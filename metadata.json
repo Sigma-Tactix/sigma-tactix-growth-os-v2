@@ -1,0 +1,8 @@
+{
+  "name": "Sigmatactix Growth OS",
+  "description": "AI-native growth infrastructure built around a secure Second Brain knowledge hub with scoped agent execution.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
