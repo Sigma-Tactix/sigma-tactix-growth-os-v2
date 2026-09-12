@@ -1,0 +1,224 @@
+{
+  "name": "SigmaTactix — 02 WhatsApp Conversation Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-inbound",
+        "options": {}
+      },
+      "id": "wh02",
+      "name": "Webhook — Twilio WhatsApp Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "sigmatactix-whatsapp-inbound"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst fromNumber = (body.From || body.from || '').replace('whatsapp:', '').trim();\nconst text = body.Body || body.body || '';\nconst msgSid = body.MessageSid || body.SmsMessageSid || '';\n\nreturn [{\n  json: {\n    phone: fromNumber,\n    message_body: text,\n    message_sid: msgSid,\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "extract02",
+      "name": "Extract Message & Sender",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": false,
+        "limit": 1,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            { "keyName": "phone", "condition": "eq", "keyValue": "={{ $json.phone }}" }
+          ]
+        }
+      },
+      "id": "sbFind02",
+      "name": "Find Existing Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [440, 0],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "lead_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "lead_id", "fieldValue": "={{ $json.id || $('Extract Message & Sender').item.json.phone }}" },
+            { "fieldId": "direction", "fieldValue": "inbound" },
+            { "fieldId": "channel", "fieldValue": "whatsapp" },
+            { "fieldId": "body", "fieldValue": "={{ $('Extract Message & Sender').item.json.message_body }}" },
+            { "fieldId": "twilio_message_sid", "fieldValue": "={{ $('Extract Message & Sender').item.json.message_sid }}" }
+          ]
+        }
+      },
+      "id": "sbLogInbound02",
+      "name": "Log Inbound Message",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [660, 0],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 600,\n  \"system\": \"You are the WhatsApp assistant for Sigma Tactix. You are talking to a lead. Goals: 1. Answer briefly and accurately using ONLY the facts in FACTS. 2. Fill missing qualification fields (need, budget, authority, timeline) conversationally. 3. Push to booked call via https://cal.com/sigmatactix/discovery once tier is warm or hot.\\n\\nHard rules:\\n- Max 3 sentences per reply. WhatsApp tone: direct, warm, no emojis unless lead uses them.\\n- Never invent prices, results, or availability. No case-study claims.\\n- Set handoff=true when: custom pricing requested, lead gets frustrated, asks legal/contract questions, enterprise lead, or after 6 exchanges without booking.\\n- Match lead language (English/Arabic).\\n\\nFACTS:\\nSigma Tactix is a Dubai-based AI native growth consultancy. Services: 1. Growth Diagnostic (USD 2,500-4,500, two-week audit, fee credits toward retainer if signed in 30d). 2. Growth Systems Retainer. 3. Authority & Demand Engine. 4. AI Operating Systems for business workflows. Every engagement starts with a diagnostic. Office in Dubai, UAE. Operating hours: Sunday-Thursday 9am-6pm GST.\\n\\nReturn ONLY JSON: {\\\"reply\\\": \\\"<str>\\\", \\\"handoff\\\": <bool>, \\\"updated_score\\\": <int or null>, \\\"updated_tier\\\": \\\"hot|warm|cold|null\\\", \\\"internal_note\\\": \\\"<str>\\\"}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Lead Phone: {{ $('Extract Message & Sender').item.json.phone }}\\nLead Name: {{ $('Find Existing Lead').item.json.full_name || 'Prospect' }}\\nCurrent Score: {{ $('Find Existing Lead').item.json.score || 50 }}\\nInbound WhatsApp message: {{ $('Extract Message & Sender').item.json.message_body }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "claudeConvo02",
+      "name": "Claude — WhatsApp Conversation Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Anthropic API Key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nlet parsed = {};\ntry {\n  const rawText = response.content?.[0]?.text || '{}';\n  parsed = JSON.parse(rawText.replace(/```json\\n?|```/g, '').trim());\n} catch (e) {\n  parsed = {\n    reply: 'Thank you for your message. A team member from Sigma Tactix will reply to you shortly.',\n    handoff: true,\n    internal_note: 'Fallback parsing triggered on WhatsApp inbound'\n  };\n}\n\nreturn [{\n  json: {\n    ...parsed,\n    phone: $('Extract Message & Sender').first().json.phone,\n    lead_id: $('Find Existing Lead').first().json.id\n  }\n}];"
+      },
+      "id": "parseConvo02",
+      "name": "Parse Conversation Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.handoff }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifHandoff02",
+      "name": "Requires Handoff?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/REPLACE_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "To", "value": "whatsapp:+REPLACE_FOUNDER_PHONE" },
+            { "name": "From", "value": "whatsapp:+REPLACE_TWILIO_WHATSAPP_NUMBER" },
+            { "name": "Body", "value": "=⚠️ *HUMAN HANDOFF REQUIRED*\n\nLead: {{ $json.phone }}\nReason: {{ $json.internal_note }}\nLast AI Response Draft: {{ $json.reply }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "alertHandoff02",
+      "name": "Notify Founder on WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, -110],
+      "credentials": {
+        "httpBasicAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Twilio Basic Auth (SID + token)" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/REPLACE_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "To", "value": "=whatsapp:{{ $json.phone }}" },
+            { "name": "From", "value": "whatsapp:+REPLACE_TWILIO_WHATSAPP_NUMBER" },
+            { "name": "Body", "value": "={{ $json.reply }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sendReply02",
+      "name": "Twilio — Send WhatsApp Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 110],
+      "credentials": {
+        "httpBasicAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Twilio Basic Auth (SID + token)" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "lead_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "lead_id", "fieldValue": "={{ $json.lead_id }}" },
+            { "fieldId": "direction", "fieldValue": "outbound" },
+            { "channel": "whatsapp" },
+            { "fieldId": "body", "fieldValue": "={{ $json.reply }}" },
+            { "fieldId": "ai_generated", "fieldValue": "true" }
+          ]
+        }
+      },
+      "id": "logReply02",
+      "name": "Log Outbound Reply",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1760, 110],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Twilio WhatsApp Inbound": { "main": [[{ "node": "Extract Message & Sender", "type": "main", "index": 0 }]] },
+    "Extract Message & Sender": { "main": [[{ "node": "Find Existing Lead", "type": "main", "index": 0 }]] },
+    "Find Existing Lead": { "main": [[{ "node": "Log Inbound Message", "type": "main", "index": 0 }]] },
+    "Log Inbound Message": { "main": [[{ "node": "Claude — WhatsApp Conversation Agent", "type": "main", "index": 0 }]] },
+    "Claude — WhatsApp Conversation Agent": { "main": [[{ "node": "Parse Conversation Response", "type": "main", "index": 0 }]] },
+    "Parse Conversation Response": { "main": [[{ "node": "Requires Handoff?", "type": "main", "index": 0 }]] },
+    "Requires Handoff?": {
+      "main": [
+        [{ "node": "Notify Founder on WhatsApp", "type": "main", "index": 0 }],
+        [{ "node": "Twilio — Send WhatsApp Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Twilio — Send WhatsApp Reply": { "main": [[{ "node": "Log Outbound Reply", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SigmaTactix Growth OS Architecture",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "request-path",
+        "label": "Client request path",
+        "focus": ["users", "spa", "api"],
+        "note": "Follow user interactions from the agency studio into the core API."
+      },
+      {
+        "id": "ai-orchestration",
+        "label": "Multi-agent intelligence",
+        "focus": ["api", "orchestrator", "gemini", "rag"],
+        "note": "Orchestrate specialized personas and synthesize strategic audit insights with Gemini."
+      },
+      {
+        "id": "services-and-data",
+        "label": "Services & persistence",
+        "focus": ["api", "supabase", "stripe", "crawler", "export"],
+        "note": "Manage workspace persistence, billing telemetry, site audits, and multi-format exports."
+      }
+    ]
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "Growth Teams", "sublabel": "Browser / Client", "pos": [40, 300], "size": [130, 60] },
+    { "id": "spa", "type": "frontend", "brand": "react", "label": "Studio UI", "sublabel": "React 19 + Vite", "pos": [250, 300], "size": [140, 60] },
+    { "id": "api", "type": "backend", "label": "Growth OS Core", "sublabel": "Express 4 Server", "pos": [470, 300], "size": [140, 60] },
+    { "id": "orchestrator", "type": "backend", "label": "Agent Orchestrator", "sublabel": "10+ Personas", "pos": [690, 300], "size": [150, 60] },
+    { "id": "gemini", "type": "cloud", "brand": "google-gemini", "label": "Gemini AI Engine", "sublabel": "Audit & Synthesis", "pos": [920, 300], "size": [140, 60] },
+    { "id": "supabase", "type": "database", "brand": "supabase", "label": "Supabase Platform", "sublabel": "Auth & PostgreSQL", "pos": [470, 150], "size": [140, 60] },
+    { "id": "rag", "type": "database", "brand": "postgresql", "label": "Vector & RAG Vault", "sublabel": "pgvector Knowledge", "pos": [690, 150], "size": [150, 60] },
+    { "id": "export", "type": "backend", "label": "Document Exporter", "sublabel": "PDF / PPTX / XLSX", "pos": [250, 450], "size": [140, 60] },
+    { "id": "stripe", "type": "cloud", "brand": "stripe", "label": "Stripe Billing", "sublabel": "Usage & Webhooks", "pos": [470, 450], "size": [140, 60] },
+    { "id": "crawler", "type": "backend", "label": "Audit Crawler", "sublabel": "Playwright + Cheerio", "pos": [690, 450], "size": [150, 60] }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Execution & Intelligence Runtime",
+      "wraps": ["orchestrator", "crawler"]
+    },
+    {
+      "kind": "region",
+      "label": "Persistence & Knowledge Store",
+      "wraps": ["supabase", "rag"]
+    }
+  ],
+  "connections": [
+    { "id": "users-spa", "from": "users", "to": "spa", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "spa-api", "from": "spa", "to": "api", "label": "REST API", "variant": "emphasis" },
+    { "id": "api-supabase", "from": "api", "to": "supabase", "label": "Workspaces", "fromSide": "top", "toSide": "bottom", "labelDy": -40 },
+    { "id": "api-orchestrator", "from": "api", "to": "orchestrator", "label": "Dispatch" },
+    { "id": "orchestrator-gemini", "from": "orchestrator", "to": "gemini", "label": "Synthesis", "variant": "emphasis" },
+    { "id": "orchestrator-rag", "from": "orchestrator", "to": "rag", "label": "Context", "fromSide": "top", "toSide": "bottom", "labelDy": -40 },
+    { "id": "orchestrator-crawler", "from": "orchestrator", "to": "crawler", "label": "Live Audit", "fromSide": "bottom", "toSide": "top", "labelDy": 40 },
+    { "id": "api-stripe", "from": "api", "to": "stripe", "label": "Billing", "fromSide": "bottom", "toSide": "top", "labelDy": 40 },
+    { "id": "spa-export", "from": "spa", "to": "export", "label": "Export Deck", "fromSide": "bottom", "toSide": "top", "labelDy": 40 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client & Studio",
+      "items": [
+        "React 19 SPA with Tailwind CSS styling",
+        "Ultron/Jarvis 3D Neural Core and Agent Heatmap",
+        "Real-time interactive workspace telemetry"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Orchestration & AI",
+      "items": [
+        "Express 4 core with rate limiting and secure headers",
+        "Autonomous multi-agent execution for audits and SEO",
+        "Gemini 2.5/Pro deep strategic growth synthesis"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Data & Platform",
+      "items": [
+        "Supabase multi-tenant PostgreSQL storage",
+        "pgvector knowledge store for RAG grounding",
+        "Playwright web crawlers and PDF/PPTX/Excel exporters"
+      ]
+    }
+  ]
+}

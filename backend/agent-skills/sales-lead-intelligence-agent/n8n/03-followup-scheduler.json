@@ -1,0 +1,194 @@
+{
+  "name": "SigmaTactix — 03 Follow-up Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 30 }]
+        }
+      },
+      "id": "st01",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": false,
+        "limit": 25,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            { "keyName": "next_followup_at", "condition": "lte", "keyValue": "={{ new Date().toISOString() }}" },
+            { "keyName": "status", "condition": "in", "keyValue": "(qualifying,qualified,nurture)" }
+          ]
+        }
+      },
+      "id": "sb20",
+      "name": "Get Due Leads",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [220, 0],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const BOOKING_LINK = 'REPLACE_BOOKING_LINK';\nconst BRAND = 'Sigma Tactix';\nconst SIDS = {\n  1: 'REPLACE_CONTENT_SID_FOLLOWUP_1',\n  2: 'REPLACE_CONTENT_SID_FOLLOWUP_2',\n  3: 'REPLACE_CONTENT_SID_FOLLOWUP_3'\n};\nconst FAR_FUTURE = '2099-12-31T00:00:00.000Z';\nconst out = [];\nfor (const item of $input.all()) {\n  const lead = item.json;\n  if (!lead || !lead.id || !lead.phone) continue;\n  if (lead.tier === 'cold' || lead.status === 'disqualified') continue;\n  const step = (Number(lead.followup_step) || 0) + 1;\n  const firstName = (lead.full_name || 'there').split(' ')[0];\n  if (step > 3 || !SIDS[step]) {\n    out.push({ json: { action: 'stop', lead_id: lead.id, phone: lead.phone, step, new_status: 'nurture', next_followup_at: FAR_FUTURE } });\n    continue;\n  }\n  const nextAt = step === 1 ? new Date(Date.now() + 2 * 86400000).toISOString()\n    : step === 2 ? new Date(Date.now() + 4 * 86400000).toISOString()\n    : FAR_FUTURE;\n  out.push({ json: {\n    action: 'send',\n    lead_id: lead.id,\n    phone: lead.phone,\n    step,\n    content_sid: SIDS[step],\n    content_variables: JSON.stringify({ '1': firstName, '2': BRAND, '3': BOOKING_LINK }),\n    next_followup_at: nextAt,\n    new_status: step === 3 ? 'nurture' : (lead.status || 'qualifying'),\n    body_preview: 'Template followup_' + step + ' sent to ' + firstName\n  } });\n}\nreturn out;"
+      },
+      "id": "code20",
+      "name": "Prepare Follow-ups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "send",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if20",
+      "name": "Send or Stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/REPLACE_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "To", "value": "=whatsapp:{{ $json.phone }}" },
+            { "name": "From", "value": "whatsapp:+REPLACE_TWILIO_WHATSAPP_NUMBER" },
+            { "name": "ContentSid", "value": "={{ $json.content_sid }}" },
+            { "name": "ContentVariables", "value": "={{ $json.content_variables }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http20",
+      "name": "Twilio — Send Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, -110],
+      "credentials": {
+        "httpBasicAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Twilio Basic Auth (SID + token)" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "lead_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "lead_id", "fieldValue": "={{ $('Prepare Follow-ups').item.json.lead_id }}" },
+            { "fieldId": "direction", "fieldValue": "outbound" },
+            { "fieldId": "channel", "fieldValue": "whatsapp" },
+            { "fieldId": "body", "fieldValue": "={{ $('Prepare Follow-ups').item.json.body_preview }}" },
+            { "fieldId": "ai_generated", "fieldValue": "true" }
+          ]
+        }
+      },
+      "id": "sb21",
+      "name": "Log Follow-up",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1100, -110],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Prepare Follow-ups').item.json.lead_id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "followup_step", "fieldValue": "={{ $('Prepare Follow-ups').item.json.step }}" },
+            { "fieldId": "status", "fieldValue": "={{ $('Prepare Follow-ups').item.json.new_status }}" },
+            { "fieldId": "next_followup_at", "fieldValue": "={{ $('Prepare Follow-ups').item.json.next_followup_at }}" },
+            { "fieldId": "last_contact_at", "fieldValue": "={{ new Date().toISOString() }}" }
+          ]
+        }
+      },
+      "id": "sb22",
+      "name": "Update Lead (sent)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1320, -110],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.lead_id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "status", "fieldValue": "={{ $json.new_status }}" },
+            { "fieldId": "next_followup_at", "fieldValue": "={{ $json.next_followup_at }}" }
+          ]
+        }
+      },
+      "id": "sb23",
+      "name": "Update Lead (stop)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [880, 110],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": { "main": [[{ "node": "Get Due Leads", "type": "main", "index": 0 }]] },
+    "Get Due Leads": { "main": [[{ "node": "Prepare Follow-ups", "type": "main", "index": 0 }]] },
+    "Prepare Follow-ups": { "main": [[{ "node": "Send or Stop?", "type": "main", "index": 0 }]] },
+    "Send or Stop?": {
+      "main": [
+        [{ "node": "Twilio — Send Template", "type": "main", "index": 0 }],
+        [{ "node": "Update Lead (stop)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Twilio — Send Template": { "main": [[{ "node": "Log Follow-up", "type": "main", "index": 0 }]] },
+    "Log Follow-up": { "main": [[{ "node": "Update Lead (sent)", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

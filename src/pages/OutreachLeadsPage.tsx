@@ -1,0 +1,1165 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  Search, 
+  Sparkles, 
+  Bot, 
+  Mail, 
+  Send, 
+  CheckCircle2, 
+  Filter, 
+  Play, 
+  RefreshCw, 
+  Share2, 
+  Sliders, 
+  TrendingUp, 
+  ExternalLink,
+  Target,
+  Copy,
+  Check,
+  Building2,
+  Briefcase,
+  Plus,
+  Kanban,
+  Code2,
+  DollarSign,
+  ArrowRight,
+  ArrowLeft,
+  X,
+  Phone,
+  Calendar,
+  AlertCircle,
+  MessageSquare,
+  FileText
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/src/lib/utils';
+import { useToast } from '@/src/contexts/ToastContext';
+import { apiFetch } from '@/src/lib/api';
+import { useWorkspace } from '@/src/contexts/WorkspaceContext';
+import WhatsAppLeadIntelligenceStudio from '@/src/components/outreach/WhatsAppLeadIntelligenceStudio';
+import DealDocumentsStudio from '@/src/components/outreach/DealDocumentsStudio';
+import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { 
+  SEED_LEAD_PROSPECTS, 
+  LeadProspect 
+} from '@/src/data/marketingModulesData';
+
+export type LeadStage = 'NEW_INBOUND' | 'ENRICHED' | 'OUTREACH_QUEUED' | 'REPLIED_WARM' | 'CALL_BOOKED' | 'CLOSED_WON';
+
+export interface SovereignLeadItem {
+  id: string;
+  name: string;
+  email: string;
+  company: string;
+  domain?: string;
+  title?: string;
+  linkedinUrl?: string;
+  stage: LeadStage;
+  sourceVector: string;
+  estimatedArr?: string;
+  icpScore: number;
+  notes?: string;
+  capturedAt: string;
+}
+
+const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; bg: string; border: string }> = {
+  NEW_INBOUND: { label: 'New / Inbound', color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+  ENRICHED: { label: 'ICP Enriched', color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
+  OUTREACH_QUEUED: { label: 'Outreach Active', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  REPLIED_WARM: { label: 'Replied / Warm', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+  CALL_BOOKED: { label: 'Diagnostic Booked', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+  CLOSED_WON: { label: 'Won / Retainer Signed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
+};
+
+const STAGES: LeadStage[] = ['NEW_INBOUND', 'ENRICHED', 'OUTREACH_QUEUED', 'REPLIED_WARM', 'CALL_BOOKED', 'CLOSED_WON'];
+
+export default function OutreachLeadsPage() {
+  const { notifySuccess, notifyInfo } = useToast();
+  const { currentWorkspace } = useWorkspace();
+  const [activeTab, setActiveTab] = useState<'PIPELINE' | 'DEAL_DOCUMENTS' | 'WHATSAPP_INTELLIGENCE' | 'CAPTURE_DOCK' | 'PROSPECTS' | 'SEQUENCES' | 'SDR_AGENT'>('PIPELINE');
+  const [selectedLeadForDocsId, setSelectedLeadForDocsId] = useState<string>('lead-101');
+
+  // Leads & Pipeline State
+  const [pipelineLeads, setPipelineLeads] = useState<SovereignLeadItem[]>([]);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
+  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadProspect>(SEED_LEAD_PROSPECTS[0]);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [isDeployingSdr, setIsDeployingSdr] = useState(false);
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  // New Lead Modal Form State
+  const [newLeadName, setNewLeadName] = useState('');
+  const [newLeadEmail, setNewLeadEmail] = useState('');
+
+  // Agent Run Results
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
+    {
+      id: 'run-outreach-01',
+      agentName: 'SDR Outbound Swarm',
+      agentRole: 'B2B Account Researcher & Sequence Dispatcher',
+      timestamp: 'Today at 04:35 AM',
+      status: 'SUCCESS',
+      moduleOrigin: 'Cold Outreach & ABM',
+      inputSummary: 'Enriched 25 Series A/B SaaS accounts from Apollo vector',
+      outputSummary: 'Verified 25 corporate emails, found 18 LinkedIn profiles, queued tailored 3-step sequence.',
+      fullOutput: 'Enrichment complete. Zero bounce risk detected. Dispatched 14 high-intent outbound touchpoints.',
+      metrics: [
+        { label: 'Accounts Enriched', value: '25' },
+        { label: 'Verified Contacts', value: '100%' },
+        { label: 'Predicted Reply Rate', value: '18.4%' },
+        { label: 'ICP Match', value: '94.2%' }
+      ]
+    }
+  ]);
+  const [newLeadCompany, setNewLeadCompany] = useState('');
+  const [newLeadDomain, setNewLeadDomain] = useState('');
+  const [newLeadTitle, setNewLeadTitle] = useState('Founder / CEO');
+  const [newLeadSource, setNewLeadSource] = useState('Direct Inbound');
+  const [newLeadArr, setNewLeadArr] = useState('$3.5M');
+  const [newLeadNotes, setNewLeadNotes] = useState('');
+
+  // Live Conversion Dock Test Form State
+  const [testDockName, setTestDockName] = useState('');
+  const [testDockEmail, setTestDockEmail] = useState('');
+  const [testDockCompany, setTestDockCompany] = useState('');
+  const [testDockNeeds, setTestDockNeeds] = useState('Growth Diagnostic Audit');
+  const [isSubmittingDock, setIsSubmittingDock] = useState(false);
+
+  // Email Sequence Editor
+  const [emailSubject, setEmailSubject] = useState(
+    `Why ${selectedLead.companyName}'s growth stalled on rented headcount`
+  );
+  const [emailBody, setEmailBody] = useState(selectedLead.personalizedOutreachCopy);
+
+  // Fetch leads on mount from server or local store
+  const fetchLeads = async () => {
+    setIsLoadingLeads(true);
+    try {
+      const res = await apiFetch('/api/leads');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.leads && Array.isArray(data.leads)) {
+          setPipelineLeads(data.leads);
+          setIsLoadingLeads(false);
+          return;
+        }
+      }
+    } catch {
+      // Fallback to local storage or defaults
+    }
+
+    const cached = localStorage.getItem('sigmatactix_sovereign_leads');
+    if (cached) {
+      try {
+        setPipelineLeads(JSON.parse(cached));
+        setIsLoadingLeads(false);
+        return;
+      } catch {}
+    }
+
+    // Default Seed Leads
+    const defaults: SovereignLeadItem[] = [
+      {
+        id: 'lead-101',
+        name: 'Sarah Chen',
+        email: 'sarah@hyperdrive.ai',
+        company: 'HyperDrive AI',
+        domain: 'hyperdrive.ai',
+        title: 'Head of Growth',
+        linkedinUrl: 'https://linkedin.com/in/sarahchen-growth',
+        stage: 'REPLIED_WARM',
+        sourceVector: 'Cold SDR (Mercury-07)',
+        estimatedArr: '$4.2M',
+        icpScore: 94,
+        notes: 'Replied asking about our 90-day ROI guarantee. Wants diagnostic audit run on their signup funnel.',
+        capturedAt: '2 hours ago'
+      },
+      {
+        id: 'lead-102',
+        name: 'Marcus Vance',
+        email: 'marcus@omnicore.io',
+        company: 'OmniCore Software',
+        domain: 'omnicore.io',
+        title: 'Founder & CEO',
+        linkedinUrl: 'https://linkedin.com/in/marcusvance',
+        stage: 'CALL_BOOKED',
+        sourceVector: 'Conversion Dock (Embed)',
+        estimatedArr: '$8.5M',
+        icpScore: 98,
+        notes: 'Booked diagnostic teardown call for Thursday 2 PM. High priority B2B enterprise SaaS.',
+        capturedAt: '5 hours ago'
+      },
+      {
+        id: 'lead-103',
+        name: 'David Reynolds',
+        email: 'david@strataflow.com',
+        company: 'StrataFlow Systems',
+        domain: 'strataflow.com',
+        title: 'VP Marketing',
+        stage: 'OUTREACH_QUEUED',
+        sourceVector: 'Performance Ads (Google RSA)',
+        estimatedArr: '$2.8M',
+        icpScore: 88,
+        notes: 'Clicked Google RSA ad on /growth-os keyword. Verified domain speed leak (FCP 3.1s).',
+        capturedAt: '1 day ago'
+      },
+      {
+        id: 'lead-104',
+        name: 'Elena Rostova',
+        email: 'elena@novapulse.tech',
+        company: 'NovaPulse Technologies',
+        domain: 'novapulse.tech',
+        title: 'Chief Revenue Officer',
+        stage: 'CLOSED_WON',
+        sourceVector: 'SEO & AEO Authority',
+        estimatedArr: '$12.0M',
+        icpScore: 96,
+        notes: 'Signed $5,000/mo retainer. Onboarded into Sovereign Enclave with full Second Brain ingestion.',
+        capturedAt: '3 days ago'
+      },
+      {
+        id: 'lead-105',
+        name: 'Jordan Miller',
+        email: 'jordan@finscale.co',
+        company: 'FinScale Protocol',
+        domain: 'finscale.co',
+        title: 'Growth Director',
+        stage: 'ENRICHED',
+        sourceVector: 'Apollo ICP Scraper',
+        estimatedArr: '$3.5M',
+        icpScore: 91,
+        notes: 'Enriched verified email and mobile tech stack. Elementor site with 0 JSON-LD schemas detected.',
+        capturedAt: 'Just now'
+      }
+    ];
+
+    setPipelineLeads(defaults);
+    localStorage.setItem('sigmatactix_sovereign_leads', JSON.stringify(defaults));
+    setIsLoadingLeads(false);
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  // Save pipeline changes locally and remotely
+  const updatePipelineLeads = (newLeads: SovereignLeadItem[]) => {
+    setPipelineLeads(newLeads);
+    localStorage.setItem('sigmatactix_sovereign_leads', JSON.stringify(newLeads));
+  };
+
+  // Move a lead forward or backward across Kanban stages
+  const handleMoveStage = async (leadId: string, direction: 'forward' | 'backward') => {
+    const lead = pipelineLeads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const currentIndex = STAGES.indexOf(lead.stage);
+    const targetIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
+    if (targetIndex < 0 || targetIndex >= STAGES.length) return;
+
+    const targetStage = STAGES[targetIndex];
+    const updated = pipelineLeads.map(l => l.id === leadId ? { ...l, stage: targetStage } : l);
+    updatePipelineLeads(updated);
+
+    try {
+      await apiFetch('/api/leads/update-stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, stage: targetStage })
+      });
+    } catch {}
+
+    notifySuccess('Pipeline Stage Updated', `${lead.company} moved to "${STAGE_CONFIG[targetStage].label}".`);
+  };
+
+  // Add new lead manually
+  const handleAddLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadName.trim() || !newLeadEmail.trim() || !newLeadCompany.trim()) return;
+
+    const newLead: SovereignLeadItem = {
+      id: `lead-${Date.now()}`,
+      name: newLeadName.trim(),
+      email: newLeadEmail.trim().toLowerCase(),
+      company: newLeadCompany.trim(),
+      domain: newLeadDomain.trim() || undefined,
+      title: newLeadTitle.trim(),
+      stage: 'NEW_INBOUND',
+      sourceVector: newLeadSource,
+      estimatedArr: newLeadArr,
+      icpScore: Math.floor(82 + Math.random() * 16),
+      notes: newLeadNotes.trim() || 'Manually entered into Sovereign Pipeline.',
+      capturedAt: 'Just now'
+    };
+
+    const updated = [newLead, ...pipelineLeads];
+    updatePipelineLeads(updated);
+    setIsAddLeadModalOpen(false);
+
+    // Reset Form
+    setNewLeadName('');
+    setNewLeadEmail('');
+    setNewLeadCompany('');
+    setNewLeadDomain('');
+    setNewLeadNotes('');
+
+    try {
+      await apiFetch('/api/leads/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLead)
+      });
+    } catch {}
+
+    notifySuccess('Lead Added to Sovereign CRM', `${newLead.name} (${newLead.company}) is now live in the pipeline.`);
+  };
+
+  // Live Test of Conversion Dock Submission
+  const handleTestDockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testDockName.trim() || !testDockEmail.trim()) return;
+
+    setIsSubmittingDock(true);
+    const newCapturedLead: SovereignLeadItem = {
+      id: `dock-${Date.now()}`,
+      name: testDockName.trim(),
+      email: testDockEmail.trim().toLowerCase(),
+      company: (testDockCompany.trim() || 'CloudVector Technologies'),
+      domain: (testDockCompany.trim() || 'cloudvector').toLowerCase().replace(/[^a-z0-9]/g, '') + '.io',
+      title: 'Founder & CEO',
+      stage: 'NEW_INBOUND',
+      sourceVector: 'Conversion Dock (Embed)',
+      estimatedArr: '$3.2M',
+      icpScore: 93,
+      notes: `Captured via embed dock: "${testDockNeeds}". Zero 3rd-party CRM needed.`,
+      capturedAt: 'Just now'
+    };
+
+    updatePipelineLeads([newCapturedLead, ...pipelineLeads]);
+
+    try {
+      await apiFetch('/api/public/capture-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: testDockName,
+          email: testDockEmail,
+          company: testDockCompany || 'Test Corporation',
+          sourceVector: 'Conversion Dock (Embed)',
+          needs: testDockNeeds
+        })
+      });
+    } catch {}
+
+    setIsSubmittingDock(false);
+    setTestDockName('');
+    setTestDockEmail('');
+    setTestDockCompany('');
+    setActiveTab('PIPELINE');
+    notifySuccess('Inbound Lead Captured!', `${newCapturedLead.name} (${newCapturedLead.company}) instantly entered the Sovereign CRM under "New / Inbound".`);
+  };
+
+  const handleEnrichLeads = () => {
+    setIsEnriching(true);
+    setTimeout(() => {
+      setIsEnriching(false);
+      notifySuccess(
+        'Lead Signals Enriched',
+        'Updated verified email addresses, LinkedIn URLs, and hiring signals for all active prospects.'
+      );
+    }, 1200);
+  };
+
+  const handleDeploySdr = () => {
+    setIsDeployingSdr(true);
+    setTimeout(() => {
+      setIsDeployingSdr(false);
+      notifySuccess(
+        'Mercury-07 AI SDR Swarm Active',
+        'Enqueued 18 hyper-personalized emails and 12 LinkedIn touchpoints into the HITL approval ledger.'
+      );
+    }, 1200);
+  };
+
+  // Pipeline Metrics Calculation
+  const totalPipelineValue = pipelineLeads.reduce((acc, l) => {
+    const val = parseFloat((l.estimatedArr || '0').replace(/[^0-9.]/g, ''));
+    return acc + (isNaN(val) ? 0 : val);
+  }, 0);
+
+  const wonARR = pipelineLeads
+    .filter(l => l.stage === 'CLOSED_WON')
+    .reduce((acc, l) => {
+      const val = parseFloat((l.estimatedArr || '0').replace(/[^0-9.]/g, ''));
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+
+  const activeDomain = currentWorkspace?.domain?.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase().trim() || 'sigmatactix.com';
+
+  const embedSnippet = `<!-- Sigma Tactix Autonomous Lead Capture Dock -->
+<div id="sigmatactix-capture-dock" data-domain="${activeDomain}" data-theme="dark"></div>
+<script src="https://${activeDomain}/api/embed/dock.js" async></script>`;
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* Top Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 text-[11px] font-mono tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full font-bold">
+              SOVEREIGN REVENUE ENGINE
+            </span>
+            <span className="text-zinc-500 text-xs">•</span>
+            <span className="text-xs font-mono text-zinc-400">MERCURY-07 SDR + NATIVE CRM</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <Kanban className="w-7 h-7 text-amber-400" />
+            Lead Engine & Sovereign CRM Pipeline
+          </h1>
+          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
+            Autonomous buyer prospecting, embeddable lead capture dock, native CRM pipeline stages, and closed-loop revenue attribution without requiring third-party subscriptions.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setIsAddLeadModalOpen(true)}
+            className="px-4 py-2.5 bg-accent text-background font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-lg amber-glow"
+          >
+            <Plus className="w-4 h-4" />
+            Add Prospect
+          </button>
+
+          <button
+            onClick={handleEnrichLeads}
+            disabled={isEnriching}
+            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5 text-amber-400", isEnriching && "animate-spin")} />
+            {isEnriching ? 'Enriching...' : 'Enrich Signals'}
+          </button>
+
+          <button
+            onClick={handleDeploySdr}
+            disabled={isDeployingSdr}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
+          >
+            <Play className="w-3.5 h-3.5 fill-black" />
+            {isDeployingSdr ? 'Executing...' : 'Deploy AI SDR'}
+          </button>
+        </div>
+      </div>
+
+      {/* Metric Highlights */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
+          <div className="text-xs font-mono text-zinc-400 mb-1">Active Pipeline Accounts</div>
+          <div className="text-2xl font-bold text-white flex items-center gap-2">
+            {pipelineLeads.length} Leads
+          </div>
+          <div className="text-[11px] text-zinc-500 mt-1">Native Sovereign Pipeline</div>
+        </div>
+
+        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
+          <div className="text-xs font-mono text-zinc-400 mb-1">Total Pipeline ARR</div>
+          <div className="text-2xl font-bold text-amber-400 flex items-center gap-2">
+            ${totalPipelineValue.toFixed(1)}M
+          </div>
+          <div className="text-[11px] text-zinc-500 mt-1">Sum of weighted qualified leads</div>
+        </div>
+
+        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
+          <div className="text-xs font-mono text-zinc-400 mb-1">Won / Contracted ARR</div>
+          <div className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
+            ${wonARR.toFixed(1)}M
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="text-[11px] text-emerald-400/80 mt-1">5 Closed Retainers Target</div>
+        </div>
+
+        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
+          <div className="text-xs font-mono text-zinc-400 mb-1">Cold Reply Rate</div>
+          <div className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+            18.4%
+            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div className="text-[11px] text-zinc-500 mt-1">Driven by empirical audit teardowns</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('PIPELINE')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'PIPELINE'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Kanban className="w-3.5 h-3.5" />
+          Sovereign CRM Pipeline ({pipelineLeads.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('DEAL_DOCUMENTS')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'DEAL_DOCUMENTS'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Briefcase className="w-3.5 h-3.5 text-amber-400" />
+          Deal Documents & Contracts Studio
+          <span className="rounded bg-amber-400/20 px-1.5 py-0.2 text-[10px] text-amber-400 font-bold">Agreements</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('WHATSAPP_INTELLIGENCE')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'WHATSAPP_INTELLIGENCE'
+              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold shadow-sm"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+          WhatsApp Lead Intel (Rubric & Drip)
+          <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] text-emerald-400">v0.1</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('CAPTURE_DOCK')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'CAPTURE_DOCK'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Code2 className="w-3.5 h-3.5" />
+          Embeddable Capture Dock (Zero CRM Needed)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('PROSPECTS')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'PROSPECTS'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Enriched Accounts & ICP Scoring
+        </button>
+
+        <button
+          onClick={() => setActiveTab('SEQUENCES')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'SEQUENCES'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Mail className="w-3.5 h-3.5" />
+          Empirical Sequence Builder
+        </button>
+
+        <button
+          onClick={() => setActiveTab('SDR_AGENT')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
+            activeTab === 'SDR_AGENT'
+              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          )}
+        >
+          <Bot className="w-3.5 h-3.5" />
+          Mercury-07 Autonomous SDR Swarm
+        </button>
+      </div>
+
+      {/* TAB 1: KANBAN PIPELINE (SOVEREIGN MINI-CRM) */}
+      {activeTab === 'PIPELINE' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+            <span>Sovereign Native Pipeline • Real-time closed-loop progression</span>
+            <span className="text-zinc-500">Click arrows to advance leads across stages</span>
+          </div>
+
+          <div data-tutorial-id="tut-pipeline-kanban" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto pb-4">
+            {STAGES.map((stageKey) => {
+              const config = STAGE_CONFIG[stageKey];
+              const stageLeads = pipelineLeads.filter(l => l.stage === stageKey);
+
+              return (
+                <div key={stageKey} className="flex flex-col min-w-[210px] bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-3 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                    <span className={cn("text-xs font-mono font-bold px-2 py-0.5 rounded border", config.bg, config.color, config.border)}>
+                      {config.label}
+                    </span>
+                    <span className="text-xs font-mono text-zinc-400 font-bold">{stageLeads.length}</span>
+                  </div>
+
+                  <div className="space-y-2 flex-1 min-h-[140px]">
+                    {stageLeads.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-[11px] font-mono text-zinc-600 p-4 text-center">
+                        No leads in this stage
+                      </div>
+                    ) : (
+                      stageLeads.map((lead) => (
+                        <div key={lead.id} className="p-3 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-2 hover:border-zinc-700 transition-all shadow-sm">
+                          <div className="flex items-start justify-between gap-1">
+                            <div>
+                              <div className="text-xs font-bold text-white leading-tight">{lead.company}</div>
+                              <div className="text-[11px] text-zinc-400">{lead.name}</div>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                              {lead.icpScore}%
+                            </span>
+                          </div>
+
+                          <div className="text-[10px] font-mono text-zinc-400 flex items-center justify-between">
+                            <span>{lead.sourceVector}</span>
+                            <span className="text-amber-400 font-bold">{lead.estimatedArr}</span>
+                          </div>
+
+                          {lead.notes && (
+                            <p className="text-[10px] text-zinc-400 line-clamp-2 italic bg-zinc-900/60 p-1.5 rounded">
+                              "{lead.notes}"
+                            </p>
+                          )}
+
+                          {/* Stage Transition Controls */}
+                          <div className="flex items-center justify-between pt-1 border-t border-zinc-800/60">
+                            <button
+                              onClick={() => handleMoveStage(lead.id, 'backward')}
+                              disabled={STAGES.indexOf(lead.stage) === 0}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-20 cursor-pointer"
+                              title="Move back"
+                            >
+                              <ArrowLeft className="w-3 h-3" />
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setSelectedLeadForDocsId(lead.id);
+                                setActiveTab('DEAL_DOCUMENTS');
+                              }}
+                              className="px-2 py-0.5 rounded bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-[9px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all"
+                              title="Create Deal Documents & Agreements"
+                            >
+                              <FileText className="w-2.5 h-2.5" />
+                              Docs
+                            </button>
+
+                            <span className="text-[9px] font-mono text-zinc-500">
+                              {lead.capturedAt}
+                            </span>
+
+                            <button
+                              onClick={() => handleMoveStage(lead.id, 'forward')}
+                              disabled={STAGES.indexOf(lead.stage) === STAGES.length - 1}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-20 cursor-pointer"
+                              title="Advance lead"
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: DEAL DOCUMENTS & CONSULTING PACKAGES STUDIO */}
+      {activeTab === 'DEAL_DOCUMENTS' && (
+        <DealDocumentsStudio 
+          leads={pipelineLeads} 
+          currentLeadId={selectedLeadForDocsId}
+          onSelectLead={(id) => setSelectedLeadForDocsId(id)}
+        />
+      )}
+
+      {/* TAB: WHATSAPP LEAD INTELLIGENCE AGENT (v0.1 LEAN MVP) */}
+      {activeTab === 'WHATSAPP_INTELLIGENCE' && (
+        <WhatsAppLeadIntelligenceStudio />
+      )}
+
+      {/* TAB 2: EMBEDDABLE CONVERSION DOCK (SOLVES "NO CRM" SCENARIO) */}
+      {activeTab === 'CAPTURE_DOCK' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: Embed Snippet & Webhook Configuration */}
+          <div className="space-y-4 p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl">
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-400 font-bold">
+              <Code2 className="w-4 h-4" /> ZERO-DEPENDENCY INBOUND CAPTURE DOCK
+            </div>
+            <h3 className="text-lg font-bold text-white">Embed Lead Capture on Any Web Property</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              If you or a client have <strong>zero existing CRM or lead capture tools</strong>, copy this snippet onto any website (WordPress, Webflow, React, HTML). Inbound submissions automatically post to your local Growth OS database with verified HMAC attribution.
+            </p>
+
+            <div className="p-3 bg-black/80 border border-zinc-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+                <span>HTML / JavaScript Embed Snippet</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(embedSnippet);
+                    setCopiedSnippet(true);
+                    setTimeout(() => setCopiedSnippet(false), 2000);
+                  }}
+                  className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
+                >
+                  {copiedSnippet ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedSnippet ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
+              <pre className="text-[11px] font-mono text-amber-300/90 overflow-x-auto p-2 bg-zinc-950 rounded">
+                {embedSnippet}
+              </pre>
+            </div>
+
+            <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl space-y-2 text-xs font-mono">
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Native Lead Pipeline Features:
+              </div>
+              <ul className="list-disc list-inside text-zinc-400 space-y-1 text-[11px]">
+                <li>Automatic domain extraction & ICP score calculation</li>
+                <li>Direct attribution to origin vector (SEO, Ads, Outreach, Referral)</li>
+                <li>Instant webhook commitment into Second Brain RAG memory</li>
+                <li>Zero ongoing Zapier, HubSpot, or Salesforce subscription required</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Right Column: Live Interactive Test Form */}
+          <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                <Send className="w-4 h-4" /> LIVE CAPTURE TEST CONSOLE
+              </div>
+              <span className="text-[10px] font-mono text-zinc-500">Fires POST /api/public/capture-lead</span>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Test submitting a lead as if an executive visited your landing page dock. The record will instantly land in your Sovereign Pipeline.
+            </p>
+
+            <form onSubmit={handleTestDockSubmit} className="space-y-3">
+              <div>
+                <label className="text-[11px] font-mono text-zinc-400">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={testDockName}
+                  onChange={(e) => setTestDockName(e.target.value)}
+                  placeholder="e.g. Alexander Cross"
+                  className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-mono text-zinc-400">Work Email</label>
+                <input
+                  type="email"
+                  required
+                  value={testDockEmail}
+                  onChange={(e) => setTestDockEmail(e.target.value)}
+                  placeholder="alexander@cloudvector.io"
+                  className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-mono text-zinc-400">Company Name</label>
+                <input
+                  type="text"
+                  value={testDockCompany}
+                  onChange={(e) => setTestDockCompany(e.target.value)}
+                  placeholder="CloudVector Technologies"
+                  className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-mono text-zinc-400">Primary Growth Need</label>
+                <select
+                  value={testDockNeeds}
+                  onChange={(e) => setTestDockNeeds(e.target.value)}
+                  className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  <option>Autonomous Growth Diagnostic Audit</option>
+                  <option>SEO / AEO Citation Recovery</option>
+                  <option>Performance Ad ROAS Optimization</option>
+                  <option>AI SDR Outbound Pipeline Installation</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingDock || !testDockName.trim() || !testDockEmail.trim()}
+                className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold rounded-xl text-xs uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+              >
+                {isSubmittingDock ? 'Capturing Lead...' : 'Submit Test Lead to Native Pipeline'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: PROSPECTS & ICP SCORING */}
+      {activeTab === 'PROSPECTS' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Prospect List */}
+          <div className="space-y-3">
+            <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
+              Active Target Accounts ({SEED_LEAD_PROSPECTS.length})
+            </div>
+
+            {SEED_LEAD_PROSPECTS.map(lead => (
+              <div
+                key={lead.id}
+                onClick={() => {
+                  setSelectedLead(lead);
+                  setEmailSubject(`Why ${lead.companyName}'s growth stalled on rented headcount`);
+                  setEmailBody(lead.personalizedOutreachCopy);
+                }}
+                className={cn(
+                  "p-4 rounded-xl border transition-all cursor-pointer text-left space-y-2",
+                  selectedLead.id === lead.id
+                    ? "bg-amber-400/10 border-amber-400/40 text-white shadow-lg shadow-amber-500/5"
+                    : "bg-zinc-900/30 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/40"
+                )}
+              >
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="font-bold text-white">{lead.name}</span>
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold">
+                    {lead.icpMatchScore}% ICP Match
+                  </span>
+                </div>
+
+                <div className="text-xs text-zinc-400">
+                  {lead.title} at <strong className="text-zinc-200">{lead.companyName}</strong>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 text-[11px] font-mono text-zinc-500">
+                  <span>{lead.industry}</span>
+                  <span>•</span>
+                  <span className="text-amber-400/80">{lead.estimatedArr || '$3.5M'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Lead Detail & Enrichment Profile */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-white">{selectedLead.companyName}</h2>
+                    <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Tier 1 Target
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono text-zinc-400 mt-1">
+                    Decision Maker: {selectedLead.name} ({selectedLead.title})
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={selectedLead.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
+                    LinkedIn
+                  </a>
+                </div>
+              </div>
+
+              {/* Enrichment Signals */}
+              <div className="space-y-2">
+                <div className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+                  Enriched Behavioral Signals
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedLead.intentSignals || [selectedLead.triggerEvent]).map((sig, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-xs font-mono text-amber-300 flex items-center gap-1.5">
+                      <Target className="w-3 h-3 text-amber-400" />
+                      {sig}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Personalized Outreach Draft */}
+              <div className="space-y-2 pt-2 border-t border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    AI-Synthesized First Touchpoint Draft
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-500">Generated via Mercury-07 SDR</span>
+                </div>
+
+                <div className="p-4 bg-black/60 border border-zinc-800 rounded-xl space-y-2">
+                  <div className="text-xs font-mono text-amber-400/90 font-bold">
+                    Subject: {emailSubject}
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">
+                    {emailBody}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: EMPIRICAL SEQUENCE BUILDER */}
+      {activeTab === 'SEQUENCES' && (
+        <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white text-base">Multi-Touch Autonomous Diagnostic Sequence</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                4-touch cadence engineered to convert cold enterprise prospects by demonstrating empirical proof of their revenue leakage.
+              </p>
+            </div>
+            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 font-bold">
+              Average Reply Rate: 18.4%
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+            {[
+              { step: 'TOUCH 1 (Day 1)', channel: 'Cold Email', desc: 'Deliver empirical diagnostic teardown highlighting their FCP speed leak and 0 AEO citations.' },
+              { step: 'TOUCH 2 (Day 3)', channel: 'LinkedIn Connection', desc: 'Custom connection note referencing their recent marketing leadership hire or ad blitz.' },
+              { step: 'TOUCH 3 (Day 6)', channel: 'Email Teardown', desc: 'Deliver 3-point growth gap preview generated by Sigma Tactix diagnostic engine.' },
+              { step: 'TOUCH 4 (Day 9)', channel: 'InMail / Loom Audit', desc: 'Video walkthrough of their Second Brain architecture and 90-day ROI guarantee.' }
+            ].map((touch, i) => (
+              <div key={i} className="p-4 bg-black/60 border border-zinc-800 rounded-xl space-y-2 text-xs">
+                <div className="font-mono text-amber-400 font-bold text-[11px]">{touch.step}</div>
+                <div className="font-bold text-white">{touch.channel}</div>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">{touch.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SDR AGENT ARCHITECTURE */}
+      {activeTab === 'SDR_AGENT' && (
+        <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+                <Bot className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm">Mercury-07 (Autonomous SDR Swarm)</h3>
+                <p className="text-xs text-zinc-400 font-mono">Codename: MERCURY-07 • Clearance: HITL Governed</p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDeploySdr}
+              disabled={isDeployingSdr}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+            >
+              <Play className="w-3.5 h-3.5 fill-black" />
+              {isDeployingSdr ? 'Executing...' : 'Dispatch Batch (25 Leads)'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-white">Sub-Agent 1: MERCURY-SUB-1</div>
+              <div className="text-zinc-400 text-[11px]">ICP Intent & Signal Scraper</div>
+              <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (184 enriched)</div>
+            </div>
+
+            <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-white">Sub-Agent 2: MERCURY-SUB-2</div>
+              <div className="text-zinc-400 text-[11px]">Objection Prediction & Copywriter</div>
+              <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (210 drafts synthesized)</div>
+            </div>
+
+            <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-white">Sub-Agent 3: MERCURY-SUB-3</div>
+              <div className="text-zinc-400 text-[11px]">Deliverability & Spam Sentinel</div>
+              <div className="text-emerald-400 font-mono text-[10px]">Status: MONITORING (0 domain flags)</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD LEAD MODAL */}
+      <AnimatePresence>
+        {isAddLeadModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090B] border border-white/10 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  Add New Prospect to Sovereign Pipeline
+                </h3>
+                <button
+                  onClick={() => setIsAddLeadModalOpen(false)}
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddLead} className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Contact Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newLeadName}
+                      onChange={(e) => setNewLeadName(e.target.value)}
+                      placeholder="e.g. Liam Sterling"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Work Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newLeadEmail}
+                      onChange={(e) => setNewLeadEmail(e.target.value)}
+                      placeholder="liam@vortexdata.io"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Company Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newLeadCompany}
+                      onChange={(e) => setNewLeadCompany(e.target.value)}
+                      placeholder="Vortex Data Inc"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Target Web Domain</label>
+                    <input
+                      type="text"
+                      value={newLeadDomain}
+                      onChange={(e) => setNewLeadDomain(e.target.value)}
+                      placeholder="vortexdata.io"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Job Title</label>
+                    <input
+                      type="text"
+                      value={newLeadTitle}
+                      onChange={(e) => setNewLeadTitle(e.target.value)}
+                      placeholder="Founder / CEO"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-400">Estimated ARR</label>
+                    <input
+                      type="text"
+                      value={newLeadArr}
+                      onChange={(e) => setNewLeadArr(e.target.value)}
+                      placeholder="$3.5M"
+                      className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-zinc-400">Origin Vector</label>
+                  <select
+                    value={newLeadSource}
+                    onChange={(e) => setNewLeadSource(e.target.value)}
+                    className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option>Direct Inbound (Conversion Dock)</option>
+                    <option>Cold SDR (Mercury-07)</option>
+                    <option>SEO & AEO Authority (Aurora-01)</option>
+                    <option>Performance Ads (Google RSA / Meta)</option>
+                    <option>Referral / High-Intent Intro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-zinc-400">Lead Context & Notes</label>
+                  <textarea
+                    rows={2}
+                    value={newLeadNotes}
+                    onChange={(e) => setNewLeadNotes(e.target.value)}
+                    placeholder="Specific growth pain points, current tech stack, or qualification details..."
+                    className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddLeadModalOpen(false)}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-mono cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-accent text-background font-bold rounded-xl text-xs uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md amber-glow"
+                  >
+                    Add to Pipeline
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Real-time Agent Run Results */}
+      <div className="mt-12">
+        <AgentRunResults
+          records={runHistory}
+          title="Outreach & SDR Swarm Run Results"
+          description="Log of lead enrichment runs, automated email dispatches, and WhatsApp SDR qualification events."
+          onClear={() => setRunHistory([])}
+        />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,179 @@
+{
+  "name": "SigmaTactix — 01 Lead Intake & Qualify",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook01",
+      "name": "Webhook — Form Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "sigmatactix-lead-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nreturn [{\n  json: {\n    full_name: body.full_name || body.name || 'Anonymous Lead',\n    email: body.email || '',\n    phone: (body.phone || body.telephone || '').replace(/[^0-9+]/g, ''),\n    company: body.company || body.organization || '',\n    message: body.message || body.notes || body.project_details || '',\n    budget_input: body.budget || '',\n    timeline_input: body.timeline || '',\n    source: body.source || 'website_form',\n    raw_payload: body\n  }\n}];"
+      },
+      "id": "normalize01",
+      "name": "Normalize Inbound Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 1024,\n  \"system\": \"You are the lead qualification engine for Sigma Tactix, a Dubai-based AI native growth consultancy: performance marketing, SEO/GEO, and AI operating systems for businesses.\\n\\nScore the inbound lead 0-100 using this rubric:\\n- NEED (0-30): Explicit pain + service match = 25-30. Vague interest = 5-15.\\n- BUDGET (0-25): Stated or inferable budget. Mentions figures at/above entry price (USD 2,500-4,500) = 20-25. No signal = 8-12. Clearly below entry price = 0-5.\\n- AUTHORITY (0-20): Owner/founder/director = 15-20. Manager = 8-14. Student/researcher/job-seeker = 0-3.\\n- TIMELINE (0-25): \\\"Now\\\"/\\\"this month\\\" = 20-25. \\\"This quarter\\\" = 12-18. \\\"Exploring\\\" = 3-8.\\n\\nTier: hot = 70+, warm = 40-69, cold = below 40.\\n\\nRules:\\n- Never invent facts about the lead. If no signal, say 'no signal'.\\n- Never quote prices beyond entry range: Growth Diagnostic, USD 2,500-4,500.\\n- reply_draft: 2-4 sentences, confident and specific, no hype words. One clear next step: book a call.\\n- Detect language; if lead wrote in Arabic, write reply_draft in Arabic.\\n- Return ONLY valid JSON: {\\\"score\\\": int, \\\"tier\\\": \\\"hot|warm|cold\\\", \\\"need_summary\\\": \\\"str\\\", \\\"budget_range\\\": \\\"str\\\", \\\"timeline\\\": \\\"str\\\", \\\"authority\\\": \\\"str\\\", \\\"disqualify\\\": bool, \\\"reply_draft\\\": \\\"str\\\", \\\"internal_note\\\": \\\"str\\\"}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Lead submission: Name: {{ $json.full_name }}, Company: {{ $json.company }}, Phone: {{ $json.phone }}, Email: {{ $json.email }}, Message: {{ $json.message }}, Budget noted: {{ $json.budget_input }}, Timeline noted: {{ $json.timeline_input }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "claude01",
+      "name": "Claude — Qualify Rubric 0-100",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Anthropic API Key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst leadInput = $('Normalize Inbound Payload').first().json;\nlet parsed = {};\ntry {\n  const rawText = response.content?.[0]?.text || '{}';\n  parsed = JSON.parse(rawText.replace(/```json\\n?|```/g, '').trim());\n} catch (e) {\n  parsed = {\n    score: 50,\n    tier: 'warm',\n    need_summary: 'Needs manual review',\n    budget_range: 'no signal',\n    timeline: 'no signal',\n    authority: 'no signal',\n    disqualify: false,\n    reply_draft: 'Thank you for reaching out to Sigma Tactix. We received your request and will follow up shortly.',\n    internal_note: 'Parse fallback triggered'\n  };\n}\n\nconst nextFollowup = parsed.tier === 'hot' ? new Date(Date.now() + 1 * 86400000).toISOString() : new Date(Date.now() + 2 * 86400000).toISOString();\n\nreturn [{\n  json: {\n    ...leadInput,\n    score: parsed.score,\n    tier: parsed.tier,\n    need_summary: parsed.need_summary,\n    budget_range: parsed.budget_range,\n    timeline: parsed.timeline,\n    authority: parsed.authority,\n    disqualified: !!parsed.disqualify,\n    reply_draft: parsed.reply_draft,\n    internal_note: parsed.internal_note,\n    status: parsed.disqualify ? 'disqualified' : (parsed.tier === 'hot' ? 'qualified' : 'qualifying'),\n    next_followup_at: nextFollowup,\n    last_contact_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse01",
+      "name": "Parse Claude Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "leads",
+        "columnsUi": {
+          "fieldValues": [
+            { "fieldId": "full_name", "fieldValue": "={{ $json.full_name }}" },
+            { "fieldId": "email", "fieldValue": "={{ $json.email }}" },
+            { "fieldId": "phone", "fieldValue": "={{ $json.phone }}" },
+            { "fieldId": "company", "fieldValue": "={{ $json.company }}" },
+            { "fieldId": "source", "fieldValue": "={{ $json.source }}" },
+            { "fieldId": "score", "fieldValue": "={{ $json.score }}" },
+            { "fieldId": "tier", "fieldValue": "={{ $json.tier }}" },
+            { "fieldId": "status", "fieldValue": "={{ $json.status }}" },
+            { "fieldId": "need_summary", "fieldValue": "={{ $json.need_summary }}" },
+            { "fieldId": "budget_range", "fieldValue": "={{ $json.budget_range }}" },
+            { "fieldId": "timeline", "fieldValue": "={{ $json.timeline }}" },
+            { "fieldId": "authority", "fieldValue": "={{ $json.authority }}" },
+            { "fieldId": "disqualified", "fieldValue": "={{ $json.disqualified }}" },
+            { "fieldId": "reply_draft", "fieldValue": "={{ $json.reply_draft }}" },
+            { "fieldId": "internal_note", "fieldValue": "={{ $json.internal_note }}" },
+            { "fieldId": "next_followup_at", "fieldValue": "={{ $json.next_followup_at }}" },
+            { "fieldId": "last_contact_at", "fieldValue": "={{ $json.last_contact_at }}" }
+          ]
+        },
+        "options": {
+          "conflictColumns": ["phone"]
+        }
+      },
+      "id": "sb01",
+      "name": "Supabase — Upsert Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [880, 0],
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Supabase (service role)" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.tier }}",
+              "rightValue": "hot",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifHot01",
+      "name": "Is Hot Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/REPLACE_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "To", "value": "whatsapp:+REPLACE_FOUNDER_PHONE" },
+            { "name": "From", "value": "whatsapp:+REPLACE_TWILIO_WHATSAPP_NUMBER" },
+            { "name": "Body", "value": "=🚨 *HOT LEAD ALERT (Score: {{ $json.score }}/100)*\n\n*Name:* {{ $json.full_name }} ({{ $json.company || 'Direct' }})\n*Phone:* {{ $json.phone }}\n*Need:* {{ $json.need_summary }}\n*Budget:* {{ $json.budget_range }}\n*Timeline:* {{ $json.timeline }}\n\n*Note:* {{ $json.internal_note }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "alert01",
+      "name": "Twilio — WhatsApp Founder Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, -100],
+      "credentials": {
+        "httpBasicAuth": { "id": "REPLACE_AFTER_IMPORT", "name": "Twilio Basic Auth (SID + token)" }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ JSON.stringify({ success: true, lead_id: $json.id, score: $json.score, tier: $json.tier }) }}"
+      },
+      "id": "resp01",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 100]
+    }
+  ],
+  "connections": {
+    "Webhook — Form Intake": { "main": [[{ "node": "Normalize Inbound Payload", "type": "main", "index": 0 }]] },
+    "Normalize Inbound Payload": { "main": [[{ "node": "Claude — Qualify Rubric 0-100", "type": "main", "index": 0 }]] },
+    "Claude — Qualify Rubric 0-100": { "main": [[{ "node": "Parse Claude Output", "type": "main", "index": 0 }]] },
+    "Parse Claude Output": { "main": [[{ "node": "Supabase — Upsert Lead", "type": "main", "index": 0 }]] },
+    "Supabase — Upsert Lead": { "main": [[{ "node": "Is Hot Lead?", "type": "main", "index": 0 }]] },
+    "Is Hot Lead?": {
+      "main": [
+        [{ "node": "Twilio — WhatsApp Founder Alert", "type": "main", "index": 0 }],
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    },
+    "Twilio — WhatsApp Founder Alert": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

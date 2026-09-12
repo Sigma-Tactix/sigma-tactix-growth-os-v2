@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture Review: SigmaTactix Growth OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep-card { background: linear-gradient(135deg, #090d16, #111827); }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans antialiased">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      
+      <!-- Header -->
+      <header class="border-b border-slate-200 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono uppercase tracking-widest text-slate-500 font-semibold">
+            Architecture Review & Deepening Opportunities
+          </span>
+          <h1 class="text-3xl font-serif font-black text-slate-900 mt-1 tracking-tight">
+            SigmaTactix Growth OS
+          </h1>
+          <p class="text-sm text-slate-600 mt-1">
+            Evaluated against <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">sigmatactix-architecture.json</code> and deep-module design principles.
+          </p>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-mono bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-800 inline-block"></span> Deep Module</div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-slate-400 inline-block"></span> Seam</div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-red-600 inline-block"></span> Leakage</div>
+        </div>
+      </header>
+
+      <!-- Candidates Section -->
+      <section id="candidates" class="space-y-12">
+
+        <!-- Candidate 1 -->
+        <article class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-100 text-emerald-800">
+                  Strong
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-100 text-slate-700">
+                  ports & adapters
+                </span>
+              </div>
+              <h2 class="text-xl font-bold text-slate-900">
+                Deepen Vault Ingestion into a Unified Document Intake Module
+              </h2>
+            </div>
+          </div>
+
+          <div class="font-mono text-xs text-slate-500 bg-slate-50 p-2.5 rounded border border-slate-200">
+            Files: server.ts, src/pages/SecondBrain.tsx, src/lib/api.ts, src/data/secondBrainVaults.ts
+          </div>
+
+          <!-- Problem & Solution -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-rose-800 block mb-1">Problem</span>
+              <p class="text-slate-700">
+                Document uploading, text extraction, Gemini synthesis, and vault persistence are scattered across shallow endpoints and client state, forcing the UI to orchestrate four distinct steps across an ad-hoc seam.
+              </p>
+            </div>
+            <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-emerald-800 block mb-1">Solution</span>
+              <p class="text-slate-700">
+                Collapse upload, multimodal text extraction, classification heuristics, and pgvector embeddings into a single deep <code class="text-xs font-mono font-bold">VaultIngestionModule</code> behind one interface.
+              </p>
+            </div>
+          </div>
+
+          <!-- Side by Side Diagram -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                Before: Scattered Shallow Handlers
+              </div>
+              <pre class="mermaid">
+                flowchart TD
+                  UI[SecondBrain.tsx] -->|Multipart| UPL[/api/vault/upload]
+                  UI -->|Raw Text| ANL[/api/vault/analyze]
+                  UI -->|Manual State| REC[handleCreateRecord]
+                  UPL -.leak storage.- SB[(Supabase Bucket)]
+                  ANL -.leak prompt.- GEM[Gemini API]
+                  REC -.random score.- VEC[Mock Cosine Search]
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class UPL,ANL,REC leak
+              </pre>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                After: Deep Ingestion Module
+              </div>
+              <pre class="mermaid">
+                flowchart TD
+                  UI[SecondBrain.tsx] -->|ingestDocument file| MOD[VaultIngestionModule]
+                  subgraph Deep Implementation
+                    MOD --> PARSE[MIME & Text Extractors]
+                    MOD --> SYNTH[Gemini Structured Synthesis]
+                    MOD --> STOR[Supabase Vault Storage]
+                    MOD --> VECSTORE[pgvector Embedding Commit]
+                  end
+                  MOD -->|Unified VaultRecord| RET[Indexed Record]
+                  classDef deepBox fill:#0f172a,stroke:#334155,color:#fff;
+                  class MOD deepBox
+              </pre>
+            </div>
+          </div>
+
+          <!-- Wins -->
+          <div class="space-y-1.5 pt-2">
+            <span class="text-xs font-bold font-mono uppercase tracking-widest text-slate-500">Wins</span>
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-700">
+              <li class="flex items-center gap-2">✓ Locality: parsing bugs stay in one module</li>
+              <li class="flex items-center gap-2">✓ Leverage: one interface serves UI & agents</li>
+              <li class="flex items-center gap-2">✓ Two adapters: real Gemini + deterministic fake</li>
+              <li class="flex items-center gap-2">✓ Tests exercise the complete intake seam</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Candidate 2 -->
+        <article class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-100 text-emerald-800">
+                  Strong
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-100 text-slate-700">
+                  in-process
+                </span>
+              </div>
+              <h2 class="text-xl font-bold text-slate-900">
+                Decompose Monolithic server.ts into Deep Domain Modules
+              </h2>
+            </div>
+          </div>
+
+          <div class="font-mono text-xs text-slate-500 bg-slate-50 p-2.5 rounded border border-slate-200">
+            Files: server.ts (6,217 LOC) → src/server/telemetry, src/server/agents, src/server/vaults
+          </div>
+
+          <!-- Problem & Solution -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-rose-800 block mb-1">Problem</span>
+              <p class="text-slate-700">
+                A single 6,217-line server file handles disparate responsibilities (Stripe billing, telemetry metering, agent loop, second brain, DNS verification), creating extreme divergent change and no modular seams.
+              </p>
+            </div>
+            <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-emerald-800 block mb-1">Solution</span>
+              <p class="text-slate-700">
+                Extract four deep modules (VaultModule, AgentRuntimeModule, TelemetryModule, BillingModule) that encapsulate state manipulation behind minimal, typed interfaces.
+              </p>
+            </div>
+          </div>
+
+          <!-- Side by Side Diagram -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                Before: Monolithic God-File
+              </div>
+              <pre class="mermaid">
+                flowchart TD
+                  REQ[HTTP Request] --> SVR[server.ts: 6,217 Lines]
+                  SVR -.mutate.- DB[(workspace_state JSON)]
+                  SVR -.call.- STR[Stripe Webhooks]
+                  SVR -.call.- GEM[Gemini SDK]
+                  SVR -.call.- SUP[Supabase Storage]
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class SVR leak
+              </pre>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                After: Deep Domain Modules at Seams
+              </div>
+              <pre class="mermaid">
+                flowchart TD
+                  RTR[Thin Express Dispatcher] --> VMOD[VaultModule]
+                  RTR --> AMOD[AgentRuntimeModule]
+                  RTR --> TMOD[TelemetryModule]
+                  VMOD --> DB[(Persistent Store)]
+                  AMOD --> GEM[AI Providers]
+                  TMOD --> MET[Token Ledger]
+                  classDef deepBox fill:#0f172a,stroke:#334155,color:#fff;
+                  class VMOD,AMOD,TMOD deepBox
+              </pre>
+            </div>
+          </div>
+
+          <!-- Wins -->
+          <div class="space-y-1.5 pt-2">
+            <span class="text-xs font-bold font-mono uppercase tracking-widest text-slate-500">Wins</span>
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-700">
+              <li class="flex items-center gap-2">✓ Deletion test: deleting server.ts moves no logic</li>
+              <li class="flex items-center gap-2">✓ Locality: each module has one reason to change</li>
+              <li class="flex items-center gap-2">✓ Interface shrinks to concise method signatures</li>
+              <li class="flex items-center gap-2">✓ Unit testing without booting full HTTP stack</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Candidate 3 -->
+        <article class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-amber-100 text-amber-800">
+                  Worth exploring
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-100 text-slate-700">
+                  local-substitutable
+                </span>
+              </div>
+              <h2 class="text-xl font-bold text-slate-900">
+                Replace Repeated Model Provider Switches with an AIProvider Adapter Seam
+              </h2>
+            </div>
+          </div>
+
+          <div class="font-mono text-xs text-slate-500 bg-slate-50 p-2.5 rounded border border-slate-200">
+            Files: server.ts, src/pages/Tenants.tsx, src/lib/agentResolution.ts
+          </div>
+
+          <!-- Problem & Solution -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-rose-800 block mb-1">Problem</span>
+              <p class="text-slate-700">
+                Provider cascades (Gemini, OpenAI, Anthropic, DeepSeek) recur across six files with custom header wiring, error handling, and prompt interpolation.
+              </p>
+            </div>
+            <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <span class="text-xs font-bold font-mono uppercase text-emerald-800 block mb-1">Solution</span>
+              <p class="text-slate-700">
+                Standardize on a deep <code class="text-xs font-mono font-bold">InferenceProvider</code> interface that hides provider-specific HTTP headers, token logging, and model parameters.
+              </p>
+            </div>
+          </div>
+
+          <!-- Side by Side Diagram -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                Before: Repeated Switches Across Callers
+              </div>
+              <pre class="mermaid">
+                flowchart LR
+                  C1[Creative Generator] --> SW1{provider switch}
+                  C2[Agent Runner] --> SW2{provider switch}
+                  C3[Diagnostic Engine] --> SW3{provider switch}
+                  SW1 -.-> G[Gemini]
+                  SW1 -.-> O[OpenAI]
+                  SW2 -.-> G
+                  SW3 -.-> G
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class SW1,SW2,SW3 leak
+              </pre>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-semibold">
+                After: Single Seam with Provider Adapters
+              </div>
+              <pre class="mermaid">
+                flowchart LR
+                  C1[Creative Generator] --> AD[InferenceAdapter Seam]
+                  C2[Agent Runner] --> AD
+                  C3[Diagnostic Engine] --> AD
+                  AD --> GEM[Gemini Adapter]
+                  AD --> OAI[OpenAI Adapter]
+                  AD --> LOC[Local LLM Adapter]
+                  classDef deepBox fill:#0f172a,stroke:#334155,color:#fff;
+                  class AD deepBox
+              </pre>
+            </div>
+          </div>
+
+          <!-- Wins -->
+          <div class="space-y-1.5 pt-2">
+            <span class="text-xs font-bold font-mono uppercase tracking-widest text-slate-500">Wins</span>
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-700">
+              <li class="flex items-center gap-2">✓ Locality: token metering attached at one seam</li>
+              <li class="flex items-center gap-2">✓ Leverage: new LLM requires exactly one adapter</li>
+              <li class="flex items-center gap-2">✓ In-memory fake eliminates external network tests</li>
+            </ul>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- Top Recommendation Section -->
+      <section id="top-recommendation" class="p-6 rounded-xl border border-slate-800 bg-slate-900 text-white space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-amber-400 text-slate-900">
+            Top Recommendation
+          </span>
+          <span class="text-xs font-mono text-slate-400">Immediate ROI</span>
+        </div>
+        <h3 class="text-xl font-bold font-serif text-white">
+          Deepen Vault Ingestion into a Unified Document Intake Module
+        </h3>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          The Vault Ingestion pipeline is a core user-facing touchpoint that directly impacts context retrieval and agent grounding. Consolidating the scattered upload, parsing, and auto-fill logic into a deep module concentrates document intelligence in one seam, enabling immediate reuse across user UI uploads, webhook data sources, and autonomous agent file ingestion.
+        </p>
+        <div>
+          <a href="#candidates" class="text-xs font-mono font-bold text-amber-400 hover:text-amber-300 underline underline-offset-4">
+            ↑ Jump to Candidates Review
+          </a>
+        </div>
+      </section>
+
+    </main>
+  </body>
+</html>
