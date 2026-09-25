@@ -3,10 +3,10 @@
   "epoch": 0,
   "term": 0,
   "active_manager": {
-    "instance_id": "orchestrator-loop-61cee9",
-    "acquired_at": "2026-09-22T05:36:53.378Z",
-    "lease_heartbeat": "2026-09-22T05:37:23.779Z",
-    "lease_expires": "2026-09-22T05:38:53.779Z"
+    "instance_id": "orchestrator-loop-41f2f0",
+    "acquired_at": "2026-09-22T08:39:41.753Z",
+    "lease_heartbeat": "2026-09-22T09:35:36.274Z",
+    "lease_expires": "2026-09-22T09:37:06.274Z"
   },
   "standbys": [],
   "monitors": [],

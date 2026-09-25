@@ -62,7 +62,13 @@ import {
 import { createAgentReachRouter } from "./src/server/routes/agentReachRoutes.js";
 import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
 import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
-import { classifyActionRisk, routeIssueToModule, evaluateAgentSwarmSafety, isJevConfigured } from "./src/lib/jevDecisionEngine.js";
+import { createCapabilityRouter } from "./src/server/routes/capabilityRoutes.js";
+import { createDecisionRouter } from "./src/server/routes/decisionRoutes.js";
+import { classifyActionRisk, routeIssueToModule, evaluateAgentSwarmSafety, getDecisionRuntimeStatus } from "./src/lib/decisionEngine.js";
+import { buildCapabilityRegistry } from "./src/lib/capabilityRegistry.js";
+import { buildDecisionTrace, decisionTraceToVantaContext } from "./src/lib/decisionTrace.js";
+import { TinyFishWebIntelligenceAdapter } from "./src/server/providers/webIntelligence/tinyFishAdapter.js";
+import { MiroFishMarketSimulationAdapter } from "./src/server/providers/marketSimulation/miroFishAdapter.js";
 
 // Load environment variables
 dotenv.config();
@@ -71,6 +77,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const tinyFishWebIntelligence = new TinyFishWebIntelligenceAdapter();
+const miroFishMarketSimulation = new MiroFishMarketSimulationAdapter();
 
 // Behind a reverse proxy (Caddy/nginx terminating TLS), req.ip is the proxy's
 // address unless Express is told how many hops to trust — which would make
@@ -1417,97 +1425,31 @@ app.use(
     vantaShareRequest,
     vantaMemoryRequest,
     vantaVoiceSettingsRequest,
+    getDecisionRuntimeStatus,
+    decisionTraceToVantaContext,
   })
 );
 
-// ==========================================
-// TypeSafe AI — Jev System 1 Decision & Routing Endpoints
-// ==========================================
-app.get("/api/workspace/decision/status", async (req: Request, res: Response) => {
-  const configured = isJevConfigured();
-  res.json({
-    success: true,
-    configured,
-    model: "jev-latest",
-    engine: configured ? "jev" : "gemini_flash_fallback",
-    latencyGrade: "INSTANT",
-  });
-});
+app.use(
+  "/api/workspace/capabilities",
+  createCapabilityRouter({
+    getWorkspace: getDB,
+    getDecisionRuntimeStatus,
+    getExternalProviderCapabilities: async () => [
+      await tinyFishWebIntelligence.capabilities(),
+      await miroFishMarketSimulation.capabilities(),
+    ],
+    buildCapabilityRegistry,
+  }),
+);
 
-app.post("/api/workspace/decision/triage", async (req: Request, res: Response) => {
-  const { title, summary, module, details } = req.body as {
-    title?: string;
-    summary?: string;
-    module?: string;
-    details?: string;
-  };
-  if (!title || !summary) {
-    res.status(400).json({ error: "title and summary are required" });
-    return;
-  }
-  const result = await classifyActionRisk({
-    title,
-    summary,
-    module: module || "GENERAL",
-    details,
-  });
-  res.json({
-    success: true,
-    ...result,
-    risk: result.risk,
-    risk_level: result.risk,
-    requiresHITL: result.requiresHITL,
-    requires_hitl: result.requiresHITL,
-    confidence: result.confidence,
-    probabilities: result.probabilities,
-    reasoning: `Classified as ${result.risk} risk (${Math.round(result.confidence * 100)}% confidence).`,
-  });
-});
-
-app.post("/api/workspace/decision/route", async (req: Request, res: Response) => {
-  const { issueText, sourceChannel } = req.body as {
-    issueText?: string;
-    sourceChannel?: string;
-  };
-  if (!issueText?.trim()) {
-    res.status(400).json({ error: "issueText is required" });
-    return;
-  }
-  const result = await routeIssueToModule({
-    issueText: issueText.trim(),
-    sourceChannel,
-  });
-  const priority = result.confidence >= 0.85 ? "HIGH" : "NORMAL";
-  res.json({
-    success: true,
-    ...result,
-    targetModule: result.targetModule,
-    target_module: result.targetModule.toLowerCase(),
-    suggestedAction: result.suggestedAction,
-    recommended_action: result.suggestedAction,
-    priority,
-    confidence: result.confidence,
-    engine: result.engine,
-  });
-});
-
-app.post("/api/workspace/decision/safety", async (req: Request, res: Response) => {
-  const { agentName, goal, proposedAction } = req.body as {
-    agentName?: string;
-    goal?: string;
-    proposedAction?: string;
-  };
-  if (!proposedAction) {
-    res.status(400).json({ error: "proposedAction is required" });
-    return;
-  }
-  const result = await evaluateAgentSwarmSafety({
-    agentName: agentName || "Autonomous Agent",
-    goal: goal || "Execute action",
-    proposedAction,
-  });
-  res.json({ success: true, ...result });
-});
+app.use('/api/workspace/decision', createDecisionRouter({
+  getDecisionRuntimeStatus,
+  classifyActionRisk,
+  routeIssueToModule,
+  evaluateAgentSwarmSafety,
+  buildDecisionTrace,
+}));
 
 
 // MCP servers + Agent Skills (#task11, Cockpit sections) — the toggle in

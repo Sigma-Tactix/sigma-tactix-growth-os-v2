@@ -40,6 +40,22 @@ describe('VANTA server contract', () => {
     expect(context).not.toContain('secret');
   });
 
+  it('gives VANTA truthful decision-runtime context without credentials', () => {
+    const workspace = {
+      secondBrain: { connectors: [], uploadedFiles: [], aiWorkflowVault: [], pipelines: [] },
+      agentTasks: [],
+    } as unknown as WorkspaceData;
+    const context = buildVantaPromptContext(workspace, {
+      provider: 'laya', state: 'shadow', mode: 'shadow', model: 'auto', reachable: true,
+      calibrated: false, executionEligible: false, checkedAt: '2026-09-25T00:00:00.000Z',
+      detail: 'Deterministic policy remains authoritative.',
+    });
+
+    expect(context).toContain('laya: state=shadow');
+    expect(context).toContain('executionEligible=false');
+    expect(context).not.toContain('LAYA_API_KEY');
+  });
+
   it('falls back to plain text when a provider does not return structured JSON', () => {
     expect(parseVantaModelOutput('No verified connector data is available.')).toEqual({
       text: 'No verified connector data is available.',

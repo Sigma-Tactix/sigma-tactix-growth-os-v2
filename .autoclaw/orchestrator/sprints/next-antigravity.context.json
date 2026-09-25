@@ -1,7 +1,7 @@
 {
   "schema": "autoclaw.contextPack.v1",
   "markdown_path": ".autoclaw/orchestrator/sprints/next-antigravity.context.md",
-  "generated_at": "2026-09-22T05:35:04.212Z",
+  "generated_at": "2026-09-22T09:33:35.854Z",
   "workspace_root_hash": "f7e3f3db2dafea4c",
   "scope": {
     "task": "Next available work for antigravity: Auto-dispatched by orchestrator-loop. Agent antigravity is idle.",
@@ -124,7 +124,7 @@
       "mode: balanced",
       "query-mode: balanced"
     ],
-    "generated_at": "2026-09-22T05:35:04.212Z",
+    "generated_at": "2026-09-22T09:33:35.854Z",
     "mode": "balanced",
     "spine_block_ids": [
       "ctx:/users/mac/downloads/sigmatactix-new-growth-os-ai-studio:project:root"

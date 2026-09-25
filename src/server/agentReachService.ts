@@ -341,14 +341,72 @@ async function fetchV2EXIntelligence(target: string): Promise<AgentReachFetchRes
 }
 
 /**
+ * Searches the currently public V2EX feeds for a keyword. This is intentionally
+ * separate from the hot-feed extractor so a keyword scan cannot be reported as
+ * a matching brand mention when the feed contains no match.
+ */
+async function searchV2EXIntelligence(query: string): Promise<AgentReachFetchResult> {
+  try {
+    const endpoints = [
+      'https://www.v2ex.com/api/topics/hot.json',
+      'https://www.v2ex.com/api/topics/latest.json',
+    ];
+    const responses = await Promise.all(endpoints.map(endpoint => fetch(endpoint, {
+      headers: { 'User-Agent': 'SigmaTactix-AgentReach/1.5.0' },
+      signal: AbortSignal.timeout(8000),
+    })));
+    const payloads = await Promise.all(responses.map(async response => response.ok ? response.json() : []));
+    const topics: any[] = payloads.flat();
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const seen = new Set<string>();
+    const matches = topics.filter(topic => {
+      if (!topic?.id || seen.has(String(topic.id))) return false;
+      seen.add(String(topic.id));
+      const haystack = [topic.title, topic.content, topic.node?.title, topic.member?.username]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return terms.every(term => haystack.includes(term));
+    }).slice(0, 12);
+
+    const markdown = matches.map((topic, index) =>
+      `${index + 1}. **[${topic.title}](${topic.url})**\n   * Node: \`${topic.node?.title || 'general'}\` • Replies: **${topic.replies || 0}** • Author: **${topic.member?.username || 'user'}**`
+    ).join('\n\n');
+
+    return {
+      success: true,
+      channel: 'v2ex',
+      target: query,
+      title: `V2EX search: ${query}`,
+      content: markdown,
+      byteCount: Buffer.byteLength(markdown, 'utf-8'),
+      metadata: { resultCount: matches.length, query, engine: 'V2EX public feeds' },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      channel: 'v2ex',
+      target: query,
+      content: '',
+      byteCount: 0,
+      error: `V2EX keyword search failed: ${err.message}`,
+    };
+  }
+}
+
+/**
  * Dedicated RSS / Atom feed extractor.
  */
 async function fetchRSSIntelligence(target: string): Promise<AgentReachFetchResult> {
-  let url = target.trim();
-  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
-  await assertPublicHost(url);
-
   try {
+    let url = target.trim();
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    const parsedUrl = new URL(url);
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('RSS extraction requires an http(s) URL.');
+    }
+    await assertPublicHost(parsedUrl.toString());
+
     const res = await fetch(url, {
       headers: { 'User-Agent': 'SigmaTactix-AgentReach/1.5.0', Accept: 'application/rss+xml, application/xml, text/xml' },
       signal: AbortSignal.timeout(10000),
@@ -398,7 +456,7 @@ async function fetchRSSIntelligence(target: string): Promise<AgentReachFetchResu
     return {
       success: false,
       channel: 'rss',
-      target: url,
+      target,
       content: '',
       byteCount: 0,
       error: `RSS Extraction failed: ${err.message}`,
@@ -512,17 +570,118 @@ async function fetchHackerNewsIntelligence(target: string): Promise<AgentReachFe
   }
 }
 
+async function searchHackerNewsIntelligence(query: string): Promise<AgentReachFetchResult> {
+  try {
+    const url = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=story&hitsPerPage=12`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`Hacker News Search HTTP ${res.status}`);
+    const data: any = await res.json();
+    const hits: any[] = Array.isArray(data?.hits) ? data.hits : [];
+    const markdown = hits.map((hit, index) => {
+      const discussionUrl = `https://news.ycombinator.com/item?id=${hit.objectID}`;
+      return `${index + 1}. **[${hit.title || 'Untitled discussion'}](${hit.url || discussionUrl})**\n   * **${hit.points || 0}** points by **${hit.author || 'unknown'}** • [${hit.num_comments || 0} comments](${discussionUrl})`;
+    }).join('\n\n');
+
+    return {
+      success: true,
+      channel: 'hackernews',
+      target: query,
+      title: `Hacker News search: ${query}`,
+      content: markdown,
+      byteCount: Buffer.byteLength(markdown, 'utf-8'),
+      metadata: { resultCount: hits.length, query, engine: 'HN Algolia Search API' },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      channel: 'hackernews',
+      target: query,
+      content: '',
+      byteCount: 0,
+      error: `Hacker News keyword search failed: ${err.message}`,
+    };
+  }
+}
+
+async function searchYouTubeIntelligence(query: string): Promise<AgentReachFetchResult> {
+  try {
+    const { stdout } = await execFileAsync('yt-dlp', [
+      '--dump-single-json',
+      '--flat-playlist',
+      '--playlist-end',
+      '10',
+      `ytsearch10:${query}`,
+    ], {
+      timeout: 20000,
+      maxBuffer: 4 * 1024 * 1024,
+      env: { ...process.env, PATH: EXTENDED_PATH },
+    });
+    const parsed = JSON.parse(stdout.trim());
+    const entries: any[] = Array.isArray(parsed?.entries) ? parsed.entries.filter(Boolean) : [];
+    const markdown = entries.map((entry, index) => {
+      const videoId = entry.id || '';
+      const videoUrl = entry.url?.startsWith('http') ? entry.url : `https://www.youtube.com/watch?v=${videoId}`;
+      return `${index + 1}. **[${entry.title || 'Untitled video'}](${videoUrl})**\n   * Channel: **${entry.channel || entry.uploader || 'Unknown'}**`;
+    }).join('\n\n');
+
+    return {
+      success: true,
+      channel: 'youtube',
+      target: query,
+      title: `YouTube search: ${query}`,
+      content: markdown,
+      byteCount: Buffer.byteLength(markdown, 'utf-8'),
+      metadata: { resultCount: entries.length, query, engine: 'yt-dlp search' },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      channel: 'youtube',
+      target: query,
+      content: '',
+      byteCount: 0,
+      error: `YouTube keyword search failed: ${err.message}`,
+    };
+  }
+}
+
+async function searchWebIntelligence(query: string): Promise<AgentReachFetchResult> {
+  const searchUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  const result = await fetchRSSIntelligence(searchUrl);
+  return {
+    ...result,
+    channel: 'web',
+    target: query,
+    title: `Web news search: ${query}`,
+    metadata: {
+      ...result.metadata,
+      resultCount: result.metadata?.itemsCount || 0,
+      query,
+      searchUrl,
+      engine: 'Google News RSS',
+    },
+    error: result.error ? result.error.replace('RSS Extraction', 'Web keyword search') : undefined,
+  };
+}
+
 /**
  * General Web extraction via Jina Reader with sanitization.
  */
 async function fetchWebIntelligence(target: string): Promise<AgentReachFetchResult> {
-  let urlToFetch = target.trim();
-  if (!/^https?:\/\//i.test(urlToFetch)) {
-    urlToFetch = `https://${urlToFetch}`;
-  }
-  await assertPublicHost(urlToFetch);
-
   try {
+    let urlToFetch = target.trim();
+    if (!/^https?:\/\//i.test(urlToFetch)) {
+      if (/\s/.test(urlToFetch)) {
+        throw new Error('Web extraction requires a valid public URL. Use keyword search for brand or topic queries.');
+      }
+      urlToFetch = `https://${urlToFetch}`;
+    }
+    const parsedUrl = new URL(urlToFetch);
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Web extraction requires an http(s) URL.');
+    }
+    await assertPublicHost(parsedUrl.toString());
+
     const jinaUrl = `https://r.jina.ai/${encodeURI(urlToFetch)}`;
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 15000);
@@ -566,6 +725,51 @@ async function fetchWebIntelligence(target: string): Promise<AgentReachFetchResu
       error: `Agent Reach Web Extractor failed: ${err.message}`,
     };
   }
+}
+
+/**
+ * Executes keyword discovery for Social Listening. Keyword search and URL
+ * extraction are deliberately distinct operations so plain brand names never
+ * flow into URL parsers.
+ */
+export async function executeReachSearch(channel: string, query: string): Promise<AgentReachFetchResult> {
+  const normalizedChannel = (channel || 'v2ex').toLowerCase().trim();
+  const trimmedQuery = (query || '').trim();
+
+  if (!trimmedQuery) {
+    return {
+      success: false,
+      channel: normalizedChannel,
+      target: '',
+      content: '',
+      byteCount: 0,
+      error: 'Search keyword cannot be empty.',
+    };
+  }
+
+  if (normalizedChannel === 'v2ex') return searchV2EXIntelligence(trimmedQuery);
+  if (normalizedChannel === 'hackernews') return searchHackerNewsIntelligence(trimmedQuery);
+  if (normalizedChannel === 'youtube') return searchYouTubeIntelligence(trimmedQuery);
+  if (normalizedChannel === 'web') return searchWebIntelligence(trimmedQuery);
+  if (normalizedChannel === 'reddit') {
+    return {
+      success: false,
+      channel: 'reddit',
+      target: trimmedQuery,
+      content: '',
+      byteCount: 0,
+      error: 'Reddit search is unavailable because no authenticated Agent Reach backend is configured. Install OpenCLI and sign in to Reddit before scanning this channel.',
+    };
+  }
+
+  return {
+    success: false,
+    channel: normalizedChannel,
+    target: trimmedQuery,
+    content: '',
+    byteCount: 0,
+    error: `Keyword search is not supported for channel "${normalizedChannel}".`,
+  };
 }
 
 /**
@@ -980,4 +1184,3 @@ Output structured JSON matching the schema.`;
     };
   }
 }
-

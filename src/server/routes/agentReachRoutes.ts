@@ -3,6 +3,7 @@ import { Type } from '@google/genai';
 import {
   getAgentReachDoctor,
   executeReachFetch,
+  executeReachSearch,
   generateCompetitorBattlecard,
   repurposeToArticle,
   repurposeToCarouselAndThread,
@@ -53,9 +54,13 @@ export function createAgentReachRouter(deps: AgentReachRouterDeps): Router {
       return;
     }
     try {
-      const fetchRes = await executeReachFetch(channel || 'v2ex', keyword.trim());
+      const fetchRes = await executeReachSearch(channel || 'v2ex', keyword.trim());
       if (!fetchRes.success) {
         res.status(422).json({ error: fetchRes.error || 'Could not fetch content from channel' });
+        return;
+      }
+      if (!fetchRes.content.trim() || fetchRes.metadata?.resultCount === 0) {
+        res.json({ success: true, mention: null, rawResult: fetchRes });
         return;
       }
 

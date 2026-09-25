@@ -39,6 +39,15 @@ export default function LivingSystemPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {state.provider.decisionRuntime && (
+            <span
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-black/30 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 md:flex"
+              title={state.provider.decisionRuntime.detail}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${state.provider.decisionRuntime.reachable ? 'bg-violet-400' : 'bg-zinc-600'}`} />
+              Laya · {state.provider.decisionRuntime.state.replace('_', ' ')}
+            </span>
+          )}
           <span className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-black/30 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 sm:flex">
             <span className={`h-1.5 w-1.5 rounded-full ${state.provider.verified ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
             {state.provider.label}

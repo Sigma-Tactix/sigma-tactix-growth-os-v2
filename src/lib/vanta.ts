@@ -56,6 +56,20 @@ export interface VantaProviderStatus {
   provider?: string;
   model?: string;
   verifiedAt?: string;
+  decisionRuntime?: VantaDecisionRuntimeStatus;
+}
+
+export interface VantaDecisionRuntimeStatus {
+  provider: 'laya';
+  configured: boolean;
+  reachable: boolean;
+  state: 'unconfigured' | 'loading' | 'ready_unvalidated' | 'shadow' | 'calibrated' | 'degraded' | 'failed';
+  mode: 'shadow' | 'active';
+  model: string;
+  calibrated: boolean;
+  executionEligible: boolean;
+  checkedAt: string;
+  detail: string;
 }
 
 export interface VantaVoiceConfig {
@@ -66,7 +80,7 @@ export interface VantaVoiceConfig {
   baseUrl?: string;
 }
 
-export type VantaNodeKind = 'core' | 'connector' | 'agent' | 'document' | 'task';
+export type VantaNodeKind = 'core' | 'decision' | 'connector' | 'agent' | 'document' | 'task';
 export type VantaNodeStatus =
   | 'verified'
   | 'configured'
@@ -172,7 +186,10 @@ export function vantaReducer(state: VantaState, event: VantaEvent): VantaState {
   }
 }
 
-export function buildVantaTopology(workspace: WorkspaceData | null | undefined): VantaTopologyFocus {
+export function buildVantaTopology(
+  workspace: WorkspaceData | null | undefined,
+  decisionRuntime?: VantaDecisionRuntimeStatus,
+): VantaTopologyFocus {
   const nodes: VantaTopologyNode[] = [{
     id: 'core-vanta',
     label: 'VANTA',
@@ -181,7 +198,29 @@ export function buildVantaTopology(workspace: WorkspaceData | null | undefined):
     detail: workspace ? 'Authenticated workspace context' : 'Workspace context unavailable',
   }];
 
-  if (!workspace) return { nodes, edges: [] };
+  if (decisionRuntime) {
+    nodes.push({
+      id: 'decision-laya',
+      label: 'Laya Decision Core',
+      kind: 'decision',
+      status: decisionRuntime.state === 'calibrated'
+        ? 'verified'
+        : decisionRuntime.state === 'shadow'
+          ? 'active'
+          : decisionRuntime.state === 'ready_unvalidated'
+            ? 'configured'
+            : decisionRuntime.state === 'unconfigured'
+              ? 'unknown'
+              : 'unavailable',
+      detail: `${decisionRuntime.detail} Automation: ${decisionRuntime.executionEligible ? 'eligible under policy' : 'disabled'}`,
+      route: '/dashboard',
+    });
+  }
+
+  if (!workspace) return {
+    nodes,
+    edges: nodes.slice(1).map(node => ({ id: `core-${node.id}`, from: 'core-vanta', to: node.id })),
+  };
 
   for (const connector of workspace.secondBrain?.connectors ?? []) {
     const state = connector.verificationState;

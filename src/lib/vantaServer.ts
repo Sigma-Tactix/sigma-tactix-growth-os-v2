@@ -118,7 +118,17 @@ const compact = (value: unknown, max = 800): string => {
   return '';
 };
 
-export function buildVantaPromptContext(workspace: WorkspaceData): string {
+export function buildVantaPromptContext(workspace: WorkspaceData, decisionRuntime?: {
+  provider?: string;
+  state?: string;
+  mode?: string;
+  model?: string;
+  reachable?: boolean;
+  calibrated?: boolean;
+  executionEligible?: boolean;
+  checkedAt?: string;
+  detail?: string;
+}): string {
   const brain = workspace.secondBrain;
   const connectors = (brain.connectors ?? []).map(connector =>
     `${connector.platform}: ${connector.verificationState ?? (connector.status === 'Connected' ? 'configured' : 'disconnected')}` +
@@ -143,6 +153,9 @@ export function buildVantaPromptContext(workspace: WorkspaceData): string {
     `Connectors:\n${connectors.length ? connectors.join('\n') : 'none configured'}`,
     `Documents:\n${documents.length ? documents.join('\n') : 'none available'}`,
     `Agent work:\n${tasks.length ? tasks.join('\n') : 'none recorded'}`,
+    `[DECISION RUNTIME]\n${decisionRuntime
+      ? `${decisionRuntime.provider || 'unknown'}: state=${decisionRuntime.state || 'unknown'}, mode=${decisionRuntime.mode || 'unknown'}, model=${decisionRuntime.model || 'unknown'}, reachable=${Boolean(decisionRuntime.reachable)}, calibrated=${Boolean(decisionRuntime.calibrated)}, executionEligible=${Boolean(decisionRuntime.executionEligible)}, checkedAt=${decisionRuntime.checkedAt || 'not checked'}, detail=${compact(decisionRuntime.detail, 300) || 'none'}`
+      : 'not inspected'}`,
   ].join('\n');
 }
 

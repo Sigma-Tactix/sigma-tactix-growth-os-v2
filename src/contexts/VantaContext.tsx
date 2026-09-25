@@ -94,7 +94,10 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
   const speechSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const speakAfterResponseRef = useRef(false);
 
-  const fullTopology = useMemo(() => buildVantaTopology(workspaceData), [workspaceData]);
+  const fullTopology = useMemo(
+    () => buildVantaTopology(workspaceData, state.provider.decisionRuntime),
+    [state.provider.decisionRuntime, workspaceData],
+  );
   const topology = useMemo(() => {
     if (topologyExpanded) return fullTopology;
     if (!focusedEntityIds.length) return { nodes: fullTopology.nodes.slice(0, 1), edges: [] };

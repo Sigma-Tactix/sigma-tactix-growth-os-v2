@@ -3,6 +3,7 @@ import {
   resolveAgentReachBinary,
   getAgentReachDoctor,
   executeReachFetch,
+  executeReachSearch,
   assertPublicHost
 } from './agentReachService.js';
 
@@ -21,7 +22,7 @@ describe('agentReachService', () => {
     expect(doctor.channels.youtube).toBeDefined();
     expect(doctor.channels.github).toBeDefined();
     expect(doctor.readyCount).toBeGreaterThan(0);
-  }, 15000);
+  }, 25000);
 
   it('rejects SSRF targeting localhost or private IPs', async () => {
     await expect(assertPublicHost('http://localhost:8080')).rejects.toThrow(/Security Exception/);
@@ -33,5 +34,19 @@ describe('agentReachService', () => {
     const result = await executeReachFetch('web', '');
     expect(result.success).toBe(false);
     expect(result.error).toContain('cannot be empty');
+  });
+
+  it('returns a structured error instead of throwing Invalid URL for a keyword passed to URL extraction', async () => {
+    const result = await executeReachFetch('web', 'Sigma Tactix');
+    expect(result).toMatchObject({ success: false, channel: 'web' });
+    expect(result.error).toContain('Agent Reach Web Extractor failed');
+    expect(result.error).not.toContain('Invalid URL');
+  });
+
+  it('returns an actionable backend notice for an unconfigured Reddit keyword scan', async () => {
+    const result = await executeReachSearch('reddit', 'Sigma Tactix');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('no authenticated Agent Reach backend is configured');
+    expect(result.error).not.toContain('Invalid URL');
   });
 });

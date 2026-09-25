@@ -229,13 +229,17 @@ export default function ActionQueueTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // TypeSafe Jev System 1 State
+  // Provider-neutral System 1 state (Laya is the configured local provider).
   const [jevStatus, setJevStatus] = useState<{
     success: boolean;
     configured: boolean;
+    reachable: boolean;
+    state: 'unconfigured' | 'loading' | 'ready_unvalidated' | 'shadow' | 'calibrated' | 'degraded' | 'failed';
+    mode: 'shadow' | 'active';
     model: string;
     engine: string;
-    latencyGrade: string;
+    executionEligible: boolean;
+    detail: string;
   } | null>(null);
   const [isTriagingQueue, setIsTriagingQueue] = useState(false);
   const [triagingItemId, setTriagingItemId] = useState<string | null>(null);
@@ -254,7 +258,7 @@ export default function ActionQueueTab() {
     engine: string;
   } | null>(null);
 
-  // Poll Jev Decision Engine Status on Mount
+  // Poll the provider-neutral decision runtime on mount.
   useEffect(() => {
     fetch('/api/workspace/decision/status')
       .then(res => res.json())
@@ -330,7 +334,7 @@ export default function ActionQueueTab() {
     }, 600);
   };
 
-  // Triage single item with Jev System 1
+  // Triage one item through the provider-neutral decision endpoint.
   const handleTriageSingleItem = async (item: ActionQueueItem) => {
     setTriagingItemId(item.id);
     try {
@@ -375,7 +379,7 @@ export default function ActionQueueTab() {
       const risk = (data.risk || data.risk_level || 'MEDIUM') as ActionQueueItem['risk'];
       const confidence = typeof data.confidence === 'number' ? data.confidence : 0.88;
       const requiresHitl = data.requires_hitl ?? data.requiresHITL ?? false;
-      const engine = data.engine || 'jev';
+      const engine = data.engine || 'deterministic_policy';
       const reasoning = data.reasoning || `Classified as ${risk} risk via ${engine}.`;
 
       setItems(prev => prev.map(i => {
@@ -397,17 +401,17 @@ export default function ActionQueueTab() {
       }));
 
       notifySuccess(
-        `Jev Triaged: ${item.title.substring(0, 24)}...`,
+        `System 1 triaged: ${item.title.substring(0, 24)}...`,
         `Risk: ${risk} (${Math.round(confidence * 100)}% confidence) · Engine: ${engine}`
       );
     } catch (err: any) {
-      notifyError('Jev Triage Failed', err?.message || 'Could not triage item');
+      notifyError('System 1 triage failed', err?.message || 'Could not triage item');
     } finally {
       setTriagingItemId(null);
     }
   };
 
-  // Auto-Triage entire queue with Jev
+  // Auto-triage the queue through the provider-neutral decision endpoint.
   const handleAutoTriageQueue = async () => {
     setIsTriagingQueue(true);
     let count = 0;
@@ -456,7 +460,7 @@ export default function ActionQueueTab() {
           const risk = (data.risk || data.risk_level || item.risk) as ActionQueueItem['risk'];
           const requiresHitl = data.requires_hitl ?? data.requiresHITL ?? false;
           const confidence = typeof data.confidence === 'number' ? data.confidence : 0.88;
-          const engine = data.engine || 'jev';
+          const engine = data.engine || 'deterministic_policy';
           const reasoning = data.reasoning || `Calibrated as ${risk} risk via ${engine}.`;
 
           return {
@@ -477,11 +481,11 @@ export default function ActionQueueTab() {
       setLastTriageStats({
         count,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        engine: jevStatus?.configured ? 'TypeSafe Jev (70ms)' : 'Gemini Flash & Heuristic',
+        engine: jevStatus?.executionEligible ? 'Laya (calibrated)' : jevStatus?.state === 'shadow' ? 'Laya shadow + deterministic policy' : 'Deterministic policy',
       });
       notifySuccess(
-        'Queue Calibrated by Jev System 1',
-        `Re-scored ${count} actions across risk levels and human-in-the-loop requirements.`
+        'Queue triage complete',
+        `Scored ${count} actions across risk levels and human-in-the-loop requirements.`
       );
     } catch (err: any) {
       notifyError('Queue triage failed', err?.message || 'Could not triage queue');
@@ -559,7 +563,7 @@ export default function ActionQueueTab() {
         recommended_action: data.recommended_action || data.suggestedAction || 'Inspect and execute in target module',
         confidence: typeof data.confidence === 'number' ? data.confidence : 0.88,
         probabilities: data.probabilities,
-        engine: data.engine || 'jev',
+        engine: data.engine || 'deterministic_policy',
       };
 
       setRoutingResult(normalizedResult);
@@ -606,7 +610,7 @@ export default function ActionQueueTab() {
       moduleIcon: target.icon,
       title: routeInputText.split('\n')[0].slice(0, 64) || 'Routed Operational Signal',
       summary: routeInputText.slice(0, 180),
-      details: `Jev Route Rationale: ${routingResult.recommended_action}. Confidence: ${Math.round(routingResult.confidence * 100)}%. Engine: ${routingResult.engine}`,
+      details: `Decision route rationale: ${routingResult.recommended_action}. Confidence: ${Math.round(routingResult.confidence * 100)}%. Engine: ${routingResult.engine}`,
       status: routingResult.priority === 'URGENT' ? 'ALERT' : 'PENDING_APPROVAL',
       risk: routingResult.priority === 'URGENT' ? 'CRITICAL' : 'HIGH',
       enclaveName: currentWorkspace.name,
@@ -645,23 +649,21 @@ export default function ActionQueueTab() {
                 <span>Sovereign Action Queue · Central Nervous System</span>
               </div>
 
-              {/* Jev System 1 Engine Status Pill */}
+              {/* System 1 decision-runtime status */}
               <div
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border',
-                  jevStatus?.configured
+                  jevStatus?.reachable
                     ? 'bg-violet-500/15 text-violet-300 border-violet-500/40 shadow-sm'
                     : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                 )}
                 title={
-                  jevStatus?.configured
-                    ? 'TypeSafe Jev active: sub-100ms non-hallucinatory parallel schema classification'
-                    : 'Fallback active: Gemini 2.5 Flash + deterministic heuristic routing'
+                  jevStatus?.detail || 'Decision runtime status unavailable'
                 }
               >
-                <Sparkles size={11} className={jevStatus?.configured ? 'text-violet-400' : 'text-amber-400'} />
+                <Sparkles size={11} className={jevStatus?.reachable ? 'text-violet-400' : 'text-amber-400'} />
                 <span>
-                  System 1 Router: {jevStatus?.configured ? 'Jev Active (70ms Latency)' : 'Gemini 2.5 Flash Fallback'}
+                  System 1: {jevStatus ? `Laya ${jevStatus.state.replace('_', ' ')}` : 'status unavailable'}
                 </span>
               </div>
             </div>
@@ -670,13 +672,13 @@ export default function ActionQueueTab() {
               <span>Cross-Module Updates & Execution Runs</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-relaxed font-sans">
-              Aggregated pulse across all 28 modules. Track background swarm progress, review Human-in-the-Loop approvals, and route incoming market signals with sub-100ms TypeSafe Jev System 1 intelligence.
+              Aggregated pulse across all modules. Track work, review Human-in-the-Loop approvals, and route incoming signals through the governed System 1 decision layer.
             </p>
           </div>
 
           {/* Action Queue Control Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 flex-wrap">
-            {/* Auto-Triage with Jev button */}
+            {/* Auto-triage button */}
             <button
               type="button"
               onClick={handleAutoTriageQueue}
@@ -685,7 +687,7 @@ export default function ActionQueueTab() {
               title="Calibrate risk & human-in-the-loop requirements for all queue items"
             >
               <Sparkles size={13} className={isTriagingQueue ? 'animate-spin text-violet-400' : 'text-violet-400'} />
-              <span>{isTriagingQueue ? 'Triaging...' : 'Jev Auto-Triage'}</span>
+              <span>{isTriagingQueue ? 'Triaging...' : 'System 1 Auto-Triage'}</span>
             </button>
 
             {/* Fast Issue Routing button */}
@@ -846,7 +848,7 @@ export default function ActionQueueTab() {
         </div>
       </div>
 
-      {/* Jev System 1 Triage Confirmation Banner */}
+      {/* System 1 triage confirmation banner */}
       {lastTriageStats && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -856,7 +858,7 @@ export default function ActionQueueTab() {
           <div className="flex items-center gap-2.5 text-violet-200">
             <Sparkles size={16} className="text-violet-400 shrink-0 animate-pulse" />
             <span>
-              <strong className="text-white font-bold">Jev System 1 Triage Executed:</strong> Calibrated {lastTriageStats.count} items across non-hallucinatory risk levels & Human-in-the-Loop constraints.
+              <strong className="text-white font-bold">System 1 triage executed:</strong> Scored {lastTriageStats.count} items across risk levels and Human-in-the-Loop constraints.
             </span>
           </div>
           <div className="flex items-center gap-2.5 text-[11px] text-zinc-400 font-mono shrink-0">
@@ -948,14 +950,14 @@ export default function ActionQueueTab() {
                           Risk: {item.risk}
                         </span>
 
-                        {/* Jev System 1 Calibrated Pill */}
+                        {/* Decision-engine result pill */}
                         {item.jevTriage && (
                           <span
                             className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/35 px-2 py-0.5 text-[9px] font-mono font-bold text-violet-300"
                             title={`Engine: ${item.jevTriage.engine} | Requires HITL: ${item.jevTriage.requires_hitl}`}
                           >
                             <Sparkles size={9} className="text-violet-400" />
-                            <span>Jev: {item.jevTriage.engine === 'jev' ? '70ms' : 'fallback'} · {Math.round(item.jevTriage.confidence * 100)}%</span>
+                            <span>{item.jevTriage.engine.replace('_', ' ')} · {Math.round(item.jevTriage.confidence * 100)}%</span>
                           </span>
                         )}
 
@@ -1005,12 +1007,12 @@ export default function ActionQueueTab() {
                         </div>
                       )}
 
-                      {/* Jev System 1 Rationale if triaged */}
+                      {/* Decision rationale if triaged */}
                       {item.jevTriage?.reasoning && (
                         <div className="mt-2 flex items-start gap-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/20 p-2 text-[11px] font-mono text-violet-300">
                           <Bot size={13} className="shrink-0 mt-0.5 text-violet-400" />
                           <span>
-                            <strong>Jev System 1 Rationale:</strong> {item.jevTriage.reasoning}
+                            <strong>Decision rationale:</strong> {item.jevTriage.reasoning}
                           </span>
                         </div>
                       )}
@@ -1019,16 +1021,16 @@ export default function ActionQueueTab() {
 
                   {/* Right actions column */}
                   <div className="flex lg:flex-col items-center lg:items-end justify-end gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-white/5">
-                    {/* On-Demand Single-Item Jev Triage Button */}
+                    {/* On-demand single-item triage button */}
                     <button
                       type="button"
                       onClick={() => handleTriageSingleItem(item)}
                       disabled={triagingItemId === item.id}
                       className="flex items-center gap-1 rounded-xl border border-violet-500/30 bg-violet-500/10 px-2.5 py-1.5 text-[11px] font-mono font-semibold text-violet-300 hover:bg-violet-500/20 transition-all cursor-pointer disabled:opacity-40"
-                      title="Run calibrated risk classification with Jev System 1"
+                      title="Run governed System 1 risk classification"
                     >
                       <Sparkles size={11} className={triagingItemId === item.id ? 'animate-spin text-violet-400' : 'text-violet-400'} />
-                      <span>{item.jevTriage ? 'Re-Score' : 'Jev Score'}</span>
+                      <span>{item.jevTriage ? 'Re-Score' : 'System 1 Score'}</span>
                     </button>
 
                     {isPending ? (
@@ -1075,7 +1077,7 @@ export default function ActionQueueTab() {
         )}
       </div>
 
-      {/* Interactive Modal: Fast Issue & Signal Router (Jev System 1) */}
+      {/* Interactive modal: fast issue and signal router */}
       <AnimatePresence>
         {routingModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -1091,7 +1093,7 @@ export default function ActionQueueTab() {
                 <div className="flex items-center gap-2 text-violet-400">
                   <Sparkles size={18} />
                   <h3 className="text-base font-bold text-white font-sans">
-                    Fast Signal & Issue Router · Jev System 1
+                    Fast Signal & Issue Router · Laya System 1
                   </h3>
                 </div>
                 <button
@@ -1108,7 +1110,7 @@ export default function ActionQueueTab() {
 
               <div className="mt-4 space-y-4 relative z-10">
                 <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                  TypeSafe Jev System 1 replaces bulky LLM prompt routing with sub-100ms deterministic parallel schemas. It routes operational issues directly to the optimal growth module without token waste.
+                  Laya evaluates typed routing choices locally. In shadow mode, its result is recorded for comparison while deterministic policy remains authoritative.
                 </p>
 
                 {/* Quick preset chips */}
@@ -1152,7 +1154,7 @@ export default function ActionQueueTab() {
                     className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-500 transition-all shadow-md cursor-pointer disabled:opacity-50"
                   >
                     <Sparkles size={13} className={isRouting ? 'animate-spin' : ''} />
-                    <span>{isRouting ? 'Routing in ~70ms...' : 'Route with Jev System 1'}</span>
+                    <span>{isRouting ? 'Routing...' : 'Route with System 1'}</span>
                   </button>
                 </div>
 

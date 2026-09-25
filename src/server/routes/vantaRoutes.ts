@@ -19,14 +19,16 @@ export interface VantaRouterDeps {
   pruneVantaLocalContexts: () => void;
   extractVantaLocalText: (file: any) => Promise<string>;
   VANTA_SYSTEM_INSTRUCTION: string;
-  classifyVantaVerification: (configured: boolean, verifiedAt?: string | null, now?: string) => any;
-  buildVantaPromptContext: (workspace: any) => string;
+  classifyVantaVerification: (configured: boolean, verifiedAt?: string | null, now?: number) => any;
+  buildVantaPromptContext: (workspace: any, decisionRuntime?: any) => string;
   parseVantaModelOutput: (text: string) => any;
   vantaMessageRequest: any;
   vantaConversationRequest: any;
   vantaShareRequest: any;
   vantaMemoryRequest: any;
   vantaVoiceSettingsRequest?: any;
+  getDecisionRuntimeStatus: () => Promise<any>;
+  decisionTraceToVantaContext: (trace: Record<string, any>) => string;
 }
 
 export function createVantaRouter(deps: VantaRouterDeps): Router {
@@ -55,6 +57,8 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
     vantaShareRequest,
     vantaMemoryRequest,
     vantaVoiceSettingsRequest,
+    getDecisionRuntimeStatus,
+    decisionTraceToVantaContext,
   } = deps;
 
   // GET /status
@@ -65,11 +69,13 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
     const verification = classifyVantaVerification(configured, settings?.provider_verified_at);
     const voiceConfigured = settings?.voice_provider === 'local' ? Boolean(settings.voice_config?.baseUrl) : Boolean(key);
     const voiceVerification = classifyVantaVerification(voiceConfigured, settings?.voice_verified_at);
+    const decisionRuntime = await getDecisionRuntimeStatus();
     res.json({
       ...verification,
       voiceAvailable: voiceVerification.verified,
       provider: settings?.text_provider || 'gemini',
       model: settings?.text_model || (await resolveEffectiveGeminiModel(res)),
+      decisionRuntime,
     });
   });
 
@@ -318,19 +324,28 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
     try {
       pruneVantaLocalContexts();
       const workspace = await getDB(res);
-      const [historyResult, memoryResult, ragMatches] = await Promise.all([
+      const [historyResult, memoryResult, ragMatches, decisionRuntime, decisionTraceResult] = await Promise.all([
         res.locals.sb.from('vanta_messages').select('role,content').eq('conversation_id', conversation.id).order('created_at', { ascending: false }).limit(12),
         res.locals.sb.from('vanta_memories').select('id,content,visibility').eq('workspace_id', res.locals.wsId).order('updated_at', { ascending: false }).limit(12),
         searchDocuments(res.locals.sb, res.locals.wsId, parsed.data.content, { topK: 5 }).catch(() => []),
+        getDecisionRuntimeStatus(),
+        res.locals.sb.from('decision_traces')
+          .select('id,operation,authoritative_engine,selected_value,confidence,probabilities,requires_hitl,policy_override,shadow_provider,shadow_decision,duration_ms,created_at')
+          .eq('workspace_id', res.locals.wsId)
+          .order('created_at', { ascending: false })
+          .limit(10),
       ]);
       const localContexts = parsed.data.localContextIds
         .map((id: string) => vantaLocalContexts.get(id))
         .filter((context: any) => Boolean(context && context.workspaceId === res.locals.wsId && context.userId === res.locals.userId));
       const evidenceContext = [
-        buildVantaPromptContext(workspace),
+        buildVantaPromptContext(workspace, decisionRuntime),
         `[APPROVED MEMORIES]\n${(memoryResult.data || []).map((memory: any) => `${memory.id}: ${memory.content}`).join('\n') || 'none'}`,
         `[SECOND BRAIN RETRIEVAL]\n${ragMatches.map((match: any) => `${match.id} (${match.fileName}, ${match.vaultId}): ${(match.contentText || '').slice(0, 1800)}`).join('\n') || 'none'}`,
         `[SESSION LOCAL CONTEXT]\n${localContexts.map((context: any) => `${context.id} (${context.name}): ${context.text.slice(0, 4000)}`).join('\n') || 'none'}`,
+        `[RECENT DECISION TRACES]\n${decisionTraceResult.error
+          ? 'unavailable: decision trace storage is not deployed or readable'
+          : (decisionTraceResult.data || []).map((trace: any) => decisionTraceToVantaContext(trace)).join('\n') || 'none'}`,
       ].join('\n\n');
 
       const history = [...(historyResult.data || [])].reverse().map((message: any) => `${message.role}: ${message.content}`).join('\n');

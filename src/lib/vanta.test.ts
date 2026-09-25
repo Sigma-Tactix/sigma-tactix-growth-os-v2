@@ -40,6 +40,28 @@ describe('VANTA public state contract', () => {
 });
 
 describe('VANTA topology', () => {
+  it('shows Laya as an inspectable decision node without claiming automation is enabled', () => {
+    const topology = buildVantaTopology(null, {
+      provider: 'laya',
+      configured: true,
+      reachable: true,
+      state: 'shadow',
+      mode: 'shadow',
+      model: 'auto',
+      calibrated: false,
+      executionEligible: false,
+      checkedAt: '2026-09-25T00:00:00.000Z',
+      detail: 'Reachable and observing decisions.',
+    });
+
+    expect(topology.nodes.find(node => node.id === 'decision-laya')).toMatchObject({
+      label: 'Laya Decision Core',
+      kind: 'decision',
+      status: 'active',
+    });
+    expect(topology.nodes.find(node => node.id === 'decision-laya')?.detail).toContain('Automation: disabled');
+  });
+
   it('derives inspectable entities from workspace data instead of static counts', () => {
     const workspace = {
       secondBrain: {
