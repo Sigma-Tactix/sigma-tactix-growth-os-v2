@@ -1,11 +1,11 @@
 {
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/vite.config.ts": {
-    "mtime": 1788480422.0,
-    "hash": "60785666fc59d0906be7385d87a7e2c1"
+    "mtime": 1789240690.522653,
+    "hash": "ef2565201e12b3bd0cab10c097cdbd8b"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/server.ts": {
-    "mtime": 1789163833.2777455,
-    "hash": "47eb57e07e2e83573ef78ea948de5f50"
+    "mtime": 1789240717.7486095,
+    "hash": "e3947de004dad1cc52ce921ff16b1d05"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/backend/database/migrations/0002_workspace_state.sql": {
     "mtime": 1788495604.560562,
@@ -76,8 +76,8 @@
     "hash": "642e2a14d2da2e9031defdcd930762b4"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/App.tsx": {
-    "mtime": 1789213195.8476987,
-    "hash": "ae023b0a1ccbb855a61cb8eefa052087"
+    "mtime": 1789261057.614402,
+    "hash": "73679c2313fe8c1ac32ef4a304d1fb56"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/main.tsx": {
     "mtime": 1788480422.0,
@@ -132,8 +132,8 @@
     "hash": "6ede83838480df2d2ae9b46f149ae233"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/IntakeMetricsChart.tsx": {
-    "mtime": 1788480422.0,
-    "hash": "267285a4a7520d354ddc2ec8f8aa6317"
+    "mtime": 1789261203.3079066,
+    "hash": "fcb9c9843d86200596835fb11d4a0242"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/AgentSkillsManager.tsx": {
     "mtime": 1788480422.0,
@@ -200,8 +200,8 @@
     "hash": "d350007029ebe402bfffc8633ea83d32"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/AIChatbot.tsx": {
-    "mtime": 1788480422.0,
-    "hash": "fd5c10cac375eaff66a58ca98d23a58c"
+    "mtime": 1789240717.8636482,
+    "hash": "1c6240becd3cf8e6fbe18838067f7a75"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/tutorial/TutorialHUD.tsx": {
     "mtime": 1789151109.2249866,
@@ -264,8 +264,8 @@
     "hash": "8a2dd97cd42cacb15536d16810862ed3"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/hologram/UltronJarvisNeuralCore.tsx": {
-    "mtime": 1788528894.2481096,
-    "hash": "239858f2ac6d26732c4c456bbe38ad68"
+    "mtime": 1789261202.9428842,
+    "hash": "abee2b83cb0d4206fe630280ca7ce0fa"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/hologram/WaveformMonitor.tsx": {
     "mtime": 1788480422.0,
@@ -280,8 +280,8 @@
     "hash": "49800874435c85dea687dd692680f4cf"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/hologram/NeuralBrainCore3D.tsx": {
-    "mtime": 1788529545.5455787,
-    "hash": "1829ab49900d1dfbdc9c3062292b60fa"
+    "mtime": 1789261203.0433674,
+    "hash": "28f1641885ffd7e00ae5fe072bc6ed78"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/hologram/HoloTelemetryHUD.tsx": {
     "mtime": 1788480422.0,
@@ -346,6 +346,10 @@
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/components/reports/AlignedExecutiveCharts.tsx": {
     "mtime": 1788507007.7836905,
     "hash": "2ff3ff15dce7907c7dfbb07d4adbc829"
+  },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/onboardingChat.test.ts": {
+    "mtime": 1789240690.4310706,
+    "hash": "ff60b87a95181fc3cc32affa5b78457b"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/hologramTelemetry.ts": {
     "mtime": 1788495604.8270092,
@@ -447,6 +451,10 @@
     "mtime": 1788502213.425708,
     "hash": "4492557e519c0d9e772f6c01227d2779"
   },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/pipelineVerification.test.ts": {
+    "mtime": 1789240536.5508294,
+    "hash": "8437d6b9656984c8dfd48ee26fc39aa1"
+  },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/agentResolution.ts": {
     "mtime": 1788495604.812703,
     "hash": "889cb91b2603153f194973dfe8b046f1"
@@ -495,13 +503,17 @@
     "mtime": 1788496395.5325658,
     "hash": "143a14ac78915ea2f617728153249f7b"
   },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/onboardingChat.ts": {
+    "mtime": 1789240690.3397763,
+    "hash": "96a6ec616dda61dc44c7feba95b443fa"
+  },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/google-api.ts": {
     "mtime": 1788495604.8211946,
     "hash": "0789d6632ee49c97ef72a31049054e83"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/tokenCostEngine.ts": {
-    "mtime": 1788967652.39487,
-    "hash": "99e44807992294aa4dd335348055c812"
+    "mtime": 1789261057.5195749,
+    "hash": "3b79af5c355feee2ac6e5267e0faebdb"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/supabaseAdmin.ts": {
     "mtime": 1788495604.8312216,
@@ -510,6 +522,10 @@
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/growthAuditAgents.ts": {
     "mtime": 1788495604.821917,
     "hash": "2a441a9497be89f88f3fabe15cd0562c"
+  },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/pipelineVerification.ts": {
+    "mtime": 1789240536.4586205,
+    "hash": "94210f1c06c5b88de16cccd6f53a52e0"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/lib/agentMailboxAndDocuments.test.ts": {
     "mtime": 1789164001.320007,
@@ -556,8 +572,8 @@
     "hash": "3c39e276203fdbf08d80c3ac2173c96c"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/data/industryReportFormats.ts": {
-    "mtime": 1789213444.1591737,
-    "hash": "a3aab44eff3f53acf7ecb4d544bcf8bc"
+    "mtime": 1789241254.9101028,
+    "hash": "afe26a30427ddffd6cf42d39432960aa"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/data/livingSystemData.ts": {
     "mtime": 1788480422.0,
@@ -628,16 +644,16 @@
     "hash": "2def5fa205b3ed1724bbd7f2eada95dc"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/pages/Dashboard.tsx": {
-    "mtime": 1789213686.0053983,
-    "hash": "fcc738d368db9001ee38a8918c8c22f1"
+    "mtime": 1789261277.2860093,
+    "hash": "8e3729917bb3298d5476572950710994"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/pages/SecondBrain.tsx": {
-    "mtime": 1789213911.3366888,
-    "hash": "0ff0a1784ce93d1bc82eda1a347207b3"
+    "mtime": 1789241416.8961213,
+    "hash": "23458c3c0dbdded9f255497acf9617d0"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/pages/DataSources.tsx": {
-    "mtime": 1789213371.1046898,
-    "hash": "6bc92661ca0b5dbcc6f0e87dd78410d5"
+    "mtime": 1789240572.6632996,
+    "hash": "161d3e60c658e0fb5a949ac06899e64a"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/src/pages/ImageStudioPage.tsx": {
     "mtime": 1789002241.864497,
@@ -715,13 +731,21 @@
     "mtime": 1788480422.0,
     "hash": "25a083a274cdad3f63a465f289943657"
   },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/CHANGELOG.md": {
+    "mtime": 1789243929.6180978,
+    "hash": "1e334b44b7b68662e82aa9ed264f5998"
+  },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/sigmatactix-architecture.html": {
     "mtime": 1788713045.7002163,
     "hash": "afa80e175af03414098fb4886fcd85aa"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/README.md": {
-    "mtime": 1788480422.0,
-    "hash": "8e55e64414a3b2a20f37a3b31c491eb2"
+    "mtime": 1789243923.741074,
+    "hash": "ee36c44767405c515668f735d4f9f32d"
+  },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/MASTER_CONTEXT.md": {
+    "mtime": 1789243678.3773572,
+    "hash": "04ca9f54d84160267391eba7cb08ade4"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/sigmatactix-architecture.visual-check.html": {
     "mtime": 1788713054.5375197,
@@ -1474,6 +1498,10 @@
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/backend/agent-skills/change-management-consultant/SKILL.md": {
     "mtime": 1788495604.8012466,
     "hash": "0d3398d0895027c2c7323e589df6e0ef"
+  },
+  "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/docs/reviews/production-readiness-initial.md": {
+    "mtime": 1789261277.389188,
+    "hash": "d0ce4585865b41d2b74d9eba5cd769ae"
   },
   "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/sovereign_crm_embeddable_dock.png": {
     "mtime": 1788529851.2353497,

@@ -1,33 +1,33 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Activity, 
-  TrendingUp, 
-  TrendingDown, 
-  Cpu, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Sparkles, 
-  Zap, 
-  Filter, 
-  Clock, 
-  ArrowUpRight, 
+import {
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Cpu,
+  AlertTriangle,
+  CheckCircle2,
+  Sparkles,
+  Zap,
+  Filter,
+  Clock,
+  ArrowUpRight,
   ArrowDownRight,
   BrainCircuit,
   Info
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  ComposedChart, 
-  AreaChart, 
-  Area, 
-  Line, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ReferenceLine 
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  AreaChart,
+  Area,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine
 } from 'recharts';
 import { cn } from '@/src/lib/utils';
 import { ScopedAgent } from '@/src/data/agentCockpitData';
@@ -168,16 +168,16 @@ export default function AgentLearningAnalyticsTab({
         </div>
 
         {/* Timeframe selector pills */}
-        <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
+        <div className="sigma-segmented font-mono">
           {(['24h', '7d', '30d', 'all'] as const).map(tf => (
             <button
               key={tf}
               onClick={() => setTimeframe(tf)}
               className={cn(
-                "px-2.5 py-1 rounded-lg uppercase transition-all font-bold",
+                "sigma-segment uppercase",
                 timeframe === tf
-                  ? "bg-accent text-background amber-glow"
-                  : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               {tf === 'all' ? 'All Epochs' : tf}
@@ -291,37 +291,37 @@ export default function AgentLearningAnalyticsTab({
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis 
-                dataKey="epoch" 
-                stroke="#71717A" 
-                fontSize={10} 
-                tickLine={false} 
+              <XAxis
+                dataKey="epoch"
+                stroke="#71717A"
+                fontSize={10}
+                tickLine={false}
               />
-              <YAxis 
-                domain={[60, 100]} 
-                stroke="#71717A" 
-                fontSize={10} 
-                tickLine={false} 
+              <YAxis
+                domain={[60, 100]}
+                stroke="#71717A"
+                fontSize={10}
+                tickLine={false}
                 tickFormatter={(val) => `${val}%`}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine y={95} stroke="#10B981" strokeDasharray="4 4" label={{ value: 'Target 95%', fill: '#10B981', fontSize: 9, position: 'right' }} />
-              <Area 
-                type="monotone" 
-                dataKey="efficiency" 
-                stroke="#F59E0B" 
-                strokeWidth={2.5} 
-                fillOpacity={1} 
-                fill="url(#efficiencyGrad)" 
+              <Area
+                type="monotone"
+                dataKey="efficiency"
+                stroke="#F59E0B"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#efficiencyGrad)"
                 name="Efficiency"
               />
-              <Area 
-                type="monotone" 
-                dataKey="rewardScore" 
-                stroke="#A855F7" 
-                strokeWidth={2} 
-                fillOpacity={1} 
-                fill="url(#rewardGrad)" 
+              <Area
+                type="monotone"
+                dataKey="rewardScore"
+                stroke="#A855F7"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#rewardGrad)"
                 name="Reward Score"
               />
             </AreaChart>
@@ -355,43 +355,43 @@ export default function AgentLearningAnalyticsTab({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={telemetryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis 
-                dataKey="epoch" 
-                stroke="#71717A" 
-                fontSize={10} 
-                tickLine={false} 
+              <XAxis
+                dataKey="epoch"
+                stroke="#71717A"
+                fontSize={10}
+                tickLine={false}
               />
-              <YAxis 
-                yAxisId="left" 
-                stroke="#06B6D4" 
-                fontSize={10} 
-                tickLine={false} 
+              <YAxis
+                yAxisId="left"
+                stroke="#06B6D4"
+                fontSize={10}
+                tickLine={false}
                 tickFormatter={(v) => `${v}k`}
               />
-              <YAxis 
-                yAxisId="right" 
-                orientation="right" 
-                stroke="#F43F5E" 
-                fontSize={10} 
-                tickLine={false} 
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#F43F5E"
+                fontSize={10}
+                tickLine={false}
                 tickFormatter={(v) => `${v}%`}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                yAxisId="left" 
-                dataKey="tokens" 
-                fill="#06B6D4" 
-                opacity={0.7} 
-                radius={[4, 4, 0, 0]} 
+              <Bar
+                yAxisId="left"
+                dataKey="tokens"
+                fill="#06B6D4"
+                opacity={0.7}
+                radius={[4, 4, 0, 0]}
                 name="Tokens (k)"
               />
-              <Line 
-                yAxisId="right" 
-                type="monotone" 
-                dataKey="errorRate" 
-                stroke="#F43F5E" 
-                strokeWidth={2.5} 
-                dot={{ r: 4, fill: '#F43F5E' }} 
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="errorRate"
+                stroke="#F43F5E"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: '#F43F5E' }}
                 name="Error Rate (%)"
               />
             </ComposedChart>
@@ -415,7 +415,7 @@ export default function AgentLearningAnalyticsTab({
 
         <div className="space-y-2">
           {agent.learningProfile.heuristics.map((h, i) => (
-            <div 
+            <div
               key={h.id || i}
               className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono"
             >

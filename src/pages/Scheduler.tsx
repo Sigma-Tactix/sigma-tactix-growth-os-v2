@@ -18,10 +18,12 @@ import {
   Mail,
   FileDown,
   X,
-  RefreshCw
+  RefreshCw,
+  Server
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { GlassCard, Button, Badge, MetricWidget, Input } from '@/src/components/ui';
 
 interface ScheduleItem {
   id: string;
@@ -34,10 +36,10 @@ interface ScheduleItem {
 }
 
 const initialStats = [
-  { label: 'ACTIVE SCHEDULES', value: '12', change: '+2', icon: Activity },
-  { label: 'DELIVERIES (24H)', value: '158', change: '-4%', icon: Mail },
-  { label: 'SUCCESS RATE', value: '99.4%', status: 'Stable', icon: CheckCircle2 },
-  { label: 'NEXT RUN', value: '14:00', status: 'Today', icon: Clock },
+  { label: 'ACTIVE SCHEDULES', value: '12', delta: { value: '+2', trend: 'up' as const }, icon: Activity },
+  { label: 'DELIVERIES (24H)', value: '158', delta: { value: '-4%', trend: 'down' as const }, icon: Mail },
+  { label: 'SUCCESS RATE', value: '99.4%', delta: { value: 'Stable', trend: 'neutral' as const }, icon: CheckCircle2 },
+  { label: 'NEXT RUN', value: '14:00', subtext: 'Scheduled for Today', icon: Clock },
 ];
 
 const initialSchedules: ScheduleItem[] = [
@@ -116,69 +118,79 @@ export default function Scheduler() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
-        <div className="max-w-3xl">
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <Clock size={14} className="text-accent" /> Automation Layer • Scheduled Distribution
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="vermilion" size="sm">
+                <Clock size={12} className="mr-1 inline" /> Automation Layer
+              </Badge>
+              <Badge variant="outline" size="sm">
+                Distribution Hub
+              </Badge>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+              Reporting Scheduler
+            </h1>
+            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+              Automate recurring intelligence delivery. Generate multi-format executive exports (PDF, PPTX) synchronized with Second Brain metrics.
+            </p>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">Reporting Scheduler</h1>
-          <p className="text-zinc-400 text-lg max-w-2xl mt-3 leading-relaxed font-sans">
-            Automate recurring intelligence delivery. Generate multi-format executive exports (PDF, PPTX) synchronized with Second Brain metrics.
-          </p>
-        </div>
 
-        <button 
-          data-tutorial-id="tut-new-schedule-btn"
-          onClick={() => setIsNewModalOpen(true)}
-          className="px-6 py-3.5 bg-accent text-background rounded-xl hover:opacity-90 transition-all font-black uppercase text-xs tracking-widest flex items-center gap-2.5 amber-glow shadow-2xl w-fit"
-        >
-          <Plus size={18} /> New Schedule
-        </button>
-      </div>
+          <Button 
+            variant="primary"
+            leftIcon={<Plus size={16} />}
+            onClick={() => setIsNewModalOpen(true)}
+          >
+            New Schedule
+          </Button>
+        </div>
+      </GlassCard>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {initialStats.map((stat, i) => (
-          <div key={i} className="bg-surface border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-accent/30 transition-all shadow-xl">
-            <div className="text-[10px] text-muted font-mono uppercase tracking-widest font-bold mb-4">{stat.label}</div>
-            <div className="flex items-end justify-between relative z-10">
-              <div className="text-3xl font-heading font-black silver-text tracking-tight">{stat.value}</div>
-              {stat.change && (
-                <div className={cn("text-xs font-mono font-bold px-2 py-0.5 rounded border", stat.change.startsWith('+') ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20")}>
-                  {stat.change}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {initialStats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <MetricWidget
+              key={i}
+              label={stat.label}
+              value={stat.value}
+              delta={stat.delta}
+              subtext={stat.subtext}
+              icon={<Icon size={18} />}
+            />
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Active Schedules Table */}
         <div className="lg:col-span-8 space-y-6">
-           <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                 <Calendar className="text-accent" size={18} />
-                 <h2 className="text-lg font-bold silver-text">Active Schedules ({schedules.length})</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="text-[var(--sigma-vermilion)]" size={18} />
+              <h2 className="text-base font-bold text-white">Active Schedules ({schedules.length})</h2>
+            </div>
+          </div>
+          
+          <GlassCard elevation="raised" className="overflow-hidden border border-[var(--sigma-border)]">
+            <div className="p-4 bg-[var(--sigma-surface)]/80 border-b border-[var(--sigma-border)] flex items-center justify-between px-6">
+              <div className="flex items-center gap-3 flex-1 max-w-sm">
+                <Search size={14} className="text-zinc-500" />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter schedules by name or category..." 
+                  className="bg-transparent border-none focus:outline-none text-xs w-full text-white placeholder:text-zinc-500 font-mono" 
+                />
               </div>
-           </div>
-           
-           <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-              <div className="p-4 bg-background/50 border-b border-white/10 flex items-center justify-between px-6">
-                 <div className="flex items-center gap-3 flex-1 max-w-sm">
-                    <Search size={14} className="text-muted" />
-                    <input 
-                      type="text" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Filter schedules by name or category..." 
-                      className="bg-transparent border-none focus:outline-none text-xs w-full text-white placeholder:text-zinc-600 font-mono" 
-                    />
-                 </div>
-              </div>
+            </div>
 
+            <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/30 text-[10px] uppercase font-mono tracking-widest text-muted border-b border-white/5">
+                <thead className="bg-black/30 text-[10px] uppercase font-mono tracking-widest text-zinc-500 border-b border-[var(--sigma-border)]">
                   <tr>
                     <th className="px-6 py-4">Report Name</th>
                     <th className="px-6 py-4 text-center">Format</th>
@@ -187,112 +199,115 @@ export default function Scheduler() {
                     <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-[var(--sigma-border)]">
                   {filteredSchedules.map((s) => (
                     <tr key={s.id} className="group hover:bg-white/[0.02] transition-colors">
                       <td className="px-6 py-4">
-                         <div className="font-bold text-sm text-white">{s.name}</div>
-                         <div className="text-[10px] text-zinc-400 font-mono mt-0.5">{s.category}</div>
+                        <div className="font-semibold text-sm text-white">{s.name}</div>
+                        <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{s.category}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                         <span className="px-2.5 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-secondary">
-                            {s.format}
-                         </span>
+                        <Badge variant="outline" size="sm">
+                          {s.format}
+                        </Badge>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-muted flex items-center gap-1.5 pt-5">
-                         <Clock size={12} /> {s.frequency}
+                      <td className="px-6 py-4 text-xs font-mono text-zinc-400">
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={12} className="text-zinc-500" /> {s.frequency}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-zinc-400">{s.lastRun}</td>
                       <td className="px-6 py-4">
-                         <div className="flex items-center justify-center gap-2">
-                            <button 
-                              onClick={() => handleRunNow(s)}
-                              disabled={runningScheduleId === s.id}
-                              title="Run Now"
-                              className="p-1.5 hover:bg-accent/20 hover:text-accent rounded-lg text-muted transition-colors disabled:opacity-50"
-                            >
-                              {runningScheduleId === s.id ? <RefreshCw size={14} className="animate-spin text-accent" /> : <Play size={14} />}
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteSchedule(s.id)}
-                              title="Delete Schedule"
-                              className="p-1.5 hover:bg-rose-500/20 hover:text-rose-400 rounded-lg text-muted transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                         </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <button 
+                            onClick={() => handleRunNow(s)}
+                            disabled={runningScheduleId === s.id}
+                            title="Run Now"
+                            className="p-2 hover:bg-[var(--sigma-vermilion)]/15 hover:text-[var(--sigma-vermilion)] rounded-lg text-zinc-400 transition-colors disabled:opacity-50"
+                          >
+                            {runningScheduleId === s.id ? <RefreshCw size={14} className="animate-spin text-[var(--sigma-vermilion)]" /> : <Play size={14} />}
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteSchedule(s.id)}
+                            title="Delete Schedule"
+                            className="p-2 hover:bg-rose-500/20 hover:text-rose-400 rounded-lg text-zinc-400 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-           </div>
+            </div>
+          </GlassCard>
 
-           {/* Recent History */}
-           <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                 <Clock className="text-muted" size={16} />
-                 <h3 className="text-base font-bold silver-text">Recent Execution History</h3>
-              </div>
-              <div className="space-y-2">
-                 {history.map((h) => (
-                   <div key={h.id} className="p-3.5 bg-surface border border-white/5 rounded-xl flex items-center justify-between group hover:border-white/15 transition-all">
-                      <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 rounded-lg flex items-center justify-center border bg-green-500/10 border-green-500/20 text-green-400">
-                            <CheckCircle2 size={16} />
-                         </div>
-                         <div>
-                            <div className="font-bold text-xs text-white">{h.title}</div>
-                            <div className="text-[11px] text-muted">{h.desc}</div>
-                         </div>
-                      </div>
-                      <div className="text-[10px] font-mono text-zinc-500">{h.time}</div>
-                   </div>
-                 ))}
-              </div>
-           </div>
+          {/* Recent History */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Clock className="text-zinc-500" size={16} />
+              <h3 className="text-sm font-bold text-white">Recent Execution History</h3>
+            </div>
+            <div className="space-y-2">
+              {history.map((h) => (
+                <div key={h.id} className="p-3.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-white/15 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                      <CheckCircle2 size={15} />
+                    </div>
+                    <div>
+                      <div className="font-medium text-xs text-white">{h.title}</div>
+                      <div className="text-[11px] text-zinc-500">{h.desc}</div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500">{h.time}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Right Sidebar: Engine Status */}
         <div className="lg:col-span-4 space-y-6">
-           <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-xl space-y-6">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                 <div className="flex items-center gap-2">
-                    <Cpu size={18} className="text-accent" />
-                    <h3 className="text-base font-bold silver-text">Cron Engine Status</h3>
-                 </div>
-                 <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
+          <GlassCard elevation="raised" className="p-6 border border-[var(--sigma-border)] space-y-6">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
+              <div className="flex items-center gap-2">
+                <Cpu size={18} className="text-[var(--sigma-vermilion)]" />
+                <h3 className="text-sm font-bold text-white">Cron Engine Status</h3>
               </div>
+              <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+            </div>
 
-              <div className="space-y-4 text-xs font-mono">
-                 <div className="flex items-center justify-between">
-                   <span className="text-zinc-400">Worker Node:</span>
-                   <span className="text-white">BullMQ Scheduler (Active)</span>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <span className="text-zinc-400">Redis Connection:</span>
-                   <span className="text-green-400">Connected (0.4ms)</span>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <span className="text-zinc-400">PDF Generator:</span>
-                   <span className="text-secondary">Chromium Headless v122</span>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <span className="text-zinc-400">Next Scheduled Run:</span>
-                   <span className="text-accent">14:00 (Today)</span>
-                 </div>
+            <div className="space-y-3.5 text-xs font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Worker Node:</span>
+                <span className="text-zinc-200">BullMQ Scheduler (Active)</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Redis Connection:</span>
+                <span className="text-emerald-400">Connected (0.4ms)</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">PDF Generator:</span>
+                <span className="text-cyan-400">Chromium Headless v122</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Next Scheduled Run:</span>
+                <span className="text-[var(--sigma-vermilion)]">14:00 (Today)</span>
+              </div>
+            </div>
 
-              <div className="pt-4 border-t border-white/5">
-                 <div className="flex justify-between items-end mb-2 text-[10px] font-mono text-muted uppercase">
-                    <span>Task Throughput</span>
-                    <span>42% Load</span>
-                 </div>
-                 <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
-                    <div className="h-full bg-accent w-[42%]" />
-                 </div>
+            <div className="pt-4 border-t border-[var(--sigma-border)]">
+              <div className="flex justify-between items-end mb-2 text-[10px] font-mono text-zinc-500 uppercase">
+                <span>Task Throughput</span>
+                <span className="text-zinc-300">42% Load</span>
               </div>
-           </div>
+              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-[var(--sigma-vermilion)] w-[42%]" />
+              </div>
+            </div>
+          </GlassCard>
         </div>
       </div>
 
@@ -304,91 +319,85 @@ export default function Scheduler() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+              className="w-full max-w-lg"
             >
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <Calendar size={20} className="text-accent" />
-                  <h3 className="text-lg font-bold silver-text">Create Automated Report Schedule</h3>
+              <GlassCard elevation="raised" className="p-6 border border-[var(--sigma-border)] space-y-5">
+                <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <Calendar size={18} className="text-[var(--sigma-vermilion)]" />
+                    <h3 className="text-base font-bold text-white">Create Automated Schedule</h3>
+                  </div>
+                  <button
+                    onClick={() => setIsNewModalOpen(false)}
+                    className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsNewModalOpen(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-all"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              <form onSubmit={handleCreateSchedule} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Schedule Name</label>
-                  <input
-                    type="text"
+                <form onSubmit={handleCreateSchedule} className="space-y-4">
+                  <Input
+                    label="Schedule Name"
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Weekly C-Level Growth Brief"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                   />
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono uppercase text-muted">Format</label>
-                    <select
-                      value={newFormat}
-                      onChange={(e) => setNewFormat(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="PDF">PDF Executive Document</option>
-                      <option value="PPTX">PPTX Board Deck</option>
-                      <option value="CSV">Raw CSV Data Dump</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono uppercase text-zinc-400">Format</label>
+                      <select
+                        value={newFormat}
+                        onChange={(e) => setNewFormat(e.target.value)}
+                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                      >
+                        <option value="PDF">PDF Executive Document</option>
+                        <option value="PPTX">PPTX Board Deck</option>
+                        <option value="CSV">Raw CSV Data Dump</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono uppercase text-zinc-400">Cadence / Frequency</label>
+                      <select
+                        value={newFrequency}
+                        onChange={(e) => setNewFrequency(e.target.value)}
+                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                      >
+                        <option value="Daily (07:00)">Daily (07:00 AM)</option>
+                        <option value="Weekly (Mon)">Weekly (Every Monday)</option>
+                        <option value="Monthly (1st)">Monthly (1st of month)</option>
+                        <option value="Bi-Weekly">Bi-Weekly</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono uppercase text-muted">Cadence / Frequency</label>
-                    <select
-                      value={newFrequency}
-                      onChange={(e) => setNewFrequency(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="Daily (07:00)">Daily (07:00 AM)</option>
-                      <option value="Weekly (Mon)">Weekly (Every Monday)</option>
-                      <option value="Monthly (1st)">Monthly (1st of month)</option>
-                      <option value="Bi-Weekly">Bi-Weekly</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Stakeholder Recipient Initials / Emails</label>
-                  <input
-                    type="text"
+                  <Input
+                    label="Stakeholder Recipient Emails"
                     required
                     value={newRecipients}
                     onChange={(e) => setNewRecipients(e.target.value)}
                     placeholder="JD, AL, ceo@company.com"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                   />
-                </div>
 
-                <div className="pt-2 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsNewModalOpen(false)}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-muted hover:text-white rounded-xl text-xs font-mono font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-accent text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 amber-glow"
-                  >
-                    Save & Activate
-                  </button>
-                </div>
-              </form>
+                  <div className="pt-3 flex justify-end gap-3">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => setIsNewModalOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="submit"
+                    >
+                      Save & Activate
+                    </Button>
+                  </div>
+                </form>
+              </GlassCard>
             </motion.div>
           </div>
         )}

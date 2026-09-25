@@ -23,6 +23,7 @@ import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import { generateCreativeImage } from '@/src/lib/creativeApi';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge } from '@/src/components/ui';
 
 interface ModelOption {
   id: string;
@@ -204,34 +205,30 @@ export default function ImageStudioPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-              <ImageIcon className="w-6 h-6" />
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">CREATION LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">DIFFUSION SYNTHESIS</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">AI Creative Image Studio</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full">
-                  Digital Marketing
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Synthesize production-grade creative visuals, ad graphics, and brand assets across top generative diffusion models.
-              </p>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <ImageIcon className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              AI Creative Image Studio
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Synthesize production-grade creative visuals, ad graphics, and brand assets across top generative diffusion models.
+            </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-            <ShieldCheck className="w-4 h-4" /> Production Grade Engine
+          <div className="flex items-center gap-3">
+            <Badge variant="success" dot>Production Grade Engine</Badge>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Main Studio Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -350,23 +347,15 @@ export default function ImageStudioPage() {
               />
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50"
+              className="w-full justify-center"
+              leftIcon={isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Synthesizing with {AI_IMAGE_MODELS.find(m => m.id === selectedModel)?.name}...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Synthesize Production Visual
-                </>
-              )}
-            </button>
+              {isGenerating ? `Synthesizing with ${AI_IMAGE_MODELS.find(m => m.id === selectedModel)?.name}...` : 'Synthesize Production Visual'}
+            </Button>
           </div>
         </div>
 

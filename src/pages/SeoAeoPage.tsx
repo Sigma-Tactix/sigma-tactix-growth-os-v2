@@ -42,6 +42,7 @@ import {
 } from '@/src/data/marketingModulesData';
 import SearchConsoleTrends from '@/src/components/SearchConsoleTrends';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
 export type SchemaType = 'FAQ' | 'ORGANIZATION' | 'TECH_ARTICLE' | 'PRODUCT' | 'LOCAL_BUSINESS' | 'HOW_TO';
 
@@ -389,163 +390,95 @@ export default function SeoAeoPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-[11px] font-mono tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full font-bold">
-              INTELLIGENCE LAYER
-            </span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-zinc-400">AURORA-01 SWARM</span>
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">INTELLIGENCE LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">AURORA-01 SWARM</Badge>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <Search className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              SEO & AEO Intelligence
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Dominate traditional search engine rankings and Generative Engine Optimization (GEO) citations across ChatGPT, Perplexity, Claude, and Google AI Overviews.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Search className="w-7 h-7 text-amber-400" />
-            SEO & AEO Intelligence
-          </h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-            Dominate traditional search engine rankings and Generative Engine Optimization (GEO) citations across ChatGPT, Perplexity, Claude, and Google AI Overviews.
-          </p>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant={isGscConnected ? "secondary" : "outline"}
+              onClick={() => setIsGscModalOpen(true)}
+              leftIcon={<Globe className="w-3.5 h-3.5 text-blue-400" />}
+            >
+              {isGscConnected ? 'GSC Linked' : 'Connect GSC'}
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={handleRunAeoTest}
+              disabled={isTestingAeo}
+              leftIcon={<RefreshCw className={cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isTestingAeo && "animate-spin")} />}
+            >
+              {isTestingAeo ? 'Auditing AI Engines...' : 'Run Live AEO Audit'}
+            </Button>
+
+            <Button
+              variant="primary"
+              data-tutorial-id="tut-seo-deploy-agent"
+              onClick={handleDeployAuthorityAgent}
+              disabled={isDeployingAgent}
+              leftIcon={<Play className="w-3.5 h-3.5 fill-black" />}
+            >
+              {isDeployingAgent ? 'Deploying Swarm...' : 'Deploy Authority Agent'}
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsGscModalOpen(true)}
-            className={cn(
-              "px-3.5 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer border shadow-sm",
-              isGscConnected
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700/80"
-            )}
-          >
-            <Globe className="w-3.5 h-3.5 text-blue-400" />
-            {isGscConnected ? 'GSC Linked' : 'Connect GSC'}
-          </button>
-
-          <button
-            onClick={handleRunAeoTest}
-            disabled={isTestingAeo}
-            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw className={cn("w-3.5 h-3.5 text-amber-400", isTestingAeo && "animate-spin")} />
-            {isTestingAeo ? 'Auditing AI Engines...' : 'Run Live AEO Audit'}
-          </button>
-
-          <button
-            data-tutorial-id="tut-seo-deploy-agent"
-            onClick={handleDeployAuthorityAgent}
-            disabled={isDeployingAgent}
-            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
-          >
-            <Play className="w-3.5 h-3.5 fill-black" />
-            {isDeployingAgent ? 'Deploying Swarm...' : 'Deploy Authority Agent'}
-          </button>
-        </div>
-      </div>
+      </GlassCard>
 
       {/* Metric Highlights Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Blended AEO Citation Rate</div>
-          <div className="text-2xl font-bold text-white flex items-center gap-2">
-            83.4%
-            <span className="text-xs font-mono text-emerald-400 font-normal">+18.2% vs last mo</span>
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Cited in 4 of 5 major LLMs</div>
-        </div>
+        <MetricWidget
+          label="Blended AEO Citation Rate"
+          value="83.4%"
+          delta={{ value: "+18.2% vs last mo", trend: "up" }}
+          subtext="Cited in 4 of 5 major LLMs"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Tracked Keyword Clusters</div>
-          <div className="text-2xl font-bold text-white flex items-center gap-2">
-            3 Pillars / 11 Spokes
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Total search volume: 39.2k/mo</div>
-        </div>
+        <MetricWidget
+          label="Tracked Keyword Clusters"
+          value="3 Pillars / 11 Spokes"
+          subtext="Total search volume: 39.2k/mo"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Top Citation Engine</div>
-          <div className="text-2xl font-bold text-amber-400 flex items-center gap-2">
-            Perplexity AI
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Rank #1.4 average position</div>
-        </div>
+        <MetricWidget
+          label="Top Citation Engine"
+          value="Perplexity AI"
+          subtext="Rank #1.4 average position"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Structured Schema Health</div>
-          <div className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-            98.5%
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">JSON-LD valid & indexed</div>
-        </div>
+        <MetricWidget
+          label="Structured Schema Health"
+          value="98.5%"
+          delta={{ value: "Valid", trend: "up" }}
+          subtext="JSON-LD valid & indexed"
+        />
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 flex-wrap">
-        <button
-          onClick={() => setActiveTab('SEARCH_CONSOLE')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'SEARCH_CONSOLE'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <TrendingUp className="w-3.5 h-3.5" />
-          Google Search Console Trends
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CLUSTERS')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'CLUSTERS'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          Topical Clusters & Search Intent
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AEO_SIMULATOR')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'AEO_SIMULATOR'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          AEO Citation Index (ChatGPT / Perplexity / Claude)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SCHEMA_ARCHITECT')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'SCHEMA_ARCHITECT'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Code2 className="w-3.5 h-3.5" />
-          Semantic Schema Architect (JSON-LD)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AGENTS')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'AGENTS'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Bot className="w-3.5 h-3.5" />
-          Autonomous SEO Agents & Sub-Agents
-        </button>
-      </div>
+      <Tabs<'SEARCH_CONSOLE' | 'CLUSTERS' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>
+        tabs={[
+          { id: 'SEARCH_CONSOLE', label: 'Google Search Console Trends', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+          { id: 'CLUSTERS', label: 'Topical Clusters & Search Intent', icon: <Layers className="w-3.5 h-3.5" /> },
+          { id: 'AEO_SIMULATOR', label: 'AEO Citation Index (ChatGPT / Perplexity / Claude)', icon: <Sparkles className="w-3.5 h-3.5" /> },
+          { id: 'SCHEMA_ARCHITECT', label: 'Semantic Schema Architect (JSON-LD)', icon: <Code2 className="w-3.5 h-3.5" /> },
+          { id: 'AGENTS', label: 'Autonomous SEO Agents & Sub-Agents', icon: <Bot className="w-3.5 h-3.5" /> }
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* TAB 1: KEYWORD CLUSTERS */}
       {activeTab === 'CLUSTERS' && (

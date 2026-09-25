@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Network, 
-  Layers, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  ShieldCheck, 
-  Cpu, 
-  Database, 
-  ArrowRight, 
-  Eye, 
-  Info, 
+import {
+  Network,
+  Layers,
+  Play,
+  Pause,
+  RotateCcw,
+  ShieldCheck,
+  Cpu,
+  Database,
+  ArrowRight,
+  Eye,
+  Info,
   ExternalLink,
   CheckCircle2,
   AlertTriangle,
@@ -23,11 +23,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { 
-  ARCHITECTURE_DIAGRAMS, 
-  ArchitectureDiagram, 
-  LifecycleState, 
-  ArchitectureComponent 
+import { GlassCard, Button, Badge } from '@/src/components/ui';
+import {
+  ARCHITECTURE_DIAGRAMS,
+  ArchitectureDiagram,
+  LifecycleState,
+  ArchitectureComponent
 } from '@/src/data/architectureDiagrams';
 
 export default function ArchitectureViewer() {
@@ -84,60 +85,63 @@ export default function ArchitectureViewer() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
-        <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <Workflow size={14} className="text-accent" /> Architecture & Lifecycle Engine
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="vermilion" size="sm">
+                <Workflow size={12} className="mr-1 inline" /> Topology Engine
+              </Badge>
+              <Badge variant="outline" size="sm">
+                Architecture v3.2
+              </Badge>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+              System Topology & Lifecycles
+            </h1>
+            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+              Interactive architectural blueprints covering Agent Run Lifecycles, Async Job Queues, Event Streaming Topologies, and Production Deployment Ownership.
+            </p>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">
-            System Topology
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
-            Interactive, verified architectural blueprints covering Agent Run Lifecycles, Async Job Queues, Event Streaming Topologies, and Production Deployment Ownership.
-          </p>
-        </div>
 
-        {/* Simulation Controls */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsPlayingSimulation(!isPlayingSimulation)}
-            className={cn(
-              "px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl",
-              isPlayingSimulation 
-                ? "bg-amber-500/20 text-accent border border-accent/40" 
-                : "bg-accent text-background hover:opacity-90 amber-glow"
-            )}
-          >
-            {isPlayingSimulation ? <Pause size={16} /> : <Play size={16} />}
-            {isPlayingSimulation ? "Pause Trace" : "Simulate Trace"}
-          </button>
-          <button
-            onClick={() => {
-              setIsPlayingSimulation(false);
-              setSimulatedStepIndex(0);
-            }}
-            className="p-3 bg-white/5 border border-white/10 rounded-xl text-muted hover:text-white transition-all hover:bg-white/10"
-            title="Reset Simulation"
-          >
-            <RotateCcw size={16} />
-          </button>
+          {/* Simulation Controls */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant={isPlayingSimulation ? "outline" : "primary"}
+              leftIcon={isPlayingSimulation ? <Pause size={16} /> : <Play size={16} />}
+              onClick={() => setIsPlayingSimulation(!isPlayingSimulation)}
+            >
+              {isPlayingSimulation ? "Pause Trace" : "Simulate Trace"}
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<RotateCcw size={15} />}
+              onClick={() => {
+                setIsPlayingSimulation(false);
+                setSimulatedStepIndex(0);
+              }}
+              title="Reset Simulation"
+            >
+              Reset
+            </Button>
+          </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Diagram Selector & Layer Filters */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono uppercase tracking-widest text-muted">Layer Filter:</span>
+            <span className="text-xs font-mono uppercase tracking-widest text-zinc-500">Layer Filter:</span>
             {['ALL', 'AGENT', 'FOUNDATION', 'INTELLIGENCE', 'INFRASTRUCTURE'].map(layer => (
               <button
                 key={layer}
                 onClick={() => setFilterLayer(layer)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all",
-                  filterLayer === layer 
-                    ? "bg-white/10 text-white font-black border border-white/20" 
-                    : "text-muted hover:text-zinc-300 hover:bg-white/5"
+                  "px-3 py-1.5 rounded-lg text-[11px] font-mono uppercase tracking-wider transition-all border",
+                  filterLayer === layer
+                    ? "bg-[var(--sigma-surface-raised)] text-white font-semibold border-white/20 shadow-sm"
+                    : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-white/5"
                 )}
               >
                 {layer}
@@ -145,7 +149,7 @@ export default function ArchitectureViewer() {
             ))}
           </div>
 
-          <div className="text-xs text-muted font-mono">
+          <div className="text-xs text-zinc-500 font-mono">
             {filteredDiagrams.length} Verified Specifications
           </div>
         </div>
@@ -160,35 +164,33 @@ export default function ArchitectureViewer() {
                 onClick={() => handleSelectDiagram(diag.id)}
                 className={cn(
                   "p-4 rounded-xl text-left border transition-all relative overflow-hidden group",
-                  isSelected 
-                    ? "bg-surface border-accent/60 shadow-[0_0_20px_rgba(245,158,11,0.15)]" 
-                    : "bg-surface/60 border-white/5 hover:border-white/20 hover:bg-surface"
+                  isSelected
+                    ? "bg-[var(--sigma-surface-raised)] border-[var(--sigma-vermilion)]/50 shadow-md ring-1 ring-[var(--sigma-vermilion)]/30"
+                    : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-white/20 hover:bg-[var(--sigma-surface-raised)]"
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={cn(
-                    "text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded",
-                    diag.meta.layer === 'Agent' ? "bg-accent/10 text-accent border border-accent/20" :
-                    diag.meta.layer === 'Foundation' ? "bg-cyan-500/10 text-secondary border border-secondary/20" :
-                    "bg-indigo-500/10 text-tertiary border border-tertiary/20"
-                  )}>
+                  <Badge
+                    variant={diag.meta.layer === 'Agent' ? 'vermilion' : diag.meta.layer === 'Foundation' ? 'info' : 'outline'}
+                    size="sm"
+                  >
                     {diag.meta.layer}
-                  </span>
-                  <span className="text-[10px] font-mono text-muted capitalize">
+                  </Badge>
+                  <span className="text-[10px] font-mono text-zinc-400 capitalize">
                     {diag.diagram_type}
                   </span>
                 </div>
                 <div className={cn(
-                  "font-bold text-sm tracking-tight transition-colors line-clamp-1",
-                  isSelected ? "silver-text font-black text-white" : "text-zinc-300 group-hover:text-white"
+                  "font-semibold text-sm tracking-tight transition-colors line-clamp-1",
+                  isSelected ? "text-white font-bold" : "text-zinc-200 group-hover:text-white"
                 )}>
                   {diag.meta.title}
                 </div>
-                <div className="text-xs text-zinc-500 line-clamp-1 mt-1">
+                <div className="text-xs text-zinc-400 line-clamp-1 mt-1">
                   {diag.meta.description}
                 </div>
                 {isSelected && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent to-secondary" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--sigma-vermilion)]" />
                 )}
               </button>
             );
@@ -197,15 +199,15 @@ export default function ArchitectureViewer() {
       </div>
 
       {/* Main Visualizer Stage */}
-      <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <GlassCard elevation="raised" className="overflow-hidden border border-[var(--sigma-border)]">
         {/* Stage Top Bar */}
-        <div className="p-6 bg-background/50 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-6 bg-[var(--sigma-surface)]/80 border-b border-[var(--sigma-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold silver-text tracking-tight">{currentDiagram.meta.title}</h2>
-              <span className="px-2.5 py-1 rounded-full bg-accent/10 border border-accent/30 text-[10px] font-mono text-accent uppercase font-bold">
+              <h2 className="text-xl font-bold text-white tracking-tight">{currentDiagram.meta.title}</h2>
+              <Badge variant="outline" size="sm">
                 Schema v{currentDiagram.schema_version}.0
-              </span>
+              </Badge>
             </div>
             <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
               {currentDiagram.meta.description}
@@ -213,8 +215,8 @@ export default function ArchitectureViewer() {
           </div>
 
           {/* View Perspective Selector */}
-          <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5 overflow-x-auto">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted px-2 flex items-center gap-1">
+          <div className="sigma-segmented">
+            <span className="px-2 flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-[var(--sigma-text-soft)]">
               <Eye size={12} /> View:
             </span>
             {currentDiagram.meta.views.map((v) => (
@@ -222,10 +224,10 @@ export default function ArchitectureViewer() {
                 key={v.id}
                 onClick={() => setActiveViewId(v.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
+                  "sigma-segment",
                   activeViewId === v.id
-                    ? "bg-accent text-background amber-glow shadow-md"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {v.label}
@@ -236,17 +238,17 @@ export default function ArchitectureViewer() {
 
         {/* Perspective Note Banner */}
         {activeView && (
-          <div className="px-6 py-2.5 bg-accent/5 border-b border-accent/10 flex items-center gap-3 text-xs text-amber-200/90 font-mono">
-            <Info size={14} className="text-accent shrink-0" />
-            <span><strong>Perspective Note:</strong> {activeView.note}</span>
+          <div className="px-6 py-2.5 bg-[var(--sigma-vermilion)]/5 border-b border-[var(--sigma-vermilion)]/15 flex items-center gap-3 text-xs text-zinc-300 font-mono">
+            <Info size={14} className="text-[var(--sigma-vermilion)] shrink-0" />
+            <span><strong className="text-white">Perspective Note:</strong> {activeView.note}</span>
           </div>
         )}
 
         {/* Interactive Diagram Canvas */}
         <div className="p-8 min-h-[440px] bg-[#070709] relative flex flex-col justify-center overflow-x-auto">
           {/* Subtle grid background */}
-          <div 
-            className="absolute inset-0 opacity-20 pointer-events-none" 
+          <div
+            className="absolute inset-0 opacity-20 pointer-events-none"
             style={{
               backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
               backgroundSize: '24px 24px'
@@ -255,8 +257,8 @@ export default function ArchitectureViewer() {
 
           {/* RENDER BY DIAGRAM TYPE */}
           {currentDiagram.diagram_type === 'lifecycle' && (
-            <LifecycleCanvas 
-              diagram={currentDiagram} 
+            <LifecycleCanvas
+              diagram={currentDiagram}
               activeView={activeView}
               selectedNode={selectedNode}
               onSelectNode={setSelectedNode}
@@ -265,8 +267,8 @@ export default function ArchitectureViewer() {
           )}
 
           {currentDiagram.diagram_type === 'workflow' && (
-            <WorkflowCanvas 
-              diagram={currentDiagram} 
+            <WorkflowCanvas
+              diagram={currentDiagram}
               activeView={activeView}
               selectedNode={selectedNode}
               onSelectNode={setSelectedNode}
@@ -275,8 +277,8 @@ export default function ArchitectureViewer() {
           )}
 
           {currentDiagram.diagram_type === 'sequence' && (
-            <SequenceCanvas 
-              diagram={currentDiagram} 
+            <SequenceCanvas
+              diagram={currentDiagram}
               activeView={activeView}
               selectedNode={selectedNode}
               onSelectNode={setSelectedNode}
@@ -285,8 +287,8 @@ export default function ArchitectureViewer() {
           )}
 
           {currentDiagram.diagram_type === 'dataflow' && (
-            <DataflowCanvas 
-              diagram={currentDiagram} 
+            <DataflowCanvas
+              diagram={currentDiagram}
               activeView={activeView}
               selectedNode={selectedNode}
               onSelectNode={setSelectedNode}
@@ -295,8 +297,8 @@ export default function ArchitectureViewer() {
           )}
 
           {currentDiagram.diagram_type === 'architecture' && (
-            <ArchitectureCanvas 
-              diagram={currentDiagram} 
+            <ArchitectureCanvas
+              diagram={currentDiagram}
               activeView={activeView}
               selectedNode={selectedNode}
               onSelectNode={setSelectedNode}
@@ -331,7 +333,7 @@ export default function ArchitectureViewer() {
 
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted font-mono">Lane: <strong className="text-white">{selectedNode.lane || selectedNode.stage || 'Primary'}</strong></span>
-                <button 
+                <button
                   onClick={() => setSelectedNode(null)}
                   className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-muted hover:text-white transition-colors"
                 >
@@ -367,7 +369,7 @@ export default function ArchitectureViewer() {
             </div>
           )}
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -442,8 +444,8 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
           </div>
           <div className="space-y-2">
             {waitingStates.map((s: any) => (
-              <div 
-                key={s.id} 
+              <div
+                key={s.id}
                 onClick={() => onSelectNode(s)}
                 className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 cursor-pointer transition-all"
               >
@@ -463,8 +465,8 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
           </div>
           <div className="space-y-2">
             {recoveryStates.map((s: any) => (
-              <div 
-                key={s.id} 
+              <div
+                key={s.id}
                 onClick={() => onSelectNode(s)}
                 className="p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20 hover:border-cyan-500/40 cursor-pointer transition-all"
               >
@@ -484,8 +486,8 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
           </div>
           <div className="space-y-2">
             {terminalStates.map((s: any) => (
-              <div 
-                key={s.id} 
+              <div
+                key={s.id}
                 onClick={() => onSelectNode(s)}
                 className="p-3 rounded-lg bg-rose-500/5 border border-rose-500/20 hover:border-rose-500/40 cursor-pointer transition-all"
               >
@@ -566,7 +568,7 @@ function SequenceCanvas({ diagram, activeView, selectedNode, onSelectNode, simul
       {/* Participants Header Bar */}
       <div className="grid grid-cols-7 gap-2">
         {participants.map((p: any) => (
-          <div 
+          <div
             key={p.id}
             onClick={() => onSelectNode(p)}
             className="p-3 bg-surface border border-white/10 rounded-xl text-center cursor-pointer hover:border-accent/40 transition-all"
@@ -582,7 +584,7 @@ function SequenceCanvas({ diagram, activeView, selectedNode, onSelectNode, simul
         {messages.map((m: any, idx: number) => {
           const isSimActive = simulatedStepIndex === idx;
           return (
-            <div 
+            <div
               key={idx}
               className={cn(
                 "p-3 rounded-lg border flex items-center justify-between text-xs transition-all font-mono",

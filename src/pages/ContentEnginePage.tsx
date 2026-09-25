@@ -45,6 +45,7 @@ import {
 } from '@/src/data/marketingModulesData';
 import CarouselCardViewer from '@/src/components/CarouselCardViewer';
 import { generateCreativeImage, generateSocialCampaign } from '@/src/lib/creativeApi';
+import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
 
 const DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
   {
@@ -449,101 +450,58 @@ The future belongs to founders who own their intelligence engine rather than ren
   return (
     <div className="space-y-6 pb-12">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-[11px] font-mono tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full font-bold">
-              CREATION LAYER
-            </span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-zinc-400">NEXUS-03 SWARM</span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Live Creative Synthesis Active
-            </span>
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">CREATION LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">NEXUS-03 SWARM</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Live Creative Synthesis Active
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <Wand2 className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Content Engine & Creative Studio
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Autonomous multi-modal creative generation producing prompt-to-image brand visuals, LinkedIn & Instagram carousels, YouTube Shorts scripts, and viral X 7-part threads.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Wand2 className="w-7 h-7 text-amber-400" />
-            Content Engine & Creative Studio
-          </h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-            Autonomous multi-modal creative generation producing prompt-to-image brand visuals, LinkedIn & Instagram carousels, YouTube Shorts scripts, and viral X 7-part threads.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleCopyContent(selectedItem.generatedContent, 'Active Item')}
-            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? 'Copied' : 'Copy Active Item'}
-          </button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => handleCopyContent(selectedItem.generatedContent, 'Active Item')}
+              leftIcon={copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            >
+              {copied ? 'Copied' : 'Copy Active Item'}
+            </Button>
 
-          <button
-            onClick={() => notifySuccess('Submitted to HITL Ledger', 'Creative assets routed to Human-in-the-Loop approval queue for direct publishing.')}
-            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
-          >
-            <Send className="w-3.5 h-3.5 fill-black" />
-            Submit for HITL Approval
-          </button>
+            <Button
+              variant="primary"
+              onClick={() => notifySuccess('Submitted to HITL Ledger', 'Creative assets routed to Human-in-the-Loop approval queue for direct publishing.')}
+              leftIcon={<Send className="w-3.5 h-3.5" />}
+            >
+              Submit for HITL Approval
+            </Button>
+          </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('SOCIAL')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 shrink-0",
-            activeTab === 'SOCIAL'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Carousel Creator & Social Studio
-        </button>
-
-        <button
-          onClick={() => setActiveTab('IMAGE')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 shrink-0",
-            activeTab === 'IMAGE'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <ImageIcon className="w-3.5 h-3.5" />
-          Image Studio & Visual Assets
-        </button>
-
-        <button
-          onClick={() => setActiveTab('TEXT')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 shrink-0",
-            activeTab === 'TEXT'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          Text Copywriter & Teardowns
-        </button>
-
-        <button
-          onClick={() => setActiveTab('VIDEO')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 shrink-0",
-            activeTab === 'VIDEO'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Video className="w-3.5 h-3.5" />
-          Video Studio & Storyboarder
-        </button>
-      </div>
+      <Tabs<'SOCIAL' | 'IMAGE' | 'TEXT' | 'VIDEO'>
+        tabs={[
+          { id: 'SOCIAL', label: 'Carousel Creator & Social Studio', icon: <Share2 className="w-3.5 h-3.5" /> },
+          { id: 'IMAGE', label: 'Image Studio & Visual Assets', icon: <ImageIcon className="w-3.5 h-3.5" /> },
+          { id: 'TEXT', label: 'Text Copywriter & Teardowns', icon: <FileText className="w-3.5 h-3.5" /> },
+          { id: 'VIDEO', label: 'Video Studio & Storyboarder', icon: <Video className="w-3.5 h-3.5" /> }
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* TAB 1: SOCIAL & CAROUSEL CREATOR STUDIO */}
       {activeTab === 'SOCIAL' && (
@@ -583,37 +541,32 @@ The future belongs to founders who own their intelligence engine rather than ren
               const Icon = ch.icon;
               const isSelected = selectedSocialChannel === ch.id;
               return (
-                <button
+                <GlassCard
                   key={ch.id}
+                  spotlight={isSelected}
+                  interactive
                   onClick={() => setSelectedSocialChannel(ch.id as any)}
                   className={cn(
-                    "p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-3",
-                    isSelected
-                      ? "bg-amber-400/10 border-amber-400/50 text-white shadow-lg shadow-amber-500/10"
-                      : "bg-zinc-900/40 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                    "p-4 flex flex-col justify-between space-y-3 cursor-pointer transition-all",
+                    isSelected ? "border-[var(--sigma-vermilion)] ring-1 ring-[var(--sigma-vermilion)]/40 shadow-lg shadow-orange-500/10" : ""
                   )}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Icon className={cn("w-5 h-5", isSelected ? "text-amber-400" : "text-zinc-500")} />
-                      <span className={cn(
-                        "text-[10px] font-mono px-2 py-0.5 rounded-full border font-semibold",
-                        isSelected 
-                          ? "bg-amber-400/20 text-amber-300 border-amber-400/30" 
-                          : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                      )}>
+                      <Icon className={cn("w-5 h-5", isSelected ? "text-[var(--sigma-vermilion)]" : "text-zinc-500")} />
+                      <Badge variant={isSelected ? "vermilion" : "neutral"}>
                         {ch.badge}
-                      </span>
+                      </Badge>
                     </div>
                     <div className="font-bold text-xs text-white">{ch.label}</div>
                     <div className="text-[11px] text-zinc-400 mt-1 leading-snug">{ch.desc}</div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-[10px] font-mono text-amber-400/80 font-bold pt-1">
+                  <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--sigma-vermilion)] font-bold pt-1">
                     {isSelected ? 'Active Generator' : 'Select Channel'} 
                     <ArrowRight className="w-3 h-3" />
                   </div>
-                </button>
+                </GlassCard>
               );
             })}
           </div>
@@ -1055,14 +1008,15 @@ The future belongs to founders who own their intelligence engine rather than ren
               />
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleGenerateImage}
               disabled={isGeneratingImage}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10 disabled:opacity-50 transition-all"
+              className="w-full justify-center"
+              leftIcon={<ImageIcon className={cn("w-4 h-4", isGeneratingImage && "animate-spin")} />}
             >
-              <ImageIcon className={cn("w-4 h-4", isGeneratingImage && "animate-spin")} />
               {isGeneratingImage ? 'Synthesizing Live AI Asset...' : 'Render Brand Visual Asset'}
-            </button>
+            </Button>
           </div>
 
           {/* Visual Output Display */}
@@ -1209,14 +1163,15 @@ The future belongs to founders who own their intelligence engine rather than ren
               </p>
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleGenerateText}
               disabled={isGeneratingText}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10 disabled:opacity-50 transition-all"
+              className="w-full justify-center"
+              leftIcon={<Sparkles className={cn("w-4 h-4", isGeneratingText && "animate-spin")} />}
             >
-              <Sparkles className={cn("w-4 h-4", isGeneratingText && "animate-spin")} />
               {isGeneratingText ? 'Synthesizing with Nexus-03...' : 'Generate Authoritative Piece'}
-            </button>
+            </Button>
           </div>
 
           {/* Editor & Preview Workspace */}
@@ -1226,7 +1181,7 @@ The future belongs to founders who own their intelligence engine rather than ren
                 <div>
                   <h3 className="text-base font-bold text-white">{selectedItem.title}</h3>
                   <div className="flex items-center gap-3 text-xs font-mono text-zinc-400 mt-1">
-                    <span>Voice Alignment: <strong className="text-amber-400">{selectedItem.voiceAlignmentScore}%</strong></span>
+                    <span>Voice Alignment: <strong className="text-[var(--sigma-vermilion)]">{selectedItem.voiceAlignmentScore}%</strong></span>
                     <span>•</span>
                     <span>Format: <strong className="text-zinc-200">{selectedItem.type}</strong></span>
                     <span>•</span>
@@ -1234,9 +1189,9 @@ The future belongs to founders who own their intelligence engine rather than ren
                   </div>
                 </div>
 
-                <span className="px-2.5 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-mono rounded-lg">
+                <Badge variant="vermilion">
                   {selectedItem.status}
-                </span>
+                </Badge>
               </div>
 
               <div className="p-4 bg-black/60 border border-zinc-800 rounded-xl max-h-[460px] overflow-y-auto text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">
@@ -1247,12 +1202,14 @@ The future belongs to founders who own their intelligence engine rather than ren
             <div className="flex items-center justify-between pt-4 border-t border-zinc-800 text-xs text-zinc-400 font-mono">
               <span>Readability: Grade 10.4 (Flesch-Kincaid)</span>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => handleCopyContent(selectedItem.generatedContent, 'Markdown Content')}
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg flex items-center gap-1.5 cursor-pointer"
+                  leftIcon={<Copy className="w-3.5 h-3.5" />}
                 >
-                  <Copy className="w-3.5 h-3.5" /> Copy Markdown
-                </button>
+                  Copy Markdown
+                </Button>
               </div>
             </div>
           </div>
@@ -1265,7 +1222,7 @@ The future belongs to founders who own their intelligence engine rather than ren
           <div className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Video className="w-5 h-5 text-amber-400" />
+                <Video className="w-5 h-5 text-[var(--sigma-vermilion)]" />
                 Scene-by-Scene Video Storyboarder
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
@@ -1284,14 +1241,14 @@ The future belongs to founders who own their intelligence engine rather than ren
                 <option value="90s">90s In-Depth Explainer</option>
               </select>
 
-              <button
+              <Button
+                variant="primary"
                 onClick={handleGenerateVideoStoryboard}
                 disabled={isGeneratingVideo}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                leftIcon={<Play className="w-3.5 h-3.5 fill-black" />}
               >
-                <Play className="w-3.5 h-3.5 fill-black" />
                 {isGeneratingVideo ? 'Scripting...' : 'Generate Storyboard'}
-              </button>
+              </Button>
             </div>
           </div>
 

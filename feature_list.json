@@ -1,0 +1,58 @@
+{
+  "features": [
+    {
+      "id": "FEAT-001",
+      "title": "Studio UI Cockpit & Multi-Tab View",
+      "description": "React 19 + Vite 6 client presentation layer with interactive dashboard tabs.",
+      "status": "done",
+      "sdd": true,
+      "sprint": "2026-Q1",
+      "agent": "delivery-lead"
+    },
+    {
+      "id": "FEAT-002",
+      "title": "Gateway Runtime & Port Topology Detection",
+      "description": "Express server gateway with asynchronous local port sniffing (3000, 24678, 1234, 11434).",
+      "status": "done",
+      "sdd": true,
+      "sprint": "2026-Q1",
+      "agent": "code-architect"
+    },
+    {
+      "id": "FEAT-003",
+      "title": "Intelligence Execution & Multi-Model AI Hub",
+      "description": "Unified routing across Gemini API, Claude, and local LLM endpoints (LM Studio and Ollama).",
+      "status": "in_progress",
+      "sdd": true,
+      "sprint": "2026-Q2",
+      "agent": "agent-trainer"
+    },
+    {
+      "id": "FEAT-004",
+      "title": "Persistence Vaults & Multi-Tenant Isolation",
+      "description": "Secure file storage, tenant isolation, and context vault synchronization.",
+      "status": "done",
+      "sdd": true,
+      "sprint": "2026-Q1",
+      "agent": "code-architect"
+    },
+    {
+      "id": "FEAT-005",
+      "title": "Full Harness Exploded Topology View",
+      "description": "Visual system harness mapping hardware, local sovereign, and managed cloud layers.",
+      "status": "done",
+      "sdd": true,
+      "sprint": "2026-Q2",
+      "agent": "delivery-lead"
+    },
+    {
+      "id": "FEAT-006",
+      "title": "RAGAS Eval Harness & Architecture Quality Gate",
+      "description": "Automated evaluation harness, test coverage enforcement, and component optimization.",
+      "status": "in_progress",
+      "sdd": true,
+      "sprint": "2026-Q2",
+      "agent": "quality-engineer"
+    }
+  ]
+}

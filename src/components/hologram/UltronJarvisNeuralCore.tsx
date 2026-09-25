@@ -4,6 +4,7 @@ import { Billboard, Text, QuadraticBezierLine } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { NOISE_GLSL } from './noiseGlsl';
+import SigmaSunCore from './SigmaSunCore';
 import type { HoloNode3D } from '../../lib/hologramGraph';
 
 export type ConsciousnessMode = 'JARVIS' | 'ULTRON';
@@ -331,8 +332,8 @@ export default function UltronJarvisNeuralCore({
 
   return (
     <group>
-      {/* 1. CENTRAL NEURAL CONSCIOUSNESS CORE (ULTRON / JARVIS SHADER) */}
-      <mesh ref={coreMeshRef}>
+      {/* Brand core: the ordered mode uses the living orange solar treatment. */}
+      {currentMode === 'JARVIS' ? <SigmaSunCore activity={coreActivity} /> : <mesh ref={coreMeshRef}>
         <icosahedronGeometry args={[2.2, 32]} />
         <shaderMaterial
           ref={materialRef}
@@ -342,10 +343,10 @@ export default function UltronJarvisNeuralCore({
           transparent
           wireframe={morphRatioRef.current.value < 0.25} // Wireframe in pure Jarvis mode
         />
-      </mesh>
+      </mesh>}
 
       {/* Inner Crystalline Core Nucleus */}
-      <mesh scale={0.75}>
+      {currentMode === 'ULTRON' && <mesh scale={0.75}>
         <octahedronGeometry args={[1.5, 0]} />
         <meshStandardMaterial
           color={currentMode === 'ULTRON' ? '#00F0FF' : '#FDE047'}
@@ -353,7 +354,7 @@ export default function UltronJarvisNeuralCore({
           emissiveIntensity={1.4}
           wireframe
         />
-      </mesh>
+      </mesh>}
 
       {/* 2. JARVIS GYRO RINGS (Harmonious Geodesic Rings) */}
       <group ref={gyroRing1Ref}>

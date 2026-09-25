@@ -1,21 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  ShieldCheck, 
-  FileText, 
-  Settings, 
-  Activity, 
-  Search, 
-  Filter, 
-  Download, 
-  Plus, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Clock, 
-  User, 
-  Terminal, 
-  Database, 
-  ArrowUpRight, 
-  X, 
+import {
+  ShieldCheck,
+  FileText,
+  Settings,
+  Activity,
+  Search,
+  Filter,
+  Download,
+  Plus,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  User,
+  Terminal,
+  Database,
+  ArrowUpRight,
+  X,
   Eye,
   Building,
   Key,
@@ -207,7 +207,7 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
     return auditLogs.filter(log => {
       const matchCategory = selectedCategory === 'ALL' || log.category === selectedCategory;
       const matchTenant = selectedTenantId === 'ALL' || log.tenantId === selectedTenantId;
-      const matchSearch = 
+      const matchSearch =
         log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
         log.actor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -312,12 +312,12 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
   return (
     <div className="bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl space-y-6 relative overflow-hidden">
       {/* Background Accent */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none" 
-        style={{ 
+      <div
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
           backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)',
-          backgroundSize: '24px 24px' 
-        }} 
+          backgroundSize: '24px 24px'
+        }}
       />
 
       {/* Top Header */}
@@ -356,7 +356,7 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
       {/* Category Pills & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
         {/* Category selector */}
-        <div className="flex flex-wrap gap-2">
+        <div className="sigma-segmented font-mono">
           {[
             { id: 'ALL', label: 'All Events', count: counts.all, icon: Activity },
             { id: 'CONFIG_CHANGE', label: 'Configuration Changes', count: counts.config, icon: Settings },
@@ -368,17 +368,17 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
               key={tab.id}
               onClick={() => setSelectedCategory(tab.id as AuditCategory)}
               className={cn(
-                "px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2",
+                "sigma-segment flex items-center gap-2",
                 selectedCategory === tab.id
-                  ? "bg-accent text-background font-black shadow-md amber-glow"
-                  : "bg-black/30 border border-white/5 text-zinc-400 hover:text-white hover:border-white/15"
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               <tab.icon size={13} />
               <span>{tab.label}</span>
               <span className={cn(
                 "px-1.5 py-0.2 rounded-full text-[10px]",
-                selectedCategory === tab.id ? "bg-background/20 text-background" : "bg-white/10 text-zinc-400"
+                selectedCategory === tab.id ? "bg-white/20 text-white" : "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-soft)]"
               )}>
                 {tab.count}
               </span>
@@ -438,8 +438,8 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
                 </tr>
               ) : (
                 filteredLogs.map(log => (
-                  <tr 
-                    key={log.id} 
+                  <tr
+                    key={log.id}
                     onClick={() => setSelectedLog(log)}
                     className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
                   >

@@ -42,7 +42,8 @@ import {
   Image as ImageIcon,
   Video,
   Share2,
-  FileText
+  FileText,
+  Wifi
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -54,6 +55,11 @@ import EcosystemStatusBar from '@/src/components/EcosystemStatusBar';
 import LivingSystemSidebarWidget from '@/src/components/LivingSystemSidebarWidget';
 import TutorialHUD from '@/src/components/tutorial/TutorialHUD';
 import { useTutorial } from '@/src/contexts/TutorialContext';
+import ThemeToggle from '@/src/components/ui/ThemeToggle';
+import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
+import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
+import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
+import Button from '@/src/components/ui/Button';
 
 interface NavSection {
   title: string;
@@ -96,6 +102,7 @@ const navSections: NavSection[] = [
     title: 'Autonomous AI Operations',
     items: [
       { label: 'Agent Cockpit & Approvals', href: '/agents', icon: Bot, roles: ['ADMIN', 'SUB_ADMIN'] },
+      { label: 'Agent Reach Router', href: '/agent-reach', icon: Wifi, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: '15 Channels' },
       { label: 'Report Scheduler', href: '/scheduler', icon: CalendarClock, roles: ['ADMIN', 'SUB_ADMIN'] },
       { label: 'Executive Reports', href: '/reports', icon: FileBarChart, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
     ]
@@ -136,39 +143,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? allNavItems.filter(i => i.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
+  const isDigitalMarketingRoute = [
+    '/seo-aeo', '/paid-ads', '/content', '/content-engine', '/social-carousels',
+    '/image-studio', '/video-studio', '/email-marketing', '/cro-studio', '/intake',
+    '/outreach', '/social-listening', '/attribution',
+  ].includes(location.pathname);
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden selection:bg-accent/30 selection:text-white">
+    <div className="sigma-app flex min-h-[100dvh] bg-background overflow-hidden selection:bg-accent/20 selection:text-zinc-950">
       {/* Sidebar */}
       <motion.aside 
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-20 flex flex-col border-r border-white/5 bg-[#09090B]"
+        className="sigma-shell relative z-20 flex flex-col border-r"
       >
-        <div className="p-5 flex flex-col gap-4">
-          <button
-            type="button"
-            aria-label="Sigma Tactix home"
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 px-2 text-left cursor-pointer group rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-          >
-             <div className="relative w-9 h-10 shrink-0 overflow-hidden">
-                <img src="/brand/sigma-tactix-mark.png" alt="" width="1563" height="1563" className="absolute w-[100px] max-w-none left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
-             </div>
-             {isSidebarOpen && (
-               <motion.div 
-                 initial={{ opacity: 0 }}
-                 animate={{ opacity: 1 }}
-                 className="flex flex-col"
-               >
-                 <span className="text-lg font-heading font-black tracking-tighter amber-text">
-                   Sigma Tactix
-                 </span>
-                 <span className="text-[9px] font-mono text-muted uppercase tracking-widest -mt-1">
-                   Growth OS
-                 </span>
-               </motion.div>
-             )}
-          </button>
+        <div className="p-4 flex flex-col gap-4">
+          <div className="flex items-center px-1">
+            <SigmaTactixLogo
+              variant={isSidebarOpen ? 'full' : 'mark'}
+              size={isSidebarOpen ? 'md' : 30}
+              onClick={() => navigate('/')}
+            />
+          </div>
 
           {/* Living System: 1 separate element on left hand side bar far above everything */}
           <LivingSystemSidebarWidget isSidebarOpen={isSidebarOpen} />
@@ -178,16 +174,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="space-y-2">
               <div 
                 onClick={() => navigate('/vaults')}
-                className="px-3.5 py-2.5 bg-white/[0.03] border border-white/5 rounded-xl flex items-center justify-between group hover:border-accent/30 transition-all cursor-pointer"
+                className="px-3 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer shadow-xs"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                   <div className="truncate">
-                    <div className="text-xs font-bold text-white truncate">Second Brain Core</div>
-                    <div className="text-[9px] text-muted font-mono uppercase tracking-wider truncate">10 Vaults Synced</div>
+                    <div className="text-xs font-semibold text-[var(--sigma-text)] truncate">Second Brain Core</div>
+                    <div className="text-[10px] text-[var(--sigma-text-muted)] truncate">Open workspace evidence</div>
                   </div>
                 </div>
-                <ChevronRight size={14} className="text-muted group-hover:text-white transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight size={14} className="text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)] transition-transform group-hover:translate-x-0.5" />
               </div>
 
               {/* Ecosystem Live Status Trigger Bar */}
@@ -197,35 +193,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setIsEcosystemStatusDocked(true);
                 }}
                 className={cn(
-                  "px-3.5 py-2.5 rounded-xl flex items-center justify-between group transition-all cursor-pointer border",
+                  "px-3 py-2 rounded-xl flex items-center justify-between group transition-all cursor-pointer border text-xs shadow-xs",
                   isEcosystemStatusOpen && isEcosystemStatusDocked
-                    ? "bg-accent text-background border-accent font-black amber-glow"
-                    : "bg-gradient-to-r from-accent/15 via-white/[0.03] to-transparent border-accent/30 hover:border-accent text-white"
+                    ? "bg-[#ff481b] text-white border-[#ff481b] font-semibold"
+                    : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] text-[var(--sigma-text)]"
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="relative">
-                    <Activity size={15} className={cn(isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-background" : "text-accent animate-pulse")} />
-                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                  </div>
+                  <Activity size={14} className={cn("shrink-0", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[#ff481b]")} />
                   <div className="truncate">
-                    <div className={cn(
-                      "text-xs font-bold truncate flex items-center gap-1.5",
-                      isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-background" : "text-white"
-                    )}>
+                    <div className="font-semibold truncate flex items-center gap-1.5">
                       <span>Ecosystem Status</span>
                       <span className={cn(
-                        "text-[8px] font-mono px-1 py-0.2 rounded font-bold",
-                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-background" : "bg-green-500/20 text-green-400"
-                      )}>94% UP</span>
+                        "text-[9px] px-1.5 py-0.2 rounded font-medium",
+                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-emerald-500/15 text-emerald-400"
+                      )}>VERIFIED</span>
                     </div>
                     <div className={cn(
-                      "text-[9px] font-mono truncate",
-                      isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-background/80" : "text-amber-300/90"
-                    )}>2 Need Attention • Fixes</div>
+                      "text-[10px] truncate",
+                      isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white/80" : "text-[var(--sigma-text-muted)]"
+                    )}>Verified telemetry evidence</div>
                   </div>
                 </div>
-                <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-background" : "text-accent")} />
+                <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
               </div>
             </div>
           )}
@@ -237,17 +227,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 setIsEcosystemStatusOpen(true);
                 setIsEcosystemStatusDocked(true);
               }}
-              title="Ecosystem Live Status (94% UP • 2 Issues)"
-              className="relative p-2.5 mx-auto bg-white/5 border border-accent/30 hover:border-accent rounded-xl flex items-center justify-center text-accent transition-all group"
+              title="Review ecosystem status evidence"
+              className="relative p-2.5 mx-auto bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] rounded-xl flex items-center justify-center text-[#ff481b] transition-all group cursor-pointer"
             >
-              <Activity size={18} className="animate-pulse" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 border border-black animate-ping" />
+              <Activity size={16} />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
             </button>
           )}
         </div>
 
         {/* Navigation List grouped by layer */}
-        <nav className="flex-1 px-3 py-2 space-y-6 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto custom-scrollbar">
           {navSections.map((section, sIdx) => {
             const sectionItems = section.items.filter(item => item.roles.includes(role));
             if (sectionItems.length === 0) return null;
@@ -255,7 +245,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             return (
               <div key={sIdx} className="space-y-1">
                 {isSidebarOpen && (
-                  <div className="px-3 text-[9px] font-mono uppercase tracking-[0.25em] text-muted/60 font-bold mb-1.5">
+                  <div className="px-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)] font-semibold mb-1 opacity-70">
                     {section.title}
                   </div>
                 )}
@@ -266,16 +256,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group relative",
+                        "flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all duration-150 group relative select-none",
                         isActive 
-                          ? "bg-accent text-background font-black amber-glow shadow-md" 
-                          : "text-muted hover:text-white hover:bg-white/5"
+                          ? "bg-[var(--sigma-surface-raised)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border-strong)] shadow-xs"
+                          : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)]"
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <item.icon size={18} className={cn("shrink-0 transition-colors", isActive ? "text-background" : "text-muted group-hover:text-white" )}/>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {isActive && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#ff481b] shrink-0" />
+                        )}
+                        <item.icon size={16} className={cn("shrink-0 transition-colors", isActive ? "text-[#ff481b]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]" )}/>
                         {isSidebarOpen && (
-                          <span className="text-xs font-bold whitespace-nowrap truncate tracking-tight">
+                          <span className="font-medium whitespace-nowrap truncate tracking-tight">
                             {item.label}
                           </span>
                         )}
@@ -283,8 +276,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       {isSidebarOpen && item.badge && (
                         <span className={cn(
-                          "text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase",
-                          isActive ? "bg-black/20 text-background" : "bg-white/5 text-zinc-400 group-hover:text-white"
+                          "text-[10px] px-1.5 py-0.5 rounded-md font-medium tracking-tight",
+                          isActive ? "bg-[#ff481b]/15 text-[#ff481b]" : "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
                         )}>
                           {item.badge}
                         </span>
@@ -292,7 +285,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       {/* Active Indicator for collapsed mode */}
                       {isActive && !isSidebarOpen && (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-l-full shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#ff481b] rounded-l-full" />
                       )}
                     </NavLink>
                   );
@@ -306,7 +299,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-4 py-4 border-t border-white/5 space-y-2">
           <button 
             onClick={toggleSidebar}
-            className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-all group"
+            className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-muted hover:text-zinc-950 hover:bg-zinc-100 transition-all group"
           >
             <div className="w-6 flex justify-center">
                <ChevronRight 
@@ -330,36 +323,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative bg-background">
         {/* Navbar */}
-        <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-background/50 backdrop-blur-md z-30 sticky top-0">
+        <header className="sigma-topbar h-16 border-b flex items-center justify-between px-4 lg:px-8 backdrop-blur-md z-30 sticky top-0">
           {/* Quick Search */}
-          <div className="flex items-center gap-4 flex-1 max-w-lg relative">
+          <div className="flex items-center gap-4 flex-1 max-w-md relative">
              <div className="w-full relative group">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={16} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[#ff481b] transition-colors" size={15} />
                 <input 
                   type="text" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  placeholder="Search features, vaults, diagnostics, or architecture..."
-                  className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent/50 focus:bg-white/[0.08] transition-all"
+                  placeholder="Search features, vaults, diagnostics..."
+                  className="w-full h-9 pl-9 pr-12 bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] border border-[var(--sigma-border)] rounded-xl text-xs font-sans focus:outline-none focus:border-[#ff481b] focus:ring-2 focus:ring-[#ff481b]/15 transition-all"
                 />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--sigma-text-muted)] bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-md shadow-2xs">
+                    ⌘K
+                  </kbd>
+                </div>
              </div>
 
              {/* Search Dropdown Results */}
              {isSearchFocused && searchResults.length > 0 && (
-               <div className="absolute top-full left-0 right-0 mt-2 bg-[#09090B] border border-white/10 rounded-xl p-2 shadow-2xl z-50 space-y-1">
+               <div className="sigma-menu absolute top-full left-0 right-0 mt-2 p-1.5 z-50 space-y-1">
                  {searchResults.map((res) => (
                    <button
                      key={res.href}
                      onClick={() => handleQuickSearchSelect(res.href)}
-                     className="w-full flex items-center justify-between p-2.5 rounded-lg text-left hover:bg-white/5 text-xs text-zinc-200 transition-colors"
+                     className="sigma-menu-item w-full flex items-center justify-between p-2 text-left text-xs cursor-pointer"
                    >
                      <div className="flex items-center gap-2">
-                       <res.icon size={14} className="text-accent" />
-                       <span className="font-bold">{res.label}</span>
+                       <res.icon size={14} className="text-[#ff481b]" />
+                       <span className="font-semibold">{res.label}</span>
                      </div>
-                     <span className="text-[10px] font-mono text-muted">{res.href}</span>
+                     <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{res.href}</span>
                    </button>
                  ))}
                </div>
@@ -370,16 +368,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="relative" data-tutorial-id="tut-workspace-switcher">
              <button
                onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
-               className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-xs font-mono group cursor-pointer"
+               className="sigma-control flex items-center gap-2 px-3 py-1.5 text-xs group cursor-pointer"
                title="Active Sovereign Client Enclave"
              >
-               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-               <Building size={13} className="text-accent" />
-               <span className="font-bold text-white max-w-[130px] truncate">{currentWorkspace.name}</span>
-               <span className="px-1.5 py-0.5 rounded bg-accent/15 text-[9px] uppercase font-bold text-accent border border-accent/30">
+               <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+               <Building size={13} className="text-[#ff481b]" />
+               <span className="sigma-text font-semibold max-w-[130px] truncate">{currentWorkspace.name}</span>
+               <span className="px-1.5 py-0.2 rounded bg-[#ff481b]/15 text-[10px] uppercase font-bold text-[#ff481b] border border-[#ff481b]/30">
                  {currentWorkspace.tier}
                </span>
-               <ChevronDown size={12} className="text-muted group-hover:text-white transition-colors" />
+               <ChevronDown size={12} className="text-[var(--sigma-text-muted)] transition-colors" />
              </button>
 
              {/* Dropdown Menu */}
@@ -389,14 +387,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                    initial={{ opacity: 0, y: 5 }}
                    animate={{ opacity: 1, y: 0 }}
                    exit={{ opacity: 0, y: 5 }}
-                   className="absolute top-full left-0 mt-2 w-72 bg-[#09090B] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 space-y-1 backdrop-blur-xl"
+                   className="sigma-menu absolute top-full left-0 mt-2 w-72 p-2 z-50 space-y-1 shadow-xl"
                  >
-                   <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between text-[10px] font-mono uppercase text-muted font-bold">
+                  <div className="px-3 py-2 border-b sigma-divider flex items-center justify-between text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] font-bold">
                      <span>Client Enclaves ({workspaces.length})</span>
                      <span className="text-emerald-400">Isolated</span>
                    </div>
 
-                   <div className="max-h-60 overflow-y-auto space-y-1">
+                   <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
                      {workspaces.map((ws) => (
                        <button
                          key={ws.id}
@@ -405,10 +403,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                            setIsWorkspaceDropdownOpen(false);
                          }}
                          className={cn(
-                           "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-xs font-mono transition-all",
+                           "sigma-menu-item w-full flex items-center justify-between p-2.5 text-left text-xs cursor-pointer",
                            currentWorkspace.id === ws.id
-                             ? "bg-accent/15 border border-accent/30 text-white font-bold"
-                             : "hover:bg-white/5 text-zinc-300"
+                             ? "bg-[#ff481b]/10 border border-[#ff481b]/30 text-[#ff481b] font-semibold"
+                             : ""
                          )}
                        >
                          <div className="space-y-0.5 truncate pr-2">
@@ -416,24 +414,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                              {currentWorkspace.id === ws.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
                              <span className="truncate">{ws.name}</span>
                            </div>
-                           <div className="text-[10px] text-muted">{ws.domain}</div>
+                           <div className="text-[10px] text-[var(--sigma-text-muted)]">{ws.domain}</div>
                          </div>
-                         <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-black/40 text-accent shrink-0">
+                         <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--sigma-surface-subtle)] text-[#ff481b] border border-[var(--sigma-border)] shrink-0">
                            {ws.tier}
                          </span>
                        </button>
                      ))}
                    </div>
 
-                   <div className="pt-2 border-t border-white/5">
+                   <div className="pt-2 border-t sigma-divider">
                      <button
                        onClick={() => {
                          setIsWorkspaceDropdownOpen(false);
                          setIsOnboardingOpen(true);
                        }}
-                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-accent/10 hover:bg-accent text-accent hover:text-background border border-accent/30 rounded-xl text-xs font-mono font-bold uppercase transition-all"
+                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#ff481b]/10 hover:bg-[#ff481b] text-[#ff481b] hover:text-white border border-[#ff481b]/30 rounded-xl text-xs font-semibold uppercase transition-all cursor-pointer"
                      >
-                       <Plus size={12} />
+                       <Plus size={13} />
                        <span>Onboard New Client</span>
                      </button>
                    </div>
@@ -443,76 +441,60 @@ export default function Layout({ children }: { children: React.ReactNode }) {
            </div>
 
           {/* Right Header Navigation & Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Guided 4-Phase Autonomous Growth Loop Quick Bar */}
-            <div data-tutorial-id="tut-playbook-bar" className="hidden lg:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5 font-mono text-[10px]">
-              <span className="px-2 text-zinc-500 font-bold uppercase tracking-wider text-[9px]">PLAYBOOK:</span>
-              <button 
-                onClick={() => navigate('/diagnostics')}
-                className={cn(
-                  "px-2.5 py-1.5 font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-1 cursor-pointer",
-                  location.pathname === '/diagnostics' ? "text-background bg-accent font-black amber-glow" : "text-muted hover:text-white"
-                )}
-                title="Stage 1: Audit Leaks & Ingest Second Brain"
-              >
-                <span className="opacity-60">1.</span> DIAGNOSE
-              </button>
-
-              <button 
-                onClick={() => navigate('/outreach')}
-                className={cn(
-                  "px-2.5 py-1.5 font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-1 cursor-pointer",
-                  location.pathname === '/outreach' ? "text-background bg-accent font-black amber-glow" : "text-muted hover:text-white"
-                )}
-                title="Stage 2: Native Lead Pipeline & Conversion Dock"
-              >
-                <span className="opacity-60">2.</span> CAPTURE & CRM
-              </button>
-
-              <button 
-                onClick={() => navigate('/content-engine')}
-                className={cn(
-                  "px-2.5 py-1.5 font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-1 cursor-pointer",
-                  location.pathname === '/content-engine' || location.pathname === '/paid-ads' || location.pathname === '/seo-aeo' ? "text-background bg-accent font-black amber-glow" : "text-muted hover:text-white"
-                )}
-                title="Stage 3: Autonomous Demand Generation (SEO, Content, Ads)"
-              >
-                <span className="opacity-60">3.</span> DEMAND SWARMS
-              </button>
-
-              <button 
-                onClick={() => navigate('/living-system')}
-                className={cn(
-                  "px-2.5 py-1.5 font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-1 cursor-pointer",
-                  location.pathname === '/living-system' || location.pathname === '/reports' ? "text-background bg-accent font-black amber-glow" : "text-muted hover:text-white"
-                )}
-                title="Stage 4: Living Ultron/Jarvis Neural Core & Attribution Dossier"
-              >
-                <span className="opacity-60">4.</span> REVENUE CORE
-              </button>
+            <div data-tutorial-id="tut-playbook-bar" className="hidden xl:flex items-center gap-1 p-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-[11px] font-sans">
+              <span className="px-2 text-[var(--sigma-text-muted)] font-semibold uppercase tracking-wider text-[9px] font-mono">PLAYBOOK:</span>
+              {[
+                { label: 'DIAGNOSE', step: '1', href: '/diagnostics', match: (p: string) => p === '/diagnostics' },
+                { label: 'CAPTURE & CRM', step: '2', href: '/outreach', match: (p: string) => p === '/outreach' },
+                { label: 'DEMAND SWARMS', step: '3', href: '/content-engine', match: (p: string) => p === '/content-engine' || p === '/paid-ads' || p === '/seo-aeo' },
+                { label: 'REVENUE CORE', step: '4', href: '/living-system', match: (p: string) => p === '/living-system' || p === '/reports' },
+              ].map((item) => {
+                const isSelected = item.match(location.pathname);
+                return (
+                  <button
+                    key={item.step}
+                    onClick={() => navigate(item.href)}
+                    className={cn(
+                      "px-2.5 py-1 font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer outline-none",
+                      isSelected
+                        ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border-strong)] shadow-xs"
+                        : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface)]/50"
+                    )}
+                  >
+                    <span className={cn("text-[10px] font-mono", isSelected ? "text-[#ff481b] font-bold" : "opacity-60")}>{item.step}.</span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Start / Resume / Replay Tutorial CTA */}
             {!isActive && (
               <button
                 onClick={startTutorial}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 hover:text-white text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 text-[11px] font-medium transition-all cursor-pointer"
                 title={hasEverStarted ? (isCompleted ? "Replay Guided Tutorial" : "Resume Guided Tutorial") : "Start Guided Tutorial"}
               >
-                <GraduationCap size={13} />
-                <span>{hasEverStarted ? (isCompleted ? "Replay Tutorial" : "Resume Tutorial") : "Start Tutorial"}</span>
+                <GraduationCap size={14} />
+                <span>{hasEverStarted ? (isCompleted ? "Replay Tutorial" : "Resume Tutorial") : "Tutorial"}</span>
               </button>
             )}
 
             {/* Guided Onboarding Wizard Action */}
-            <button
+            <Button
               data-tutorial-id="tut-onboard-btn"
               onClick={() => setIsOnboardingOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-accent/40 bg-accent/15 hover:bg-accent hover:text-background text-accent text-[10px] font-mono font-black tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(245,158,11,0.15)] group"
+              variant="primary"
+              size="sm"
+              leftIcon={<Sparkles size={13} />}
             >
-              <Sparkles size={13} className="text-accent group-hover:text-background transition-colors animate-pulse" />
-              <span>Onboard Client</span>
-            </button>
+              Onboard Client
+            </Button>
+
+            {/* VANTA Neural Core Header Status & Drawer Summoner */}
+            <VantaHeaderIndicator />
 
             {/* Ecosystem Status Header Pill */}
             <button 
@@ -521,35 +503,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 setIsEcosystemStatusDocked(true);
               }}
               className={cn(
-                "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-mono font-bold tracking-wider uppercase transition-all",
+                "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer",
                 isEcosystemStatusOpen && isEcosystemStatusDocked
-                  ? "bg-accent text-background border-accent font-black shadow-md amber-glow"
-                  : "bg-white/5 border-white/10 text-zinc-300 hover:text-white hover:border-accent/40"
+                  ? "bg-[#ff481b] text-white border-[#ff481b] font-semibold shadow-xs"
+                  : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)]"
               )}
             >
-              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-background" : "text-accent animate-pulse"} />
-              <span className="hidden md:inline">Ecosystem Status:</span>
+              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[#ff481b]"} />
+              <span className="hidden md:inline">Ecosystem:</span>
               <span className={cn(
-                "px-1 py-0.5 rounded text-[9px] font-bold",
-                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-background" : "bg-amber-500/20 text-amber-300"
-              )}>94% UP (2 Issues)</span>
+                "px-1.5 py-0.2 rounded text-[10px] font-bold font-mono",
+                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-emerald-500/15 text-emerald-400"
+              )}>VERIFIED</span>
             </button>
 
-            <div className="h-6 w-px bg-white/10 mx-1" />
+            <ThemeToggle />
+            <div className="h-5 w-px sigma-divider border-l mx-0.5" />
             
             {/* Role Switcher */}
             <div className="relative group/role">
-               <button className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-mono font-bold tracking-widest uppercase text-accent hover:border-accent/40 transition-all">
-                  <ShieldCheck size={14} /> {role}
+               <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-xs font-medium text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer">
+                  <ShieldCheck size={14} className="text-[#ff481b]" />
+                  <span>{role}</span>
                </button>
-               <div className="absolute top-full right-0 mt-2 w-48 bg-[#09090B] border border-white/10 rounded-xl p-2 hidden group-hover/role:block shadow-2xl z-[100]">
+               <div className="absolute top-full right-0 mt-2 w-44 sigma-menu p-1.5 hidden group-hover/role:block shadow-xl z-[100]">
                   {(['ADMIN', 'SUB_ADMIN', 'USER'] as UserRole[]).map((r) => (
                     <button 
                       key={r}
                       onClick={() => setRole(r)}
                       className={cn(
-                        "w-full text-left px-3 py-2 rounded-lg text-[10px] font-mono uppercase tracking-widest transition-all",
-                        role === r ? "bg-accent/10 amber-text font-black" : "text-muted hover:bg-white/5 hover:text-white"
+                        "w-full text-left px-3 py-2 rounded-lg text-xs transition-all cursor-pointer",
+                        role === r ? "bg-[#ff481b]/15 text-[#ff481b] font-semibold" : "text-[var(--sigma-text-soft)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)]"
                       )}
                     >
                       {r}
@@ -562,33 +546,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="relative">
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="text-muted hover:text-white relative p-2 rounded-xl hover:bg-white/5 transition-all"
+                className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] relative p-2 rounded-xl hover:bg-[var(--sigma-surface-subtle)] transition-all cursor-pointer"
               >
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full border-2 border-background animate-pulse" />
+                <Bell size={17} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff481b] rounded-full border-2 border-[var(--sigma-surface)]" />
               </button>
 
               {/* Notifications Dropdown */}
               {isNotificationsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-80 bg-[#09090B] border border-white/10 rounded-2xl p-4 shadow-2xl z-50 space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <span className="text-xs font-bold text-white">System Alerts</span>
-                    <span className="text-[10px] font-mono text-accent">3 New</span>
+                <div className="absolute top-full right-0 mt-2 w-80 sigma-menu p-4 shadow-xl z-50 space-y-3">
+                  <div className="flex items-center justify-between border-b sigma-divider pb-2">
+                    <span className="text-xs font-semibold text-[var(--sigma-text)]">System Alerts</span>
+                    <span className="text-[10px] font-mono font-bold text-[#ff481b] bg-[#ff481b]/10 px-1.5 py-0.5 rounded">3 New</span>
                   </div>
                   <div className="space-y-2 text-xs">
                     <div 
                       onClick={() => { navigate('/agents'); setIsNotificationsOpen(false); }}
-                      className="p-2.5 rounded-xl bg-accent/10 border border-accent/20 cursor-pointer hover:bg-accent/20 transition-all"
+                      className="p-2.5 rounded-xl bg-[#ff481b]/10 border border-[#ff481b]/20 cursor-pointer hover:bg-[#ff481b]/15 transition-all"
                     >
-                      <div className="font-bold text-amber-200">HITL Approval Required</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Performance Re-allocator proposed $6,200 shift</div>
+                      <div className="font-semibold text-[var(--sigma-text)]">HITL Approval Required</div>
+                      <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Performance Re-allocator proposed $6,200 shift</div>
                     </div>
                     <div 
                       onClick={() => { navigate('/diagnostics'); setIsNotificationsOpen(false); }}
-                      className="p-2.5 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-all"
+                      className="p-2.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] cursor-pointer hover:bg-[var(--sigma-surface-raised)] transition-all"
                     >
-                      <div className="font-bold text-white">Growth Diagnostic Completed</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Overall Growth Score: 78/100</div>
+                      <div className="font-semibold text-[var(--sigma-text)]">Growth Diagnostic Completed</div>
+                      <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Overall Growth Score: 78/100</div>
                     </div>
                   </div>
                 </div>
@@ -598,7 +582,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* User Avatar */}
             <div 
               onClick={() => navigate('/tenants')}
-              className="w-8 h-8 rounded-full border border-accent/30 p-0.5 hover:scale-105 transition-transform cursor-pointer" 
+              className="w-8 h-8 rounded-full border border-[var(--sigma-border-strong)] p-0.5 hover:border-[#ff481b] transition-all cursor-pointer"
               title="Tenant Control"
             >
               <img 
@@ -614,7 +598,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <TutorialHUD />
 
         {/* Page Container */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-10">
+        <main className={cn(
+          "flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-10",
+          isDigitalMarketingRoute && "sigma-marketing-suite"
+        )}>
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 8 }}
@@ -627,6 +614,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         
         {/* AI Assistant Chatbot */}
         <AIChatbot />
+
+        {/* VANTA Neural Core Slide-out Intelligence Drawer */}
+        <VantaTranscriptDrawer />
 
         {/* Guided Client Onboarding Wizard */}
         <ClientOnboardingWizard 

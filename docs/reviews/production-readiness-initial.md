@@ -5,15 +5,15 @@ Date: 2026-09-12. Status: review in progress; production readiness is not establ
 ## Verified baseline
 
 - Current folder has no Git repository. Findings below are current-state defects, not attributed regressions.
-- TypeScript baseline passed. Tests: 143 passed, 1 failed across 17 files. The failing token-cost test expects 6.25 and receives 0.375.
+- Current verification passes: TypeScript, production build, and 150 tests across 19 files. The earlier token-cost alias failure is resolved.
 - Reviewed all three supplied logo images and a frame from Orb3.mp4. Brand references use diagonal orange pill bars with circular details. Orb reference is a luminous orange filament sphere.
 - No production deployment or test account has been identified by the user yet. No live provider validation or publishing has been performed.
 - Board agenda confirmation is pending. No board decision is approved.
 
 ## Confirmed release blockers
 
-1. **Pipeline verification fabricates success.** `server.ts:6021` waits and generates latency without calling a provider. `src/pages/DataSources.tsx:628` converts failures into successful handshakes. Names and account IDs do not establish authentication.
-2. **Unsupported connector validators accept any nonempty credential.** `server.ts:5725` returns true when a key, token, or webhook URL exists. Those connectors can become Connected without a provider response.
+1. **Connector coverage remains incomplete.** Pipeline checks now fail closed and require an exact account plus provider validation, but many catalogue entries still have no supported account-scoped adapter and no live test account has been exercised.
+2. **Dashboard telemetry contracts remain incomplete.** Cached connection state is no longer treated as live performance data, but provider-specific reporting payloads still need a normalized, server-owned metrics contract.
 3. **Media-plan import does not read the file.** `src/pages/PaidAdsPage.tsx:474` uses a timer and inserts a fixed budget of 55,000 and fixed dates, then claims AI extraction.
 4. **Agent allocation is a browser label, not demonstrated authorization.** `src/pages/DataSources.tsx:334` writes selected agent names to localStorage and reports permissions granted. Server enforcement must be established before agents can execute work.
 5. **Vault classification overstates certainty.** `src/pages/SecondBrain.tsx:119` defaults unmatched documents to Executive Vault at confidence 85. Substring matching also lets short keywords match unrelated words. File persistence and All Vaults behavior still need end-to-end testing.
@@ -62,7 +62,7 @@ Microsoft Ads currently validates Microsoft Graph /me, which does not demonstrat
 
 ## Separate connector library shown in the UI
 
-The DataSources library uses a separate pipeline model and the fabricated ping endpoint above. Every entry below needs mapping to the authoritative connector registry, credentials, account selection, supported actions, and server permissions.
+The DataSources library still uses a separate pipeline model. Every entry below needs mapping to the authoritative connector registry, credentials, account selection, supported actions, and server permissions.
 
 - Google Ads
 - Meta Ads Manager
@@ -128,5 +128,20 @@ Implemented after the initial review:
 - Pipeline configuration saves require a successful server response and persist an unverified warning state. Configuration is no longer reported as an active stream.
 - Onboarding chat moved from direct browser Gemini calls to an authenticated, rate-limited server endpoint. The Vite API-key injection was removed. Input history is validated and bounded. Chat history resets when the selected workspace changes, and stale responses are ignored.
 - Chat now supports the Enter key and has named message/open/send controls.
+- The Topline Report no longer derives spend from ingestion record counts or converts audit scores into ROAS. Cached connection state is distinct from validated metrics, and the intake chart is explicitly labelled as sample data unless a caller enables live mode.
+- Route-level lazy loading reduced the main frontend bundle from 5,617.32 kB to about 3,872.49 kB uncompressed. The shared bundle remains above the Vite warning threshold.
+- The primary 3D brand mode now uses the orange animated photosphere, corona and flare shader while retaining interactive vault nodes and camera controls.
 
 Remaining verification limits: unit tests use mocked provider adapters. No live provider authentication, ingestion, publishing, token refresh or deployment check was performed. Existing webhook simulation, agent allocation semantics, saved legacy pipeline records and outdated provider endpoints remain open work.
+
+## Ordered remediation checkpoint — 2026-09-14
+
+Implemented in the requested sequence (4, 2, 1, 3, 5):
+
+- **Connector verification:** connect failures now return an error response, unsupported platforms are explicit, failed submissions do not overwrite a previously verified secret, and connector records carry server-owned verification state/error fields. LinkedIn Organic and Microsoft Ads no longer reuse unrelated validators.
+- **Document ingestion:** uploaded bytes are persisted through the private vault upload route on approved ingest, original bytes receive a SHA-256 fingerprint for exact duplicate rejection, XLS/XLSX text is extracted server-side, and uncertain vault classification no longer defaults to Executive Vault. The UI requires an explicit destination for unmatched files.
+- **Media-plan import:** the upload control now reads CSV/TXT/Markdown/JSON/XLS/XLSX content locally and delegates other supported files to server extraction. It parses budget, dates, CAC, ROAS, objective and channel percentages into a **DRAFT** plan with source evidence; fixed $55,000/date values and the timer-based success path were removed.
+- **Agent allocation:** pipeline agent permissions now require an owner/admin server request and persist on the server. The browser no longer reports permissions granted after a localStorage-only write.
+- **Reporting contract:** Dashboard spend, conversion and ROAS now come from `/api/workspace/reporting/metrics`; linked connectors alone do not create live metrics. Normalized metrics are only marked available when a verified pipeline payload contains numeric spend data. Benchmark mode remains separate.
+
+Verification after these changes: TypeScript passed; all 153 tests across 20 files passed; production frontend and server build passed. The Vite large-chunk warning remains. Live provider credentials, deployed storage/RLS, real ingestion feeds, and end-to-end browser checks remain unverified. Vault record UI state is still locally rendered from the current page model; full server-backed move/delete of authored records remains outstanding.

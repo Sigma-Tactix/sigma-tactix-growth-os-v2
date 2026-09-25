@@ -142,7 +142,7 @@ const REQUIREMENTS: Partial<Record<TabId, Requirement[]>> = {
     { name: 'Completed diagnostic audit', met: (i) => has(i.brain?.auditVault?.lastAuditedAt), fix: 'Run the Growth Audit Engine', fixTab: 'growth' },
   ],
   roadmap: [
-    { name: 'Audit findings to sequence', met: (i) => has(i.brain?.auditVault?.findings?.websitePresence), fix: 'Run the Growth Audit Engine', fixTab: 'growth' },
+    { name: 'Audit findings to sequence', met: (i) => Array.isArray(i.brain?.auditVault?.findings) && i.brain!.auditVault.findings.length > 0, fix: 'Run the Growth Audit Engine', fixTab: 'growth' },
   ],
   brain: [
     { name: 'Brand voice & positioning', met: (i) => has(i.brain?.brandVault?.voiceAndTone), fix: 'Fill the Brand Vault', fixTab: 'brain' },

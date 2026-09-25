@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge } from '@/src/components/ui';
 import { ShortsScene } from '@/src/data/marketingModulesData';
 
 const DEFAULT_SCENES: ShortsScene[] = [
@@ -185,34 +186,30 @@ export default function VideoStudioPage() {
   const activeScene = scenes[activeSceneIndex] || scenes[0];
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
-              <Video className="w-6 h-6" />
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">CREATION LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">REMOTION ANIMATED ENGINE</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Video & Motion Studio</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full">
-                  Remotion Animated Engine
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Produce code-driven animated video storyboards, short-form reels, and motion graphic assets with Remotion.
-              </p>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <Video className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Video & Motion Studio
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Produce code-driven animated video storyboards, short-form reels, and motion graphic assets with Remotion.
+            </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-            <ShieldCheck className="w-4 h-4" /> Remotion v4.0 Motion Engine
+          <div className="flex items-center gap-3">
+            <Badge variant="success" dot>Remotion v4.0 Motion Engine</Badge>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Main Studio Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -221,30 +218,31 @@ export default function VideoStudioPage() {
           <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-rose-400" />
-              Motion Parameters
+              Video Script & Concept
             </h3>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Video Concept / Core Message</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Campaign Topic or Thesis</label>
               <textarea
                 value={topic}
                 onChange={e => setTopic(e.target.value)}
                 rows={3}
-                placeholder="e.g. 60-Second Agency Replacement Breakdown..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-rose-500/50 resize-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-rose-500/50 resize-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Aspect Ratio</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">Format Preset</label>
                 <select
                   value={format}
                   onChange={e => setFormat(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-rose-500/50"
+                  className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-rose-500/50"
                 >
-                  <option value="9:16_SHORTS">9:16 Vertical (TikTok/Reels)</option>
-                  <option value="16:9_YOUTUBE">16:9 Horizontal (YouTube/Web)</option>
+                  <option value="REELS_9_16">Instagram / TikTok Reels (9:16)</option>
+                  <option value="YOUTUBE_SHORTS">YouTube Shorts (9:16)</option>
+                  <option value="LINKEDIN_FEED">LinkedIn Feed Video (1:1 / 4:5)</option>
+                  <option value="EXPLAINER_16_9">Landscape Explainer (16:9)</option>
                 </select>
               </div>
 
@@ -253,32 +251,24 @@ export default function VideoStudioPage() {
                 <select
                   value={duration}
                   onChange={e => setDuration(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-rose-500/50"
+                  className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-rose-500/50"
                 >
-                  <option value="30s">30 Seconds (High Velocity)</option>
+                  <option value="30s">30 Seconds (Quick Teardown)</option>
                   <option value="60s">60 Seconds (Standard Short)</option>
                   <option value="90s">90 Seconds (Deep Teardown)</option>
                 </select>
               </div>
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+              className="w-full justify-center"
+              leftIcon={isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Directing Scenes & Audio Cues...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Synthesize Remotion Storyboard
-                </>
-              )}
-            </button>
+              {isGenerating ? 'Directing Scenes & Audio Cues...' : 'Synthesize Remotion Storyboard'}
+            </Button>
           </div>
 
           {/* Scene Breakdown List */}

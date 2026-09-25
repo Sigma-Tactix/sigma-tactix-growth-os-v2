@@ -1,0 +1,16 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "mcp": {
+    "vexp": {
+      "type": "local",
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/mac/.antigravity-ide/extensions/vexp.vexp-vscode-3.2.4-darwin-arm64/dist/mcp-server.cjs"
+      ],
+      "env": {
+        "VEXP_WORKSPACE": "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio"
+      },
+      "enabled": true
+    }
+  }
+}

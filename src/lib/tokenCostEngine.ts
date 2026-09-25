@@ -17,7 +17,8 @@ export type ModelProvider =
   | 'ollama' 
   | 'omniroute' 
   | 'opencode' 
-  | 'openrouter';
+  | 'openrouter'
+  | 'typesafe';
 
 export interface ModelInfo {
   id: string;
@@ -39,6 +40,24 @@ export interface ModelInfo {
 
 // Complete multi-provider AI model catalog with verified token unit pricing per 1M tokens (USD) as of September 2026
 export const ALL_AI_MODELS: ModelInfo[] = [
+  // ==========================================
+  // 0. TypeSafe AI — System One Models
+  // ==========================================
+  {
+    id: 'jev-latest',
+    provider: 'typesafe',
+    providerName: 'TypeSafe AI',
+    name: 'Jev (System One Decision Engine)',
+    contextWindow: '128K tokens',
+    promptPer1M: 0.042,
+    candidatePer1M: 0.00,
+    description: 'Sub-100ms parallel probabilistic decision routing. Optimized for structured outputs, Action Queue triage, and fuzzy if-statements with 0% hallucination.',
+    recommendedRole: 'Fast Action Queue Triage & Sub-60s Inbound Lead Routing',
+    status: 'PREVIEW',
+    latencyGrade: 'INSTANT',
+    useCases: ['Action Queue Priority Scoring', 'Inbound Lead Qualification', 'Agent Swarm Safety Gates'],
+    oneClickAgentTarget: 'agent-orchestrator'
+  },
   // ==========================================
   // 1. Google Cloud Gemini
   // ==========================================
@@ -676,6 +695,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = ALL_AI_MODELS.reduce(
 
 // Aliases for backwards compatibility and fuzzy match lookups
 MODEL_PRICING['gemini-3.5-flash'] = { promptPer1M: 0.075, candidatePer1M: 0.30 };
+MODEL_PRICING['gemini-1.5-pro']   = { promptPer1M: 1.25, candidatePer1M: 5.00 };
 MODEL_PRICING['claude-3-sonnet']   = { promptPer1M: 3.00,  candidatePer1M: 15.00 };
 MODEL_PRICING['gpt-4-turbo']       = { promptPer1M: 10.00, candidatePer1M: 30.00 };
 MODEL_PRICING['o1-mini']           = { promptPer1M: 1.10,  candidatePer1M: 4.40 };
@@ -694,8 +714,11 @@ export function calculateTokenCost(
   const norm = modelName.toLowerCase();
   let pricing = DEFAULT_PRICING;
 
-  for (const [key, p] of Object.entries(MODEL_PRICING)) {
-    if (norm.includes(key) || key.includes(norm)) {
+  // Sort by descending key length so longer, more specific model IDs
+  // (e.g. "gpt-4o-mini") match before shorter prefixes ("gpt-4o").
+  const sortedEntries = Object.entries(MODEL_PRICING).sort(([a], [b]) => b.length - a.length);
+  for (const [key, p] of sortedEntries) {
+    if (norm === key || norm.includes(key)) {
       pricing = p;
       break;
     }
@@ -736,7 +759,7 @@ export function computeProfitability(
   aiTokenCostUsd: number,
   cloudInfraCostUsd = 35.00
 ): ClientProfitabilityMetrics {
-  const netProfit = Math.max(0, monthlyRetainerUsd - aiTokenCostUsd - cloudInfraCostUsd);
+  const netProfit = monthlyRetainerUsd - aiTokenCostUsd - cloudInfraCostUsd;
   const grossMargin = monthlyRetainerUsd > 0
     ? Math.round(((monthlyRetainerUsd - aiTokenCostUsd - cloudInfraCostUsd) / monthlyRetainerUsd) * 1000) / 10
     : 0;

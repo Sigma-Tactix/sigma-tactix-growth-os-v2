@@ -1,27 +1,27 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { 
-  FileText, 
-  Printer, 
-  Download, 
-  Copy, 
-  Check, 
-  Send, 
-  Sparkles, 
-  ShieldCheck, 
-  Briefcase, 
-  ChevronRight, 
-  Building2, 
-  UserCheck, 
-  Sliders, 
-  Calendar, 
-  DollarSign, 
-  Layers, 
-  Scroll, 
-  CheckSquare, 
-  Rocket, 
-  Activity, 
-  Eye, 
-  Edit3, 
+import {
+  FileText,
+  Printer,
+  Download,
+  Copy,
+  Check,
+  Send,
+  Sparkles,
+  ShieldCheck,
+  Briefcase,
+  ChevronRight,
+  Building2,
+  UserCheck,
+  Sliders,
+  Calendar,
+  DollarSign,
+  Layers,
+  Scroll,
+  CheckSquare,
+  Rocket,
+  Activity,
+  Eye,
+  Edit3,
   ExternalLink,
   Mail,
   X,
@@ -31,17 +31,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import { SovereignLeadItem } from '@/src/pages/OutreachLeadsPage';
-import { 
-  DocumentType, 
+import {
+  DocumentType,
   DocumentStage,
-  STAGE_DOCUMENT_TEMPLATES, 
-  AGENCY_CONSULTING_PACKAGES, 
+  STAGE_DOCUMENT_TEMPLATES,
+  AGENCY_CONSULTING_PACKAGES,
   generateDocumentMarkdown,
   ConsultingPackage
 } from '@/src/data/agencyConsultingPackages';
-import { 
-  INITIAL_AGENT_MAILBOXES, 
-  generateBrandedEmailHtml, 
+import {
+  INITIAL_AGENT_MAILBOXES,
+  generateBrandedEmailHtml,
   DEFAULT_BRAND_EMAIL_THEME,
   AgentMailboxConfig
 } from '@/src/data/agentMailboxConfigs';
@@ -348,7 +348,7 @@ export default function DealDocumentsStudio({
               Deal Stages & Packages
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-black/60 border border-zinc-800 rounded-xl">
+            <div className="sigma-segmented">
               {[
                 { id: 'PROSPECTING', label: '1. Prospecting' },
                 { id: 'DISCUSSING', label: '2. Discussing' },
@@ -362,10 +362,10 @@ export default function DealDocumentsStudio({
                     if (firstInStage) setSelectedDocType(firstInStage.id);
                   }}
                   className={cn(
-                    "py-2 rounded-lg text-[11px] font-mono font-bold transition-all text-center",
+                    "sigma-segment flex-1 font-mono text-center",
                     selectedStageTab === s.id
-                      ? "bg-amber-400/20 text-amber-400 border border-amber-400/30 shadow-sm"
-                      : "text-zinc-400 hover:text-white"
+                      ? "sigma-segment-active"
+                      : ""
                   )}
                 >
                   {s.label}
@@ -503,8 +503,8 @@ export default function DealDocumentsStudio({
             </div>
           ) : (
             /* Executive Document Rendering View */
-            <div 
-              id="printable-deal-document" 
+            <div
+              id="printable-deal-document"
               ref={printContainerRef}
               className="p-8 md:p-12 bg-white text-zinc-900 rounded-2xl border border-zinc-300 shadow-2xl space-y-6 font-sans select-text leading-relaxed text-sm"
             >

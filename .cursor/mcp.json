@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "vexp": {
+      "command": "/usr/local/bin/node",
+      "args": [
+        "/Users/mac/.antigravity-ide/extensions/vexp.vexp-vscode-3.2.4-darwin-arm64/dist/mcp-server.cjs"
+      ],
+      "env": {
+        "VEXP_WORKSPACE": "/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio"
+      }
+    }
+  }
+}

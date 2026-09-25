@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  Mail, 
-  Send, 
-  Sparkles, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Copy, 
-  Check, 
-  RefreshCw, 
-  Sliders, 
-  ShieldCheck, 
-  BarChart3, 
-  Users, 
-  Inbox, 
-  Clock, 
-  Smartphone, 
+import {
+  Mail,
+  Send,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Copy,
+  Check,
+  RefreshCw,
+  Sliders,
+  ShieldCheck,
+  BarChart3,
+  Users,
+  Inbox,
+  Clock,
+  Smartphone,
   Monitor,
   Flame,
   FileText
@@ -23,6 +23,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
 
 interface DripSequence {
   id: string;
@@ -147,59 +148,38 @@ The Sigma Tactix Revenue Architecture Team`);
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
-              <Mail className="w-6 h-6" />
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">EXECUTION LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">LIFECYCLE & NURTURE</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Email & Lifecycle Marketing</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-full">
-                  Digital Marketing
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Automate high-converting B2B nurture sequences, executive broadcasts, and domain deliverability monitoring.
-              </p>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <Mail className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Email & Lifecycle Marketing
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Automate high-converting B2B nurture sequences, executive broadcasts, and domain deliverability monitoring.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Tabs<'BROADCAST' | 'SEQUENCES' | 'DELIVERABILITY'>
+              tabs={[
+                { id: 'BROADCAST', label: 'Campaign Broadcast' },
+                { id: 'SEQUENCES', label: 'Automated Drip Sequences' },
+                { id: 'DELIVERABILITY', label: 'Deliverability & DNS Health' }
+              ]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
           </div>
         </div>
-
-        {/* View Switcher */}
-        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-[#0F0F12] border border-white/10">
-          <button
-            onClick={() => setActiveTab('BROADCAST')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-              activeTab === 'BROADCAST' ? "bg-teal-600 text-white shadow" : "text-slate-400 hover:text-white"
-            )}
-          >
-            Campaign Broadcast
-          </button>
-          <button
-            onClick={() => setActiveTab('SEQUENCES')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-              activeTab === 'SEQUENCES' ? "bg-teal-600 text-white shadow" : "text-slate-400 hover:text-white"
-            )}
-          >
-            Automated Drip Sequences
-          </button>
-          <button
-            onClick={() => setActiveTab('DELIVERABILITY')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-              activeTab === 'DELIVERABILITY' ? "bg-teal-600 text-white shadow" : "text-slate-400 hover:text-white"
-            )}
-          >
-            Deliverability & DNS Health
-          </button>
-        </div>
-      </div>
+      </GlassCard>
 
       {/* Main Tab Content */}
       {activeTab === 'BROADCAST' && (
@@ -248,23 +228,15 @@ The Sigma Tactix Revenue Architecture Team`);
                 />
               </div>
 
-              <button
+              <Button
+                variant="primary"
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50"
+                className="w-full justify-center"
+                leftIcon={isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Optimizing Email Copy & Deliverability...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Synthesize Optimized Email
-                  </>
-                )}
-              </button>
+                {isGenerating ? 'Optimizing Email Copy & Deliverability...' : 'Synthesize Optimized Email'}
+              </Button>
             </div>
 
             {/* Spam Filter Audit */}
@@ -289,12 +261,12 @@ The Sigma Tactix Revenue Architecture Team`);
             <div className="p-6 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 p-1 rounded-lg bg-white/5 border border-white/10 text-xs">
+                  <div className="sigma-segmented">
                     <button
                       onClick={() => setPreviewDevice('DESKTOP')}
                       className={cn(
-                        "p-1.5 rounded transition-colors",
-                        previewDevice === 'DESKTOP' ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+                        "sigma-segment !min-h-8 !px-2",
+                        previewDevice === 'DESKTOP' ? "sigma-segment-active" : ""
                       )}
                     >
                       <Monitor className="w-4 h-4" />
@@ -302,8 +274,8 @@ The Sigma Tactix Revenue Architecture Team`);
                     <button
                       onClick={() => setPreviewDevice('MOBILE')}
                       className={cn(
-                        "p-1.5 rounded transition-colors",
-                        previewDevice === 'MOBILE' ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+                        "sigma-segment !min-h-8 !px-2",
+                        previewDevice === 'MOBILE' ? "sigma-segment-active" : ""
                       )}
                     >
                       <Smartphone className="w-4 h-4" />

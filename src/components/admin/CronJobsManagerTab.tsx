@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  Clock, 
-  Play, 
-  Pause, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
-  Calendar, 
-  Terminal, 
-  Zap, 
-  ChevronRight, 
-  FileText, 
-  Download, 
-  Plus, 
-  Sliders, 
-  Trash2 
+import {
+  Clock,
+  Play,
+  Pause,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Calendar,
+  Terminal,
+  Zap,
+  ChevronRight,
+  FileText,
+  Download,
+  Plus,
+  Sliders,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -225,10 +225,10 @@ export default function CronJobsManagerTab() {
     const costSim = (tokenSim / 1000000) * 0.075;
 
     setRunLog(prev => [
-      { 
-        time: new Date().toLocaleTimeString(), 
-        text: `✔ Completed in ${durationSim}ms. Metered ${tokenSim.toLocaleString()} tokens ($${costSim.toFixed(6)} USD).`, 
-        type: 'success' 
+      {
+        time: new Date().toLocaleTimeString(),
+        text: `✔ Completed in ${durationSim}ms. Metered ${tokenSim.toLocaleString()} tokens ($${costSim.toFixed(6)} USD).`,
+        type: 'success'
       },
       ...prev
     ]);
@@ -376,16 +376,16 @@ export default function CronJobsManagerTab() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
+      <div className="sigma-segmented">
         {(['ALL', 'OUTREACH', 'DIAGNOSTICS', 'ADS', 'CONTENT', 'REPORTS', 'INFRA'] as const).map(cat => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={cn(
-              "px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all",
+              "sigma-segment font-mono uppercase tracking-wider",
               activeCategory === cat
-                ? "bg-accent/20 text-accent font-bold border border-accent/30"
-                : "text-muted hover:text-white hover:bg-white/5"
+                ? "sigma-segment-active"
+                : ""
             )}
           >
             {cat}
@@ -436,7 +436,7 @@ export default function CronJobsManagerTab() {
                       }}
                       className={cn(
                         "p-2 rounded-lg border text-xs font-mono transition-all",
-                        job.active 
+                        job.active
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
                           : "bg-zinc-800/60 border-white/10 text-zinc-400 hover:text-white"
                       )}
@@ -491,7 +491,7 @@ export default function CronJobsManagerTab() {
                 </div>
                 <span className={cn(
                   "px-2.5 py-1 rounded-full text-xs font-mono font-bold",
-                  selectedJob.active 
+                  selectedJob.active
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                     : "bg-zinc-800 text-zinc-400 border border-white/10"
                 )}>

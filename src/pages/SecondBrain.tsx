@@ -35,7 +35,8 @@ import { cn } from '@/src/lib/utils';
 import { SECOND_BRAIN_VAULTS, SecondBrainVault, VaultRecord } from '@/src/data/secondBrainVaults';
 import { useUser } from '@/src/contexts/UserContext';
 import { useToast } from '@/src/contexts/ToastContext';
-import { analyzeVaultDocument } from '@/src/lib/api';
+import { analyzeVaultDocument, apiFetch } from '@/src/lib/api';
+import { Button, GlassCard, Badge, Input } from '@/src/components/ui';
 
 export const VAULT_TAG_STYLES: Record<string, { label: string; badge: string }> = {
   'executive-vault': { label: 'Executive Strategy', badge: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
@@ -143,14 +144,19 @@ export const identifyDestinationVault = (
     'mov': { vaultId: 'brand-vault', label: 'Brand Vault (Video Assets)' },
   };
 
-  let bestMatch = { vaultId: 'executive-vault', confidence: 40, reasoning: 'No strong keyword signals detected. Defaulted to Executive Vault — review and reassign if needed.' };
+  let bestMatch = { vaultId: '', confidence: 0, reasoning: 'No strong classification signal detected. Choose a destination vault before ingesting.' };
   let highestScore = 0;
+
+  const keywordMatches = (text: string, keyword: string) => {
+    const escaped = keyword.trim().split(/\s+/).map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+');
+    return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(text);
+  };
 
   for (const rule of rules) {
     let score = 0;
     const matched: string[] = [];
     for (const kw of rule.keywords) {
-      if (combined.includes(kw)) {
+      if (keywordMatches(combined, kw)) {
         // Multi-word keywords are stronger signals
         score += kw.includes(' ') ? 2 : 1;
         matched.push(kw);
@@ -207,6 +213,7 @@ export default function SecondBrain() {
   // File Upload & AI Auto-fill State
   const [isAnalyzingFile, setIsAnalyzingFile] = useState(false);
   const [uploadedFileMeta, setUploadedFileMeta] = useState<{ name: string; size: string; type: string } | null>(null);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const headerFileInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +281,7 @@ export default function SecondBrain() {
   const processDocumentFile = async (file: File) => {
     setIsAnalyzingFile(true);
     setIsNewRecordModalOpen(true);
+    setPendingUploadFile(file);
 
     try {
       const res = await analyzeVaultDocument(file);
@@ -312,7 +320,7 @@ export default function SecondBrain() {
           type: file.type || 'Document'
         });
 
-        const vaultName = vaults.find(v => v.id === routing.vaultId)?.name || 'Executive Vault';
+        const vaultName = vaults.find(v => v.id === routing.vaultId)?.name || 'Manual classification required';
         notifySuccess(
           'Document Analyzed & Auto-Routed',
           `Parsed "${file.name}" and auto-identified destination as ${vaultName} (${routing.confidence}% confidence).`,
@@ -356,7 +364,7 @@ export default function SecondBrain() {
           type: file.type || 'Document'
         });
 
-        const vName = vaults.find(v => v.id === routing.vaultId)?.name || 'Executive Vault';
+        const vName = vaults.find(v => v.id === routing.vaultId)?.name || 'Manual classification required';
         notifySuccess(
           'File Auto-Routed to Vault',
           `Parsed "${file.name}" locally. Destination set to ${vName}. Review and adjust before saving.`,
@@ -423,9 +431,14 @@ export default function SecondBrain() {
     return record.allowedRoles.includes(role);
   };
 
-  const handleCreateRecord = (e: React.FormEvent) => {
+  const handleCreateRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) return;
+
+    if (!targetVaultId) {
+      notifyInfo('Classification Required', 'No reliable vault signal was found. Select the correct destination vault before ingesting.');
+      return;
+    }
 
     // Check duplicate
     const dup = checkForDuplicate(newTitle, newContent);
@@ -455,6 +468,20 @@ export default function SecondBrain() {
       tags: newTags.split(',').map(t => t.trim()).filter(Boolean)
     };
 
+    if (pendingUploadFile) {
+      const formData = new FormData();
+      formData.append('file', pendingUploadFile);
+      formData.append('vaultId', destinationVaultId);
+      try {
+        const response = await apiFetch('/api/workspace/vault/upload', { method: 'POST', body: formData });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || 'The file could not be persisted.');
+      } catch (error) {
+        notifyInfo('Document Not Persisted', error instanceof Error ? error.message : 'The file could not be persisted. No vault record was created.');
+        return;
+      }
+    }
+
     setVaults(prev => prev.map(v => {
       if (v.id === destinationVaultId) {
         return {
@@ -473,12 +500,13 @@ export default function SecondBrain() {
     setNewContent('');
     setNewTags('Strategy, AI, Ingest');
     setUploadedFileMeta(null);
+    setPendingUploadFile(null);
     setAutoVaultMeta(null);
 
     const destinationVaultName = vaults.find(v => v.id === destinationVaultId)?.name || 'Vault';
     notifySuccess(
       'Document Ingested & Vectorized',
-      `Saved "${createdRecord.title}" into ${destinationVaultName} with 1,536-dim embeddings.`,
+      `Saved "${createdRecord.title}" into ${destinationVaultName} with 1,536-dim embeddings and persisted the source file.`,
       { category: 'SYSTEM' }
     );
   };
@@ -564,61 +592,58 @@ export default function SecondBrain() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-8">
         <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <Database size={14} className="text-secondary" /> Foundation Layer • Relational Knowledge Hub
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="vermilion" size="sm">
+              <Database size={12} className="mr-1" /> Foundation Layer
+            </Badge>
+            <span className="text-xs font-mono text-[var(--sigma-text-muted)]">Relational Knowledge Hub</span>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[var(--sigma-text)]">
             Second Brain Vaults
           </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
+          <p className="text-[var(--sigma-text-secondary)] text-sm max-w-3xl mt-1.5 leading-relaxed">
             10 strictly partitioned, relational vaults storing verified corporate strategy, credentials, brand voice vectors, ICP models, and audit logs with pgvector semantic search.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-zinc-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px]">Snapshot: <strong className="text-white">{lastBackupTime}</strong></span>
-          </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Badge variant="neutral" size="sm" dot>
+            Snapshot: <strong className="text-[var(--sigma-text)] ml-1 font-mono">{lastBackupTime}</strong>
+          </Badge>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleTriggerBackup}
             disabled={isBackingUp}
-            className="px-5 py-3.5 bg-black/40 hover:bg-white/10 border border-white/10 hover:border-accent/40 text-white rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 disabled:opacity-50"
+            isLoading={isBackingUp}
+            icon={!isBackingUp ? <HardDriveDownload size={14} className="text-[var(--sigma-primary)]" /> : undefined}
             title="Download encrypted snapshot of all 10 Second Brain Vaults and verify SHA-256 checksum"
           >
-            {isBackingUp ? (
-              <>
-                <RefreshCw size={14} className="animate-spin text-accent" />
-                <span>Verifying & Backing Up...</span>
-              </>
-            ) : (
-              <>
-                <HardDriveDownload size={15} className="text-accent" />
-                <span>Backup Second Brain</span>
-              </>
-            )}
-          </button>
+            {isBackingUp ? 'Backing Up...' : 'Backup Second Brain'}
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleDeduplicateVaults}
-            className="px-4 py-3.5 bg-black/40 hover:bg-white/10 border border-white/10 hover:border-amber-500/40 text-white rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2"
+            icon={<CopyCheck size={14} className="text-amber-400" />}
             title="Scan all vaults and remove duplicate documents"
           >
-            <CopyCheck size={15} className="text-amber-400" />
-            <span>Clean Duplicates</span>
-          </button>
+            Clean Duplicates
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => headerFileInputRef.current?.click()}
-            className="px-5 py-3.5 bg-black/40 hover:bg-white/10 border border-white/10 hover:border-accent/40 text-white rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2"
+            icon={<UploadCloud size={14} className="text-[var(--sigma-primary)]" />}
             title="Upload document file to auto-populate vault record via AI"
           >
-            <UploadCloud size={15} className="text-accent" />
-            <span>Upload Files</span>
-          </button>
+            Upload Files
+          </Button>
           <input
             ref={headerFileInputRef}
             type="file"
@@ -633,53 +658,56 @@ export default function SecondBrain() {
             }}
           />
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setIsNewRecordModalOpen(true)}
-            className="px-6 py-3.5 bg-accent text-background rounded-xl font-black uppercase text-xs tracking-widest hover:opacity-90 transition-all amber-glow shadow-2xl flex items-center gap-2"
+            icon={<Plus size={14} />}
           >
-            <Plus size={16} /> New Vault Record
-          </button>
+            New Vault Record
+          </Button>
         </div>
       </div>
 
       {/* RBAC Role Simulator & Vector Search Strip */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Vector Semantic Search Widget */}
-        <div className="lg:col-span-8 bg-surface border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+        <GlassCard className="lg:col-span-8 p-6 space-y-4" spotlight>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-accent" />
-              <h3 className="text-sm font-bold silver-text tracking-tight uppercase">pgvector Semantic Search</h3>
+              <Sparkles size={16} className="text-[var(--sigma-primary)]" />
+              <h3 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">pgvector Semantic Search</h3>
             </div>
-            <span className="text-[10px] font-mono text-secondary px-2 py-0.5 rounded bg-secondary/10 border border-secondary/20">
+            <Badge variant="neutral" size="xs">
               Cosine Distance Metric (1536-dim)
-            </span>
+            </Badge>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)]" size={15} />
               <input
                 type="text"
                 value={vectorSearchPrompt}
                 onChange={(e) => setVectorSearchPrompt(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleVectorSearch()}
                 placeholder="Ask your Second Brain: e.g. 'What is our Q3 CAC benchmark and mobile CRO leak?'"
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl py-2.5 pl-10 pr-4 text-xs font-mono text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
               />
             </div>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleVectorSearch}
-              className="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl text-xs font-bold font-mono transition-all"
             >
               Query
-            </button>
+            </Button>
           </div>
 
           {/* Vector Results Preview */}
           {vectorSearchResults && (
-            <div className="space-y-2 pt-2 border-t border-white/5">
-              <div className="text-[10px] font-mono text-muted uppercase tracking-widest">
+            <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)]">
+              <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase">
                 Top Vector Matches ({vectorSearchResults.length})
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -690,33 +718,33 @@ export default function SecondBrain() {
                       setSelectedVaultId(record.vaultId);
                       setSelectedRecord(record);
                     }}
-                    className="p-3 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 rounded-xl cursor-pointer transition-all"
+                    className="p-3 bg-[var(--sigma-bg-subtle)] hover:bg-[var(--sigma-border)]/20 border border-[var(--sigma-border)] rounded-xl cursor-pointer transition-all"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-mono text-accent font-bold">Sim: {similarity}</span>
-                      <span className="text-[8px] font-mono text-muted">{record.vaultId.replace('-vault', '')}</span>
+                      <span className="text-[10px] font-mono text-[var(--sigma-primary)] font-semibold">Sim: {similarity}</span>
+                      <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{record.vaultId.replace('-vault', '')}</span>
                     </div>
-                    <div className="text-xs font-bold text-white line-clamp-1">{record.title}</div>
-                    <div className="text-[10px] text-zinc-400 line-clamp-2 mt-1">{record.summary}</div>
+                    <div className="text-xs font-semibold text-[var(--sigma-text)] line-clamp-1">{record.title}</div>
+                    <div className="text-[11px] text-[var(--sigma-text-muted)] line-clamp-2 mt-1">{record.summary}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
+        </GlassCard>
 
         {/* Live RBAC Permission Filter Widget */}
-        <div className="lg:col-span-4 bg-surface border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+        <GlassCard className="lg:col-span-4 p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UserCheck size={18} className="text-secondary" />
-              <h3 className="text-sm font-bold silver-text tracking-tight uppercase">RBAC Role Simulator</h3>
+              <UserCheck size={16} className="text-[var(--sigma-primary)]" />
+              <h3 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">RBAC Role Simulator</h3>
             </div>
-            <span className="text-[10px] font-mono text-muted">Test Security Zone</span>
+            <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">Security Sandbox</span>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs text-zinc-400">Simulate Access Perspective:</label>
+            <label className="text-xs text-[var(--sigma-text-secondary)]">Simulate Access Perspective:</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'ADMIN', label: 'Admin' },
@@ -727,10 +755,10 @@ export default function SecondBrain() {
                   key={r.id}
                   onClick={() => setRbacTestRole(r.id)}
                   className={cn(
-                    "p-2 rounded-lg text-xs font-bold font-mono transition-all border",
+                    "p-2 rounded-lg text-xs font-mono font-medium transition-all border cursor-pointer",
                     rbacTestRole === r.id
-                      ? "bg-secondary text-background border-secondary font-black shadow-md"
-                      : "bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10"
+                      ? "bg-[var(--sigma-primary)] text-white border-[var(--sigma-primary)] font-semibold shadow-sm"
+                      : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-secondary)] hover:text-[var(--sigma-text)]"
                   )}
                 >
                   {r.label}
@@ -739,23 +767,22 @@ export default function SecondBrain() {
             </div>
           </div>
 
-          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] font-mono text-zinc-400">
-            Current perspective: <strong className="text-white">{rbacTestRole}</strong>. 
+          <div className="p-2.5 rounded-lg bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] text-[11px] font-mono text-[var(--sigma-text-muted)]">
+            Perspective: <strong className="text-[var(--sigma-text)]">{rbacTestRole}</strong>. 
             {rbacTestRole === 'ADMIN' ? ' Full read/write clearance across all 10 vaults.' :
              rbacTestRole === 'SUB_ADMIN' ? ' Restricted from Executive & Credentials Vaults.' :
              ' Read-only on operational, website, marketing & brand vaults.'}
           </div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Vault Grid Selector */}
       <div className="space-y-3">
-        <div className="text-xs font-mono uppercase tracking-widest text-muted flex items-center justify-between">
-          <span>Select Permissioned Vault (10 Partitioned Zones)</span>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>PostgreSQL 16 Schema Active</span>
-          </div>
+        <div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] flex items-center justify-between">
+          <span>Select Partitioned Vault (10 Security Zones)</span>
+          <Badge variant="success" size="xs" dot>
+            PostgreSQL 16 Schema Active
+          </Badge>
         </div>
 
         <div data-tutorial-id="tut-brand-vault-card" className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -766,25 +793,25 @@ export default function SecondBrain() {
               setSelectedRecord(null);
             }}
             className={cn(
-              "p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group",
+              "p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group cursor-pointer",
               selectedVaultId === 'all' 
-                ? "bg-surface border-accent shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-accent" 
-                : "bg-surface/50 border-white/5 hover:border-white/20 hover:bg-surface"
+                ? "bg-[var(--sigma-primary)]/10 border-[var(--sigma-primary)] shadow-sm ring-1 ring-[var(--sigma-primary)]/30" 
+                : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] hover:border-[var(--sigma-text-muted)]/30 hover:bg-[var(--sigma-border)]/10"
             )}
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] font-mono text-accent font-bold">{totalAllRecordsCount} docs</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] font-mono font-semibold tabular-nums text-[var(--sigma-primary)]">{totalAllRecordsCount} docs</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--sigma-primary)]" />
             </div>
             <div className={cn(
-              "font-bold text-xs tracking-tight truncate flex items-center gap-1.5",
-              selectedVaultId === 'all' ? "silver-text font-black text-white" : "text-zinc-300 group-hover:text-white"
+              "font-semibold text-xs tracking-tight truncate flex items-center gap-1.5",
+              selectedVaultId === 'all' ? "text-[var(--sigma-text)] font-bold" : "text-[var(--sigma-text-secondary)] group-hover:text-[var(--sigma-text)]"
             )}>
-              <Layers size={13} className="text-accent" />
+              <Layers size={13} className="text-[var(--sigma-primary)]" />
               <span>All Vaults View</span>
             </div>
-            <div className="text-[9px] font-mono text-zinc-400 mt-1 truncate">
-              Unified Ingest Catalog
+            <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-1 truncate">
+              Unified Catalog
             </div>
           </button>
 
@@ -800,28 +827,28 @@ export default function SecondBrain() {
                   setSelectedRecord(null);
                 }}
                 className={cn(
-                  "p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group",
+                  "p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group cursor-pointer",
                   isSelected 
-                    ? "bg-surface border-accent/80 shadow-[0_0_20px_rgba(245,158,11,0.15)]" 
-                    : "bg-surface/50 border-white/5 hover:border-white/20 hover:bg-surface",
+                    ? "bg-[var(--sigma-primary)]/10 border-[var(--sigma-primary)] shadow-sm ring-1 ring-[var(--sigma-primary)]/30" 
+                    : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] hover:border-[var(--sigma-text-muted)]/30 hover:bg-[var(--sigma-border)]/10",
                   isRestrictedForRole && "opacity-40"
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] font-mono text-muted">{v.records.length} docs</span>
+                  <span className="text-[10px] font-mono font-semibold tabular-nums text-[var(--sigma-text-muted)]">{v.records.length} docs</span>
                   {isRestrictedForRole ? (
                     <Lock size={12} className="text-rose-400" />
                   ) : (
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   )}
                 </div>
                 <div className={cn(
-                  "font-bold text-xs tracking-tight truncate",
-                  isSelected ? "silver-text font-black text-white" : "text-zinc-300 group-hover:text-white"
+                  "font-semibold text-xs tracking-tight truncate",
+                  isSelected ? "text-[var(--sigma-text)] font-bold" : "text-[var(--sigma-text-secondary)] group-hover:text-[var(--sigma-text)]"
                 )}>
                   {v.name}
                 </div>
-                <div className="text-[9px] font-mono text-zinc-500 mt-1 truncate">
+                <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-1 truncate">
                   {v.securityZone}
                 </div>
               </button>
@@ -831,37 +858,37 @@ export default function SecondBrain() {
       </div>
 
       {/* Active Vault Records Section */}
-      <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <GlassCard className="overflow-hidden">
         {/* Vault Header Banner */}
-        <div className="p-6 bg-background/50 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-5 bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold silver-text tracking-tight">
-                {selectedVaultId === 'all' ? 'All Vaults View (Unified Ingest Catalog)' : activeVault.name}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-lg font-semibold text-[var(--sigma-text)] tracking-tight">
+                {selectedVaultId === 'all' ? 'All Vaults View (Unified Catalog)' : activeVault.name}
               </h2>
-              <span className="px-2.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-[10px] font-mono text-accent font-bold uppercase">
-                {selectedVaultId === 'all' ? '10 VAULTS PARTITIONED' : activeVault.securityZone}
-              </span>
-              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-muted">
-                {selectedVaultId === 'all' ? `${totalAllRecordsCount} Total Documents` : activeVault.encryptionLevel}
-              </span>
+              <Badge variant="vermilion" size="xs">
+                {selectedVaultId === 'all' ? '10 PARTITIONS' : activeVault.securityZone}
+              </Badge>
+              <Badge variant="neutral" size="xs">
+                {selectedVaultId === 'all' ? `${totalAllRecordsCount} Documents` : activeVault.encryptionLevel}
+              </Badge>
             </div>
-            <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
+            <p className="text-xs text-[var(--sigma-text-muted)] mt-1 max-w-2xl">
               {selectedVaultId === 'all'
-                ? 'Unified view of all corporate knowledge records across all 10 relational vaults. Every file displays its corresponding vault tag and security clearance.'
+                ? 'Unified view of all corporate knowledge records across all 10 relational vaults with security clearance filters.'
                 : activeVault.description
               }
             </p>
           </div>
 
           <div className="relative max-w-xs w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)]" size={14} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={selectedVaultId === 'all' ? "Search across all vaults..." : "Search active vault records..."}
-              className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-xl py-2 pl-9 pr-3 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors font-mono"
             />
           </div>
         </div>
@@ -870,17 +897,17 @@ export default function SecondBrain() {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-black/30 border-b border-white/5 text-[10px] font-mono uppercase tracking-widest text-muted">
-                <th className="px-6 py-4">Title & Classification</th>
-                <th className="px-6 py-4">Vault Tag</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Vector Status</th>
-                <th className="px-6 py-4">Clearance</th>
-                <th className="px-6 py-4">Last Updated</th>
-                <th className="px-6 py-4 text-center">Inspect</th>
+              <tr className="bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] text-[10px] font-mono uppercase text-[var(--sigma-text-muted)]">
+                <th className="px-5 py-3">Title & Classification</th>
+                <th className="px-5 py-3">Vault Tag</th>
+                <th className="px-5 py-3">Category</th>
+                <th className="px-5 py-3">Vector Status</th>
+                <th className="px-5 py-3">Clearance</th>
+                <th className="px-5 py-3">Last Updated</th>
+                <th className="px-5 py-3 text-center">Inspect</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[var(--sigma-border)]">
               {filteredRecords.map((rec) => {
                 const isAllowed = isAccessAllowedForRole(rec, rbacTestRole);
                 const tagInfo = getVaultTagInfo(rec.vaultId);
@@ -891,75 +918,75 @@ export default function SecondBrain() {
                     onClick={() => isAllowed && setSelectedRecord(rec)}
                     className={cn(
                       "transition-colors",
-                      isAllowed ? "hover:bg-white/[0.02] cursor-pointer" : "opacity-40 bg-red-950/10 cursor-not-allowed"
+                      isAllowed ? "hover:bg-[var(--sigma-border)]/10 cursor-pointer" : "opacity-40 bg-red-950/5 cursor-not-allowed"
                     )}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono shrink-0",
-                          rec.classification === 'RESTRICTED_C_LEVEL' ? "bg-amber-500/10 text-accent border border-accent/20" :
-                          rec.classification === 'ENCRYPTED_SECRET' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                          "bg-cyan-500/10 text-secondary border border-secondary/20"
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono shrink-0 border",
+                          rec.classification === 'RESTRICTED_C_LEVEL' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                          rec.classification === 'ENCRYPTED_SECRET' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
+                          "bg-[var(--sigma-primary)]/10 text-[var(--sigma-primary)] border-[var(--sigma-primary)]/20"
                         )}>
                           {rec.classification === 'ENCRYPTED_SECRET' ? <Key size={14} /> : <FileText size={14} />}
                         </div>
                         <div>
-                          <div className="font-bold text-sm text-white">{rec.title}</div>
-                          <div className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{rec.summary}</div>
+                          <div className="font-medium text-xs text-[var(--sigma-text)]">{rec.title}</div>
+                          <div className="text-[11px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">{rec.summary}</div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-6 py-4">
-                      <span className={cn("px-2.5 py-1 rounded text-[11px] font-mono font-bold border", tagInfo.badge)}>
+                    <td className="px-5 py-3.5">
+                      <span className={cn("px-2 py-0.5 rounded text-[10px] font-mono font-semibold border", tagInfo.badge)}>
                         {tagInfo.label}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-xs text-zinc-300 font-mono">
+                    <td className="px-5 py-3.5">
+                      <span className="px-2 py-0.5 rounded bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] text-[11px] text-[var(--sigma-text-secondary)] font-mono">
                         {rec.category}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       {rec.vectorIndexed ? (
-                        <div className="flex items-center gap-1.5 text-xs text-green-400 font-mono">
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
                           <CheckCircle2 size={12} />
-                          <span>1536-dim Indexed</span>
+                          <span>1536-dim</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted font-mono">Raw Secret</span>
+                        <span className="text-xs text-[var(--sigma-text-muted)] font-mono">Raw Secret</span>
                       )}
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       {isAllowed ? (
-                        <span className="text-xs text-secondary font-mono flex items-center gap-1">
+                        <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
                           <Check size={12} /> Granted
                         </span>
                       ) : (
                         <span className="text-xs text-rose-400 font-mono flex items-center gap-1">
-                          <Lock size={12} /> Blocked ({rbacTestRole})
+                          <Lock size={12} /> Blocked
                         </span>
                       )}
                     </td>
 
-                    <td className="px-6 py-4 text-xs font-mono text-muted">
+                    <td className="px-5 py-3.5 text-xs font-mono tabular-nums text-[var(--sigma-text-muted)]">
                       {rec.lastUpdated}
                     </td>
 
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-5 py-3.5 text-center">
                       <button 
                         disabled={!isAllowed}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isAllowed) setSelectedRecord(rec);
                         }}
-                        className="p-2 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-colors disabled:opacity-30"
+                        className="p-1.5 hover:bg-[var(--sigma-bg-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors disabled:opacity-30 cursor-pointer"
                       >
-                        <Eye size={16} />
+                        <Eye size={15} />
                       </button>
                     </td>
                   </tr>
@@ -968,7 +995,7 @@ export default function SecondBrain() {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Document Detail Modal */}
       <AnimatePresence>
@@ -978,72 +1005,73 @@ export default function SecondBrain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/10 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-6 bg-background/50 border-b border-white/10 flex items-center justify-between">
+              <div className="p-5 bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono text-accent uppercase font-bold px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
+                    <Badge variant="vermilion" size="xs">
                       {selectedRecord.classification}
-                    </span>
-                    <span className="text-[10px] font-mono text-muted">
+                    </Badge>
+                    <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">
                       ID: {selectedRecord.id}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold silver-text">{selectedRecord.title}</h3>
+                  <h3 className="text-base font-semibold text-[var(--sigma-text)]">{selectedRecord.title}</h3>
                 </div>
                 <button
                   onClick={() => setSelectedRecord(null)}
-                  className="p-2 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-all"
+                  className="p-1.5 hover:bg-[var(--sigma-bg)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 space-y-6 overflow-y-auto">
+              <div className="p-6 space-y-5 overflow-y-auto">
                 <div>
-                  <h4 className="text-xs font-mono uppercase text-muted tracking-widest mb-2">Summary</h4>
-                  <p className="text-sm text-zinc-300 leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
+                  <h4 className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] mb-2">Summary</h4>
+                  <p className="text-xs text-[var(--sigma-text-secondary)] leading-relaxed bg-[var(--sigma-bg-subtle)] p-3.5 rounded-xl border border-[var(--sigma-border)]">
                     {selectedRecord.summary}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-mono uppercase text-muted tracking-widest mb-2">Vault Payload Content</h4>
-                  <pre className="text-xs text-zinc-200 font-mono bg-black/60 p-4 rounded-xl border border-white/10 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                  <h4 className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] mb-2">Vault Payload Content</h4>
+                  <pre className="text-xs text-[var(--sigma-text)] font-mono bg-[var(--sigma-bg-subtle)] p-4 rounded-xl border border-[var(--sigma-border)] whitespace-pre-wrap leading-relaxed overflow-x-auto">
                     {selectedRecord.content}
                   </pre>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs font-mono text-muted pt-4 border-t border-white/5">
-                  <div>Author: <strong className="text-white">{selectedRecord.author}</strong></div>
-                  <div>Category: <strong className="text-white">{selectedRecord.category}</strong></div>
-                  <div>Vector Embeddings: <strong className="text-secondary">{selectedRecord.vectorIndexed ? '1536-dim Active' : 'None'}</strong></div>
-                  <div>Last Synced: <strong className="text-white">{selectedRecord.lastUpdated}</strong></div>
+                <div className="grid grid-cols-2 gap-4 text-xs font-mono text-[var(--sigma-text-muted)] pt-3 border-t border-[var(--sigma-border)]">
+                  <div>Author: <strong className="text-[var(--sigma-text)]">{selectedRecord.author}</strong></div>
+                  <div>Category: <strong className="text-[var(--sigma-text)]">{selectedRecord.category}</strong></div>
+                  <div>Vector Index: <strong className="text-emerald-400">{selectedRecord.vectorIndexed ? '1536-dim Active' : 'None'}</strong></div>
+                  <div>Last Synced: <strong className="text-[var(--sigma-text)]">{selectedRecord.lastUpdated}</strong></div>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-mono uppercase text-muted tracking-widest mb-2">Semantic Tags</h4>
-                  <div className="flex flex-wrap gap-2">
+                  <h4 className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] mb-2">Semantic Tags</h4>
+                  <div className="flex flex-wrap gap-1.5">
                     {selectedRecord.tags.map((t, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-xs font-mono text-zinc-300">
+                      <Badge key={i} variant="neutral" size="xs">
                         #{t}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 bg-background/50 border-t border-white/10 flex justify-end">
-                <button
+              <div className="p-4 bg-[var(--sigma-bg-subtle)] border-t border-[var(--sigma-border)] flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setSelectedRecord(null)}
-                  className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-mono transition-all"
                 >
                   Close Document
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -1058,16 +1086,16 @@ export default function SecondBrain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/10 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
             >
-              <div className="p-6 bg-background/50 border-b border-white/10 flex items-center justify-between">
+              <div className="p-5 bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold silver-text">Ingest New Vault Record</h3>
-                  <p className="text-xs text-muted mt-0.5">Target: {activeVault.name}</p>
+                  <h3 className="text-base font-semibold text-[var(--sigma-text)]">Ingest New Vault Record</h3>
+                  <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">Target: {activeVault.name}</p>
                 </div>
                 <button
                   onClick={() => setIsNewRecordModalOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-all"
+                  className="p-1.5 hover:bg-[var(--sigma-bg)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -1077,49 +1105,48 @@ export default function SecondBrain() {
                 {/* File Upload Dropzone for Auto-Filling Vault Record */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase text-muted flex items-center gap-1.5">
-                      <Sparkles size={13} className="text-accent" /> Auto-Fill Via File Upload
+                    <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-[var(--sigma-primary)]" /> Auto-Fill Via File Upload
                     </label>
-                    <span className="text-[10px] font-mono text-secondary">
+                    <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
                       Gemini 2.5 Flash Synthesis
                     </span>
                   </div>
 
                   {isAnalyzingFile ? (
-                    <div className="border-2 border-dashed border-accent/40 bg-accent/5 rounded-xl p-5 text-center flex flex-col items-center justify-center gap-2">
-                      <RefreshCw size={24} className="animate-spin text-accent" />
-                      <div className="text-xs font-bold text-white">
+                    <div className="border-2 border-dashed border-[var(--sigma-primary)]/40 bg-[var(--sigma-primary)]/5 rounded-xl p-5 text-center flex flex-col items-center justify-center gap-2">
+                      <RefreshCw size={22} className="animate-spin text-[var(--sigma-primary)]" />
+                      <div className="text-xs font-semibold text-[var(--sigma-text)]">
                         Synthesizing Document with Gemini AI...
                       </div>
-                      <p className="text-[10px] font-mono text-muted">
-                        Reading text & auto-filling Title, Category, Classification, Summary, Payload, and Tags
+                      <p className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
+                        Extracting Title, Category, Classification, Summary, and Payload
                       </p>
                     </div>
                   ) : uploadedFileMeta ? (
-                    <div className="p-3.5 bg-white/5 border border-accent/30 rounded-xl flex items-center justify-between gap-3">
+                    <div className="p-3 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2.5 rounded-lg bg-accent/10 border border-accent/20 text-accent shrink-0">
-                          <FileCheck size={18} />
+                        <div className="p-2 rounded-lg bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 text-[var(--sigma-primary)] shrink-0">
+                          <FileCheck size={16} />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white truncate">{uploadedFileMeta.name}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 text-[9px] font-mono font-bold shrink-0">
-                              AI AUTO-FILLED
-                            </span>
+                            <span className="text-xs font-medium text-[var(--sigma-text)] truncate">{uploadedFileMeta.name}</span>
+                            <Badge variant="success" size="xs">AI POPULATED</Badge>
                           </div>
-                          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
-                            {uploadedFileMeta.size} • Fields populated. Edit below before vectorizing.
+                          <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">
+                            {uploadedFileMeta.size} • Verify extracted details below
                           </div>
                         </div>
                       </div>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-2.5 py-1 text-[11px] font-mono font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 shrink-0 transition-all"
                       >
                         Replace
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <div
@@ -1138,16 +1165,16 @@ export default function SecondBrain() {
                       className={cn(
                         "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all group",
                         isDragOver 
-                          ? "border-accent bg-accent/10" 
-                          : "border-white/10 hover:border-accent/40 bg-black/20 hover:bg-white/[0.02]"
+                          ? "border-[var(--sigma-primary)] bg-[var(--sigma-primary)]/5" 
+                          : "border-[var(--sigma-border)] hover:border-[var(--sigma-primary)]/50 bg-[var(--sigma-bg-subtle)]"
                       )}
                     >
-                      <UploadCloud size={24} className="mx-auto text-accent mb-1.5 group-hover:scale-110 transition-transform" />
-                      <div className="text-xs font-bold text-white">
-                        Upload Document to Auto-Fill Information
+                      <UploadCloud size={22} className="mx-auto text-[var(--sigma-primary)] mb-1 group-hover:scale-105 transition-transform" />
+                      <div className="text-xs font-semibold text-[var(--sigma-text)]">
+                        Upload Document to Auto-Fill
                       </div>
-                      <p className="text-[10px] text-muted font-mono mt-0.5">
-                        Drop PDF, Markdown, TXT, JSON, CSV, XLSX, or DOCX • AI will extract, summarize, and categorize
+                      <p className="text-[10px] text-[var(--sigma-text-muted)] font-mono mt-0.5">
+                        PDF, Markdown, TXT, JSON, CSV, XLSX, or DOCX • AI extracts & categorizes
                       </p>
                     </div>
                   )}
@@ -1168,29 +1195,27 @@ export default function SecondBrain() {
                 </div>
 
                 {/* Auto-Identified Destination Vault Selector */}
-                <div className="p-3.5 bg-accent/5 border border-accent/20 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-3 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Sparkles size={14} className="text-accent shrink-0" />
-                      <span className="text-xs font-bold text-zinc-100 truncate">
-                        Destination: <span className="text-accent">{vaults.find(v => v.id === targetVaultId)?.name || 'Executive Vault'}</span>
+                      <Sparkles size={13} className="text-[var(--sigma-primary)] shrink-0" />
+                      <span className="text-xs font-medium text-[var(--sigma-text)] truncate">
+                        Destination: <span className="text-[var(--sigma-primary)] font-semibold">{vaults.find(v => v.id === targetVaultId)?.name || 'Select a vault'}</span>
                       </span>
                       {autoVaultMeta && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold shrink-0">
-                          AUTO-ROUTED ({autoVaultMeta.confidence}%)
-                        </span>
+                        <Badge variant="success" size="xs">AUTO-ROUTED ({autoVaultMeta.confidence}%)</Badge>
                       )}
                     </div>
-                    <p className="text-[10px] font-mono text-zinc-400 mt-0.5 line-clamp-1">
+                    <p className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5 line-clamp-1">
                       {autoVaultMeta?.reasoning || 'Partitioned vault zone for document storage, embeddings & access clearance.'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <label className="text-[10px] font-mono uppercase text-muted">Change Vault:</label>
+                    <label className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)]">Change:</label>
                     <select
                       value={targetVaultId}
                       onChange={(e) => setTargetVaultId(e.target.value)}
-                      className="bg-black/70 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                      className="bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-lg px-2 py-1 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] font-mono"
                     >
                       {vaults.map((v) => (
                         <option key={v.id} value={v.id}>{v.name}</option>
@@ -1199,36 +1224,36 @@ export default function SecondBrain() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Document Title</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Document Title</label>
                   <input
                     type="text"
                     required
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g. Q4 Target CAC & Audience Expansion Specs"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono uppercase text-muted">Category</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Category</label>
                     <input
                       type="text"
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       placeholder="e.g. Performance Strategy"
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono uppercase text-muted">Classification</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Classification</label>
                     <select
                       value={newClassification}
                       onChange={(e) => setNewClassification(e.target.value as any)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                     >
                       <option value="STRATEGIC_CORE">STRATEGIC_CORE</option>
                       <option value="OPERATIONAL_PUBLIC">OPERATIONAL_PUBLIC</option>
@@ -1238,54 +1263,56 @@ export default function SecondBrain() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Executive Summary</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Executive Summary</label>
                   <input
                     type="text"
                     value={newSummary}
                     onChange={(e) => setNewSummary(e.target.value)}
                     placeholder="High level overview for AI context retrieval"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Content / Raw Payload</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Content / Raw Payload</label>
                   <textarea
                     rows={4}
                     required
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
                     placeholder="Detailed corporate knowledge, operational rules, or metrics..."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Semantic Tags (comma separated)</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Semantic Tags (comma separated)</label>
                   <input
                     type="text"
                     value={newTags}
                     onChange={(e) => setNewTags(e.target.value)}
                     placeholder="Growth, Ingest, Strategy"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
 
-                <div className="p-4 bg-background/50 border-t border-white/10 flex justify-end gap-3 pt-4">
-                  <button
+                <div className="p-4 bg-[var(--sigma-bg-subtle)] border-t border-[var(--sigma-border)] flex justify-end gap-2.5 pt-4">
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setIsNewRecordModalOpen(false)}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-muted hover:text-white rounded-xl text-xs font-mono font-bold"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="px-6 py-2.5 bg-accent text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 amber-glow"
+                    variant="primary"
+                    size="sm"
                   >
                     Ingest & Vectorize
-                  </button>
+                  </Button>
                 </div>
               </form>
             </motion.div>

@@ -1,5 +1,13 @@
 import { getIdToken } from './auth';
-import { TokenTelemetrySummary, AIKeyConfig } from '../types';
+import { 
+  TokenTelemetrySummary, 
+  AIKeyConfig, 
+  AgentReachDoctorSummary, 
+  AgentReachFetchResult,
+  CompetitorBattlecard,
+  RepurposedArticle,
+  RepurposedCarouselAndThread
+} from '../types';
 
 // One fetch wrapper for every call to our own backend — attaches the
 // Supabase session token so /api/workspace/* requests pass server-side auth.
@@ -217,4 +225,111 @@ export async function analyzeVaultDocument(fileOrPayload: File | { text: string;
 
   return res.json();
 }
+
+// Agent Reach — Multi-Channel Capability Router
+export async function getAgentReachDoctor(): Promise<AgentReachDoctorSummary> {
+  const res = await apiFetch('/api/workspace/agent-reach/doctor');
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/html')) {
+    throw new Error('Backend route not registered on active server process. Please restart the backend server (Ctrl+C and npm run dev) to load new endpoints.');
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Failed to fetch Agent Reach doctor: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.summary;
+}
+
+export async function fetchAgentReachContent(payload: {
+  channel: string;
+  target: string;
+  options?: any;
+}): Promise<AgentReachFetchResult> {
+  const res = await apiFetch('/api/workspace/agent-reach/fetch', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  const contentType = res.headers.get('content-type') || '';
+  if (res.status === 404 || contentType.includes('text/html')) {
+    throw new Error('Endpoint /api/workspace/agent-reach/fetch is not mounted on the active dev server process. Please restart `npm run dev` in your terminal.');
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Agent Reach fetch failed: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.result;
+}
+
+export async function syncAgentReachSocial(payload: {
+  keyword: string;
+  channel?: string;
+}): Promise<{ success: boolean; mention: any; rawResult: any }> {
+  const res = await apiFetch('/api/workspace/agent-reach/sync-social', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  const contentType = res.headers.get('content-type') || '';
+  if (res.status === 404 || contentType.includes('text/html')) {
+    throw new Error('Endpoint /api/workspace/agent-reach/sync-social is not mounted on the active dev server process. Please restart `npm run dev` in your terminal.');
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Agent Reach social sync failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// Phase 2: Live Competitor Radar Scan
+export async function scanCompetitorWithAgentReach(payload: {
+  target: string;
+  competitorName?: string;
+}): Promise<CompetitorBattlecard> {
+  const res = await apiFetch('/api/workspace/agent-reach/competitor-scan', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Competitor scan failed: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.battlecard;
+}
+
+// Phase 3: Editorial Article Repurposing
+export async function repurposeArticleWithAgentReach(payload: {
+  sourceUrl: string;
+  format?: string;
+  targetAudience?: string;
+}): Promise<RepurposedArticle> {
+  const res = await apiFetch('/api/workspace/agent-reach/repurpose-article', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Article repurposing failed: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.article;
+}
+
+// Phase 3: LinkedIn Carousel & Twitter Thread Repurposing
+export async function repurposeCarouselWithAgentReach(payload: {
+  sourceUrl: string;
+  topic?: string;
+}): Promise<RepurposedCarouselAndThread> {
+  const res = await apiFetch('/api/workspace/agent-reach/repurpose-carousel', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Carousel repurposing failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 

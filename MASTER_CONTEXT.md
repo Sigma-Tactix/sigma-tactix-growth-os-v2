@@ -1,8 +1,8 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-09-13  
-> **Version**: v0.1.0  
-> **Status**: Pre-release (Production-ready)
+> **Last updated**: 2026-09-18  
+> **Version**: v0.2.0-rc (Post-Agent Reach & VANTA & Theme Engine Integration)  
+> **Status**: Pre-release (Production-ready & Governed)
 
 ---
 
@@ -12,191 +12,173 @@
 |---|---|
 | **Product Name** | SigmaTactix Growth OS |
 | **Tagline** | AI-Native Growth Infrastructure & Secure Second Brain |
-| **Type** | Multi-tenant SaaS — Marketing Operating System |
+| **Type** | Multi-tenant SaaS — Autonomous Marketing Operating System |
 | **Origin** | Google AI Studio (App ID: `54d15c37-4548-4f52-9b37-a720510970e0`) |
 | **Organization** | SigmaTactix |
-| **GitHub** | `sigmatactix/sigma-tactix-growth-os-v2` (Private) |
+| **GitHub** | `sigmatactix/sigma-tactix-growth-os-v2` (Private, Active `main`) |
 
 ---
 
 ## 2. Technology Stack
 
-| Layer | Technology | Version |
+| Layer | Technology | Version / Spec |
 |---|---|---|
-| **Runtime** | Node.js | ≥20 |
-| **Language** | TypeScript | ~5.8.2 |
-| **Frontend Framework** | React | 19.x |
-| **Routing** | React Router DOM | 7.x |
-| **Styling** | TailwindCSS (v4) via Vite plugin | 4.x |
-| **Charts** | Recharts | 3.x |
-| **3D/WebGL** | Three.js + React Three Fiber + Drei | 0.185.x |
-| **Animation** | GSAP + Motion (Framer) | 3.x / 12.x |
+| **Runtime** | Node.js (V8) + Bun compatible | ≥20.x |
+| **Language** | TypeScript (Strict mode) | ~5.8.2 |
+| **Frontend Framework** | React 19 (Concurrent Mode + React 19 Compiler ready) | 19.x |
+| **Routing** | React Router DOM (28+ active routes + code splitting) | 7.x |
+| **Styling & Tokens** | TailwindCSS (v4) + Sigma Appearance Tokens (Light/Dark/System) | 4.x |
+| **Charts** | Recharts (Responsive, Themed) | 3.x |
+| **3D/WebGL** | Three.js + React Three Fiber + Drei (Neural Core & Vault Orbs) | 0.185.x |
+| **Animation** | GSAP 3 + Motion (Framer Motion 12) + Scroll-driven motion | 3.x / 12.x |
 | **Icons** | Lucide React | 0.546.x |
-| **Backend** | Express 4 (single `server.ts` — 6,511 lines) | 4.x |
-| **AI/LLM** | Google Gemini (`@google/genai`) | 2.4.x |
-| **Database** | Supabase (PostgreSQL + pgvector) | 2.110.x |
-| **Payments** | Stripe | 22.x |
-| **File Uploads** | Multer | 2.x |
-| **PDF/Exports** | jsPDF + PptxGenJS + xlsx | Various |
-| **Scraping** | Cheerio + Playwright | Various |
-| **Validation** | Zod | 4.x |
-| **Build** | Vite 6 + esbuild | 6.x |
-| **Test** | Vitest | 4.x |
-| **Security** | Helmet + express-rate-limit | 8.x / 8.x |
+| **Backend Gateway** | Express 4 (`server.ts` — API gateway, RAG, Webhooks, RLS bridge) | 4.x |
+| **AI/LLM Engine** | Google Gemini (`@google/genai` 2.4.x) + Multi-Model AI Hub | 2.5 Flash / Pro |
+| **External Intelligence** | Agent Reach CLI router (`v1.5.0`) + Jina Web Reader + YouTube oEmbed | 1.5.x |
+| **Database & Vector** | Supabase (PostgreSQL 15+ with `pgvector`, RLS, moddatetime) | 2.110.x |
+| **Payments & Billing** | Stripe (HMAC-verified webhooks, customer portal) | 22.x |
+| **Scraping & Web Audit** | Cheerio + Playwright + SSRF validation | Various |
+| **Schema Validation** | Zod (Runtime input validation at all API boundaries) | 4.x |
+| **Build & Test** | Vite 6 + esbuild + Vitest 4 (21+ test suites, 169+ passing tests) | 6.x / 4.x |
+| **Agent Governance** | Harness SDD (`agentic.json`, 4 subagents, 25 skills, feature roadmap) | v0.8.x |
 
 ---
 
 ## 3. Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    React SPA (Vite)                       │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
-│  │Dashboard │ │  Vaults  │ │  Agents  │ │  Content   │  │
-│  │  + KPIs  │ │(10 Vault)│ │ Cockpit  │ │  Engine    │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └─────┬──────┘  │
-│       │             │            │              │         │
-│  ┌────┴─────────────┴────────────┴──────────────┴──────┐ │
-│  │              React Router v7 (26 Routes)            │ │
-│  └────────────────────────┬────────────────────────────┘ │
-└───────────────────────────┼──────────────────────────────┘
-                            │ HTTP/JSON
-┌───────────────────────────┼──────────────────────────────┐
-│                    Express API Server                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
-│  │  Helmet  │ │Rate Limit│ │  RBAC    │ │  Gemini    │  │
-│  │ Headers  │ │ (2-tier) │ │ Policies │ │  AI Calls  │  │
-│  └──────────┘ └──────────┘ └──────────┘ └────────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
-│  │ Workspace│ │Credential│ │   RAG    │ │Token Cost  │  │
-│  │  Store   │ │ Crypto   │ │ Search   │ │  Engine    │  │
-│  └────┬─────┘ └──────────┘ └──────────┘ └────────────┘  │
-└───────┼──────────────────────────────────────────────────┘
-        │ Row-Level Security (JWT)
-┌───────┼──────────────────────────────────────────────────┐
-│       ▼      Supabase (PostgreSQL + pgvector)            │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │   workspaces │ documents │ intake_tokens │ etc.  │    │
-│  └──────────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │             Supabase Auth (Google SSO)            │    │
-│  └──────────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │           Supabase Storage (File Uploads)        │    │
-│  └──────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                   React 19 SPA (Vite 6 + Code Splitting)               │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────────┐ │
+│  │ Dashboard    │ │ Second Brain │ │ Agent Cockpit│ │ Agent Reach   │ │
+│  │ & Topline KPI│ │ (10 Vaults)  │ │ & Telemetry  │ │ (15 Channels) │ │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └───────┬───────┘ │
+│         │                │                │                 │         │
+│  ┌──────┴────────────────┴────────────────┴─────────────────┴───────┐ │
+│  │                 React Router v7 (28+ Active Routes)              │ │
+│  │             AppearanceProvider (Light/Dark/System Tokens)        │ │
+│  │             AuthGate (Enforced Application Session)              │ │
+│  └────────────────────────────────┬─────────────────────────────────┘ │
+└───────────────────────────────────┼───────────────────────────────────┘
+                                    │ HTTP / JSON (CSRF & Helmet Protected)
+┌───────────────────────────────────┼───────────────────────────────────┐
+│                      Express API Gateway (server.ts)                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────────┐ │
+│  │ Helmet & CORS│ │ 2-Tier Rate  │ │ Zod Request  │ │ Agent Reach   │ │
+│  │ Headers      │ │ Limiters     │ │ Boundaries   │ │ Service (CLI) │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └───────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────────┐ │
+│  │ VANTA Neural │ │ Token Cost   │ │ RAG Search   │ │ AES-256-GCM   │ │
+│  │ Server Logic │ │ Engine (Spec)│ │ (Supabase)   │ │ Crypto Vault  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └───────────────┘ │
+└───────────────────────────────────┬───────────────────────────────────┘
+                                    │ Row-Level Security (JWT Scoped)
+┌───────────────────────────────────┼───────────────────────────────────┐
+│         Supabase Cloud (PostgreSQL 15 + pgvector + Auth)              │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │ App Tables: workspaces, documents, intake_tokens, signals, etc. │  │
+│  │ Migrations: 0001–0015 (0015_vanta_conversations.sql)            │  │
+│  │ Security: 100% RLS Enforcement (Audited via verify.sql)         │  │
+│  │ Secret Vaults: executive_vault, credentials_vault (Strict Deny) │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 4. Module Map (26 Routes)
+## 4. Module Map (28+ Active Routes)
 
 ### Growth OS Overview
-| Module | Route | Page Component | Description |
+| Module | Route | Component | Description |
 |---|---|---|---|
-| Executive Dashboard | `/` | `Dashboard.tsx` | Topline KPIs, live metrics, intake pipeline status |
-| Growth Diagnostics | `/diagnostics` | `GrowthDiagnostics.tsx` | 8-category AI growth audit with scoring |
-| Second Brain (Vaults) | `/vaults` | `SecondBrain.tsx` | 10 knowledge vaults, file uploads, connectors, RAG |
+| Executive Dashboard | `/` | `Dashboard.tsx` | Dynamic industry KPIs, color profiles, revenue velocity, real-time activity feed |
+| Growth Diagnostics | `/diagnostics` | `GrowthDiagnostics.tsx` | 8-category AI growth diagnostic with empirical scoring and 90-day roadmap |
+| Second Brain (Vaults) | `/vaults` | `SecondBrain.tsx` | 10 specialized knowledge vaults, 22-extension auto-routing, RAG embeddings |
 
 ### Digital Marketing Suite
-| Module | Route | Page Component | Description |
+| Module | Route | Component | Description |
 |---|---|---|---|
-| SEO & AEO | `/seo-aeo` | `SeoAeoPage.tsx` | Keyword clusters, topical authority, AEO readiness |
-| Paid Ads Manager | `/paid-ads` | `PaidAdsPage.tsx` | Multi-platform ad management, budget optimizer |
-| Editorial Content | `/content` | `EditorialContentPage.tsx` | AI editorial content generation |
-| Social Carousels | `/social-carousels` | `SocialCarouselsPage.tsx` | LinkedIn/IG carousel creator |
-| Image Studio | `/image-studio` | `ImageStudioPage.tsx` | Gemini-powered image generation |
-| Video Studio | `/video-studio` | `VideoStudioPage.tsx` | AI video creation |
-| Email Marketing | `/email-marketing` | `EmailMarketingPage.tsx` | Campaign builder, template engine |
-| CRO Studio | `/cro-studio` | `CroStudioPage.tsx` | Conversion rate optimization |
-| Intake Engine | `/intake` | `IntakeEngine.tsx` | Client onboarding wizard + audit pipeline |
-| Outreach & Leads | `/outreach` | `OutreachLeadsPage.tsx` | AI SDR, lead pipeline, deal documents |
-| Social Listening | `/social-listening` | `SocialListeningPage.tsx` | Brand mentions, sentiment analysis |
-| Attribution & ROI | `/attribution` | `AttributionRoiPage.tsx` | Multi-touch attribution, ROAS tracking |
-| Competitor Research | `/competitors` | `CompetitorResearchPage.tsx` | Competitive intelligence |
+| SEO & AEO Engine | `/seo-aeo` | `SeoAeoPage.tsx` | Keyword clusters, topical authority graphs, ChatGPT/Perplexity citation readiness |
+| Paid Ads Manager | `/paid-ads` | `PaidAdsPage.tsx` | Cross-network ad spend optimizer, ROAS analyzer, creative performance matrix |
+| Editorial Content | `/content` | `EditorialContentPage.tsx` | Trend-to-Article engine, long-form executive briefs, grounded citation banners |
+| Social Carousels | `/social-carousels` | `SocialCarouselsPage.tsx` | Multi-slide LinkedIn carousel generator (4:5 portrait) + X viral thread studio |
+| Image Studio | `/image-studio` | `ImageStudioPage.tsx` | Gemini-powered promotional asset creation and visual canvas |
+| Video Studio | `/video-studio` | `VideoStudioPage.tsx` | AI video storyboard creator and multi-shot generator |
+| Email Marketing | `/email-marketing` | `EmailMarketingPage.tsx` | High-conversion lifecycle campaign creator, HTML template previews |
+| CRO Studio | `/cro-studio` | `CroStudioPage.tsx` | Conversion rate optimization, copy challenger, page friction auditor |
+| Intake Engine | `/intake` | `IntakeEngine.tsx` | Client onboarding wizard, single-use intake token generator |
+| Outreach & Leads | `/outreach` | `OutreachLeadsPage.tsx` | AI SDR pipeline, lead enrichment, deal document generator |
+| Social Listening | `/social-listening` | `SocialListeningPage.tsx` | Multi-channel social sentinel radar, sentiment analysis, brand mention triage |
+| Attribution & ROI | `/attribution` | `AttributionRoiPage.tsx` | Multi-touch attribution modeling, payback period forecasting, blended CAC |
+| Competitor Research | `/competitors` | `CompetitorResearchPage.tsx` | Automated competitor scraping, counter-positioning, SDR 30-sec battlecards |
 
-### Autonomous Swarm Execution
-| Module | Route | Page Component | Description |
+### Autonomous Swarm Execution & Intelligence
+| Module | Route | Component | Description |
 |---|---|---|---|
-| Agent Cockpit | `/agents` | `AgentCockpit.tsx` | Agent management, DAG visualization, simulation mode |
-| Scheduler | `/scheduler` | `Scheduler.tsx` | Report scheduling |
-| Reports | `/reports` | `Reports.tsx` | Executive report generation (PDF, PPTX, XLSX) |
+| Agent Cockpit | `/agents` | `AgentCockpit.tsx` | 8-agent swarm manager, DAG visualizer, live telemetry heatmap |
+| Agent Reach Router | `/agent-reach` | `AgentReachPage.tsx` | 15-platform live intelligence extraction, CLI doctor diagnostics, social bridge |
+| Living System (VANTA) | `/living-system` | `LivingSystemPage.tsx` | VANTA 3D neural core, 12-phase voice/multimodal state machine, audio amplitude |
+| Scheduler | `/scheduler` | `Scheduler.tsx` | Autonomous cron jobs, report delivery scheduling |
+| Reports | `/reports` | `Reports.tsx` | Executive report export engine (PDF, PowerPoint PPTX, Excel XLSX) |
 
 ### Platform & Infrastructure
-| Module | Route | Page Component | Description |
+| Module | Route | Component | Description |
 |---|---|---|---|
-| Architecture Viewer | `/architecture` | `ArchitectureViewer.tsx` | System architecture diagrams |
-| Tenants / Admin | `/tenants` | `Tenants.tsx` | Multi-tenant workspace management, AI model config |
-| AI Explorer | `/explorer` | `AIExplorer.tsx` | AI model explorer, chatbot |
-| Data Sources | `/connectors` | `DataSources.tsx` | 35+ platform connectors |
-| Marketing Learnings | `/learnings` | `MarketingTeamLearningsPage.tsx` | Knowledge base, team insights |
-| Living System | `/living-system` | `LivingSystemPage.tsx` | Real-time system canvas, health monitoring |
+| System Architecture | `/architecture` | `ArchitectureViewer.tsx` | Interactive system topology, component dependency inspector |
+| Harness SDD View | `/harness` | `Tenants.tsx` (`HARNESS_VIEW`) | 5-layer exploded harness view, 6 core feature lifecycles, subagent links |
+| Tenants & Admin | `/tenants` | `Tenants.tsx` | Multi-tenant workspace switcher, tenant provisioning, system settings |
+| AI Config Hub | `/models` | `Tenants.tsx` (`AI_CONFIG`) | Multi-model API keys (Gemini, OpenAI, Anthropic, Qwen, DeepSeek, xAI) |
+| System Prompts | `/prompts` | `Tenants.tsx` (`SYSTEM_PROMPTS`)| Core agent persona prompts, system guardrails, customization |
+| Skills & MCP Catalog| `/skills` | `Tenants.tsx` (`SKILLS_MCP`) | Production skills registry (`agent-reach`, MCP servers, tool definitions) |
+| Cron Operations | `/cron` | `Tenants.tsx` (`CRON_JOBS`) | Background execution schedules, heartbeat monitors |
+| Data Connectors | `/connectors` | `DataSources.tsx` | 35+ platform connectors with AES-256-GCM credential encryption |
+| Marketing Learnings | `/learnings` | `MarketingTeamLearningsPage.tsx`| Team insights repository, retrospective log |
+| AI Model Explorer | `/explorer` | `AIExplorer.tsx` | Interactive prompt testbed, token usage inspector |
 
 ---
 
-## 5. Second Brain — 10-Vault Schema
+## 5. Second Brain — 10-Vault Schema & Supabase Architecture
 
-The Second Brain is a structured knowledge repository partitioned into 10 specialized vaults. Each vault has strict RBAC policies enforced by `agentPolicies.ts`.
+The Second Brain partitions client intelligence into 10 isolated vaults. Each vault is strictly isolated via PostgreSQL Row-Level Security (RLS) policies and TypeScript interfaces.
 
 ### Vault → TypeScript → Supabase Mapping
 
-| # | Vault | TypeScript Interface | Short Key | Purpose |
-|---|---|---|---|---|
-| I | Executive Vault | `SecondBrain.executiveVault` | `executive` | C-level strategy, IP, financials |
-| II | Credentials Vault | `SecondBrain.credentialsVault` | `credentials` | API keys, OAuth tokens (AES-256-GCM encrypted) |
-| III | Brand Vault | `SecondBrain.brandVault` | `brand` | Voice/tone, positioning, offers, slogan |
-| IV | Customer Vault | `SecondBrain.customerVault` | `customer` | ICP, segments, objections, testimonials |
-| V | Marketing Vault | `SecondBrain.marketingVault` | `marketing` | Campaign history, channels, performance |
-| VI | Website Vault | `SecondBrain.websiteVault` | `website` | Site URL, CMS, analytics ID, DNS verification |
-| VII | Authority Vault | `SecondBrain.authorityVault` | `authority` | Keywords, backlinks, SEO focus areas |
-| VIII | Operations Vault | `SecondBrain.operationsVault` | `operations` | SOPs, org hierarchy |
-| IX | AI Workflow Vault | `SecondBrain.aiWorkflowVault` | `ai_workflow` | Agent configs, system prompts, model routers |
-| X | Audit Vault | `SecondBrain.auditVault` | `audit` | Readiness scores, diagnostics, 90-day roadmaps |
+| # | Vault | TypeScript Property | Vault Key | Purpose | Access Rule |
+|---|---|---|---|---|---|
+| I | Executive Vault | `SecondBrain.executiveVault` | `executive` | C-level strategy, IP, financials, cap table | **STRICT BLOCK** (Owner only) |
+| II | Credentials Vault | `SecondBrain.credentialsVault` | `credentials` | API keys, OAuth tokens (AES-256-GCM) | **STRICT BLOCK** (System only) |
+| III | Brand Vault | `SecondBrain.brandVault` | `brand` | Voice, tone, logos, positioning, messaging | Read/Write (Creative/Marketing) |
+| IV | Customer Vault | `SecondBrain.customerVault` | `customer` | ICPs, personas, objections, win-loss data | Read/Write (Sales/SDR/Marketing) |
+| V | Marketing Vault | `SecondBrain.marketingVault` | `marketing` | Ad campaigns, creative assets, spend history | Read/Write (Media buyers/Agents) |
+| VI | Website Vault | `SecondBrain.websiteVault` | `website` | Domain DNS, CMS tokens, analytics tracking | Read/Write (SEO/Audit Agents) |
+| VII | Authority Vault | `SecondBrain.authorityVault` | `authority` | Keywords, backlinks, topical graph, citations | Read/Write (SEO/AEO Agents) |
+| VIII | Operations Vault | `SecondBrain.operationsVault` | `operations` | Agency SOPs, workflow templates, org chart | Read/Write (Ops/Admin) |
+| IX | AI Workflow Vault | `SecondBrain.aiWorkflowVault` | `ai_workflow` | Prompt templates, model routers, agent DAGs | Read/Write (Orchestrator) |
+| X | Audit Vault | `SecondBrain.auditVault` | `audit` | Diagnostic scores, audit logs, roadmaps | Read/Write (Audit/Executive) |
 
-### Supabase Tables
-
-| Table | Purpose | RLS |
-|---|---|---|
-| `workspaces` | Primary workspace data (JSONB column holding `WorkspaceData`) | Per-user JWT |
-| `documents` | RAG document store with vector embeddings | Scoped by `vault_id` |
-| `intake_tokens` | Single-use onboarding tokens | SECURITY DEFINER RPCs |
-| Auth tables | Supabase Auth (Google SSO, email/password) | Supabase managed |
-| Storage buckets | File uploads | Supabase storage policies |
+### Supabase Migrations & Verification
+- `backend/database/migrations/`: Sequential migration files (0001 through `0015_vanta_conversations.sql`).
+- `verify.sql`: Comprehensive verification suite testing RLS enablement, secret vault revocation, moddatetime triggers, and `is_member()` helper execution rights.
 
 ---
 
-## 6. Agent RBAC Matrix
+## 6. Harness SDD Subagent Architecture
 
-All agents are sandboxed. Executive and Credentials vaults are **always blocked** for every agent.
-
-| Agent | Allowed Vaults | Blocked Vaults |
-|---|---|---|
-| Marketing Agent | Brand, Customer, Marketing, Authority, AI Workflow | Executive, Credentials, Operations |
-| AI SDR (Sales Agent) | Brand, Customer, AI Workflow | Executive, Credentials, Marketing, Website, Authority, Operations |
-| Authority Agent | Brand, Authority, AI Workflow | Executive, Credentials, Customer, Marketing, Website |
-| Customer Success Agent | Brand, Customer, Marketing, AI Workflow | Executive, Credentials, Operations |
-| Operations Agent | Operations, AI Workflow | Executive, Credentials, Marketing, Customer |
-| Audit Diagnostic Agent | Website, Marketing, Authority, Audit, AI Workflow | Executive, Credentials, Customer, Operations |
-| Creative Director Agent | Brand, Customer, AI Workflow | Executive, Credentials, Operations, Authority |
-| SEO & Authority Agent | Brand, Authority, AI Workflow | Executive, Credentials, Customer, Marketing, Website |
-
-### Human-in-the-Loop (HITL) State Machine
+The system operates an orchestrated subagent hierarchy defined in [`.agents/agentic.json`](file:///Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio/.agents/agentic.json):
 
 ```
-[Agent Task Created] → Status: PENDING_APPROVAL
-                              │
-                  ┌───────────┴───────────┐
-                  │                       │
-                  ▼                       ▼
-             [Approve]               [Reject]
-                  │                       │
-                  ▼                       ▼
-          Status: RUNNING          Status: REJECTED
-                  │
-          ┌───────┴───────┐
-          ▼               ▼
-     Status: SUCCESS  Status: FAILED
+                     sigmatactix-orchestrator
+                               │
+       ┌───────────────┬───────┴───────┬───────────────┐
+       ▼               ▼               ▼               ▼
+code-architect  quality-engineer agent-trainer  delivery-lead
+   (6 skills)      (5 skills)     (9 skills)      (5 skills)
 ```
+
+1. **`code-architect`**: Owns domain modeling, architecture review, deep-module seams, and persistence schemas.
+2. **`quality-engineer`**: Owns TDD, unit/integration testing, bug diagnosis, merge conflict resolution, and code review.
+3. **`agent-trainer`**: Owns agent prompt alignment, teaching, grilling sessions, and wizard workflows.
+4. **`delivery-lead`**: Owns ticket translation, spec breakdown, implementation slicing, and release handoff.
 
 ---
 
@@ -204,208 +186,101 @@ All agents are sandboxed. Executive and Credentials vaults are **always blocked*
 
 | Control | Implementation | File |
 |---|---|---|
-| Security Headers | Helmet (HSTS, X-Content-Type-Options, Referrer-Policy, X-Frame-Options) | `server.ts` |
-| Rate Limiting | 2-tier: general API + expensive routes (Gemini, Playwright) | `server.ts` |
-| Input Validation | Zod schemas at route boundaries | `server.ts` |
-| Credential Encryption | AES-256-GCM via `CONNECTOR_CREDENTIALS_KEY` | `credentialCrypto.ts` |
-| Agent Sandboxing | Vault-level RBAC, always-blocked secret vaults | `agentPolicies.ts` |
-| Auth | Supabase Auth (JWT verification), per-request RLS client | `supabaseAdmin.ts` |
-| Trust Proxy | Opt-in via `TRUST_PROXY` env var | `server.ts` |
-| Async Error Handling | `express-async-errors` prevents unhandled rejections | `server.ts` |
-| Stripe Webhooks | HMAC signature verification, service-role-only RPC | `server.ts`, `supabaseAdmin.ts` |
+| **App-Level Auth Gate** | Prevents unauthenticated access; requires browser session | `src/components/AuthGate.tsx` |
+| **SSRF Protection** | `assertPublicHost` blocks loopback, link-local, and RFC1918 IPs | `src/server/agentReachService.ts` |
+| **Security Headers** | Helmet with HSTS, X-Content-Type-Options, Referrer-Policy | `server.ts` |
+| **Rate Limiting** | 2-tier: General API + expensive routes (LLM calls, scrapers) | `server.ts` |
+| **Input Validation** | Strict Zod parsing on all body and query parameters | `server.ts`, `vantaServer.ts` |
+| **Credential Encryption** | AES-256-GCM via `CONNECTOR_CREDENTIALS_KEY` | `src/lib/credentialCrypto.ts` |
+| **Agent Sandboxing** | Vault-level RBAC; Executive & Credentials vaults strictly denied | `src/lib/agentPolicies.ts` |
+| **Stripe Webhooks** | HMAC-SHA256 signature verification, service-role isolation | `server.ts` |
 
 ---
 
-## 8. AI/LLM Integration
+## 8. Agent Reach 15-Platform Intelligence Matrix
 
-| Feature | Model | Usage |
+Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
+
+| Category | Platforms | Engine / Backend |
 |---|---|---|
-| Growth Audits | Gemini (via `@google/genai`) | 8-category diagnostic analysis |
-| Content Generation | Multi-model (Gemini default) | Editorial, social, email content |
-| Image Generation | Gemini | Image Studio |
-| Agent Tool Calling | Gemini with function declarations | Autonomous agent execution |
-| RAG Search | Supabase pgvector | Document retrieval with embeddings |
-| Token Metering | Custom engine | Per-model cost tracking, profitability analysis |
-
-### Multi-Model Support
-
-Providers: Gemini, Google, OpenAI, Anthropic, xAI (Grok), Qwen, DeepSeek, GLM
-
-Configuration managed per-workspace via `AIKeyConfig` type in admin panel.
+| **Social** | Twitter/X, Reddit, Threads, Bluesky | OpenCLI / Native API / Scraper |
+| **Developer** | GitHub, V2EX, HackerNews | GitHub REST API, V2EX API, Algolia HN |
+| **Video & Media** | YouTube, Bilibili | YouTube oEmbed + Transcript, Bilibili Web |
+| **Career & B2B** | LinkedIn, Upwork | Headless Scraper / Profile Extractor |
+| **Finance** | Yahoo Finance, SEC EDGAR | Yahoo Finance API, EDGAR Search |
+| **Open Web** | Generic Web, RSS Feeds | Jina Reader (`r.jina.ai`), RSS Parser |
 
 ---
 
-## 9. Data Connectors (35+ Platforms)
+## 9. Comprehensive Development Session History
 
-**Ads**: LinkedIn Ads, TikTok Ads, Twitter/X Ads, Apple Search Ads, Reddit Ads, Pinterest Ads, Meta Ads, Google Ads, Snapchat Ads, Amazon Ads, Microsoft Ads
-
-**CRM**: HubSpot CRM, Salesforce
-
-**Analytics**: Google Analytics, Google Search Console, Semrush, Ahrefs, Similarweb
-
-**Social (Organic)**: LinkedIn, Twitter/X, Facebook Pages
-
-**Communication**: Slack, Microsoft Teams, WhatsApp Business
-
-**Collaboration**: Notion, Jira, Linear, Confluence
-
-**E-commerce**: Shopify
-
-**Email**: Klaviyo, Mailchimp
-
-**Content**: WordPress
-
-**Maps**: Google My Business
-
----
-
-## 10. Environment Variables
-
-| Variable | Purpose | Required |
+| Date | Session ID | Key Work & Deliverables |
 |---|---|---|
-| `GEMINI_API_KEY` | Google Gemini API calls | ✅ |
-| `GOOGLE_API_KEY` | Google APIs (Search Console, etc.) | Optional |
-| `SUPABASE_URL` | Supabase project URL | ✅ |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key (public) | ✅ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role (Stripe webhooks only) | ✅ for billing |
-| `STRIPE_SECRET_KEY` | Stripe payments | Optional |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification | Optional |
-| `CONNECTOR_CREDENTIALS_KEY` | AES-256-GCM key for credential encryption | ✅ for production |
-| `APP_URL` | Application URL (self-referential links) | ✅ |
-| `MASTRA_SPIKE_WORKSPACE_ID` | Mastra integration workspace | Optional |
-| `TRUST_PROXY` | Trust proxy hops (for rate limiting behind reverse proxy) | Optional |
-| `SEED_DEMO_WORKSPACE` | Seed demo data (sales demos only, never production) | Optional |
+| Apr 18 | `7524fa3b` | Sigma Tactix Web2Agent WordPress audit, CSS icon sizing fix, 10 E-E-A-T marketing authority blog posts. |
+| May 12 | `ab75a1bc` | Smart Analytics Phase 2 audit, React.lazy code splitting (84% bundle reduction), ErrorBoundary, Supabase wiring. |
+| Jul 14 | `7bf5842a` | Initial project analysis, production readiness planning. |
+| Jul 14 | `81df798c` | Context study, OpenAI→Gemini migration, multi-model UI. |
+| Jul 18 | `345fd7fc` | AI Studio integration, local server setup. |
+| Jul 24 | `a1c6262f` | Claude context synchronization. |
+| Jul 27 | `3b5de70d` | Open-source competitor research. |
+| Jul 28 | `8178bd11` | Master context problem resolution. |
+| Jul 29 | `50045446` | Stitch MCP prompt generation. |
+| Jul 29 | `c24c3a8f` | UI/UX polish, design division. |
+| Jul 29 | `c25b2af2` | Harness SDD template installation. |
+| Jul 30 | `80ea7233` | Agency Agents app integration. |
+| Jul 30 | `c4e81103` | GitHub push attempts (v1 repo). |
+| Jul 31 | `61e2d295` | Agentic OS pending items action. |
+| Aug 18 | `fe616f65` | Context engineering, GSD audit. |
+| Aug 18 | `5152dc17` | Supabase Google auth login fix. |
+| Aug 18 | `84d3047a` | Master context sync from sessions. |
+| Aug 21 | `f2129fb4` | Workspace resolution failure debugging. |
+| Aug 22 | `819e74d0` | Course archival pipeline. |
+| Aug 24 | `cfee53c3` | Open-source Agentic OS research. |
+| Aug 24 | `003ea7a2` | Context file consolidation. |
+| Aug 26 | `5cc45c01` | Master context update, PRD/blueprint revision. |
+| Aug 27 | `9c10e28a` | 3D holographic dashboard, Growth Matrix. |
+| Aug 28 | `df979e35` | Architecture explosion, AI stack visualization. |
+| Aug 28 | `b3c42b97` | Orb component for Second Brain module. |
+| Aug 29 | `a841abcc` | Archify architecture diagrams. |
+| Sep 1 | `94a45c26` | Gallery artifact verification. |
+| Sep 2 | `304767eb` | System improvements. |
+| Sep 2 | `c3ea7d61` | Additional system work. |
+| Sep 4 | `32d89277` | Clean-slate review, real vs mock data audit. |
+| Sep 6 | `c5eab993` | Scroll-driven cinematic animations. |
+| Sep 9 | `d55e3510` | Further enhancements. |
+| Sep 10 | `4112b672` | System refinements. |
+| Sep 11 | `e972de1e` | Module improvements. |
+| Sep 11 | `714b4e1e` | Pre-production fixes. |
+| Sep 12 | `8c3c8573` | Final hardening. |
+| Sep 12 | `3ff9ff2e` | Last-mile fixes. |
+| Sep 12 | `b4b41b92` | Growth OS system optimizations, AI slop removal. |
+| Sep 13 | `be3262f6` | Production Git launch, release `v0.1.0` tag, comprehensive `MASTER_CONTEXT.md`, `README.md`, `CHANGELOG.md`. |
+| Sep 15 | `21655f01` | Harness SDD integration: `.agents/agentic.json`, 4 subagents, 25 skills mapped, `feature_list.json`, `steering/`. |
+| Sep 16 | `6a3a6184` | Growth OS full-system logic review (5 critical fixes across routing, token cost engine, margin math, telemetry). |
+| Sep 16–17 | VANTA Core | VANTA Sigma Intelligence neural core, migration `0015_vanta_conversations.sql`, 12-phase state engine. |
+| Sep 17–18 | `534c702c` | Agent Reach 15-platform integration, `/agent-reach`, competitor battlecards, content repurposing pipelines. |
+| Sep 18 | `833dbe5d` | Light/Dark Theme tokens, `AuthGate.tsx` session gate, master context compilation, `/learn` proposal, grilling round. |
 
 ---
 
-## 11. File Structure
+## 10. Known Issues & Operational Guidelines
 
-```
-sigmatactix-new-growth-os-ai-studio/
-├── server.ts                    # Express API server (6,511 lines)
-├── index.html                   # SPA entry point
-├── vite.config.ts               # Vite + TailwindCSS + React config
-├── tsconfig.json                # TypeScript config
-├── package.json                 # Dependencies & scripts
-├── .env.example                 # Environment template
-├── .gitignore                   # Git exclusions
-├── src/
-│   ├── App.tsx                  # React Router (26 routes)
-│   ├── main.tsx                 # React entry
-│   ├── types.ts                 # TypeScript interfaces (478 lines)
-│   ├── initialData.ts           # Empty workspace template
-│   ├── index.css                # Global styles
-│   ├── pages/                   # 26 page components
-│   ├── components/              # 32 reusable components
-│   │   ├── Layout.tsx           # App shell + navigation
-│   │   ├── Orb/                 # 3D interactive orb (Second Brain)
-│   │   ├── hologram/            # Holographic visualizations
-│   │   ├── outreach/            # CRM & deal document components
-│   │   ├── reports/             # Report generation components
-│   │   ├── shell/               # App shell components
-│   │   ├── admin/               # Admin panel components
-│   │   └── tutorial/            # Guided tour overlay
-│   ├── contexts/                # React contexts
-│   │   ├── UserContext.tsx       # Auth state
-│   │   ├── WorkspaceContext.tsx  # Workspace data
-│   │   ├── ToastContext.tsx      # Notifications
-│   │   └── TutorialContext.tsx   # Guided tour state
-│   ├── lib/                     # Shared utilities (51 files)
-│   │   ├── agentPolicies.ts     # RBAC vault access matrix
-│   │   ├── agentResolution.ts   # Agent dispatch routing
-│   │   ├── credentialCrypto.ts  # AES-256-GCM encryption
-│   │   ├── workspaceStore.ts    # Supabase workspace CRUD
-│   │   ├── supabaseAdmin.ts     # Supabase client factory
-│   │   ├── tokenCostEngine.ts   # AI cost tracking & profitability
-│   │   ├── rag.ts               # RAG document search
-│   │   ├── hologramGraph.ts     # 3D graph layout engine
-│   │   ├── hologramPlanets.ts   # Planet visualization engine
-│   │   ├── hologramTelemetry.ts # System health telemetry
-│   │   ├── siteFetch.ts         # Website content scraping
-│   │   ├── screenshot.ts        # Playwright-based screenshots
-│   │   ├── growthAuditAgents.ts # Growth audit AI agents
-│   │   ├── api.ts               # Frontend API client
-│   │   ├── auth.ts              # Auth utilities
-│   │   └── *.test.ts            # Unit tests (14 test files)
-│   ├── data/                    # Static data & configurations
-│   │   ├── agencyAgentsRegistry.ts  # 109KB agent registry
-│   │   ├── architectureDiagrams.ts  # System diagrams
-│   │   ├── demoWorkspace.ts         # Demo workspace seed data
-│   │   └── tutorialSteps.ts         # Tutorial step definitions
-│   └── services/                # Business logic services
-│       ├── agentFilesService.ts     # Agent file management
-│       ├── agentMarkdownService.ts  # Markdown processing
-│       └── exportService.ts         # PDF/PPTX/XLSX export
-├── backend/
-│   ├── TECHNICAL_REQUIREMENTS.md    # Schema & architecture spec
-│   ├── database/                    # Migration files
-│   └── agent-skills/               # Agent skill definitions
-└── public/                          # Static assets
-```
+1. **Monolithic Server**: `server.ts` handles multiple responsibilities; route decomposition planned for v0.3.0.
+2. **CSP Disabled in Dev**: Content Security Policy disabled in development for Vite HMR compatibility.
+3. **Scraper Anti-Bot Guard**: Headless scrapers can be challenged by YouTube BotGuard or Cloudflare; always use oEmbed or Jina Reader fallback.
+4. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
+5. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
 
 ---
 
-## 12. Development Session History (Last 2 Months)
-
-| Date | Session ID | Key Work |
-|---|---|---|
-| Jul 14 | `7bf5842a` | Initial project analysis, production readiness planning |
-| Jul 14 | `81df798c` | Context study, OpenAI→Gemini migration, multi-model UI |
-| Jul 18 | `345fd7fc` | AI Studio integration, local server setup |
-| Jul 24 | `a1c6262f` | Claude context synchronization |
-| Jul 27 | `3b5de70d` | Open-source competitor research |
-| Jul 28 | `8178bd11` | Master context problem resolution |
-| Jul 29 | `50045446` | Stitch MCP prompt generation |
-| Jul 29 | `c24c3a8f` | UI/UX polish, design division |
-| Jul 29 | `c25b2af2` | Harness SDD template installation |
-| Jul 30 | `80ea7233` | Agency Agents app integration |
-| Jul 30 | `c4e81103` | GitHub push attempts (v1 repo) |
-| Jul 31 | `61e2d295` | Agentic OS pending items action |
-| Aug 18 | `fe616f65` | Context engineering, GSD audit |
-| Aug 18 | `5152dc17` | Supabase Google auth login fix |
-| Aug 18 | `84d3047a` | Master context sync from sessions |
-| Aug 21 | `f2129fb4` | Workspace resolution failure debugging |
-| Aug 22 | `819e74d0` | Course archival pipeline |
-| Aug 24 | `cfee53c3` | Open-source Agentic OS research |
-| Aug 24 | `003ea7a2` | Context file consolidation |
-| Aug 26 | `5cc45c01` | Master context update, PRD/blueprint revision |
-| Aug 27 | `9c10e28a` | 3D holographic dashboard, Growth Matrix |
-| Aug 28 | `df979e35` | Architecture explosion, AI stack visualization |
-| Aug 28 | `b3c42b97` | Orb component for Second Brain module |
-| Aug 29 | `a841abcc` | Archify architecture diagrams |
-| Sep 1 | `94a45c26` | Gallery artifact verification |
-| Sep 2 | `304767eb` | System improvements |
-| Sep 2 | `c3ea7d61` | Additional system work |
-| Sep 4 | `32d89277` | Clean-slate review, real vs mock data audit |
-| Sep 6 | `c5eab993` | Scroll-driven cinematic animations |
-| Sep 9 | `d55e3510` | Further enhancements |
-| Sep 10 | `4112b672` | System refinements |
-| Sep 11 | `e972de1e` | Module improvements |
-| Sep 11 | `714b4e1e` | Pre-production fixes |
-| Sep 12 | `8c3c8573` | Final hardening |
-| Sep 12 | `3ff9ff2e` | Last-mile fixes |
-| Sep 12 | `b4b41b92` | Growth OS system optimizations, AI slop removal |
-
----
-
-## 13. Known Issues & Technical Debt
-
-1. **Monolithic server**: `server.ts` is 6,511 lines — should be decomposed into route modules
-2. **CSP disabled**: Content Security Policy is off due to Vite dev/inline script compatibility
-3. **Dev fallback key**: `credentialCrypto.ts` has a hardcoded dev-only fallback key for `CONNECTOR_CREDENTIALS_KEY`
-4. **Service role usage**: Single exception for Stripe webhook handler (documented, audited)
-5. **Cross-origin embedder policy**: Disabled for Supabase Storage screenshot rendering
-
----
-
-## 14. Scripts
+## 11. Scripts
 
 | Command | Purpose |
 |---|---|
-| `npm run dev` | Start development server (tsx + Vite HMR) |
-| `npm run dev:client` | Start Vite client only (port 3000) |
-| `npm run build` | Production build (Vite + esbuild) |
+| `npm run dev` | Start development server (Node.js + Vite HMR on port 3000) |
+| `npm run dev:client` | Start Vite client only |
+| `npm run build` | Full production build (Vite client bundle + esbuild server) |
 | `npm start` | Run production server (`dist/server.js`) |
 | `npm run lint` | TypeScript type check (`tsc --noEmit`) |
-| `npm run test` | Run Vitest tests |
-| `npm run clean` | Remove build artifacts |
+| `npm run test` | Run Vitest test suite |
+| `npm run clean` | Clean dist and cache directories |

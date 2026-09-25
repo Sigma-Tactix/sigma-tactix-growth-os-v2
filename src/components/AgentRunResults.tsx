@@ -140,9 +140,12 @@ export default function AgentRunResults({
   return (
     <div className={cn("mt-8", className)}>
       {/* Section Header */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl cursor-pointer hover:bg-zinc-900/80 transition-all group"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsExpanded(!isExpanded); }}
+        className="w-full flex items-center justify-between p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl cursor-pointer hover:bg-zinc-900/80 transition-all group select-none"
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center">
@@ -163,6 +166,7 @@ export default function AgentRunResults({
         <div className="flex items-center gap-2">
           {onClear && normalizedResults.length > 0 && (
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onClear(); }}
               className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-red-400 text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all border border-zinc-700/50"
             >
@@ -175,7 +179,7 @@ export default function AgentRunResults({
             <ChevronDown className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
           )}
         </div>
-      </button>
+      </div>
 
       {/* Results List */}
       <AnimatePresence>

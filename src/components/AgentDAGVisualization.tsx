@@ -1,20 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Workflow, 
-  Bot, 
-  Crown, 
-  Layers, 
-  Database, 
-  ArrowRight, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Maximize2, 
-  Minimize2, 
-  ShieldCheck, 
-  Zap, 
+import {
+  Workflow,
+  Bot,
+  Crown,
+  Layers,
+  Database,
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  Play,
+  Pause,
+  RotateCcw,
+  Maximize2,
+  Minimize2,
+  ShieldCheck,
+  Zap,
   Sparkles,
   Info,
   ChevronRight,
@@ -248,16 +248,16 @@ export default function AgentDAGVisualization({
         {/* Toolbar */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Pipeline filter buttons */}
-          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
+          <div className="sigma-segmented font-mono">
             {(['ALL', 'AUTHORITY', 'PERFORMANCE', 'CONTENT', 'OPS'] as const).map(filterKey => (
               <button
                 key={filterKey}
                 onClick={() => setActivePipelineFilter(filterKey)}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg uppercase transition-all font-bold",
+                  "sigma-segment uppercase",
                   activePipelineFilter === filterKey
-                    ? "bg-accent text-background amber-glow"
-                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {filterKey}
@@ -311,7 +311,7 @@ export default function AgentDAGVisualization({
 
           {/* SVG Diagram Canvas */}
           <div className="relative w-full h-[380px] sm:h-[420px]">
-            <svg 
+            <svg
               className="w-full h-full"
               viewBox="0 0 100 100"
               preserveAspectRatio="none"

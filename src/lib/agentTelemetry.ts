@@ -167,7 +167,7 @@ export function buildHeatmapMatrix(
           timestamp: baseTime + intIdx * 3600000,
           activeLoad: 0,
           capacityPct: 0,
-          successRate: 0,
+          successRate: 100,
           completedTasks: 0,
           failedTasks: 0,
           hitlPauses: 0,

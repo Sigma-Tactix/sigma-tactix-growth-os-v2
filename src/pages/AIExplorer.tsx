@@ -26,6 +26,7 @@ import { cn, formatCurrency } from '@/src/lib/utils';
 import { useUser } from '@/src/contexts/UserContext';
 import { useToast } from '@/src/contexts/ToastContext';
 import { exportService } from '@/src/services/exportService';
+import { GlassCard, Button, Badge } from '@/src/components/ui';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, subDays, startOfMonth, isWithinInterval } from 'date-fns';
 
@@ -165,118 +166,129 @@ export default function AIExplorer() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-baseline gap-4">
-          <h1 className="text-6xl font-heading font-black amber-text tracking-tighter">AI Insight</h1>
-          <h1 className="text-6xl font-heading font-black silver-text tracking-tighter">Explorer</h1>
-        </div>
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">INTELLIGENCE LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">NATURAL LANGUAGE SQL & TELEMETRY</Badge>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <BrainCircuit className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              AI Insight Explorer
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              {isAdmin 
+                ? "Query your enterprise data in natural language to reveal hidden patterns, attribution leaks, and growth opportunities."
+                : "Explore campaign insights and performance metrics across all channels."}
+            </p>
+          </div>
 
-        <div className="relative">
-             <button 
-               onClick={() => setShowDateOptions(!showDateOptions)}
-               className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-xs font-black uppercase tracking-wider silver-text flex items-center gap-2.5"
-             >
-               <Calendar size={15} className="text-secondary" />
-               <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary font-bold text-[10px] font-mono border border-secondary/30">
-                 {selectedPreset}
-               </span>
-               <span className="text-zinc-200">
-                 {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd, yyyy')}
-               </span>
-             </button>
-             <AnimatePresence>
-                {showDateOptions && (
-                   <motion.div 
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: 10 }}
-                     className="absolute top-full right-0 mt-2 w-64 bg-surface border border-white/10 rounded-xl p-2 shadow-2xl z-50"
-                   >
-                     <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest text-muted border-b border-white/5 mb-1">
-                       Filter Period
-                     </div>
-                     {datePresets.map((p) => {
-                       const isActive = selectedPreset === p.label;
-                       return (
-                         <button 
-                           key={p.label}
-                           onClick={() => { 
-                             setSelectedPreset(p.label);
-                             setDateRange(p.get()); 
-                             setShowDateOptions(false); 
-                           }}
-                           className={cn(
-                             "w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between",
-                             isActive ? "bg-secondary/15 text-secondary border border-secondary/30" : "hover:bg-white/5 silver-text"
-                           )}
-                         >
-                           <span>{p.label}</span>
-                           {isActive && <CheckCircle2 size={14} className="text-secondary" />}
-                         </button>
-                       );
-                     })}
-                   </motion.div>
-                )}
-             </AnimatePresence>
+          <div className="relative">
+            <button 
+              onClick={() => setShowDateOptions(!showDateOptions)}
+              className="px-4 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl hover:bg-white/5 transition-all text-xs font-mono text-zinc-300 flex items-center gap-2.5 cursor-pointer shadow-sm"
+            >
+              <Calendar size={14} className="text-[var(--sigma-vermilion)]" />
+              <span className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] font-bold text-[10px] font-mono border border-[var(--sigma-vermilion)]/30">
+                {selectedPreset}
+              </span>
+              <span className="text-zinc-200">
+                {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd, yyyy')}
+              </span>
+            </button>
+            <AnimatePresence>
+              {showDateOptions && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full right-0 mt-2 w-64 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-2 shadow-2xl z-50 backdrop-blur-xl"
+                >
+                  <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-500 border-b border-[var(--sigma-border)] mb-1">
+                    Filter Period
+                  </div>
+                  {datePresets.map((p) => {
+                    const isActive = selectedPreset === p.label;
+                    return (
+                      <button 
+                        key={p.label}
+                        onClick={() => { 
+                          setSelectedPreset(p.label);
+                          setDateRange(p.get()); 
+                          setShowDateOptions(false); 
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer",
+                          isActive ? "bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] border border-[var(--sigma-vermilion)]/30" : "hover:bg-white/5 text-zinc-300"
+                        )}
+                      >
+                        <span>{p.label}</span>
+                        {isActive && <CheckCircle2 size={14} className="text-[var(--sigma-vermilion)]" />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-      <p className="text-zinc-400 text-xl max-w-3xl leading-relaxed">
-        {isAdmin 
-          ? "Query your enterprise data in natural language to reveal hidden patterns and growth opportunities."
-          : "Explore campaign insights and performance metrics across all channels."}
-      </p>
+      </GlassCard>
 
       {/* Query Engine */}
-      <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-secondary" />
-        <div className="flex items-center gap-3 mb-4 text-secondary">
-           {isAdmin ? <BrainCircuit size={20} /> : <Sparkles size={20} />}
-           <span className="text-xs font-mono uppercase tracking-[0.3em] font-bold">
-             {isAdmin ? "Technical Query Engine" : "Insight Search"}
-           </span>
+      <GlassCard spotlight elevation="raised" className="p-6 relative overflow-hidden">
+        <div className="flex items-center gap-3 mb-4 text-[var(--sigma-vermilion)]">
+          {isAdmin ? <BrainCircuit size={18} /> : <Sparkles size={18} />}
+          <span className="text-xs font-mono font-bold tracking-wider uppercase">
+            {isAdmin ? "Technical Query Engine" : "Insight Search"}
+          </span>
         </div>
         
         <div className="relative">
-            <textarea 
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  handleExecuteQuery();
-                }
-              }}
-              placeholder={isAdmin ? "What is our CAC by acquisition channel for Q3?" : "Search for trends..."}
-              className="w-full bg-[#09090B] border border-white/10 rounded-xl p-8 text-2xl focus:outline-none focus:ring-1 focus:ring-secondary/50 transition-all min-h-[160px] resize-none font-sans silver-text placeholder:text-zinc-700"
-            />
-            <button 
+          <textarea 
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                handleExecuteQuery();
+              }
+            }}
+            placeholder={isAdmin ? "What is our CAC by acquisition channel for Q3?" : "Search for trends..."}
+            className="w-full bg-black/60 border border-[var(--sigma-border)] rounded-xl p-5 text-base focus:outline-none focus:border-[var(--sigma-vermilion)]/60 transition-all min-h-[140px] resize-none font-sans text-zinc-200 placeholder:text-zinc-600"
+          />
+          <div className="absolute bottom-4 right-4">
+            <Button 
+              variant="primary"
               onClick={handleExecuteQuery}
               disabled={isExecuting}
-              className="absolute bottom-6 right-6 px-8 py-3 bg-accent text-background rounded-xl font-black uppercase tracking-widest flex items-center gap-3 hover:opacity-90 transition-all shadow-[0_0_30px_rgba(245,158,11,0.3)] disabled:opacity-50 cursor-pointer"
+              leftIcon={<Send size={14} />}
             >
-              {isExecuting ? 'Analyzing...' : 'Execute'} <Send size={20} className="fill-background" />
+              {isExecuting ? 'Analyzing...' : 'Execute Query'}
+            </Button>
+          </div>
+        </div>
+
+        {executionResult && (
+          <div className="mt-4 p-4 rounded-xl bg-[var(--sigma-vermilion)]/10 border border-[var(--sigma-vermilion)]/30 flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-[var(--sigma-vermilion)] shrink-0 mt-0.5" />
+            <div className="text-xs text-zinc-200 leading-relaxed font-sans">{executionResult}</div>
+          </div>
+        )}
+
+        <div className="mt-5 flex flex-wrap gap-2 items-center">
+          <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mr-1">Suggestions:</span>
+          {['Lifetime Value Trend', 'Churn Prediction', 'Revenue Attribution'].map((s) => (
+            <button 
+              key={s} 
+              onClick={() => setQuery(s)}
+              className="px-3 py-1 rounded-full border border-[var(--sigma-border)] text-xs text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-white/5 transition-all cursor-pointer"
+            >
+              {s}
             </button>
-         </div>
-
-         {executionResult && (
-           <div className="mt-4 p-4 rounded-xl bg-secondary/10 border border-secondary/30 flex items-start gap-3">
-             <Sparkles className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-             <div className="text-sm text-zinc-200 leading-relaxed font-sans">{executionResult}</div>
-           </div>
-         )}
-
-         <div className="mt-6 flex flex-wrap gap-3 items-center">
-            <span className="text-[10px] text-muted font-mono uppercase tracking-widest mr-2">Suggestions:</span>
-            {['Lifetime Value Trend', 'Churn Prediction', 'Revenue Attribution'].map((s) => (
-              <button 
-                key={s} 
-                onClick={() => setQuery(s)}
-                className="px-3 py-1 rounded-full border border-white/10 text-xs text-muted hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-              >
-                {s}
-              </button>
-            ))}
-         </div>
-      </div>
+          ))}
+        </div>
+      </GlassCard>
 
       {/* Main Analysis Area */}
       <div className="grid grid-cols-12 gap-8">

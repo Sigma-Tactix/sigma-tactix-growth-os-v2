@@ -1,33 +1,42 @@
 import React, { useState } from 'react';
-import { 
-  Share2, 
-  Linkedin, 
-  Twitter, 
-  Instagram, 
-  Sparkles, 
-  Copy, 
-  Check, 
-  Download, 
-  RefreshCw, 
-  Layers, 
-  Maximize2, 
-  Send, 
-  Flame, 
+import {
+  Share2,
+  Linkedin,
+  Twitter,
+  Instagram,
+  Sparkles,
+  Copy,
+  Check,
+  Download,
+  RefreshCw,
+  Layers,
+  Maximize2,
+  Send,
+  Flame,
   ChevronRight,
   Eye,
   Sliders,
-  FileText
+  FileText,
+  Youtube,
+  Globe,
+  X,
+  ExternalLink,
+  Link2,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import CarouselCardViewer from '@/src/components/CarouselCardViewer';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
-import { 
-  CarouselSlide, 
-  TweetItem, 
-  SocialCampaignData 
+import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
+import {
+  CarouselSlide,
+  TweetItem,
+  SocialCampaignData
 } from '@/src/data/marketingModulesData';
+import { repurposeCarouselWithAgentReach } from '@/src/lib/api';
+import { RepurposedCarouselAndThread } from '@/src/types';
 
 const INITIAL_LINKEDIN_SLIDES: CarouselSlide[] = [
   {
@@ -170,6 +179,13 @@ export default function SocialCarouselsPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'CARDS' | 'RAW_TEXT'>('CARDS');
 
+  // Agent Reach Carousel Repurposing State
+  const [isRepurposeModalOpen, setIsRepurposeModalOpen] = useState(false);
+  const [repurposeUrl, setRepurposeUrl] = useState('');
+  const [repurposeTopicAngle, setRepurposeTopicAngle] = useState('');
+  const [isRepurposing, setIsRepurposing] = useState(false);
+  const [repurposedMeta, setRepurposedMeta] = useState<RepurposedCarouselAndThread | null>(null);
+
   // Active Slides & Campaign Data
   const [slides, setSlides] = useState<CarouselSlide[]>(INITIAL_LINKEDIN_SLIDES);
   const [threadTweets, setThreadTweets] = useState<TweetItem[]>(INITIAL_THREAD_TWEETS);
@@ -203,6 +219,66 @@ Which slide hit closest to home? Drop a comment below 👇
       ]
     }
   ]);
+
+  const handleRepurposeCarousel = async () => {
+    if (!repurposeUrl.trim()) {
+      notifyError('Source URL Required', 'Please enter a valid YouTube video URL or article link.');
+      return;
+    }
+
+    setIsRepurposing(true);
+    try {
+      const result = await repurposeCarouselWithAgentReach({
+        sourceUrl: repurposeUrl.trim(),
+        topic: repurposeTopicAngle.trim() || undefined
+      });
+
+      if (result.slides && result.slides.length > 0) {
+        setSlides(result.slides);
+      }
+      if (result.tweetThread && result.tweetThread.length > 0) {
+        setThreadTweets(result.tweetThread.map(t => ({
+          tweetNumber: t.tweetNumber,
+          text: t.text,
+          charCount: t.characterCount
+        })));
+      }
+
+      if (result.sourceTitle) {
+        setTopic(result.sourceTitle);
+        setCaption(`Stop guessing your social distribution strategy. 🛑\n\nWe extracted the core frameworks from "${result.sourceTitle}":\n\nSwipe through the carousel above to see the actionable breakdown.\n\nSource: ${result.sourceUrl}\n\n#GrowthOS #B2BMarketing #AIAgents #SigmaTactix #ContentRepurposing`);
+      }
+
+      setRepurposedMeta(result);
+
+      const newRun: AgentRunRecord = {
+        id: `run-repurpose-carousel-${Date.now()}`,
+        agentName: 'Agent Reach Social & Carousel Swarm',
+        agentRole: 'Cross-Platform Social Architect',
+        timestamp: 'Just now',
+        status: 'SUCCESS',
+        moduleOrigin: 'Agent Reach Studio',
+        inputSummary: `Source: ${result.sourceTitle || result.sourceUrl}`,
+        outputSummary: `Synthesized ${result.slides?.length || 0}-slide deck & ${result.tweetThread?.length || 0}-tweet viral thread.`,
+        fullOutput: JSON.stringify(result, null, 2),
+        metrics: [
+          { label: 'Source', value: result.sourceUrl.includes('youtube') ? 'YouTube' : 'Web' },
+          { label: 'Slides', value: `${result.slides?.length || 0}` },
+          { label: 'Tweets', value: `${result.tweetThread?.length || 0}` },
+          { label: 'Visual Cards', value: 'Rendered' }
+        ]
+      };
+
+      setRunHistory(prev => [newRun, ...prev]);
+      notifySuccess('Repurposing Complete', `Synthesized ${result.slides?.length || 0} carousel slides and ${result.tweetThread?.length || 0} tweets.`);
+      setIsRepurposeModalOpen(false);
+    } catch (err: any) {
+      console.error('Repurpose carousel error:', err);
+      notifyError('Repurposing Failed', err.message || 'Failed to extract and repurpose carousel.');
+    } finally {
+      setIsRepurposing(false);
+    }
+  };
 
   const handleGenerate = () => {
     if (!topic.trim()) {
@@ -301,124 +377,101 @@ Which slide hit closest to home? Drop a comment below 👇
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
-              <Share2 className="w-6 h-6" />
+      <GlassCard spotlight elevation="raised" className="sigma-page-header p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">EXECUTION LAYER</Badge>
+              <span className="h-3 w-px bg-[var(--sigma-border-strong)]" aria-hidden="true" />
+              <Badge variant="neutral">VIRAL CAROUSEL ENGINE</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Social & Carousel Studio</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">
-                  Digital Marketing
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Design multi-slide LinkedIn carousels, X/Twitter threads, and high-retention social campaigns.
-              </p>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
+              <Share2 className="w-7 h-7 text-[var(--sigma-primary)]" />
+              Social & Carousel Studio
+            </h1>
+            <p className="text-[var(--sigma-text-muted)] text-sm mt-1 max-w-2xl leading-relaxed">
+              Design multi-slide LinkedIn carousels, X/Twitter threads, and high-retention social campaigns.
+            </p>
+          </div>
+
+          {/* Actions & Channel Selector */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button
+              variant="secondary"
+              onClick={() => setIsRepurposeModalOpen(true)}
+              leftIcon={<Youtube className="w-3.5 h-3.5 text-red-400" />}
+            >
+              Repurpose via Agent Reach
+            </Button>
+
+            {/* Channel Selector Tabs */}
+            <Tabs<'LinkedIn' | 'X_Thread' | 'Instagram'>
+              tabs={[
+                { id: 'LinkedIn', label: 'LinkedIn Carousel', icon: <Linkedin className="w-3.5 h-3.5" /> },
+                { id: 'X_Thread', label: 'X Thread', icon: <Twitter className="w-3.5 h-3.5" /> },
+                { id: 'Instagram', label: 'Instagram Swipe', icon: <Instagram className="w-3.5 h-3.5" /> }
+              ]}
+              activeTab={channel}
+              onChange={setChannel}
+            />
           </div>
         </div>
-
-        {/* Channel Selector */}
-        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-[#0F0F12] border border-white/10">
-          <button
-            onClick={() => setChannel('LinkedIn')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors",
-              channel === 'LinkedIn' 
-                ? "bg-blue-600 text-white shadow" 
-                : "text-slate-400 hover:text-white"
-            )}
-          >
-            <Linkedin className="w-3.5 h-3.5" /> LinkedIn Carousel
-          </button>
-          <button
-            onClick={() => setChannel('X_Thread')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors",
-              channel === 'X_Thread' 
-                ? "bg-sky-500 text-white shadow" 
-                : "text-slate-400 hover:text-white"
-            )}
-          >
-            <Twitter className="w-3.5 h-3.5" /> X Thread
-          </button>
-          <button
-            onClick={() => setChannel('Instagram')}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors",
-              channel === 'Instagram' 
-                ? "bg-pink-600 text-white shadow" 
-                : "text-slate-400 hover:text-white"
-            )}
-          >
-            <Instagram className="w-3.5 h-3.5" /> Instagram Swipe
-          </button>
-        </div>
-      </div>
+      </GlassCard>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Generator Controls */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-400" />
+          <GlassCard elevation="raised" className="p-5 space-y-4">
+            <h3 className="text-xs font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[var(--sigma-primary)]" />
               Campaign Parameters
             </h3>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Topic / Hook Core</label>
+              <label className="block text-xs font-medium text-[var(--sigma-text-soft)] mb-1.5">Topic / Hook Core</label>
               <textarea
                 value={topic}
                 onChange={e => setTopic(e.target.value)}
                 rows={3}
                 placeholder="e.g. 5 Hidden Digital Revenue Leaks Siphoning Your Pipeline..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-blue-500/50 resize-none"
+                className="sigma-input w-full px-3.5 py-2.5 text-sm resize-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Target Audience</label>
+              <label className="block text-xs font-medium text-[var(--sigma-text-soft)] mb-1.5">Target Audience</label>
               <input
                 type="text"
                 value={audience}
                 onChange={e => setAudience(e.target.value)}
                 placeholder="e.g. B2B Founders, CMOs, Growth Leads"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                className="sigma-input w-full px-3.5 py-2.5 text-sm"
               />
             </div>
 
             <div className="pt-2">
-              <button
+              <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                isLoading={isGenerating}
+                leftIcon={!isGenerating ? <Sparkles className="w-4 h-4" /> : undefined}
               >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Generating Multi-Slide Angles...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Generate {channel === 'X_Thread' ? 'Thread' : 'Carousel'}
-                  </>
-                )}
-              </button>
+                {isGenerating ? 'Generating campaign...' : `Generate ${channel === 'X_Thread' ? 'Thread' : 'Carousel'}`}
+              </Button>
             </div>
-          </div>
+          </GlassCard>
 
           {/* Accompanying Post Copy */}
-          <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-3">
+          <GlassCard elevation="flat" className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-400" />
+              <h3 className="text-xs font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[var(--sigma-primary)]" />
                 Accompanying Caption
               </h3>
               <button
@@ -426,7 +479,7 @@ Which slide hit closest to home? Drop a comment below 👇
                   navigator.clipboard.writeText(caption);
                   notifySuccess('Copied', 'Post caption copied to clipboard.');
                 }}
-                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                className="text-xs text-[var(--sigma-primary)] hover:brightness-90 flex items-center gap-1 font-semibold"
               >
                 <Copy className="w-3 h-3" /> Copy
               </button>
@@ -435,19 +488,62 @@ Which slide hit closest to home? Drop a comment below 👇
               value={caption}
               onChange={e => setCaption(e.target.value)}
               rows={8}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-blue-500/50 resize-none font-mono"
+              className="sigma-input w-full px-3.5 py-2.5 text-xs leading-relaxed resize-none font-mono"
             />
-          </div>
+          </GlassCard>
         </div>
 
         {/* Right Column: Visual Preview & Live Slides */}
         <div className="lg:col-span-8 space-y-6">
+          {/* Agent Reach Source Grounding Banner */}
+          {repurposedMeta && (
+            <div className="sigma-panel p-4 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {repurposedMeta.sourceThumbnail ? (
+                  <img
+                    src={repurposedMeta.sourceThumbnail}
+                    alt="Source Thumbnail"
+                    className="w-14 h-9 object-cover rounded-lg border border-[var(--sigma-border-strong)] shrink-0"
+                  />
+                ) : (
+                  <div className="p-2 rounded-lg bg-[var(--sigma-primary-subtle)] text-[var(--sigma-primary)] shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[var(--sigma-text)] text-xs line-clamp-1">{repurposedMeta.sourceTitle || 'External Source'}</span>
+                    <Badge variant="info" size="xs">
+                      {repurposedMeta.sourceUrl.includes('youtube') ? 'YouTube Ingestion' : 'Web Ingestion'}
+                    </Badge>
+                  </div>
+                  <a
+                    href={repurposedMeta.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-primary)] hover:underline flex items-center gap-1 mt-0.5 font-mono"
+                  >
+                    {repurposedMeta.sourceUrl} <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
+                <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> {repurposedMeta.slides?.length || 0} Slides
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-sky-600 dark:text-sky-400">
+                  {repurposedMeta.tweetThread?.length || 0} Tweets
+                </span>
+              </div>
+            </div>
+          )}
+
           {channel === 'X_Thread' ? (
             /* Twitter Thread View */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Twitter className="w-4 h-4 text-sky-400" />
+                <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                  <Twitter className="w-4 h-4 text-sky-500" />
                   X / Twitter Thread ({threadTweets.length} Tweets)
                 </h3>
                 <button
@@ -456,7 +552,7 @@ Which slide hit closest to home? Drop a comment below 👇
                     navigator.clipboard.writeText(fullThread);
                     notifySuccess('Thread Copied', 'All tweets copied in sequence.');
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200 hover:bg-white/10 flex items-center gap-1.5"
+                  className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5"
                 >
                   <Copy className="w-3.5 h-3.5" /> Copy Entire Thread
                 </button>
@@ -464,21 +560,22 @@ Which slide hit closest to home? Drop a comment below 👇
 
               <div className="space-y-3">
                 {threadTweets.map((tweet, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-[#0F0F12] border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span className="font-semibold text-sky-400">Tweet {tweet.tweetNumber} of {threadTweets.length}</span>
+                  <GlassCard key={idx} elevation="flat" className="p-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs text-[var(--sigma-text-muted)]">
+                      <span className="font-semibold text-sky-600 dark:text-sky-400">Tweet {tweet.tweetNumber} of {threadTweets.length}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[11px]">{tweet.charCount} / 280</span>
                         <button
                           onClick={() => handleCopyText(tweet.text, idx)}
-                          className="text-slate-400 hover:text-white"
+                          className="sigma-icon-button !min-h-8 !min-w-8"
+                          aria-label={`Copy tweet ${tweet.tweetNumber}`}
                         >
                           {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm text-slate-200 whitespace-pre-wrap">{tweet.text}</p>
-                  </div>
+                    <p className="text-sm text-[var(--sigma-text-soft)] whitespace-pre-wrap leading-relaxed">{tweet.text}</p>
+                  </GlassCard>
                 ))}
               </div>
             </div>
@@ -487,13 +584,13 @@ Which slide hit closest to home? Drop a comment below 👇
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-white">Visual Slide Deck Preview</h3>
-                  <span className="text-xs text-slate-400">({slides.length} slides • 4:5 Portrait)</span>
+                  <h3 className="text-sm font-semibold text-[var(--sigma-text)]">Visual Slide Deck Preview</h3>
+                  <span className="text-xs text-[var(--sigma-text-muted)]">{slides.length} slides, 4:5 portrait</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setViewMode(viewMode === 'CARDS' ? 'RAW_TEXT' : 'CARDS')}
-                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200 hover:bg-white/10 flex items-center gap-1.5"
+                    className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5"
                   >
                     {viewMode === 'CARDS' ? 'View Slide Text' : 'View Visual Cards'}
                   </button>
@@ -501,31 +598,32 @@ Which slide hit closest to home? Drop a comment below 👇
               </div>
 
               {viewMode === 'CARDS' ? (
-                <div className="p-6 rounded-2xl bg-[#0F0F12] border border-white/10 flex justify-center">
+                <div className="sigma-panel-raised p-4 sm:p-6 flex justify-center overflow-hidden">
                   <CarouselCardViewer slides={slides} />
                 </div>
               ) : (
                 <div className="space-y-3">
                   {slides.map((slide, idx) => (
-                    <div key={idx} className="p-4 rounded-xl bg-[#0F0F12] border border-white/10 space-y-2">
+                    <GlassCard key={idx} elevation="flat" className="p-4 space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-amber-400">Slide {slide.slideNumber}: {slide.badge}</span>
                         <button
                           onClick={() => handleCopyText(`${slide.title}\n${slide.subtitle}\n\n${slide.contentPoints.join('\n')}\n\nTakeaway: ${slide.takeaway}`, idx)}
-                          className="text-slate-400 hover:text-white"
+                          className="sigma-icon-button !min-h-8 !min-w-8"
+                          aria-label={`Copy slide ${slide.slideNumber}`}
                         >
                           {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
-                      <div className="font-semibold text-sm text-white">{slide.title}</div>
-                      <div className="text-xs text-slate-400">{slide.subtitle}</div>
-                      <ul className="text-xs text-slate-300 list-disc list-inside space-y-1 pt-1">
+                      <div className="font-semibold text-sm text-[var(--sigma-text)]">{slide.title}</div>
+                      <div className="text-xs text-[var(--sigma-text-muted)]">{slide.subtitle}</div>
+                      <ul className="text-xs text-[var(--sigma-text-soft)] list-disc list-inside space-y-1 pt-1">
                         {slide.contentPoints.map((pt, pIdx) => (
                           <li key={pIdx}>{pt}</li>
                         ))}
                       </ul>
-                      <div className="text-xs text-amber-300/90 font-medium pt-1">Key Takeaway: {slide.takeaway}</div>
-                    </div>
+                      <div className="text-xs text-[var(--sigma-primary)] font-medium pt-1">Key Takeaway: {slide.takeaway}</div>
+                    </GlassCard>
                   ))}
                 </div>
               )}
@@ -543,6 +641,122 @@ Which slide hit closest to home? Drop a comment below 👇
           onClear={() => setRunHistory([])}
         />
       </div>
+
+      {/* Agent Reach Carousel Repurposing Modal */}
+      <AnimatePresence>
+        {isRepurposeModalOpen && (
+          <div className="sigma-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="sigma-modal w-full max-w-2xl p-6 md:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-[var(--sigma-primary-subtle)] border border-[var(--sigma-primary)]/25 text-[var(--sigma-primary)]">
+                    <Youtube className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[var(--sigma-text)] flex items-center gap-2 flex-wrap">
+                      Video & Article to Carousel Pipeline
+                      <Badge variant="info" size="xs">Agent Reach</Badge>
+                    </h3>
+                    <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5 leading-relaxed">
+                      Extract high-retention frameworks from any YouTube video or web article to produce an interactive LinkedIn carousel and viral X thread.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsRepurposeModalOpen(false)}
+                  className="sigma-icon-button"
+                  aria-label="Close repurpose dialog"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Source URL Field & Presets */}
+              <div className="space-y-3">
+                <label className="text-xs font-semibold text-[var(--sigma-text-soft)] flex items-center gap-1.5">
+                  <Link2 className="w-3.5 h-3.5 text-[var(--sigma-primary)]" />
+                  Source URL (YouTube Video or Web Article)
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    value={repurposeUrl}
+                    onChange={e => setRepurposeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... or https://..."
+                    className="sigma-input w-full px-4 py-3 text-sm font-mono"
+                  />
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-[var(--sigma-text-muted)]">Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRepurposeUrl('https://www.youtube.com/watch?v=jNQXAC9IVRw');
+                      setRepurposeTopicAngle('History and First Principles of Video Platforms');
+                    }}
+                    className="sigma-button-secondary px-2.5 py-1 text-[11px] flex items-center gap-1"
+                  >
+                    <Youtube className="w-3 h-3 text-red-400" /> YouTube Demo Video
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRepurposeUrl('https://paulgraham.com/foundermode.html');
+                      setRepurposeTopicAngle('Founder Mode vs Manager Mode');
+                    }}
+                    className="sigma-button-secondary px-2.5 py-1 text-[11px] flex items-center gap-1"
+                  >
+                    <Globe className="w-3 h-3 text-[var(--sigma-primary)]" /> Paul Graham: Founder Mode
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Topic / Angle Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[var(--sigma-text-soft)]">
+                  Custom Angle or Hook Focus (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={repurposeTopicAngle}
+                  onChange={e => setRepurposeTopicAngle(e.target.value)}
+                  placeholder="e.g. Focus on executive leverage and sovereign infrastructure"
+                  className="sigma-input w-full px-3.5 py-2.5 text-xs"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRepurposeModalOpen(false)}
+                  className="sigma-button-secondary px-4 py-2.5 text-xs font-medium"
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="button"
+                  onClick={handleRepurposeCarousel}
+                  disabled={isRepurposing || !repurposeUrl.trim()}
+                  variant="primary"
+                  isLoading={isRepurposing}
+                  leftIcon={!isRepurposing ? <Sparkles className="w-3.5 h-3.5" /> : undefined}
+                >
+                  {isRepurposing ? 'Extracting and repurposing...' : 'Generate Carousel and Thread'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

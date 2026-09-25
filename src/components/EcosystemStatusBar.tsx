@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  Activity, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  RefreshCw, 
-  Wrench, 
-  ArrowRight, 
-  ChevronDown, 
-  ChevronRight, 
-  Search, 
-  Bot, 
-  Database, 
-  Layers, 
-  Cpu, 
-  Zap, 
+import {
+  Activity,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  RefreshCw,
+  Wrench,
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Bot,
+  Database,
+  Layers,
+  Cpu,
+  Zap,
   ShieldCheck,
   Check,
   X,
@@ -444,7 +444,7 @@ export default function EcosystemStatusBar({
         const matchesSearch = el.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               el.diagnosticDetail.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               sub.title.toLowerCase().includes(searchQuery.toLowerCase());
-        
+
         if (!matchesSearch) return false;
         if (filter === 'ALL') return true;
         if (filter === 'ISSUES') return el.status !== 'OPERATIONAL';
@@ -490,7 +490,7 @@ export default function EcosystemStatusBar({
         </div>
 
         <div className="flex items-center gap-1">
-          <button 
+          <button
             onClick={handlePingAll}
             disabled={isRefreshing}
             title="Ping all ecosystem elements"
@@ -498,7 +498,7 @@ export default function EcosystemStatusBar({
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin text-accent")} />
           </button>
-          
+
           {onToggleDock && (
             <button
               onClick={onToggleDock}
@@ -509,7 +509,7 @@ export default function EcosystemStatusBar({
             </button>
           )}
 
-          <button 
+          <button
             onClick={onClose}
             className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
           >
@@ -533,12 +533,12 @@ export default function EcosystemStatusBar({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 text-[10px] font-mono">
+        <div className="sigma-segmented font-mono">
           <button
             onClick={() => setFilter('ALL')}
             className={cn(
-              "px-2.5 py-1 rounded-md transition-all font-bold",
-              filter === 'ALL' ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white hover:bg-white/5"
+              "sigma-segment",
+              filter === 'ALL' ? "sigma-segment-active" : ""
             )}
           >
             All ({totalCount})
@@ -546,8 +546,8 @@ export default function EcosystemStatusBar({
           <button
             onClick={() => setFilter('ISSUES')}
             className={cn(
-              "px-2.5 py-1 rounded-md transition-all font-bold flex items-center gap-1",
-              filter === 'ISSUES' ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "text-zinc-400 hover:text-amber-400 hover:bg-white/5"
+              "sigma-segment flex items-center gap-1",
+              filter === 'ISSUES' ? "sigma-segment-active" : ""
             )}
           >
             <AlertTriangle size={10} />
@@ -556,8 +556,8 @@ export default function EcosystemStatusBar({
           <button
             onClick={() => setFilter('OPERATIONAL')}
             className={cn(
-              "px-2.5 py-1 rounded-md transition-all font-bold flex items-center gap-1",
-              filter === 'OPERATIONAL' ? "bg-green-500/20 text-green-400 border border-green-500/30" : "text-zinc-400 hover:text-green-400 hover:bg-white/5"
+              "sigma-segment flex items-center gap-1",
+              filter === 'OPERATIONAL' ? "sigma-segment-active" : ""
             )}
           >
             <CheckCircle2 size={10} />
@@ -625,8 +625,8 @@ export default function EcosystemStatusBar({
                                 key={el.id}
                                 className={cn(
                                   "p-2.5 rounded-lg border transition-all text-xs font-mono",
-                                  isOperational 
-                                    ? "bg-black/20 border-white/5 hover:border-white/15" 
+                                  isOperational
+                                    ? "bg-black/20 border-white/5 hover:border-white/15"
                                     : "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50"
                                 )}
                               >

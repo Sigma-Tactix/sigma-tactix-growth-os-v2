@@ -5,7 +5,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { computeCameraFit, type HoloNode3D, type HoloLink3D } from '../../lib/hologramGraph';
-import SigmaSunCore, { SUN_RADIUS } from './SigmaSunCore';
+import { SUN_RADIUS } from './SigmaSunCore';
 import Starfield from './Starfield';
 import PlanetSystem from './PlanetSystem';
 import UltronJarvisNeuralCore, { ConsciousnessMode } from './UltronJarvisNeuralCore';
@@ -619,7 +619,7 @@ export default function NeuralBrainCore3D({
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse" />
-          JARVIS PROTOCOL (Order)
+          LIVING CORE
         </button>
 
         <button
@@ -631,7 +631,7 @@ export default function NeuralBrainCore3D({
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block animate-pulse" />
-          ULTRON CONSCIOUSNESS (Synapse)
+          NETWORK VIEW
         </button>
       </div>
 

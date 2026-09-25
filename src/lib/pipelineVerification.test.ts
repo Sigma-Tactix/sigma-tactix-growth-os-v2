@@ -32,4 +32,24 @@ describe('pipeline verification', () => {
     expect(adapter).not.toHaveBeenCalled();
     expect(await unsupportedConnectorAdapter()).toBe(false);
   });
+
+  it('does not treat a failed connector verification state as live', async () => {
+    const failed = { ...connector, verificationState: 'failed' as const };
+    await expect(verifyPipelineConnection('Meta Ads', 'act_123', [failed], credentials, () => async () => true)).rejects.toThrow('exact provider account');
+  });
+
+  it.each([
+    ['Google Analytics 4 (GA4)', 'Google Analytics'],
+    ['Google Ads', 'Google Ads'],
+    ['Meta Ads Manager', 'Meta Ads'],
+    ['LinkedIn Ads', 'LinkedIn Ads'],
+    ['Twitter (X) Ads', 'Twitter (X) Ads'],
+    ['Reddit Ads', 'Reddit Ads'],
+  ] as const)('maps %s to its account-scoped adapter', async (pipelinePlatform, connectorPlatform) => {
+    const scopedConnector: Connector = { ...connector, platform: connectorPlatform, id: pipelinePlatform };
+    const adapter = vi.fn().mockResolvedValue(true);
+    const result = await verifyPipelineConnection(pipelinePlatform, 'act_123', [scopedConnector], credentials, () => adapter);
+    expect(result.verified).toBe(true);
+    expect(adapter).toHaveBeenCalledOnce();
+  });
 });

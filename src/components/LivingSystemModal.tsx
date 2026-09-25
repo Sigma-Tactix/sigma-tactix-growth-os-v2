@@ -1,19 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  X, 
-  Sparkles, 
-  Zap, 
-  Database, 
-  Bot, 
-  FileText, 
-  Layers, 
-  ShieldAlert, 
-  Search, 
-  RotateCcw, 
-  ExternalLink, 
-  Activity, 
-  ChevronRight, 
-  Maximize2, 
+import {
+  X,
+  Sparkles,
+  Zap,
+  Database,
+  Bot,
+  FileText,
+  Layers,
+  ShieldAlert,
+  Search,
+  RotateCcw,
+  ExternalLink,
+  Activity,
+  ChevronRight,
+  Maximize2,
   Minimize2,
   Info,
   Radio,
@@ -76,11 +76,11 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   // Upstream and downstream nodes for the selected node
-  const upstreamNodes = selectedNode 
+  const upstreamNodes = selectedNode
     ? nodes.filter(n => selectedNode.dependencies.includes(n.id))
     : [];
 
-  const downstreamNodes = selectedNode 
+  const downstreamNodes = selectedNode
     ? nodes.filter(n => selectedNode.dependents.includes(n.id))
     : [];
 
@@ -136,12 +136,12 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
             </button>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-0.5">
+            <div className="sigma-segmented font-mono">
               <button
                 onClick={() => setViewMode('3D_HOLOGRAM')}
                 className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                  viewMode === '3D_HOLOGRAM' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
+                  "sigma-segment flex items-center gap-1.5",
+                  viewMode === '3D_HOLOGRAM' ? "sigma-segment-active" : ""
                 )}
               >
                 <Sparkles size={12} /> {hasWebGL ? '3D Hologram Universe' : 'Solar Lattice (2D Canvas)'}
@@ -149,8 +149,8 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
               <button
                 onClick={() => setViewMode('PARTICLE_ORB')}
                 className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                  viewMode === 'PARTICLE_ORB' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
+                  "sigma-segment flex items-center gap-1.5",
+                  viewMode === 'PARTICLE_ORB' ? "sigma-segment-active" : ""
                 )}
               >
                 <Orbit size={12} /> Particle Earth Orb
@@ -158,8 +158,8 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
               <button
                 onClick={() => setViewMode('DAG_MATRIX')}
                 className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                  viewMode === 'DAG_MATRIX' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
+                  "sigma-segment flex items-center gap-1.5",
+                  viewMode === 'DAG_MATRIX' ? "sigma-segment-active" : ""
                 )}
               >
                 <LayoutGrid size={12} /> Dependency DAG

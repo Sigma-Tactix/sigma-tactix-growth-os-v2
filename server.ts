@@ -8,7 +8,20 @@
 // (the handler at the bottom of this file) instead.
 import "express-async-errors";
 import { onboardingChatRequest, ONBOARDING_INSTRUCTION } from "./src/lib/onboardingChat.js";
-import { verifyPipelineConnection, unsupportedConnectorAdapter } from "./src/lib/pipelineVerification.js";
+import { canonicalConnectorPlatform, verifyPipelineConnection, unsupportedConnectorAdapter } from "./src/lib/pipelineVerification.js";
+import { classifyChannelMedia, validatePriorityConnectorCredentials } from "./src/lib/connectorLifecycle.js";
+import {
+  VANTA_SYSTEM_INSTRUCTION,
+  buildVantaPromptContext,
+  classifyVantaVerification,
+  describeVantaProviderError,
+  parseVantaModelOutput,
+  vantaConversationRequest,
+  vantaMemoryRequest,
+  vantaMessageRequest,
+  vantaShareRequest,
+  vantaVoiceSettingsRequest,
+} from "./src/lib/vantaServer.js";
 import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -39,6 +52,17 @@ import { sendEmail } from "./src/lib/email.js";
 import { getPublicClient, getServiceRoleClient } from "./src/lib/supabaseAdmin.js";
 import { isStripeConfigured, isStripeWebhookConfigured, getStripeClient } from "./src/lib/stripe.js";
 import { promises as dns } from "dns";
+import { 
+  getAgentReachDoctor, 
+  executeReachFetch, 
+  generateCompetitorBattlecard, 
+  repurposeToArticle, 
+  repurposeToCarouselAndThread 
+} from "./src/server/agentReachService.js";
+import { createAgentReachRouter } from "./src/server/routes/agentReachRoutes.js";
+import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
+import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
+import { classifyActionRisk, routeIssueToModule, evaluateAgentSwarmSafety, isJevConfigured } from "./src/lib/jevDecisionEngine.js";
 
 // Load environment variables
 dotenv.config();
@@ -1293,8 +1317,198 @@ function requireModule(moduleKey: string) {
 // Get Workspace Data
 app.get("/api/workspace", async (req: Request, res: Response) => {
   const db = await getDB(res);
-  res.json(db);
+  // This general workspace read is used by client pages. Never serialize
+  // encrypted connector/provider blobs or webhook secrets to the browser.
+  const { aiProviderKeys: _keys, secondBrain, ...safeWorkspace } = db as any;
+  res.json({
+    ...safeWorkspace,
+    secondBrain: {
+      ...secondBrain,
+      connectors: (secondBrain?.connectors || []).map(({ credentials: _credentials, ...connector }: any) => connector),
+      pipelines: (secondBrain?.pipelines || []).map(({ credential: _credential, webhookSecret: _webhookSecret, ...pipeline }: any) => pipeline),
+    },
+  });
 });
+
+// VANTA is a read/explain/propose interface. It never receives a generic tool
+// executor: proposed changes route back into existing, permissioned workflows.
+const vantaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024, files: 12 },
+});
+type VantaLocalContext = { id: string; workspaceId: string; userId: string; name: string; text: string; expiresAt: number };
+const vantaLocalContexts = new Map<string, VantaLocalContext>();
+
+function pruneVantaLocalContexts() {
+  const now = Date.now();
+  for (const [id, context] of vantaLocalContexts) {
+    if (context.expiresAt <= now) vantaLocalContexts.delete(id);
+  }
+}
+
+async function extractVantaLocalText(file: Express.Multer.File): Promise<string> {
+  const lower = file.originalname.toLowerCase();
+  if (file.mimetype.startsWith('text/') || /\.(txt|md|csv|json|xml|html)$/i.test(lower)) {
+    return file.buffer.toString('utf8').slice(0, 60_000);
+  }
+  if (file.mimetype === 'application/pdf' || lower.endsWith('.pdf')) {
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ data: file.buffer });
+    const result = await parser.getText();
+    return result.text.slice(0, 60_000);
+  }
+  if (/\.(xlsx|xls)$/i.test(lower)) {
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    return workbook.SheetNames
+      .map(sheet => `--- ${sheet} ---\n${XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])}`)
+      .join('\n')
+      .slice(0, 60_000);
+  }
+  throw new Error('Unsupported file type. Use text, Markdown, CSV, JSON, HTML, PDF, XLS or XLSX.');
+}
+
+function normalizeVantaLocalBaseUrl(raw: string) {
+  return raw.replace(/\/$/, '').replace(/\/v1$/, '');
+}
+
+async function getVantaSettings(res: Response) {
+  const { data } = await res.locals.sb
+    .from('vanta_settings')
+    .select('text_provider,text_model,voice_provider,voice_config,provider_verified_at,voice_verified_at')
+    .eq('workspace_id', res.locals.wsId)
+    .maybeSingle();
+  return data as null | {
+    text_provider: string;
+    text_model: string | null;
+    voice_provider: 'gemini' | 'local';
+    voice_config: { baseUrl?: string; sttModel?: string; ttsModel?: string; voice?: string } | null;
+    provider_verified_at: string | null;
+    voice_verified_at: string | null;
+  };
+}
+
+// ==========================================
+// VANTA — Sigma Intelligence Neural Core Router (Modular Controller)
+// ==========================================
+app.use(
+  "/api/workspace/vanta",
+  createVantaRouter({
+    expensiveLimiter,
+    callerIsOwnerOrAdmin,
+    getVantaSettings,
+    normalizeVantaLocalBaseUrl,
+    describeVantaProviderError,
+    resolveEffectiveGeminiKey,
+    resolveEffectiveGeminiModel,
+    getGeminiClient,
+    getDB,
+    searchDocuments,
+    vantaUpload,
+    vantaLocalContexts,
+    pruneVantaLocalContexts,
+    extractVantaLocalText,
+    VANTA_SYSTEM_INSTRUCTION,
+    classifyVantaVerification,
+    buildVantaPromptContext,
+    parseVantaModelOutput,
+    vantaMessageRequest,
+    vantaConversationRequest,
+    vantaShareRequest,
+    vantaMemoryRequest,
+    vantaVoiceSettingsRequest,
+  })
+);
+
+// ==========================================
+// TypeSafe AI — Jev System 1 Decision & Routing Endpoints
+// ==========================================
+app.get("/api/workspace/decision/status", async (req: Request, res: Response) => {
+  const configured = isJevConfigured();
+  res.json({
+    success: true,
+    configured,
+    model: "jev-latest",
+    engine: configured ? "jev" : "gemini_flash_fallback",
+    latencyGrade: "INSTANT",
+  });
+});
+
+app.post("/api/workspace/decision/triage", async (req: Request, res: Response) => {
+  const { title, summary, module, details } = req.body as {
+    title?: string;
+    summary?: string;
+    module?: string;
+    details?: string;
+  };
+  if (!title || !summary) {
+    res.status(400).json({ error: "title and summary are required" });
+    return;
+  }
+  const result = await classifyActionRisk({
+    title,
+    summary,
+    module: module || "GENERAL",
+    details,
+  });
+  res.json({
+    success: true,
+    ...result,
+    risk: result.risk,
+    risk_level: result.risk,
+    requiresHITL: result.requiresHITL,
+    requires_hitl: result.requiresHITL,
+    confidence: result.confidence,
+    probabilities: result.probabilities,
+    reasoning: `Classified as ${result.risk} risk (${Math.round(result.confidence * 100)}% confidence).`,
+  });
+});
+
+app.post("/api/workspace/decision/route", async (req: Request, res: Response) => {
+  const { issueText, sourceChannel } = req.body as {
+    issueText?: string;
+    sourceChannel?: string;
+  };
+  if (!issueText?.trim()) {
+    res.status(400).json({ error: "issueText is required" });
+    return;
+  }
+  const result = await routeIssueToModule({
+    issueText: issueText.trim(),
+    sourceChannel,
+  });
+  const priority = result.confidence >= 0.85 ? "HIGH" : "NORMAL";
+  res.json({
+    success: true,
+    ...result,
+    targetModule: result.targetModule,
+    target_module: result.targetModule.toLowerCase(),
+    suggestedAction: result.suggestedAction,
+    recommended_action: result.suggestedAction,
+    priority,
+    confidence: result.confidence,
+    engine: result.engine,
+  });
+});
+
+app.post("/api/workspace/decision/safety", async (req: Request, res: Response) => {
+  const { agentName, goal, proposedAction } = req.body as {
+    agentName?: string;
+    goal?: string;
+    proposedAction?: string;
+  };
+  if (!proposedAction) {
+    res.status(400).json({ error: "proposedAction is required" });
+    return;
+  }
+  const result = await evaluateAgentSwarmSafety({
+    agentName: agentName || "Autonomous Agent",
+    goal: goal || "Execute action",
+    proposedAction,
+  });
+  res.json({ success: true, ...result });
+});
+
 
 // MCP servers + Agent Skills (#task11, Cockpit sections) — the toggle in
 // the old combined "MCP & Agent Skills" Settings card had no save handler
@@ -1584,6 +1798,12 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
   }
 
   const db = await getDB(res);
+  const sha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
+  const duplicate = (db.secondBrain.uploadedFiles || []).find(f => f.sha256 === sha256);
+  if (duplicate) {
+    res.status(409).json({ error: "This exact file has already been uploaded.", file: duplicate, code: 'DUPLICATE_FILE' });
+    return;
+  }
   const storagePath = `${res.locals.wsId}/${vaultId}/${crypto.randomUUID()}-${file.originalname}`;
 
   const { error: uploadErr } = await res.locals.sb.storage
@@ -1606,6 +1826,14 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
       contentText = result.text.slice(0, 50000);
     } catch (err) {
       console.error("PDF text extraction failed (file still stored):", err);
+    }
+  } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(file.buffer, { type: "buffer" });
+      contentText = workbook.SheetNames.map(sheet => `--- Sheet: ${sheet} ---\n${XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])}`).join("\n").slice(0, 50000);
+    } catch (err) {
+      console.error("Spreadsheet text extraction failed (file still stored):", err);
     }
   }
   // docx/xlsx/images: stored above, but not text-extracted — status stays
@@ -1637,6 +1865,7 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
     storagePath,
     documentId,
     mimeType: file.mimetype,
+    sha256,
   };
   db.secondBrain.uploadedFiles = [...(db.secondBrain.uploadedFiles || []), newFile];
   await saveDB(res, db);
@@ -2139,163 +2368,18 @@ app.delete("/api/workspace/team/member/:userId", async (req: Request, res: Respo
 });
 
 // Admin Panel real billing (#17) — was a fully hardcoded modal ($15,000/mo,
-// fake invoice dates, two "Simulate Webhook" buttons). Stripe is the source
-// of truth; workspaces.stripe_customer_id/billing_* (migration 0007) are just
-// a cache written by the webhook above. No fabricated numbers when Stripe
-// isn't configured — the UI gets `configured: false` and shows that state
-// honestly instead of guessing.
-app.get("/api/workspace/billing/status", async (req: Request, res: Response) => {
-  if (!isStripeConfigured()) {
-    res.json({ success: true, configured: false });
-    return;
-  }
-  const { data: wsRow, error: wsErr } = await res.locals.sb
-    .from("workspaces")
-    .select("stripe_customer_id, billing_status, billing_plan, billing_current_period_end")
-    .eq("id", res.locals.wsId)
-    .single();
-  if (wsErr) {
-    res.status(500).json({ error: wsErr.message });
-    return;
-  }
-  if (!wsRow?.stripe_customer_id) {
-    res.json({ success: true, configured: true, hasCustomer: false });
-    return;
-  }
+// ==========================================
+// Billing & Subscription Tier Router (Modular Controller)
+// ==========================================
+app.use(
+  "/api/workspace/billing",
+  createBillingRouter({
+    isStripeConfigured,
+    getStripeClient,
+    getEntitlements,
+  })
+);
 
-  try {
-    const stripe = getStripeClient();
-    const customerId = wsRow.stripe_customer_id as string;
-    const [subscriptions, invoices] = await Promise.all([
-      stripe.subscriptions.list({ customer: customerId, limit: 1, expand: ["data.default_payment_method", "data.items.data.price"] }),
-      stripe.invoices.list({ customer: customerId, limit: 10 }),
-    ]);
-    const sub = subscriptions.data[0];
-    const pm = sub?.default_payment_method && typeof sub.default_payment_method !== "string" ? sub.default_payment_method : null;
-    res.json({
-      success: true,
-      configured: true,
-      hasCustomer: true,
-      subscription: sub ? {
-        status: sub.status,
-        plan: sub.items.data[0]?.price?.nickname || sub.items.data[0]?.price?.id || wsRow.billing_plan || null,
-        currentPeriodEnd: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : wsRow.billing_current_period_end,
-      } : (wsRow.billing_status ? { status: wsRow.billing_status, plan: wsRow.billing_plan, currentPeriodEnd: wsRow.billing_current_period_end } : null),
-      paymentMethod: pm?.card ? { brand: pm.card.brand, last4: pm.card.last4 } : null,
-      invoices: invoices.data.map(inv => ({
-        id: inv.id,
-        date: inv.created ? new Date(inv.created * 1000).toISOString() : null,
-        amount: (inv.amount_paid ?? inv.amount_due ?? 0) / 100,
-        currency: inv.currency,
-        status: inv.status,
-        hostedInvoiceUrl: inv.hosted_invoice_url,
-        invoicePdf: inv.invoice_pdf,
-      })),
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to load billing data from Stripe: " + (err.message || String(err)) });
-  }
-});
-
-// Opens the real Stripe-hosted Billing Portal for payment-method and plan
-// changes — deliberately not reimplementing plan-selection/card-collection
-// UI ourselves (Stripe's own PCI-scoped, maintained portal is strictly safer
-// and less code). First call for a workspace lazily creates its Stripe
-// customer; ws_update RLS (owner_id = caller) is what actually gates who can
-// link billing. An adversarial review found the original version trusted a
-// bare .update().eq() to report failure for a non-owner caller — Postgres/
-// PostgREST report an RLS-filtered 0-row UPDATE as a normal success (no
-// error), not a permission error, so that check never fired. Fixed two ways:
-// (1) the caller's ownership is checked explicitly before ever creating a
-// Stripe customer (so a rejected non-owner never causes an orphaned Stripe
-// Customer to be created), and (2) the update chains .select().single(),
-// which does surface a real error when RLS filters out all rows.
-app.post("/api/workspace/billing/portal-session", async (req: Request, res: Response) => {
-  if (!isStripeConfigured()) {
-    res.status(503).json({ error: "Stripe billing is not configured on this server. Set STRIPE_SECRET_KEY to enable it." });
-    return;
-  }
-  try {
-    const stripe = getStripeClient();
-    const { data: wsRow, error: wsErr } = await res.locals.sb
-      .from("workspaces")
-      .select("stripe_customer_id, name, owner_id")
-      .eq("id", res.locals.wsId)
-      .single();
-    if (wsErr) {
-      res.status(500).json({ error: wsErr.message });
-      return;
-    }
-
-    let customerId = wsRow?.stripe_customer_id as string | undefined;
-    if (!customerId) {
-      if (wsRow?.owner_id !== res.locals.userId) {
-        res.status(403).json({ error: "Only the workspace owner can set up billing." });
-        return;
-      }
-      const customer = await stripe.customers.create({
-        email: res.locals.userEmail,
-        name: wsRow?.name || undefined,
-        metadata: { workspace_id: res.locals.wsId },
-      });
-      customerId = customer.id;
-      const { error: updateErr } = await res.locals.sb.from("workspaces").update({ stripe_customer_id: customerId }).eq("id", res.locals.wsId).select().single();
-      if (updateErr) {
-        res.status(403).json({ error: "Only the workspace owner can set up billing. (" + updateErr.message + ")" });
-        return;
-      }
-    }
-
-    const appUrl = (process.env.APP_URL && !process.env.APP_URL.startsWith("MY_")) ? process.env.APP_URL : "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: appUrl.replace(/\/$/, ""),
-    });
-    res.json({ success: true, url: portalSession.url });
-  } catch (err: any) {
-    res.status(500).json({ error: "Failed to open Stripe billing portal: " + (err.message || String(err)) });
-  }
-});
-
-// Subscription tier plans (#pricing) — Admin panel "apply pricing package to
-// client" flow. List is public-to-authenticated (tier_definitions RLS in
-// 0009_subscription_tiers.sql), the set-tier write is a SECURITY DEFINER RPC
-// gated on caller being owner/admin of the workspace being changed.
-app.get("/api/workspace/billing/tiers", async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.from("tier_definitions").select("*").order("sort_order");
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  res.json({ success: true, tiers: data || [] });
-});
-
-app.get("/api/workspace/billing/tier", async (req: Request, res: Response) => {
-  const ent = await getEntitlements(res);
-  res.json({ success: true, entitlements: ent });
-});
-
-app.post("/api/workspace/billing/set-tier", async (req: Request, res: Response) => {
-  const { tierKey } = req.body as { tierKey?: string };
-  if (!tierKey) {
-    res.status(400).json({ error: "tierKey is required" });
-    return;
-  }
-  const { data, error } = await res.locals.sb.rpc("admin_set_workspace_tier", {
-    p_workspace_id: res.locals.wsId,
-    p_tier_key: tierKey,
-  });
-  if (error) {
-    res.status(400).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(403).json({ error: "Only the workspace owner or admin can apply a pricing plan." });
-    return;
-  }
-  const ent = await getEntitlements(res);
-  res.json({ success: true, entitlements: ent });
-});
 
 // Admin > AI Model Config (#pricing task 6). Keys are stored the same way
 // ConnectorsCenter stores connector credentials — AES-encrypted via
@@ -2320,7 +2404,8 @@ const SUPPORTED_AI_PROVIDERS = [
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter"
+  "openrouter",
+  "typesafe"
 ] as const;
 type AIProvider = typeof SUPPORTED_AI_PROVIDERS[number];
 
@@ -2336,7 +2421,8 @@ const UI_PRIMARY_PROVIDERS = [
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter"
+  "openrouter",
+  "typesafe"
 ] as const;
 
 async function resolveEffectiveProviderKey(res: Response, provider: string): Promise<string | undefined> {
@@ -2367,6 +2453,7 @@ async function resolveEffectiveProviderKey(res: Response, provider: string): Pro
     omniroute: process.env.OMNIROUTE_API_KEY,
     opencode: process.env.OPENCODE_API_KEY,
     openrouter: process.env.OPENROUTER_API_KEY,
+    typesafe: process.env.TYPESAFE_API_KEY,
     lmstudio: "local-on-device",
     ollama: "local-on-device"
   };
@@ -3189,6 +3276,20 @@ app.get("/api/workspace/admin/harness/status", async (req: Request, res: Respons
     }
   });
 });
+
+// ==========================================
+// Agent Reach — Multi-Channel Internet Capability Router (Modular Controller)
+// ==========================================
+app.use(
+  "/api/workspace/agent-reach",
+  createAgentReachRouter({
+    expensiveLimiter,
+    requireModule,
+    getGeminiClient,
+    resolveEffectiveGeminiKey,
+    resolveEffectiveGeminiModel,
+  })
+);
 
 // Token Metering & Client Profitability Telemetry
 app.get("/api/workspace/telemetry/tokens", async (req: Request, res: Response) => {
@@ -5522,7 +5623,8 @@ async function testMetaAdsConnection(token?: string, accountId?: string): Promis
 async function testGoogleAdsConnection(token?: string, customerId?: string, devToken?: string): Promise<boolean> {
   if (!token || !customerId || !devToken) return false;
   try {
-    const res = await fetch(`https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`, {
+    const normalizedCustomerId = customerId.replace(/-/g, '');
+    const res = await fetch(`https://googleads.googleapis.com/v25/customers/${normalizedCustomerId}/googleAds:search`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -5555,8 +5657,13 @@ async function testTikTokAdsConnection(token?: string, advertiserId?: string): P
 async function testLinkedInAdsConnection(token?: string, accountId?: string): Promise<boolean> {
   if (!token || !accountId) return false;
   try {
-    const res = await fetch(`https://api.linkedin.com/v2/adAccountsV2/${accountId}`, {
-      headers: { "Authorization": `Bearer ${token}` }
+    const normalizedId = accountId.replace(/^urn:li:sponsoredAccount:/, '');
+    const res = await fetch(`https://api.linkedin.com/rest/adAccounts/${encodeURIComponent(normalizedId)}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Linkedin-Version": "202607",
+        "X-Restli-Protocol-Version": "2.0.0",
+      }
     });
     return res.status === 200;
   } catch { return false; }
@@ -5568,6 +5675,55 @@ async function testTwitterAdsConnection(token?: string, accountId?: string): Pro
     const res = await fetch(`https://ads-api.twitter.com/12/accounts/${accountId}`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+async function testRedditAdsConnection(token?: string, accountId?: string): Promise<boolean> {
+  if (!token || !accountId) return false;
+  try {
+    const res = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${encodeURIComponent(accountId)}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+// Organic profiles use their own lightweight identity/profile endpoints. These
+// are intentionally separate from ad-account adapters: an ads token is not
+// evidence that the corresponding organic profile can be read.
+async function testLinkedInOrganicConnection(token?: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const res = await fetch('https://api.linkedin.com/rest/me', {
+      headers: { Authorization: `Bearer ${token}`, 'Linkedin-Version': '202607', 'X-Restli-Protocol-Version': '2.0.0' },
+    });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+async function testXOrganicConnection(token?: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const res = await fetch('https://api.x.com/2/users/me', { headers: { Authorization: `Bearer ${token}` } });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+async function testMetaOrganicConnection(token?: string, accountId?: string): Promise<boolean> {
+  if (!token || !accountId) return false;
+  try {
+    const res = await fetch(`https://graph.facebook.com/v22.0/${encodeURIComponent(accountId)}?fields=id,name`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.status === 200;
+  } catch { return false; }
+}
+
+async function testRedditOrganicConnection(token?: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const res = await fetch('https://oauth.reddit.com/api/v1/me', { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'SigmaTactix/1.0' } });
     return res.status === 200;
   } catch { return false; }
 }
@@ -5640,14 +5796,131 @@ async function testGoogleMyBusinessConnection(token?: string): Promise<boolean> 
   } catch { return false; }
 }
 
-async function testGoogleAnalyticsConnection(token?: string): Promise<boolean> {
-  if (!token) return false;
+function createGoogleSignedJwt(clientEmail: string, privateKey: string, scopes: string[]) {
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const claimSet = Buffer.from(JSON.stringify({
+    iss: clientEmail,
+    scope: scopes.join(' '),
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  })).toString('base64url');
+
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(`${header}.${claimSet}`);
+  const signature = sign.sign(privateKey, 'base64url');
+  return `${header}.${claimSet}.${signature}`;
+}
+
+async function getAccessTokenFromServiceAccount(keyData: { client_email: string; private_key: string }) {
   try {
-    const res = await fetch("https://analyticsadmin.googleapis.com/v1beta/accounts", {
-      headers: { "Authorization": `Bearer ${token}` }
+    const assertion = createGoogleSignedJwt(keyData.client_email, keyData.private_key, [
+      'https://www.googleapis.com/auth/analytics.readonly',
+      'https://www.googleapis.com/auth/analytics'
+    ]);
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
+      }),
     });
-    return res.status === 200;
-  } catch { return false; }
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.access_token as string;
+  } catch (err) {
+    console.error('Error exchanging service account assertion for OAuth token:', err);
+    return null;
+  }
+}
+
+async function testGoogleAnalyticsConnection(credsOrToken?: any, targetId?: string): Promise<boolean> {
+  if (!credsOrToken) return false;
+  let bearerToken: string | null = null;
+  let saKey: any = null;
+
+  if (typeof credsOrToken === 'object') {
+    if (credsOrToken.client_email && credsOrToken.private_key) {
+      saKey = credsOrToken;
+    } else if (credsOrToken.serviceAccountKey) {
+      try {
+        saKey = typeof credsOrToken.serviceAccountKey === 'string'
+          ? JSON.parse(credsOrToken.serviceAccountKey)
+          : credsOrToken.serviceAccountKey;
+      } catch {
+        saKey = null;
+      }
+    } else if (credsOrToken.apiKey && typeof credsOrToken.apiKey === 'string' && credsOrToken.apiKey.trim().startsWith('{')) {
+      try {
+        saKey = JSON.parse(credsOrToken.apiKey);
+      } catch {
+        saKey = null;
+      }
+    }
+  } else if (typeof credsOrToken === 'string' && credsOrToken.trim().startsWith('{')) {
+    try {
+      saKey = JSON.parse(credsOrToken);
+    } catch {
+      saKey = null;
+    }
+  }
+
+  if (saKey?.client_email && saKey?.private_key) {
+    bearerToken = await getAccessTokenFromServiceAccount(saKey);
+  } else if (typeof credsOrToken === 'string') {
+    bearerToken = credsOrToken;
+  } else if (credsOrToken?.accessToken) {
+    bearerToken = credsOrToken.accessToken;
+  } else if (credsOrToken?.apiKey) {
+    bearerToken = credsOrToken.apiKey;
+  }
+
+  if (!bearerToken) return false;
+
+  try {
+    const res = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", {
+      headers: { "Authorization": `Bearer ${bearerToken}` }
+    });
+    if (res.status === 200) {
+      const data = await res.json();
+      if (targetId && data.accountSummaries) {
+        const cleanedTarget = targetId.trim().replace(/^properties\//, '').replace(/^accounts\//, '');
+        let matchedProperty = '';
+        for (const acc of data.accountSummaries) {
+          const accId = acc.account?.replace(/^accounts\//, '');
+          if (accId === cleanedTarget) {
+            matchedProperty = acc.propertySummaries?.[0]?.property?.replace(/^properties\//, '') || '';
+            break;
+          }
+          const found = acc.propertySummaries?.find((p: any) => p.property?.replace(/^properties\//, '') === cleanedTarget);
+          if (found) {
+            matchedProperty = cleanedTarget;
+            break;
+          }
+        }
+        if (matchedProperty) {
+          const reportRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${matchedProperty}:runReport`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${bearerToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+              metrics: [{ name: 'activeUsers' }],
+            }),
+          });
+          return reportRes.status === 200;
+        }
+      }
+      return true;
+    }
+    const accountsRes = await fetch("https://analyticsadmin.googleapis.com/v1beta/accounts", {
+      headers: { "Authorization": `Bearer ${bearerToken}` }
+    });
+    return accountsRes.status === 200;
+  } catch {
+    return false;
+  }
 }
 
 async function testGoogleSearchConsoleConnection(token?: string): Promise<boolean> {
@@ -5731,27 +6004,35 @@ const connectorAdapters: Partial<Record<ConnectorPlatform, ConnectorAdapter>> = 
   'TikTok Ads': (c) => testTikTokAdsConnection(c.accessToken || c.apiKey, c.accountId),
   'LinkedIn Ads': (c) => testLinkedInAdsConnection(c.accessToken || c.apiKey, c.accountId),
   'Twitter (X) Ads': (c) => testTwitterAdsConnection(c.accessToken || c.apiKey, c.accountId),
+  'Reddit Ads': (c) => testRedditAdsConnection(c.accessToken || c.apiKey, c.accountId),
+  'LinkedIn (Organic)': (c) => testLinkedInOrganicConnection(c.accessToken || c.apiKey),
+  'Twitter/X (Organic)': (c) => testXOrganicConnection(c.accessToken || c.apiKey),
+  'Facebook Pages': (c) => testMetaOrganicConnection(c.accessToken || c.apiKey, c.accountId),
+  'Instagram (Organic)': (c) => testMetaOrganicConnection(c.accessToken || c.apiKey, c.accountId),
+  'Reddit (Organic)': (c) => testRedditOrganicConnection(c.accessToken || c.apiKey),
   'Snapchat Ads': (c) => testSnapchatAdsConnection(c.accessToken || c.apiKey),
   'Amazon Ads': (c) => testAmazonAdsConnection(c.accessToken || c.apiKey, c.clientId),
-  'Microsoft Ads': (c) => testMicrosoftAdsConnection(c.accessToken || c.apiKey),
   'Shopify': (c) => testShopifyConnection(c.siteUrl, c.accessToken || c.apiKey),
   'Klaviyo': (c) => testKlaviyoConnection(c.apiKey),
   'Mailchimp': (c) => testMailchimpConnection(c.apiKey),
   'Salesforce': (c) => testSalesforceConnection(c.accessToken || c.apiKey, c.siteUrl),
   'Google My Business': (c) => testGoogleMyBusinessConnection(c.accessToken || c.apiKey),
-  'Google Analytics': (c) => testGoogleAnalyticsConnection(c.accessToken || c.apiKey),
+  'Google Analytics': (c) => testGoogleAnalyticsConnection(c, c.propertyId || c.accountId),
   'Google Search Console': (c) => testGoogleSearchConsoleConnection(c.accessToken || c.apiKey),
   'Semrush': (c) => testSemrushConnection(c.apiKey),
   'Ahrefs': (c) => testAhrefsConnection(c.apiKey),
   'Similarweb': (c) => testSimilarwebConnection(c.apiKey),
   'WhatsApp Business': (c) => testWhatsAppBusinessConnection(c.accessToken || c.apiKey, c.accountId),
-  'LinkedIn (Organic)': (c) => testLinkedInAdsConnection(c.accessToken || c.apiKey, c.accountId),
 };
 
 const genericAdapter: ConnectorAdapter = unsupportedConnectorAdapter;
 
 function getConnectorAdapter(platform: ConnectorPlatform): ConnectorAdapter {
   return connectorAdapters[platform] || genericAdapter;
+}
+
+function hasConnectorAdapter(platform: ConnectorPlatform): boolean {
+  return Boolean(connectorAdapters[platform]);
 }
 
 // Publish adapters — the Creative Command Center's multi-channel publish.
@@ -5907,15 +6188,51 @@ app.post("/api/workspace/connectors/:id/connect", async (req: Request, res: Resp
     return;
   }
 
+  if (!hasConnectorAdapter(connector.platform)) {
+    connector.status = 'Disconnected';
+    connector.verificationState = 'unsupported';
+    connector.verificationError = `Live account verification is not implemented for ${connector.platform}.`;
+    await saveDB(res, db);
+    res.status(422).json({
+      success: false,
+      verified: false,
+      error: connector.verificationError,
+      code: 'UNSUPPORTED_CONNECTOR',
+    });
+    return;
+  }
+
   let verified = false;
+  let verificationError = '';
   try {
     verified = await getConnectorAdapter(connector.platform)(credentials);
   } catch (err) {
     console.error(`Connector validation failed for ${connector.platform}:`, err);
     verified = false;
+    verificationError = err instanceof Error ? err.message : 'Provider verification failed.';
   }
 
-  connector.status = verified ? 'Connected' : 'Disconnected';
+  if (!verified) {
+    connector.status = 'Disconnected';
+    connector.verificationState = 'failed';
+    connector.verificationError = verificationError || 'The provider rejected these credentials or account details.';
+    // Do not replace a previously verified secret with an invalid submission.
+    await saveDB(res, db);
+    const { credentials: _omit, ...safeConnector } = connector;
+    res.status(422).json({
+      success: false,
+      connector: safeConnector,
+      verified: false,
+      error: connector.verificationError,
+      code: 'CONNECTOR_VERIFICATION_FAILED',
+    });
+    return;
+  }
+
+  connector.status = 'Connected';
+  connector.verificationState = 'verified';
+  connector.verificationError = undefined;
+  connector.verifiedAt = new Date().toISOString();
   connector.lastSyncedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
   connector.credentials = Object.keys(credentials).length > 0
     ? { encrypted: encryptCredentials(credentials) }
@@ -5937,6 +6254,8 @@ app.post("/api/workspace/connectors/:id/disconnect", async (req: Request, res: R
   }
 
   connector.status = 'Disconnected';
+  connector.verificationState = 'disconnected';
+  connector.verificationError = undefined;
   connector.credentials = undefined;
   await saveDB(res, db);
   const { credentials: _omit, ...safeConnector } = connector;
@@ -5994,8 +6313,35 @@ app.get("/api/workspace/pipelines", async (req: Request, res: Response) => {
   res.json({ success: true, pipelines });
 });
 
+app.get("/api/workspace/reporting/metrics", async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const media = req.query.media === 'paid' ? 'paid' : req.query.media === 'organic' ? 'organic' : undefined;
+  const metrics = (db.secondBrain.pipelines || [])
+    .filter(p => p.status === 'active' && p.verificationState === 'verified' && p.lastMetrics?.available)
+    .map(p => ({ ...p.lastMetrics, platform: p.platform, accountName: p.accountName, pipelineId: p.id, mediaType: p.lastMetrics?.mediaType || classifyChannelMedia(p.platform) }))
+    .filter(item => !media || item.mediaType === media);
+  const spend = metrics.reduce((sum, item) => sum + item.spend, 0);
+  const conversions = metrics.reduce((sum, item) => sum + item.conversions, 0);
+  const revenue = metrics.reduce((sum, item) => sum + item.revenue, 0);
+  res.json({
+    success: true,
+    metrics: {
+      available: metrics.length > 0,
+      source: metrics.length > 0 ? 'verified_connector_payload' : 'none',
+      observedAt: metrics.map(item => item.observedAt).sort().at(-1) || null,
+      spend,
+      conversions,
+      revenue,
+      roas: spend > 0 ? revenue / spend : 0,
+      providers: metrics,
+    },
+  });
+});
+
 app.post("/api/workspace/pipelines/save", async (req: Request, res: Response) => {
-  const pipeline = req.body as Partial<ActivePipeline>;
+  // Credentials never belong to a pipeline payload or browser cache. They are
+  // accepted only by the verification route and encrypted in the connector vault.
+  const { credential: _credential, webhookSecret: _submittedWebhookSecret, status: _submittedStatus, verificationState: _submittedVerificationState, ...pipeline } = req.body as Partial<ActivePipeline>;
   if (!pipeline || !pipeline.accountName?.trim() || !pipeline.propertyId?.trim()) {
     res.status(400).json({ error: "Account Name and Property/Account ID are mandatory evidence fields." });
     return;
@@ -6007,7 +6353,8 @@ app.post("/api/workspace/pipelines/save", async (req: Request, res: Response) =>
   }
 
   const existingIdx = db.secondBrain.pipelines.findIndex(p => p.id === pipeline.id);
-  const webhookSecret = pipeline.webhookSecret || `whsec_${crypto.createHash('sha256').update(`${pipeline.id || Date.now()}_${pipeline.propertyId}`).digest('hex').slice(0, 24)}`;
+  const existingPipeline = existingIdx >= 0 ? db.secondBrain.pipelines[existingIdx] : undefined;
+  const webhookSecret = existingPipeline?.webhookSecret || `whsec_${crypto.createHash('sha256').update(`${pipeline.id || Date.now()}_${pipeline.propertyId}`).digest('hex').slice(0, 24)}`;
   const webhookUrl = pipeline.webhookUrl || `https://api.sigmatactix.com/api/webhooks/ingest?pipeline=${pipeline.id || `pipe-${Date.now()}`}&vault=${encodeURIComponent(pipeline.targetVault || 'Marketing Vault')}`;
 
   const savedPipeline: ActivePipeline = {
@@ -6020,14 +6367,16 @@ app.post("/api/workspace/pipelines/save", async (req: Request, res: Response) =>
     syncFrequency: pipeline.syncFrequency || 'Every 15 mins',
     protocol: pipeline.protocol || 'Direct REST API (OAuth 2.0)',
     status: 'warning',
+    verificationState: 'configured',
     lastPing: 'Not verified',
     latencyMs: 0,
-    credentialSnippet: pipeline.credentialSnippet || 'Not verified',
+    credentialSnippet: 'Stored only in encrypted credentials vault after verification',
     metricsCollected: pipeline.metricsCollected || ['Core Telemetry Events', 'Attribution Deltas'],
     webhookUrl,
     webhookSecret,
     totalEventsIngested: pipeline.totalEventsIngested || 0,
-    lastIngestedAt: pipeline.lastIngestedAt || undefined
+    lastIngestedAt: pipeline.lastIngestedAt || undefined,
+    allocatedAgents: Array.isArray(pipeline.allocatedAgents) ? pipeline.allocatedAgents.filter((name): name is string => typeof name === 'string' && name.trim().length > 0) : []
   };
 
   if (existingIdx >= 0) {
@@ -6043,8 +6392,29 @@ app.post("/api/workspace/pipelines/save", async (req: Request, res: Response) =>
   res.json({ success: true, pipeline: savedPipeline });
 });
 
+app.post("/api/workspace/pipelines/:id/agent-permissions", async (req: Request, res: Response) => {
+  if (!(await callerIsOwnerOrAdmin(res))) {
+    res.status(403).json({ error: "Only a workspace owner or admin can authorize agent access." });
+    return;
+  }
+  const agentNames = req.body?.agentNames;
+  if (!Array.isArray(agentNames) || agentNames.some((name: unknown) => typeof name !== 'string' || !name.trim())) {
+    res.status(400).json({ error: "agentNames must be an array of non-empty agent names." });
+    return;
+  }
+  const db = await getDB(res);
+  const pipeline = (db.secondBrain.pipelines || []).find(p => p.id === req.params.id);
+  if (!pipeline) {
+    res.status(404).json({ error: "Pipeline not found." });
+    return;
+  }
+  pipeline.allocatedAgents = [...new Set(agentNames.map((name: string) => name.trim()))];
+  await saveDB(res, db);
+  res.json({ success: true, pipeline });
+});
+
 app.post("/api/workspace/pipelines/ping", async (req: Request, res: Response) => {
-  const { platform, accountName, propertyId, protocol } = req.body as Record<string, string>;
+  const { pipelineId, platform, accountName, propertyId, protocol, credential, credentials, targetVault, syncFrequency, metricsCollected } = req.body as Record<string, any>;
   if (!accountName?.trim() || !propertyId?.trim()) {
     res.status(400).json({ error: "Missing Account Name or Property/Account ID evidence." });
     return;
@@ -6052,10 +6422,235 @@ app.post("/api/workspace/pipelines/ping", async (req: Request, res: Response) =>
 
   try {
     const db = await getDB(res);
-    const result = await verifyPipelineConnection(platform, propertyId.trim(), db.secondBrain.connectors || [], getStoredCredentials, getConnectorAdapter);
-    res.json({ success: true, ...result, verifiedAt: new Date().toISOString(), message: 'Provider account access verified. This check does not ingest data or authorize campaign changes.' });
+    const isGA4 = platform?.toLowerCase().includes('analytics') || platform?.toLowerCase().includes('ga4');
+    let directResult: { verified: boolean; latencyMs: number; connectorId?: string; resolvedPropertyId?: string } | null = null;
+
+    const submittedCredentials = credentials && typeof credentials === 'object'
+      ? { ...credentials, accountId: propertyId.trim(), propertyId: propertyId.trim() }
+      : credential
+        ? { accessToken: credential, accountId: propertyId.trim(), propertyId: propertyId.trim() }
+        : null;
+    const gaCredential = submittedCredentials?.serviceAccountKey || credential;
+
+    if (isGA4 && gaCredential) {
+      const start = performance.now();
+      let saKey: any = null;
+      if (typeof gaCredential === 'object') {
+        saKey = gaCredential;
+      } else if (typeof gaCredential === 'string' && gaCredential.trim().startsWith('{')) {
+        try { saKey = JSON.parse(gaCredential); } catch { saKey = null; }
+      }
+
+      let bearerToken: string | null = null;
+      if (saKey?.client_email && saKey?.private_key) {
+        bearerToken = await getAccessTokenFromServiceAccount(saKey);
+      } else if (typeof gaCredential === 'string') {
+        bearerToken = gaCredential;
+      }
+
+      if (!bearerToken) {
+        throw new Error("Could not authenticate with provided Service Account JSON Key. Ensure private_key and client_email are present.");
+      }
+
+      const sumRes = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", {
+        headers: { "Authorization": `Bearer ${bearerToken}` }
+      });
+      if (sumRes.status !== 200) {
+        throw new Error(`Google Analytics Admin API returned ${sumRes.status}: Check that Google Analytics Admin API is enabled and service account has permissions.`);
+      }
+      const sumData = await sumRes.json();
+      const cleanedTarget = propertyId.trim().replace(/^properties\//, '').replace(/^accounts\//, '');
+      let resolvedPropertyId = cleanedTarget;
+
+      for (const acc of (sumData.accountSummaries || [])) {
+        const accId = acc.account?.replace(/^accounts\//, '');
+        if (accId === cleanedTarget) {
+          resolvedPropertyId = acc.propertySummaries?.[0]?.property?.replace(/^properties\//, '') || cleanedTarget;
+          break;
+        }
+        const found = acc.propertySummaries?.find((p: any) => p.property?.replace(/^properties\//, '') === cleanedTarget);
+        if (found) {
+          resolvedPropertyId = cleanedTarget;
+          break;
+        }
+      }
+
+      const reportRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${resolvedPropertyId}:runReport`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${bearerToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+          metrics: [{ name: 'activeUsers' }],
+        }),
+      });
+
+      if (!reportRes.ok) {
+        const repErr = await reportRes.json().catch(() => ({}));
+        throw new Error(repErr.error?.message || `Google Analytics Data API returned ${reportRes.status}`);
+      }
+
+      directResult = {
+        verified: true,
+        latencyMs: Math.round(performance.now() - start),
+        resolvedPropertyId,
+      };
+
+      let gaConn = db.secondBrain.connectors.find(c => c.platform === 'Google Analytics');
+      const credPayload = {
+        serviceAccountKey: typeof gaCredential === 'string' ? gaCredential : JSON.stringify(gaCredential),
+        accountId: cleanedTarget,
+        propertyId: resolvedPropertyId,
+      };
+      if (!gaConn) {
+        gaConn = {
+          id: `conn-${Date.now()}`,
+          platform: 'Google Analytics',
+          status: 'Connected',
+          verificationState: 'verified',
+          connectedBy: 'admin',
+          verifiedAt: new Date().toISOString(),
+          lastSyncedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          credentials: { encrypted: encryptCredentials(credPayload) }
+        };
+        db.secondBrain.connectors.push(gaConn);
+      } else {
+        gaConn.status = 'Connected';
+        gaConn.verificationState = 'verified';
+        gaConn.verifiedAt = new Date().toISOString();
+        gaConn.lastSyncedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+        gaConn.credentials = { encrypted: encryptCredentials(credPayload) };
+      }
+      await saveDB(res, db);
+    } else if (submittedCredentials) {
+      const validation = validatePriorityConnectorCredentials(platform, propertyId, submittedCredentials);
+      if (!validation.valid) throw new Error(validation.error);
+      const canonical = canonicalConnectorPlatform(platform);
+      if (!canonical || !hasConnectorAdapter(canonical)) {
+        throw new Error(`Live account verification is not implemented for ${platform}.`);
+      }
+      const startedAt = performance.now();
+      const verified = await getConnectorAdapter(canonical)(submittedCredentials);
+      if (!verified) throw new Error(`The ${platform} API rejected the supplied credentials or account access.`);
+      directResult = { verified: true, latencyMs: Math.round(performance.now() - startedAt) };
+
+      let connector = db.secondBrain.connectors.find(c => c.platform === canonical && getStoredCredentials(c).accountId === propertyId.trim());
+      if (!connector) {
+        connector = { id: `conn-${Date.now()}`, platform: canonical, status: 'Connected', connectedBy: 'admin' };
+        db.secondBrain.connectors.push(connector);
+      }
+      connector.status = 'Connected';
+      connector.verificationState = 'verified';
+      connector.verificationError = undefined;
+      connector.verifiedAt = new Date().toISOString();
+      connector.lastSyncedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+      connector.credentials = { encrypted: encryptCredentials(submittedCredentials) };
+      await saveDB(res, db);
+    }
+
+    const result = directResult || await verifyPipelineConnection(platform, propertyId.trim(), db.secondBrain.connectors || [], getStoredCredentials, getConnectorAdapter);
+    if (!db.secondBrain.pipelines) db.secondBrain.pipelines = [];
+    const persistedAccountId = directResult?.resolvedPropertyId || propertyId.trim();
+    let pipeline = db.secondBrain.pipelines.find(p => p.id === pipelineId)
+      || db.secondBrain.pipelines.find(p => (p.platform === platform || (isGA4 && (p.platform.includes('Analytics') || p.platform.includes('GA4')))) && (p.propertyId === propertyId.trim() || p.propertyId === persistedAccountId));
+
+    // A verified handshake is itself a connection event. Persist the pipeline
+    // here so a successful test cannot disappear before the user reaches Save.
+    if (!pipeline) {
+      pipeline = {
+        id: pipelineId || `pipe-${Date.now()}`,
+        name: `${platform} (${accountName.trim()})`,
+        platform,
+        accountName: accountName.trim(),
+        propertyId: persistedAccountId,
+        targetVault: targetVault || (isGA4 ? 'Website Vault' : 'Marketing Vault'),
+        syncFrequency: syncFrequency || 'Every 15 mins',
+        protocol: protocol || 'Direct REST API (OAuth 2.0)',
+        status: 'active',
+        verificationState: 'verified',
+        verifiedAt: new Date().toISOString(),
+        lastPing: new Date().toISOString(),
+        latencyMs: result.latencyMs,
+        credentialSnippet: 'Encrypted credentials vault',
+        metricsCollected: Array.isArray(metricsCollected) ? metricsCollected : [],
+        totalEventsIngested: 0,
+      };
+      db.secondBrain.pipelines.unshift(pipeline);
+    } else {
+      pipeline.status = 'active';
+      pipeline.verificationState = 'verified';
+      pipeline.verificationError = undefined;
+      pipeline.verifiedAt = new Date().toISOString();
+      pipeline.lastPing = new Date().toISOString();
+      pipeline.latencyMs = result.latencyMs;
+      pipeline.propertyId = persistedAccountId;
+      pipeline.credentialSnippet = 'Encrypted credentials vault';
+    }
+    await saveDB(res, db);
+    res.json({
+      success: true,
+      ...result,
+      pipeline,
+      verifiedAt: new Date().toISOString(),
+      message: directResult?.resolvedPropertyId
+        ? `Handshake Verified: 200 OK • GA4 Property ${directResult.resolvedPropertyId} connected live via Service Account.`
+        : 'Provider account access verified. This check does not ingest data or authorize campaign changes.'
+    });
   } catch (error) {
     res.status(422).json({ success: false, verified: false, error: error instanceof Error ? error.message : 'Account verification failed.' });
+  }
+});
+
+// Pull a small, provider-owned GA4 organic metrics snapshot after a verified
+// connection. This is deliberately separate from the handshake: access alone
+// is not telemetry, and other providers remain "verified" until their own
+// metric adapters are implemented.
+app.post("/api/workspace/pipelines/:id/sync-metrics", async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const pipeline = (db.secondBrain.pipelines || []).find(p => p.id === req.params.id);
+  if (!pipeline) { res.status(404).json({ error: 'Pipeline not found.' }); return; }
+  if (pipeline.status !== 'active' || pipeline.verificationState !== 'verified') {
+    res.status(409).json({ error: 'Provider access must be verified before metrics can be synchronized.' });
+    return;
+  }
+  if (!/analytics|ga4/i.test(pipeline.platform)) {
+    res.status(422).json({ error: `A provider metrics adapter is not implemented for ${pipeline.platform}; this channel remains verified, not live.` });
+    return;
+  }
+
+  const connector = (db.secondBrain.connectors || []).find(c => c.platform === 'Google Analytics' && getStoredCredentials(c).propertyId === pipeline.propertyId);
+  const credentials = connector ? getStoredCredentials(connector) : null;
+  let serviceAccount: any = null;
+  try { serviceAccount = credentials?.serviceAccountKey ? JSON.parse(credentials.serviceAccountKey) : null; } catch {}
+  if (!serviceAccount?.client_email || !serviceAccount?.private_key) {
+    res.status(409).json({ error: 'The verified GA4 credential is unavailable. Reconnect GA4 with its service-account JSON key.' });
+    return;
+  }
+  const token = await getAccessTokenFromServiceAccount(serviceAccount);
+  if (!token) { res.status(422).json({ error: 'Google rejected the stored service-account credential during metrics synchronization.' }); return; }
+  try {
+    const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${pipeline.propertyId}:runReport`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'conversions' }],
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.error?.message || `GA4 Data API returned ${response.status}`);
+    const values = payload.rows?.[0]?.metricValues || [];
+    const activeUsers = Number(values[0]?.value || 0);
+    const sessions = Number(values[1]?.value || 0);
+    const conversions = Number(values[2]?.value || 0);
+    pipeline.lastMetrics = {
+      source: 'ga4_data_api', observedAt: new Date().toISOString(), available: true, mediaType: 'organic',
+      activeUsers, sessions, conversions, spend: 0, revenue: 0, roas: 0,
+    };
+    pipeline.lastIngestedAt = new Date().toISOString();
+    await saveDB(res, db);
+    res.json({ success: true, pipeline, metrics: pipeline.lastMetrics });
+  } catch (err) {
+    res.status(422).json({ error: err instanceof Error ? err.message : 'GA4 metric synchronization failed.' });
   }
 });
 
@@ -6087,6 +6682,21 @@ app.post("/api/workspace/pipelines/test-webhook", async (req: Request, res: Resp
       pipeline.lastIngestedAt = timestamp;
       pipeline.lastPing = 'Just now';
       targetVault = pipeline.targetVault;
+      const source = payload && typeof payload === 'object' ? payload : {};
+      const spend = Number(source.spend ?? source.cost ?? source.ad_spend);
+      const revenue = Number(source.revenue ?? source.value ?? source.conversion_value);
+      const conversions = Number(source.conversions ?? source.purchases ?? source.leads);
+      if ([spend, revenue, conversions].every(value => Number.isFinite(value) && value >= 0) && spend > 0) {
+        pipeline.lastMetrics = {
+          source: 'verified_connector_payload',
+          observedAt: timestamp,
+          spend,
+          conversions,
+          revenue,
+          roas: revenue / spend,
+          available: true,
+        };
+      }
       await saveDB(res, db);
     }
   }
@@ -6476,6 +7086,28 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
 });
 
 const server = app.listen(PORT, "0.0.0.0", () => { console.log(`Sigma Tactix Growth OS Backend running on http://localhost:${PORT}`); });
+
+// Conversation rows have a 30-day expiry; this best-effort service-role sweep
+// removes expired rows even when no user opens VANTA. Deployments may replace
+// it with pg_cron, but retention does not depend on client behavior.
+const vantaRetentionSweep = setInterval(async () => {
+  try {
+    const serviceClient = getServiceRoleClient();
+    const { error } = await serviceClient.rpc('purge_expired_vanta_conversations');
+    if (error?.code === 'PGRST202' || /function .* does not exist|schema cache/i.test(error?.message || '')) {
+      const { error: fallbackError } = await serviceClient
+        .from('vanta_conversations')
+        .delete()
+        .lte('expires_at', new Date().toISOString());
+      if (fallbackError) console.error('VANTA retention fallback failed:', fallbackError.message);
+    } else if (error) {
+      console.error('VANTA retention sweep failed:', error.message);
+    }
+  } catch (error) {
+    console.error('VANTA retention sweep failed:', error);
+  }
+}, 6 * 60 * 60 * 1000);
+vantaRetentionSweep.unref();
 
 // Last-resort process guards. The Express handler above catches everything that
 // happens inside a request; these catch what happens outside one — a rejection

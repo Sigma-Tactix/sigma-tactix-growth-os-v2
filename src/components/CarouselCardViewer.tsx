@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Download, 
-  Copy, 
-  Check, 
-  Layers, 
-  Sparkles, 
-  Maximize2, 
-  Palette, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Copy,
+  Check,
+  Layers,
+  Sparkles,
+  Maximize2,
+  Palette,
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
@@ -67,7 +67,7 @@ export default function CarouselCardViewer({
 ${currentSlide.subtitle ? currentSlide.subtitle + '\n' : ''}
 ${(currentSlide.contentPoints || []).map(p => `• ${p}`).join('\n')}
 ${currentSlide.takeaway ? `\nTAKEAWAY: ${currentSlide.takeaway}` : ''}`;
-    
+
     navigator.clipboard.writeText(text);
     setCopiedSlide(true);
     notifyInfo('Slide Text Copied', `Slide #${currentSlide.slideNumber} content copied to clipboard.`);
@@ -300,7 +300,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
   const handleExportAllSlides = () => {
     setIsExporting(true);
     notifyInfo('Exporting Full Deck', `Rendering all ${totalSlides} slides as PNGs...`);
-    
+
     slides.forEach((_, idx) => {
       setTimeout(() => {
         handleExportSlidePng(idx);
@@ -316,17 +316,17 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
   return (
     <div className="space-y-4">
       {/* Top Toolbar: Aspect Ratio, Theme, and Bulk Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl">
+      <div className="sigma-panel flex flex-wrap items-center justify-between gap-3 p-3.5">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-black/60 p-1 rounded-lg border border-zinc-800">
-            <span className="text-[11px] font-mono text-zinc-400 px-2">Ratio:</span>
+          <div className="flex items-center gap-1.5 bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
+            <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] px-2">Ratio:</span>
             <button
               onClick={() => setAspectRatio('4:5')}
               className={cn(
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '4:5'
                   ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               4:5 Portrait
@@ -337,15 +337,15 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '1:1'
                   ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               1:1 Square
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-black/60 p-1 rounded-lg border border-zinc-800">
-            <span className="text-[11px] font-mono text-zinc-400 px-2 flex items-center gap-1">
+          <div className="flex items-center gap-1.5 bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
+            <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] px-2 flex items-center gap-1">
               <Palette className="w-3 h-3" /> Theme:
             </span>
             <button
@@ -354,7 +354,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'OBSIDIAN_AMBER'
                   ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-semibold"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               <div className="w-2 h-2 rounded-full bg-amber-400" />
@@ -366,7 +366,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'CYBER_BLUEPRINT'
                   ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-semibold"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               <div className="w-2 h-2 rounded-full bg-cyan-400" />
@@ -378,7 +378,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'MONOLITH_GOLD'
                   ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-semibold"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               <div className="w-2 h-2 rounded-full bg-yellow-400" />
@@ -390,7 +390,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopySlideText}
-            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
             {copiedSlide ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             {copiedSlide ? 'Copied' : 'Copy Slide Text'}
@@ -398,7 +398,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
 
           <button
             onClick={handleCopyAllSlides}
-            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5" />
             Copy All Slides
@@ -425,12 +425,12 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
       </div>
 
       {/* Main Slide Card Stage */}
-      <div className="flex flex-col items-center justify-center p-6 bg-black/40 border border-zinc-800/80 rounded-2xl relative">
+      <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl relative overflow-hidden">
         {/* Navigation Arrow Left */}
         <button
           onClick={goToPrev}
           disabled={currentSlideIndex === 0}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-zinc-900/90 hover:bg-zinc-800 text-white rounded-full border border-zinc-700 shadow-xl disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer transition-all"
+          className="sigma-icon-button absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 !rounded-full shadow-lg disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
           aria-label="Previous slide"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -440,17 +440,17 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
         <button
           onClick={goToNext}
           disabled={currentSlideIndex === totalSlides - 1}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-zinc-900/90 hover:bg-zinc-800 text-white rounded-full border border-zinc-700 shadow-xl disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer transition-all"
+          className="sigma-icon-button absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 !rounded-full shadow-lg disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
           aria-label="Next slide"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
         {/* Slide Visual Container */}
-        <div 
+        <div
           ref={cardRef}
           className={cn(
-            "relative w-full max-w-lg transition-all duration-300 rounded-2xl p-8 flex flex-col justify-between overflow-hidden shadow-2xl border select-none",
+            "sigma-preserve-dark relative w-full max-w-lg transition-all duration-300 rounded-2xl p-8 flex flex-col justify-between overflow-hidden shadow-2xl border select-none",
             aspectRatio === '4:5' ? 'aspect-[4/5]' : 'aspect-square',
             theme === 'OBSIDIAN_AMBER' && "bg-gradient-to-b from-zinc-950 via-zinc-900 to-black border-amber-500/30 shadow-amber-500/5",
             theme === 'CYBER_BLUEPRINT' && "bg-gradient-to-b from-[#030914] via-[#071328] to-[#02050d] border-cyan-500/30 shadow-cyan-500/5",
@@ -458,7 +458,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           )}
         >
           {/* Ambient Glow */}
-          <div 
+          <div
             className={cn(
               "absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-20",
               theme === 'OBSIDIAN_AMBER' && "bg-amber-500",
@@ -544,7 +544,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
             <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] font-mono text-zinc-500">
               <span>sigmatactix.com</span>
               <span className="flex items-center gap-1 text-amber-400 font-bold">
-                {currentSlide.slideNumber === totalSlides ? 'Save Deck' : 'Swipe next'} 
+                {currentSlide.slideNumber === totalSlides ? 'Save Deck' : 'Swipe next'}
                 <ArrowRight className="w-3 h-3" />
               </span>
             </div>
@@ -560,8 +560,8 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "transition-all cursor-pointer",
                 currentSlideIndex === idx
-                  ? "w-8 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"
-                  : "w-2 h-2 rounded-full bg-zinc-700 hover:bg-zinc-500"
+                  ? "w-8 h-2 rounded-full bg-[var(--sigma-primary)]"
+                  : "w-2 h-2 rounded-full bg-[var(--sigma-border-strong)] hover:bg-[var(--sigma-text-muted)]"
               )}
               aria-label={`Go to slide ${s.slideNumber}`}
             />
@@ -576,20 +576,20 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
             key={s.slideNumber}
             onClick={() => setCurrentSlideIndex(idx)}
             className={cn(
-              "shrink-0 w-32 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+              "shrink-0 w-32 p-2.5 rounded-xl border text-left transition-all cursor-pointer bg-[var(--sigma-surface)]",
               currentSlideIndex === idx
-                ? "bg-amber-400/10 border-amber-400/50 shadow-md shadow-amber-500/10"
-                : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                ? "border-[var(--sigma-primary)]/50 shadow-[var(--sigma-shadow-md)]"
+                : "border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text)]"
             )}
           >
             <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-              <span className="text-amber-400 font-bold">#{s.slideNumber}</span>
-              <span className="text-zinc-500">{s.badge || 'SLIDE'}</span>
+              <span className="text-[var(--sigma-primary)] font-bold">#{s.slideNumber}</span>
+              <span className="text-[var(--sigma-text-muted)]">{s.badge || 'SLIDE'}</span>
             </div>
-            <div className="text-[11px] font-bold text-white line-clamp-1">
+            <div className="text-[11px] font-bold text-[var(--sigma-text)] line-clamp-1">
               {s.title}
             </div>
-            <div className="text-[9px] text-zinc-400 line-clamp-1 mt-0.5">
+            <div className="text-[9px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">
               {s.subtitle || s.takeaway || 'Content slide'}
             </div>
           </button>

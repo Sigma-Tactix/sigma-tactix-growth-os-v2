@@ -1,0 +1,372 @@
+{
+  "tick": 1144,
+  "startedAt": "2026-09-21T14:43:41.900Z",
+  "lastTickAt": "2026-09-22T05:37:23.407Z",
+  "totalAgentsSeen": 1,
+  "totalTicks": 1144,
+  "totalErrors": 0,
+  "totalDispatches": 124,
+  "vendorStats": {},
+  "skippedTicks": 0,
+  "lastSkippedAt": null,
+  "lockOwner": "orchestrator-loop-61cee9",
+  "runtimeHealth": {
+    "schema": "autoclaw.runtime-health.v1",
+    "window": [
+      {
+        "seq": 1097,
+        "at": "2026-09-22T05:13:03.985Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 22
+      },
+      {
+        "seq": 1098,
+        "at": "2026-09-22T05:13:34.060Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 96
+      },
+      {
+        "seq": 1099,
+        "at": "2026-09-22T05:14:03.984Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 16
+      },
+      {
+        "seq": 1100,
+        "at": "2026-09-22T05:14:33.997Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 28
+      },
+      {
+        "seq": 1101,
+        "at": "2026-09-22T05:15:04.000Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 31
+      },
+      {
+        "seq": 1102,
+        "at": "2026-09-22T05:15:34.003Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 28
+      },
+      {
+        "seq": 1103,
+        "at": "2026-09-22T05:16:03.994Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 18
+      },
+      {
+        "seq": 1104,
+        "at": "2026-09-22T05:16:34.016Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 34
+      },
+      {
+        "seq": 1105,
+        "at": "2026-09-22T05:17:04.005Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 20
+      },
+      {
+        "seq": 1106,
+        "at": "2026-09-22T05:17:34.014Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 27
+      },
+      {
+        "seq": 1107,
+        "at": "2026-09-22T05:18:04.015Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 24
+      },
+      {
+        "seq": 1108,
+        "at": "2026-09-22T05:18:34.028Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 35
+      },
+      {
+        "seq": 1109,
+        "at": "2026-09-22T05:19:04.073Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 80
+      },
+      {
+        "seq": 1110,
+        "at": "2026-09-22T05:19:34.030Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 33
+      },
+      {
+        "seq": 1111,
+        "at": "2026-09-22T05:20:04.021Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 21
+      },
+      {
+        "seq": 1112,
+        "at": "2026-09-22T05:20:34.035Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 31
+      },
+      {
+        "seq": 1113,
+        "at": "2026-09-22T05:21:04.023Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 18
+      },
+      {
+        "seq": 1114,
+        "at": "2026-09-22T05:21:34.144Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 22
+      },
+      {
+        "seq": 1115,
+        "at": "2026-09-22T05:22:04.137Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 14
+      },
+      {
+        "seq": 1116,
+        "at": "2026-09-22T05:22:34.151Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 27
+      },
+      {
+        "seq": 1117,
+        "at": "2026-09-22T05:23:04.149Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 24
+      },
+      {
+        "seq": 1118,
+        "at": "2026-09-22T05:23:34.163Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 36
+      },
+      {
+        "seq": 1119,
+        "at": "2026-09-22T05:24:04.187Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 57
+      },
+      {
+        "seq": 1120,
+        "at": "2026-09-22T05:24:34.173Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 37
+      },
+      {
+        "seq": 1121,
+        "at": "2026-09-22T05:25:04.149Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 14
+      },
+      {
+        "seq": 1122,
+        "at": "2026-09-22T05:25:34.168Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 28
+      },
+      {
+        "seq": 1123,
+        "at": "2026-09-22T05:26:04.157Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 12
+      },
+      {
+        "seq": 1124,
+        "at": "2026-09-22T05:26:34.183Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 32
+      },
+      {
+        "seq": 1125,
+        "at": "2026-09-22T05:27:04.172Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 20
+      },
+      {
+        "seq": 1126,
+        "at": "2026-09-22T05:27:34.184Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 29
+      },
+      {
+        "seq": 1127,
+        "at": "2026-09-22T05:28:04.168Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 11
+      },
+      {
+        "seq": 1128,
+        "at": "2026-09-22T05:28:34.201Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 40
+      },
+      {
+        "seq": 1129,
+        "at": "2026-09-22T05:29:04.177Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 12
+      },
+      {
+        "seq": 1130,
+        "at": "2026-09-22T05:29:34.254Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 86
+      },
+      {
+        "seq": 1131,
+        "at": "2026-09-22T05:30:04.186Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 14
+      },
+      {
+        "seq": 1132,
+        "at": "2026-09-22T05:30:34.199Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 24
+      },
+      {
+        "seq": 1133,
+        "at": "2026-09-22T05:31:04.201Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 20
+      },
+      {
+        "seq": 1134,
+        "at": "2026-09-22T05:31:34.210Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 26
+      },
+      {
+        "seq": 1135,
+        "at": "2026-09-22T05:32:04.201Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 14
+      },
+      {
+        "seq": 1136,
+        "at": "2026-09-22T05:32:34.219Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 28
+      },
+      {
+        "seq": 1137,
+        "at": "2026-09-22T05:33:04.214Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 21
+      },
+      {
+        "seq": 1138,
+        "at": "2026-09-22T05:33:34.224Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 26
+      },
+      {
+        "seq": 1139,
+        "at": "2026-09-22T05:34:04.219Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 16
+      },
+      {
+        "seq": 1140,
+        "at": "2026-09-22T05:34:34.228Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 23
+      },
+      {
+        "seq": 1141,
+        "at": "2026-09-22T05:35:04.277Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 71
+      },
+      {
+        "seq": 1142,
+        "at": "2026-09-22T05:35:32.815Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 9024
+      },
+      {
+        "seq": 1143,
+        "at": "2026-09-22T05:35:53.454Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 73
+      },
+      {
+        "seq": 1144,
+        "at": "2026-09-22T05:36:23.371Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 15
+      },
+      {
+        "seq": 1145,
+        "at": "2026-09-22T05:36:53.429Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 59
+      },
+      {
+        "seq": 1146,
+        "at": "2026-09-22T05:37:23.407Z",
+        "ok": true,
+        "errors": 0,
+        "durationMs": 16
+      }
+    ],
+    "seq": 1146,
+    "windowMax": 50,
+    "acks": [],
+    "ackedThroughSeq": 0
+  }
+}

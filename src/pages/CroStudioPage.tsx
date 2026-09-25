@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
+import { Button, GlassCard, Badge } from '@/src/components/ui';
 import { useToast } from '@/src/contexts/ToastContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 
@@ -129,136 +130,138 @@ export default function CroStudioPage() {
   const qualifiedOps = Math.round(completedForms * (qualifiedRate / 100));
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
-              <Target className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">CRO & Landing Page Studio</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full">
-                  Digital Marketing
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Optimize conversion funnels, test high-impact headline variants, and eliminate pipeline friction.
-              </p>
-            </div>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="brand" size="sm" icon={<Target size={12} />}>Conversion Rate Optimization</Badge>
+            <Badge variant="neutral" size="sm">Digital Marketing</Badge>
           </div>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
+            CRO & Landing Page Studio
+          </h1>
+          <p className="text-sm text-[var(--sigma-text-muted)] mt-1.5 max-w-3xl leading-relaxed">
+            Optimize conversion funnels, test high-impact headline variants, and eliminate pipeline friction with empirical A/B testing.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-            <ShieldCheck className="w-4 h-4" />
+        <div className="flex items-center gap-2.5">
+          <Badge variant="success" size="sm" icon={<ShieldCheck size={12} />}>
             Empirical Lift Predictor Active
-          </div>
+          </Badge>
         </div>
       </div>
 
       {/* URL Audit Bar */}
-      <div className="p-4 rounded-2xl bg-[#0F0F12] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <GlassCard spotlight className="p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
-          <span className="text-xs font-semibold text-slate-400 shrink-0">Target Page:</span>
+          <span className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] shrink-0">Target Page:</span>
           <input
             type="text"
             value={pageUrl}
             onChange={e => setPageUrl(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-orange-500/50"
+            className="w-full px-3 py-1.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[#ff481b] transition-colors"
           />
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={handleAudit}
           disabled={isAuditing}
-          className="w-full sm:w-auto px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow shrink-0 disabled:opacity-50"
+          isLoading={isAuditing}
+          icon={<Sparkles size={13} />}
+          className="w-full sm:w-auto shrink-0"
         >
-          {isAuditing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           Run CRO Teardown
-        </button>
-      </div>
+        </Button>
+      </GlassCard>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: A/B Headline Variants */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <SplitSquareVertical className="w-4 h-4 text-orange-400" />
+            <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+              <SplitSquareVertical className="w-4 h-4 text-[#ff481b]" />
               Above-the-Fold A/B Value Proposition Variants
             </h3>
-            <span className="text-xs text-slate-400">{variants.length} Variants Generated</span>
+            <Badge variant="neutral" size="xs">{variants.length} Variants</Badge>
           </div>
 
           <div className="space-y-3">
             {variants.map(v => (
-              <div
+              <GlassCard
                 key={v.id}
+                spotlight
+                interactive
                 onClick={() => setSelectedVariant(v.id)}
                 className={cn(
-                  "p-5 rounded-2xl border text-left cursor-pointer transition-all space-y-3",
+                  "p-4 text-left cursor-pointer transition-all space-y-3",
                   selectedVariant === v.id
-                    ? "bg-orange-500/10 border-orange-500/50 text-white shadow-lg shadow-orange-500/5"
-                    : "bg-[#0F0F12] border-white/10 text-slate-300 hover:border-white/20"
+                    ? "border-[#ff481b]/50 ring-1 ring-[#ff481b]/30 shadow-md"
+                    : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-orange-400 px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
+                  <Badge variant="neutral" size="xs">
                     {v.badge}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-emerald-400">{v.predictedLift}</span>
-                    <span className="text-[10px] text-slate-500">({v.confidenceScore})</span>
+                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="success" size="xs">
+                      {v.predictedLift}
+                    </Badge>
+                    <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">({v.confidenceScore})</span>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-base font-bold text-white tracking-tight">{v.headline}</h4>
-                  <p className="text-xs text-slate-400 mt-1">{v.subheadline}</p>
+                  <h4 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">{v.headline}</h4>
+                  <p className="text-xs text-[var(--sigma-text-muted)] mt-1 leading-relaxed">{v.subheadline}</p>
                 </div>
 
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                <div className="pt-2 border-t border-[var(--sigma-border)] flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-500">CTA Button:</span>
-                    <span className="font-semibold text-orange-300 bg-white/5 px-2.5 py-1 rounded-md border border-white/5">
+                    <span className="text-[var(--sigma-text-muted)]">CTA:</span>
+                    <span className="font-semibold text-[#ff481b] bg-[#ff481b]/10 border border-[#ff481b]/20 px-2 py-0.5 rounded">
                       {v.ctaText}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.writeText(`${v.headline}\n${v.subheadline}\nCTA: ${v.ctaText}`);
                       notifySuccess('Copied', 'Variant copy copied to clipboard.');
                     }}
-                    className="text-slate-400 hover:text-white flex items-center gap-1"
+                    icon={<Copy size={11} />}
                   >
-                    <Copy className="w-3.5 h-3.5" /> Copy
-                  </button>
+                    Copy
+                  </Button>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
         </div>
 
         {/* Right Column: Funnel Drop-off Simulator */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-6 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <BarChart className="w-4 h-4 text-orange-400" />
+          <GlassCard spotlight className="p-5 space-y-5">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
+              <h3 className="text-xs font-semibold text-[var(--sigma-text)] uppercase font-mono flex items-center gap-2">
+                <BarChart className="w-3.5 h-3.5 text-[#ff481b]" />
                 Funnel Conversion Simulator
               </h3>
-              <span className="text-xs text-emerald-400 font-mono font-bold">Interactive</span>
+              <Badge variant="neutral" size="xs">Interactive</Badge>
             </div>
 
             {/* Sliders */}
-            <div className="space-y-4 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <div className="flex justify-between mb-1.5 text-slate-300">
+                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
                   <span>Monthly Unique Visitors</span>
-                  <span className="font-mono text-white font-bold">{trafficVolume.toLocaleString()}</span>
+                  <span className="font-bold text-[var(--sigma-text)]">{trafficVolume.toLocaleString()}</span>
                 </div>
                 <input
                   type="range"
@@ -267,14 +270,14 @@ export default function CroStudioPage() {
                   step={2500}
                   value={trafficVolume}
                   onChange={e => setTrafficVolume(Number(e.target.value))}
-                  className="w-full accent-orange-500"
+                  className="w-full accent-[#ff481b] cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between mb-1.5 text-slate-300">
+                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
                   <span>Hero CTA Conversion Rate</span>
-                  <span className="font-mono text-orange-400 font-bold">{heroConversion}%</span>
+                  <span className="font-bold text-[#ff481b]">{heroConversion}%</span>
                 </div>
                 <input
                   type="range"
@@ -283,14 +286,14 @@ export default function CroStudioPage() {
                   step={0.2}
                   value={heroConversion}
                   onChange={e => setHeroConversion(Number(e.target.value))}
-                  className="w-full accent-orange-500"
+                  className="w-full accent-[#ff481b] cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between mb-1.5 text-slate-300">
+                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
                   <span>Demo Form Completion Rate</span>
-                  <span className="font-mono text-amber-400 font-bold">{formCompletion}%</span>
+                  <span className="font-bold text-amber-400">{formCompletion}%</span>
                 </div>
                 <input
                   type="range"
@@ -299,37 +302,37 @@ export default function CroStudioPage() {
                   step={1.0}
                   value={formCompletion}
                   onChange={e => setFormCompletion(Number(e.target.value))}
-                  className="w-full accent-orange-500"
+                  className="w-full accent-[#ff481b] cursor-pointer"
                 />
               </div>
             </div>
 
             {/* Funnel Output Summary */}
-            <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-3">
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="p-3.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] space-y-2.5">
+              <div className="text-[10px] font-semibold text-[var(--sigma-text-muted)] uppercase tracking-wider font-mono">
                 Simulated Enterprise Pipeline
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-lg bg-white/5">
-                  <div className="text-[10px] text-slate-400">Total Leads</div>
-                  <div className="font-mono font-bold text-white text-base">{totalLeads}</div>
+              <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
+                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Total Leads</div>
+                  <div className="font-bold text-[var(--sigma-text)] text-sm mt-0.5">{totalLeads}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-white/5">
-                  <div className="text-[10px] text-slate-400">Demos Booked</div>
-                  <div className="font-mono font-bold text-orange-400 text-base">{completedForms}</div>
+                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
+                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Demos Booked</div>
+                  <div className="font-bold text-[#ff481b] text-sm mt-0.5">{completedForms}</div>
                 </div>
-                <div className="p-2 rounded-lg bg-white/5">
-                  <div className="text-[10px] text-slate-400">SQL Ops</div>
-                  <div className="font-mono font-bold text-emerald-400 text-base">{qualifiedOps}</div>
+                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
+                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">SQL Ops</div>
+                  <div className="font-bold text-emerald-400 text-sm mt-0.5">{qualifiedOps}</div>
                 </div>
               </div>
             </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
 
       {/* Agent Run Results */}
-      <div className="mt-10">
+      <div className="mt-8">
         <AgentRunResults
           records={runHistory}
           title="CRO Execution & Experiment Logs"

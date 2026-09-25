@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  FileCode, 
-  Download, 
-  Copy, 
-  Check, 
-  Upload, 
-  X, 
-  FileText, 
+import {
+  FileCode,
+  Download,
+  Copy,
+  Check,
+  Upload,
+  X,
+  FileText,
   Sparkles,
   AlertCircle
 } from 'lucide-react';
@@ -14,6 +14,7 @@ import { ScopedAgent } from '@/src/data/agentCockpitData';
 import { exportAgentToMarkdown, downloadAgentMarkdown, importAgentFromMarkdown } from '@/src/services/agentMarkdownService';
 import { useToast } from '@/src/contexts/ToastContext';
 import { cn } from '@/src/lib/utils';
+import { Tabs } from '@/src/components/ui';
 
 interface AgentMarkdownModalProps {
   mode: 'export' | 'import';
@@ -129,26 +130,16 @@ export default function AgentMarkdownModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mr-2">
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-mono transition-all",
-                  activeTab === 'preview' ? "bg-accent text-background font-black" : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Export .md
-              </button>
-              <button
-                onClick={() => setActiveTab('import')}
-                className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-mono transition-all",
-                  activeTab === 'import' ? "bg-accent text-background font-black" : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Import .md
-              </button>
-            </div>
+            <Tabs<'preview' | 'import'>
+              tabs={[
+                { id: 'preview', label: 'Export .md' },
+                { id: 'import', label: 'Import .md' },
+              ]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              size="sm"
+              className="mr-2"
+            />
 
             <button
               onClick={onClose}

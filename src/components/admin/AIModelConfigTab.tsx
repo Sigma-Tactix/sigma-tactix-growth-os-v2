@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Key, 
-  Cpu, 
-  Sparkles, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
-  Sliders, 
-  Lock, 
-  Laptop, 
-  Zap, 
-  Layers, 
-  Search, 
-  ArrowRight, 
-  Check, 
+import {
+  Key,
+  Cpu,
+  Sparkles,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Sliders,
+  Lock,
+  Laptop,
+  Zap,
+  Layers,
+  Search,
+  ArrowRight,
+  Check,
   ExternalLink,
   ShieldCheck,
   Activity,
@@ -41,7 +41,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  
+
   // Selected Provider for Key Vault
   const [selectedProvider, setSelectedProvider] = useState<ModelProvider>('google');
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -102,7 +102,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
   // Filtered models
   const filteredModels = useMemo(() => {
     return ALL_AI_MODELS.filter((m) => {
-      const matchesSearch = 
+      const matchesSearch =
         m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         m.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         m.recommendedRole.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -292,15 +292,15 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="sigma-segmented font-mono">
             <button
               onClick={() => {
                 setLocalProvider('lmstudio');
                 setLocalBaseUrl('http://localhost:1234/v1');
               }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer",
-                localProvider === 'lmstudio' ? "bg-accent text-background border-accent shadow-lg" : "bg-black/40 border-white/10 text-zinc-400 hover:text-white"
+                "sigma-segment cursor-pointer",
+                localProvider === 'lmstudio' ? "sigma-segment-active" : ""
               )}
             >
               LM Studio (:1234)
@@ -311,8 +311,8 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 setLocalBaseUrl('http://localhost:11434/v1');
               }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer",
-                localProvider === 'ollama' ? "bg-accent text-background border-accent shadow-lg" : "bg-black/40 border-white/10 text-zinc-400 hover:text-white"
+                "sigma-segment cursor-pointer",
+                localProvider === 'ollama' ? "sigma-segment-active" : ""
               )}
             >
               Ollama (:11434)
@@ -462,7 +462,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
               </span>
             </div>
             <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-              {autoBandwidthThrottle 
+              {autoBandwidthThrottle
                 ? "Auto-Throttle is monitoring client roundtrip latency. If your connection exceeds 400ms RTT, token chunking dynamically throttles to sustain real-time UI streaming without socket drops."
                 : "Manual context override active. Large payloads (1M+ tokens) will consume unthrottled bandwidth."}
             </p>
@@ -514,7 +514,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 }}
                 className={cn(
                   "p-3 rounded-2xl border cursor-pointer transition-all relative overflow-hidden flex flex-col justify-between",
-                  isSelected 
+                  isSelected
                     ? "bg-accent/15 border-accent shadow-xl ring-1 ring-accent"
                     : "bg-black/40 border-white/10 hover:border-white/20"
                 )}
@@ -659,7 +659,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="sigma-segmented font-mono">
             {[
               { id: 'ALL', label: 'All Models' },
               { id: 'FRONTIER_2026', label: '⭐ Frontier 2026' },
@@ -675,10 +675,10 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 key={tab.id}
                 onClick={() => setSelectedCategory(tab.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-xl font-mono text-xs transition-all border cursor-pointer",
+                  "sigma-segment cursor-pointer",
                   selectedCategory === tab.id
-                    ? "bg-accent text-background font-bold border-accent shadow-md"
-                    : "bg-surface border-white/10 text-muted hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {tab.label}
@@ -711,7 +711,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 key={model.id}
                 className={cn(
                   "p-6 rounded-3xl border transition-all flex flex-col justify-between relative overflow-hidden group",
-                  isGloballyActive 
+                  isGloballyActive
                     ? "bg-gradient-to-br from-accent/15 via-surface to-surface border-accent shadow-xl ring-1 ring-accent"
                     : "bg-surface/90 border-white/10 hover:border-white/20"
                 )}

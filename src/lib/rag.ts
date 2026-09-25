@@ -9,12 +9,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // this is what makes "generation anchors to Second Brain context" literally
 // true instead of aspirational.
 //
-// 768-dim (Gemini text-embedding-004), deliberately not the dead 1536-dim
+// 768-dim (Gemini Embedding 2), deliberately not the dead 1536-dim
 // voice_embedding/persona_embedding columns on brand_vault/customer_vault —
 // nothing ever wrote to those, so there's no migration debt to carry forward,
 // and 768 matches what this embedding call actually returns.
 
-const EMBEDDING_MODEL = "text-embedding-004";
+const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2";
 const EMBEDDING_DIM = 768;
 
 let embedClient: GoogleGenAI | null = null;
@@ -159,4 +159,3 @@ export async function indexPerformanceHook(
     contentText,
   });
 }
-

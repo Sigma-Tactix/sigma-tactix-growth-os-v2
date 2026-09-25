@@ -1,0 +1,190 @@
+{
+  "schema": "autoclaw.contextPack.v1",
+  "markdown_path": ".autoclaw/orchestrator/sprints/next-antigravity.context.md",
+  "generated_at": "2026-09-22T05:35:04.212Z",
+  "workspace_root_hash": "f7e3f3db2dafea4c",
+  "scope": {
+    "task": "Next available work for antigravity: Auto-dispatched by orchestrator-loop. Agent antigravity is idle.",
+    "agent_id": "antigravity",
+    "sprint": 1,
+    "task_ids": [
+      "next-antigravity"
+    ]
+  },
+  "mode": "balanced",
+  "query_mode": "balanced",
+  "degraded": true,
+  "notes": [
+    "Code retrieval unavailable (vector backend degraded).",
+    "mode: balanced",
+    "query-mode: balanced"
+  ],
+  "evidence": [
+    {
+      "id": "kg:0",
+      "kind": "kg",
+      "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790001822172-72cdbf67",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:43:42.185Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    },
+    {
+      "id": "kg:1",
+      "kind": "kg",
+      "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790001822172-72cdbf67",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:43:42.198Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    },
+    {
+      "id": "kg:2",
+      "kind": "kg",
+      "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790002151942-5a0e7bae",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:49:11.953Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    },
+    {
+      "id": "kg:3",
+      "kind": "kg",
+      "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790002151942-5a0e7bae",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:49:11.965Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    },
+    {
+      "id": "kg:4",
+      "kind": "kg",
+      "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790002482016-34d1cae7",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:54:42.028Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    },
+    {
+      "id": "kg:5",
+      "kind": "kg",
+      "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790002482016-34d1cae7",
+      "score": 0.25,
+      "captured_at": "2026-09-21T14:54:42.039Z",
+      "freshness": "current",
+      "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+    }
+  ],
+  "hashes": [
+    {
+      "evidence_id": "kg:0",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "0845d938667479761622a38560f5087deedd424ae28430f1714a9d9c5d220345"
+    },
+    {
+      "evidence_id": "kg:1",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "5ee85f77783d35ce7e60be3f158ba6ba18637d90956d1073b8a4b2fa471dd442"
+    },
+    {
+      "evidence_id": "kg:2",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "51cd34c0c4fda8d89a338ac504f87162615a2df7ad20a1eb95584272a6220989"
+    },
+    {
+      "evidence_id": "kg:3",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "e4e299e23064bf294588c0c193cb6d68e75ae6c8776c931467f4f2c2c8b88033"
+    },
+    {
+      "evidence_id": "kg:4",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "83da840443489085c0c08fa19069fe625715da08776c5ff0cd00e596162c5264"
+    },
+    {
+      "evidence_id": "kg:5",
+      "content_hash": "bfa27658e9fbf1521bacf4e27b54ad4bc5381916a7b5dbc59c23ef46a9180e10",
+      "source_hash": "ae07b1d24213ecb7013fe7e85b047c3cc206a31fae2287fb2094018a4d4bdf28"
+    }
+  ],
+  "summary": {
+    "task": "Next available work for antigravity: Auto-dispatched by orchestrator-loop. Agent antigravity is idle.",
+    "agent_id": "antigravity",
+    "sprint": 1,
+    "task_ids": [
+      "next-antigravity"
+    ],
+    "used_code": false,
+    "code_hits": 0,
+    "learning_hits": 0,
+    "kg_hits": 6,
+    "degraded": true,
+    "notes": [
+      "Code retrieval unavailable (vector backend degraded).",
+      "mode: balanced",
+      "query-mode: balanced"
+    ],
+    "generated_at": "2026-09-22T05:35:04.212Z",
+    "mode": "balanced",
+    "spine_block_ids": [
+      "ctx:/users/mac/downloads/sigmatactix-new-growth-os-ai-studio:project:root"
+    ],
+    "query_mode": "balanced",
+    "evidence": [
+      {
+        "id": "kg:0",
+        "kind": "kg",
+        "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790001822172-72cdbf67",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:43:42.185Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      },
+      {
+        "id": "kg:1",
+        "kind": "kg",
+        "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790001822172-72cdbf67",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:43:42.198Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      },
+      {
+        "id": "kg:2",
+        "kind": "kg",
+        "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790002151942-5a0e7bae",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:49:11.953Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      },
+      {
+        "id": "kg:3",
+        "kind": "kg",
+        "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790002151942-5a0e7bae",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:49:11.965Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      },
+      {
+        "id": "kg:4",
+        "kind": "kg",
+        "source_ref": "kg:dispatch:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity-1790002482016-34d1cae7",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:54:42.028Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      },
+      {
+        "id": "kg:5",
+        "kind": "kg",
+        "source_ref": "kg:evt:/Users/mac/Downloads/sigmatactix-new-growth-os-ai-studio:next-antigravity:progress:next-antigravity-1790002482016-34d1cae7",
+        "score": 0.25,
+        "captured_at": "2026-09-21T14:54:42.039Z",
+        "freshness": "current",
+        "included_reason": "durable KG fact ranked by hybrid fusion (balanced)"
+      }
+    ]
+  }
+}

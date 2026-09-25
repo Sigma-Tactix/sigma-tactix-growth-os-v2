@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  ClipboardCheck, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle2, 
-  ShieldAlert, 
-  ArrowRight, 
-  Play, 
-  RefreshCw, 
-  Sliders, 
+import {
+  ClipboardCheck,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  ShieldAlert,
+  ArrowRight,
+  Play,
+  RefreshCw,
+  Sliders,
   Sparkles,
   Zap,
   Target,
@@ -37,17 +37,18 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
-import { 
-  DIAGNOSTIC_CATEGORIES, 
-  INITIAL_UI_CHECKLIST, 
-  INITIAL_ROADMAP, 
-  UIChecklistItem, 
-  RoadmapMilestone 
+import {
+  DIAGNOSTIC_CATEGORIES,
+  INITIAL_UI_CHECKLIST,
+  INITIAL_ROADMAP,
+  UIChecklistItem,
+  RoadmapMilestone
 } from '@/src/data/growthDiagnosticsData';
 
 import { apiFetch } from '@/src/lib/api';
 import { exportService, ExecutiveReportData } from '@/src/services/exportService';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
+import { Button, GlassCard, Badge, Tabs } from '@/src/components/ui';
 
 interface DomainAuditRecord {
   domain: string;
@@ -261,8 +262,8 @@ export default function GrowthDiagnostics() {
     fetchExistingAudit();
   }, []);
 
-  const overallScore = isScanningDomain 
-    ? '--' 
+  const overallScore = isScanningDomain
+    ? '--'
     : (domainScore !== null && domainScore > 0 ? domainScore : computeCalibratedScore(activeDomain));
 
   const numericScore = typeof overallScore === 'number' ? overallScore : 74;
@@ -270,7 +271,7 @@ export default function GrowthDiagnostics() {
   const annualLostARR = quantifiedLeakMonthly * 12;
   const targetARRUplift = Math.round(quantifiedLeakMonthly * 4.4);
 
-  const diagnosticGrade = numericScore >= 85 
+  const diagnosticGrade = numericScore >= 85
     ? { grade: 'A', label: 'Exceptional Growth Velocity', color: 'text-emerald-400' }
     : numericScore >= 70
     ? { grade: 'B+', label: 'High Growth Potential', color: 'text-green-400' }
@@ -723,93 +724,99 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
     }
   };
 
-  const filteredRoadmap = selectedPhase === 'ALL' 
-    ? roadmap 
+  const filteredRoadmap = selectedPhase === 'ALL'
+    ? roadmap
     : roadmap.filter(m => m.phase.startsWith(selectedPhase));
 
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-8">
         <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <ClipboardCheck size={14} className="text-accent" /> Intelligence Layer • Digital Growth Diagnostic
+          <div className="text-xs text-[var(--sigma-text-muted)] font-mono flex items-center gap-2 mb-2">
+            <ClipboardCheck size={14} className="text-[var(--sigma-primary)]" />
+            <span>Intelligence Layer</span>
+            <span className="opacity-40">/</span>
+            <span className="text-[var(--sigma-text)] font-semibold">Growth Diagnostic</span>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight text-[var(--sigma-text)]">
             Growth Diagnostics
           </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
+          <p className="text-[var(--sigma-text-muted)] text-sm sm:text-base max-w-3xl mt-2 leading-relaxed font-sans">
             Systematic diagnosis of digital growth bottlenecks, revenue leaks, UI/UX heuristic audit checklists, and automated 90-day execution roadmaps.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            data-tutorial-id="tut-export-pdf-btn"
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleDownloadPDF}
-            disabled={isExportingPDF}
-            className="px-4 py-3.5 bg-white/5 border border-white/10 hover:border-accent/40 rounded-xl font-bold uppercase text-xs font-mono tracking-wider text-zinc-300 hover:text-white transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            isLoading={isExportingPDF}
+            icon={<Download size={14} />}
             title="Download full executive report as PDF"
           >
-            <Download size={15} className={cn(isExportingPDF && "animate-bounce text-accent")} />
-            <span>{isExportingPDF ? "Exporting PDF..." : "Export Report (PDF)"}</span>
-          </button>
+            Export PDF
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleDownloadPPTX}
-            disabled={isExportingPPTX}
-            className="px-4 py-3.5 bg-white/5 border border-white/10 hover:border-accent/40 rounded-xl font-bold uppercase text-xs font-mono tracking-wider text-zinc-300 hover:text-white transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            isLoading={isExportingPPTX}
+            icon={<Presentation size={14} />}
             title="Download executive presentation deck as PPTX"
           >
-            <Presentation size={15} className={cn(isExportingPPTX && "animate-pulse text-accent")} />
-            <span>{isExportingPPTX ? "Exporting Deck..." : "Download Deck (PPTX)"}</span>
-          </button>
+            Deck (PPTX)
+          </Button>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDownloadMarkdown}
-            disabled={isExportingMD}
-            className="px-3.5 py-3.5 bg-black/50 border border-white/10 hover:border-white/25 rounded-xl font-bold text-xs font-mono text-zinc-300 hover:text-white transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            isLoading={isExportingMD}
+            icon={<FileText size={14} />}
             title="Export raw Markdown dossier"
           >
-            <FileText size={15} />
-            <span>{isExportingMD ? "Exporting..." : "Export .MD"}</span>
-          </button>
+            .MD
+          </Button>
 
-          <button
-            data-tutorial-id="tut-run-audit-btn"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleRunFreshAudit}
-            disabled={isScanningDomain || isRunningAudit}
-            className="px-6 py-3.5 bg-accent text-background rounded-xl font-black uppercase text-xs tracking-widest hover:opacity-90 transition-all amber-glow shadow-2xl flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            isLoading={isScanningDomain || isRunningAudit}
+            icon={isScanningDomain ? undefined : <Play size={14} />}
           >
-            {isScanningDomain ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} />}
-            {isScanningDomain ? "Crawling Domain..." : "Run Fresh Diagnostic"}
-          </button>
+            {isScanningDomain ? "Crawling..." : "Run Diagnostic"}
+          </Button>
         </div>
       </div>
 
       {/* DOMAIN SEARCH BAR TO BEGIN AUDIT FOR ANY NEW DOMAIN */}
-      <div className="bg-surface border border-white/15 rounded-2xl p-6 shadow-2xl space-y-4 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/5 pb-3">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-accent">
-            <Globe size={15} /> Autonomous Domain Audit Engine
+      <GlassCard spotlight className="p-6 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[var(--sigma-border)] pb-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--sigma-text)]">
+            <Globe size={15} className="text-[var(--sigma-primary)]" />
+            <span>Autonomous Domain Audit Engine</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-400">
+          <div className="flex items-center gap-3 text-xs font-mono text-[var(--sigma-text-muted)]">
             {currentWorkspace && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent font-bold">
+              <Badge variant="outline" size="sm">
                 Enclave: {currentWorkspace.name}
-              </span>
+              </Badge>
             )}
             <div className="flex items-center gap-1.5">
               <span>Target:</span>
-              <span className="text-white font-bold bg-white/10 px-2.5 py-0.5 rounded-md flex items-center gap-1.5">
-                <Lock size={10} className="text-green-400" /> https://{activeDomain}
+              <span className="text-[var(--sigma-text)] font-semibold bg-[var(--sigma-surface-subtle)] px-2 py-0.5 rounded-md border border-[var(--sigma-border)] flex items-center gap-1.5">
+                <Lock size={11} className="text-emerald-400" /> https://{activeDomain}
               </span>
             </div>
           </div>
         </div>
 
         {/* Search Input & Action */}
-        <form 
+        <form
           onSubmit={(e) => {
             e.preventDefault();
             handleBeginDomainAudit();
@@ -817,30 +824,33 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
           className="flex flex-col sm:flex-row items-center gap-3"
         >
           <div className="relative flex-1 w-full">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)]" />
             <input
               type="text"
               value={domainInput}
               onChange={(e) => setDomainInput(e.target.value)}
               placeholder="Enter company website (e.g. acme-tech.com or domain.io)..."
-              className="w-full pl-11 pr-4 py-3.5 bg-black/50 border border-white/10 rounded-xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+              className="w-full pl-10 pr-4 py-2.5 glass-panel border border-[var(--sigma-border)] rounded-xl text-xs font-mono text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:border-[var(--sigma-primary)] transition-all"
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={isScanningDomain || !domainInput.trim()}
-            className="w-full sm:w-auto px-8 py-3.5 bg-accent text-background rounded-xl font-black uppercase text-xs tracking-widest hover:opacity-90 transition-all amber-glow shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
+            variant="primary"
+            size="md"
+            isLoading={isScanningDomain}
+            disabled={!domainInput.trim()}
+            icon={isScanningDomain ? undefined : <Play size={14} />}
+            className="w-full sm:w-auto"
           >
-            {isScanningDomain ? <RefreshCw size={15} className="animate-spin" /> : <Play size={15} />}
-            <span>{isScanningDomain ? "Scanning..." : "Begin Audit"}</span>
-          </button>
+            {isScanningDomain ? "Scanning..." : "Begin Audit"}
+          </Button>
         </form>
 
         {/* Preset Domain Pills & Recent Audits */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs font-mono">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-zinc-500 text-[11px]">Presets:</span>
+            <span className="text-[var(--sigma-text-muted)] text-[11px]">Presets:</span>
             {Array.from(new Set([currentWorkspace?.domain || 'sigmatactix.com', 'sigmatactix.com'])).map(domain => (
               <button
                 key={domain}
@@ -850,10 +860,10 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                   handleBeginDomainAudit(domain);
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] border transition-all",
+                  "px-2.5 py-1 rounded-lg text-xs border transition-all cursor-pointer",
                   activeDomain === domain
-                    ? "bg-accent/15 border-accent text-accent font-bold"
-                    : "bg-black/30 border-white/10 text-zinc-400 hover:text-white hover:border-white/25"
+                    ? "bg-[var(--sigma-primary-subtle)] border-[var(--sigma-primary)] text-[var(--sigma-primary)] font-semibold"
+                    : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                 )}
               >
                 {domain}
@@ -862,8 +872,8 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
           </div>
 
           {/* Recent Audits selector */}
-          <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
-            <History size={13} className="text-muted" />
+          <div className="flex items-center gap-2 text-[var(--sigma-text-muted)] text-xs">
+            <History size={13} />
             <span>Recent:</span>
             {recentAudits.slice(0, 3).map(rec => (
               <button
@@ -874,7 +884,7 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                   setDomainInput(rec.domain);
                   setDomainScore(rec.score);
                 }}
-                className="hover:text-accent underline underline-offset-2"
+                className="hover:text-[var(--sigma-primary)] underline underline-offset-2 cursor-pointer"
               >
                 {rec.domain} ({rec.score}/100)
               </button>
@@ -889,108 +899,100 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 p-4 rounded-xl bg-black/40 border border-accent/30 space-y-3"
+              className="mt-4 p-4 rounded-xl glass-panel border border-[var(--sigma-primary)]/30 space-y-3"
             >
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-accent flex items-center gap-2 font-bold">
-                  <Activity size={14} className="animate-pulse" />
+                <span className="text-[var(--sigma-primary)] flex items-center gap-2 font-semibold">
+                  <Activity size={14} className="animate-spin" />
                   {scanStatusText}
                 </span>
-                <span className="text-white font-bold">{scanProgress}%</span>
+                <span className="text-[var(--sigma-text)] font-bold">{scanProgress}%</span>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div 
-                  className="h-full bg-accent amber-glow" 
+              <div className="w-full h-2 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-[var(--sigma-primary)] rounded-full"
                   style={{ width: `${scanProgress}%` }}
                   transition={{ ease: "easeInOut" }}
                 />
               </div>
 
-              <div className="grid grid-cols-4 gap-2 pt-1 text-[10px] font-mono text-zinc-400">
-                <span className={cn(scanStep >= 1 ? "text-green-400" : "")}>1. DNS & SSL</span>
-                <span className={cn(scanStep >= 2 ? "text-green-400" : "")}>2. Web Vitals</span>
-                <span className={cn(scanStep >= 3 ? "text-green-400" : "")}>3. UX Heuristics</span>
-                <span className={cn(scanStep >= 4 ? "text-green-400" : "")}>4. Pixel & Pixels</span>
+              <div className="grid grid-cols-4 gap-2 pt-1 text-[11px] font-mono text-[var(--sigma-text-muted)]">
+                <span className={cn(scanStep >= 1 ? "text-emerald-400 font-semibold" : "")}>1. DNS & SSL</span>
+                <span className={cn(scanStep >= 2 ? "text-emerald-400 font-semibold" : "")}>2. Web Vitals</span>
+                <span className={cn(scanStep >= 3 ? "text-emerald-400 font-semibold" : "")}>3. UX Heuristics</span>
+                <span className={cn(scanStep >= 4 ? "text-emerald-400 font-semibold" : "")}>4. Attribution</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </GlassCard>
 
       {/* INSTANT AUDIT REPORT DOWNLOAD BANNER */}
-      <div className="p-6 bg-gradient-to-r from-accent/15 via-[#121217] to-emerald-500/10 border border-accent/30 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl">
+      <GlassCard spotlight className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-accent font-bold mb-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[var(--sigma-primary)] font-semibold mb-1">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>AUDIT READY FOR {activeDomain.toUpperCase()}</span>
-            <span className="text-zinc-500">•</span>
-            <span className="text-emerald-400">Score: {overallScore}/100</span>
+            <span className="text-[var(--sigma-text-muted)]">•</span>
+            <Badge variant="success" size="sm">Score: {overallScore}/100</Badge>
           </div>
-          <h3 className="text-xl font-heading font-black text-white">
+          <h3 className="text-xl font-display font-bold text-[var(--sigma-text)]">
             Executive Growth Dossier & Revenue Leakage Audit
           </h3>
-          <p className="text-xs text-zinc-300 mt-1 max-w-2xl">
-            Identified <strong className="text-rose-400 font-bold">${quantifiedLeakMonthly.toLocaleString()}/mo</strong> (${annualLostARR.toLocaleString()} annual ARR) in recoverable revenue across 9 verified vectors. Download the complete report below:
+          <p className="text-xs text-[var(--sigma-text-muted)] mt-1 max-w-2xl">
+            Identified <strong className="text-rose-400 font-semibold font-mono">${quantifiedLeakMonthly.toLocaleString()}/mo</strong> (${annualLostARR.toLocaleString()} annual ARR) in recoverable revenue across 9 verified vectors. Download the complete report below:
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleDownloadPDF}
-            disabled={isExportingPDF}
-            className="px-4 py-2.5 bg-accent text-background hover:opacity-90 font-black rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer amber-glow shadow-xl disabled:opacity-50"
-            title="Download full executive report as PDF"
+            isLoading={isExportingPDF}
+            icon={<Download size={14} />}
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>{isExportingPDF ? 'Exporting PDF...' : 'Download Report (PDF)'}</span>
-          </button>
+            Download PDF
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleDownloadPPTX}
-            disabled={isExportingPPTX}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            title="Download presentation deck as PPTX"
+            isLoading={isExportingPPTX}
+            icon={<Presentation size={14} />}
           >
-            <Presentation className="w-3.5 h-3.5 text-accent" />
-            <span>{isExportingPPTX ? 'Exporting Deck...' : 'Download Deck (PPTX)'}</span>
-          </button>
+            Deck (PPTX)
+          </Button>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDownloadMarkdown}
-            disabled={isExportingMD}
-            className="px-3.5 py-2.5 bg-black/60 hover:bg-black text-zinc-300 border border-white/10 rounded-xl text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-            title="Export raw Markdown dossier"
+            isLoading={isExportingMD}
+            icon={<FileText size={14} />}
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Export .MD</span>
-          </button>
+            Export .MD
+          </Button>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-4 overflow-x-auto">
-        {[
-          { id: 'overview', label: 'Diagnostic Overview & Leaks', icon: TrendingUp },
-          { id: 'report', label: 'Detailed Diagnostic Report', icon: FileText },
-          { id: 'checklist', label: `UI/UX Heuristics (${passedChecklistCount}/${checklist.length})`, icon: ClipboardCheck },
-          { id: 'roadmap', label: '90-Day Execution Roadmap', icon: Target }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={cn(
-              "px-5 py-2.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer",
-              activeTab === tab.id
-                ? "bg-accent text-background font-black shadow-lg amber-glow"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
-            )}
-          >
-            <tab.icon size={14} />
-            {tab.label}
-          </button>
-        ))}
+      <div className="border-b border-[var(--sigma-border)] pb-4">
+        <Tabs
+          tabs={[
+            { id: 'overview', label: 'Diagnostic Overview & Leaks', icon: <TrendingUp size={14} /> },
+            { id: 'report', label: 'Detailed Diagnostic Report', icon: <FileText size={14} /> },
+            { id: 'checklist', label: `UI/UX Heuristics (${passedChecklistCount}/${checklist.length})`, icon: <ClipboardCheck size={14} /> },
+            { id: 'roadmap', label: '90-Day Execution Roadmap', icon: <Target size={14} /> }
+          ]}
+          activeTab={activeTab}
+          onChange={(tabId) => setActiveTab(tabId as any)}
+          variant="pill"
+          size="md"
+        />
       </div>
 
       {/* TAB 1: OVERVIEW & REVENUE LEAKS */}
@@ -998,105 +1000,82 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
         <div className="space-y-8">
           {/* Top Score Banner */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div data-tutorial-id="tut-audit-score-card" className="lg:col-span-4 bg-surface border border-white/10 rounded-2xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+            <GlassCard spotlight className="lg:col-span-4 p-7 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted">Composite Growth Index</div>
-                  <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
-                    {activeDomain}
-                  </span>
+                  <div className="text-xs font-mono text-[var(--sigma-text-muted)]">Composite Growth Index</div>
+                  <Badge variant="outline" size="sm">{activeDomain}</Badge>
                 </div>
-                <div className="flex items-baseline gap-3 mt-3">
-                  <span className="text-6xl font-heading font-black amber-text tracking-tighter">{overallScore}</span>
-                  <span className="text-xl font-bold text-zinc-500 font-mono">/ 100</span>
+                <div className="flex items-baseline gap-2 mt-3">
+                  <span className="text-5xl font-display font-extrabold text-[var(--sigma-text)] tracking-tight">{overallScore}</span>
+                  <span className="text-lg font-mono text-[var(--sigma-text-muted)] font-normal">/ 100</span>
                 </div>
-                <div className={cn("text-xs font-mono mt-2 flex items-center gap-1.5", diagnosticGrade.color)}>
-                  <CheckCircle2 size={14} /> Diagnostic Grade: {diagnosticGrade.grade} ({diagnosticGrade.label})
+                <div className="mt-2">
+                  <Badge variant={numericScore >= 70 ? "success" : "warning"} dot>
+                    Grade: {diagnosticGrade.grade} ({diagnosticGrade.label})
+                  </Badge>
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-white/5">
-                <div className="text-[11px] font-mono text-muted uppercase tracking-widest">Identified Revenue Leaks:</div>
-                <div className="text-2xl font-black silver-text mt-1 text-rose-400">
+              <div className="mt-6 pt-6 border-t border-[var(--sigma-border)]">
+                <div className="text-xs font-mono text-[var(--sigma-text-muted)]">Identified Revenue Leaks:</div>
+                <div className="text-2xl font-bold font-mono tabular-nums mt-1 text-rose-400">
                   ${quantifiedLeakMonthly.toLocaleString()} / month
                 </div>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Primary leakage in mobile conversion friction, unoptimized broad match keywords, and zero AEO entity presence.
+                <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
+                  Primary leakage in mobile conversion friction, unoptimized search queries, and generative entity absence.
                 </p>
 
-                {/* Direct download buttons right on the Composite Growth Index card */}
-                <div className="mt-4 pt-4 border-t border-white/5 flex flex-wrap gap-2">
-                  <button 
-                    onClick={handleDownloadPDF} 
-                    disabled={isExportingPDF} 
-                    className="px-3 py-1.5 bg-accent/15 hover:bg-accent/30 border border-accent/30 text-accent rounded-lg text-[10px] font-mono font-bold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Download size={12} /> Download PDF
-                  </button>
-                  <button 
-                    onClick={handleDownloadPPTX} 
-                    disabled={isExportingPPTX} 
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Presentation size={12} className="text-accent" /> Deck (PPTX)
-                  </button>
-                  <button 
-                    onClick={handleDownloadMarkdown} 
-                    disabled={isExportingMD} 
-                    className="px-2.5 py-1.5 bg-black/40 hover:bg-black/60 border border-white/10 text-zinc-400 rounded-lg text-[10px] font-mono flex items-center gap-1 cursor-pointer"
-                  >
-                    <FileText size={12} /> .MD
-                  </button>
+                {/* Direct download buttons */}
+                <div className="mt-4 pt-4 border-t border-[var(--sigma-border)] flex flex-wrap gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleDownloadPDF} icon={<Download size={12} />}>PDF</Button>
+                  <Button variant="secondary" size="sm" onClick={handleDownloadPPTX} icon={<Presentation size={12} />}>Deck</Button>
+                  <Button variant="ghost" size="sm" onClick={handleDownloadMarkdown} icon={<FileText size={12} />}>.MD</Button>
                 </div>
               </div>
-
-              <div className="absolute -bottom-6 -right-6 opacity-5 text-accent pointer-events-none">
-                <Target size={160} />
-              </div>
-            </div>
+            </GlassCard>
 
             {/* Category Scores Grid (Dynamically calibrated to domain score) */}
             <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeCategories.map(cat => (
-                <div 
-                  key={cat.id} 
-                  className="bg-surface border border-white/10 rounded-2xl p-5 shadow-xl hover:border-white/20 transition-all flex flex-col justify-between"
+                <GlassCard
+                  key={cat.id}
+                  spotlight
+                  className="p-5 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white tracking-tight">{cat.name}</span>
-                      <span className={cn(
-                        "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold",
-                        cat.status === 'OPTIMAL' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                        cat.status === 'MODERATE' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                        "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                      )}>
+                      <span className="text-xs font-semibold text-[var(--sigma-text)] tracking-tight">{cat.name}</span>
+                      <Badge
+                        variant={cat.status === 'OPTIMAL' ? 'success' : cat.status === 'MODERATE' ? 'warning' : 'vermilion'}
+                        size="sm"
+                      >
                         {cat.status}
-                      </span>
+                      </Badge>
                     </div>
 
                     <div className="flex items-center gap-3 my-2">
-                      <div className="text-2xl font-black silver-text">{cat.score}</div>
-                      <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden">
-                        <div 
+                      <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{cat.score}</div>
+                      <div className="flex-1 h-2 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden">
+                        <div
                           className={cn(
                             "h-full rounded-full",
-                            cat.score > 80 ? "bg-green-400" : cat.score > 70 ? "bg-amber-400" : "bg-rose-400"
-                          )} 
-                          style={{ width: `${cat.score}%` }} 
+                            cat.score > 80 ? "bg-emerald-400" : cat.score > 70 ? "bg-amber-400" : "bg-rose-400"
+                          )}
+                          style={{ width: `${cat.score}%` }}
                         />
                       </div>
                     </div>
 
-                    <div className="text-xs text-secondary font-mono font-bold">{cat.keyMetric}</div>
-                    <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{cat.summary}</p>
+                    <div className="text-xs text-[var(--sigma-primary)] font-mono font-semibold">{cat.keyMetric}</div>
+                    <p className="text-xs text-[var(--sigma-text-muted)] mt-2 leading-relaxed">{cat.summary}</p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-white/5 text-[10px] font-mono text-rose-300/90 flex items-center gap-1.5">
+                  <div className="mt-4 pt-3 border-t border-[var(--sigma-border)] text-xs font-mono text-rose-400/90 flex items-center gap-1.5">
                     <AlertTriangle size={12} className="shrink-0 text-rose-400" />
                     <span className="truncate">{cat.leakEstimate}</span>
                   </div>
-                </div>
+                </GlassCard>
               ))}
             </div>
           </div>
@@ -1108,200 +1087,210 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
       {activeTab === 'report' && (
         <div className="space-y-8">
           {/* Report Action Banner */}
-          <div className="p-6 bg-surface border border-white/10 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <GlassCard spotlight className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-xs font-mono text-accent font-bold mb-1">
+              <div className="flex items-center gap-2 text-xs font-mono text-[var(--sigma-primary)] font-semibold mb-1">
                 <FileText className="w-4 h-4" /> OFFICIAL POST-AUDIT DIAGNOSTIC DOSSIER
               </div>
-              <h2 className="text-xl font-bold text-white">Executive Growth Diagnostic: {activeDomain}</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <h2 className="text-xl font-bold font-display text-[var(--sigma-text)]">Executive Growth Diagnostic: {activeDomain}</h2>
+              <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">
                 Audit executed by Chronos-00 Master Orchestrator across 8 core growth vectors. Explains every single finding, revenue leakage, and aggressive 90-day remediation plan.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleDownloadPDF}
-                disabled={isExportingPDF}
-                className="px-4 py-2.5 bg-accent text-background hover:opacity-90 font-black rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer amber-glow shadow-xl disabled:opacity-50"
+                isLoading={isExportingPDF}
+                icon={<Download size={14} />}
               >
-                <Download className="w-3.5 h-3.5" />
-                {isExportingPDF ? 'Exporting PDF...' : 'Download Report (PDF)'}
-              </button>
+                Download PDF
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleDownloadPPTX}
-                disabled={isExportingPPTX}
-                className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                isLoading={isExportingPPTX}
+                icon={<Presentation size={14} />}
               >
-                <Presentation className="w-3.5 h-3.5 text-accent" />
-                {isExportingPPTX ? 'Exporting Deck...' : 'Download Deck (PPTX)'}
-              </button>
+                Deck (PPTX)
+              </Button>
 
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   navigator.clipboard.writeText(`Executive Growth Diagnostic Report for ${activeDomain}\nScore: ${overallScore}/100\nIdentified Revenue Leaks: $42,000/mo\nGenerated by Sigma Tactix Growth OS`);
                   setCopiedReport(true);
                   notifyInfo('Report Copied', 'Full Markdown summary copied to clipboard.');
                   setTimeout(() => setCopiedReport(false), 2000);
                 }}
-                className="px-3 py-2.5 bg-black/40 hover:bg-black/60 text-zinc-300 border border-white/10 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                icon={copiedReport ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
               >
-                {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedReport ? 'Copied' : 'Copy'}
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => notifySuccess('All Remediation Swarms Dispatched', 'Dispatched Aurora-01 (SEO), Nexus-03 (Content), and Vortex-02 (Paid Ads) to begin Day 1 fixes.')}
-                className="px-4 py-2.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+                icon={<Zap size={14} className="text-[var(--sigma-primary)]" />}
               >
-                <Zap className="w-3.5 h-3.5" />
                 Remediate
-              </button>
+              </Button>
             </div>
-          </div>
+          </GlassCard>
 
           {/* Exportable Report Canvas Container */}
-          <div id="diagnostic-report-canvas" className="space-y-8 bg-[#09090B] p-4 sm:p-6 rounded-2xl border border-white/5">
+          <div id="diagnostic-report-canvas" className="space-y-6 glass-panel border border-[var(--sigma-border)] p-4 sm:p-6 rounded-2xl">
             {/* Section 1: Executive Scorecard */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="p-5 bg-surface border border-white/10 rounded-2xl">
-                <div className="text-[11px] font-mono text-zinc-400 uppercase">Total Growth Score</div>
-                <div className="text-3xl font-black amber-text mt-1 flex items-baseline gap-2">
-                  {overallScore} <span className="text-sm font-mono text-zinc-500 font-normal">/ 100</span>
+              <GlassCard className="p-5" spotlight>
+                <div className="text-xs font-mono text-[var(--sigma-text-muted)] uppercase">Growth Index</div>
+                <div className="text-3xl font-bold font-mono tabular-nums text-[var(--sigma-text)] mt-1 flex items-baseline gap-2">
+                  {overallScore} <span className="text-xs font-mono text-[var(--sigma-text-muted)] font-normal">/ 100</span>
                 </div>
-                <div className={cn("text-[11px] font-mono mt-1", diagnosticGrade.color)}>Grade: {diagnosticGrade.grade} ({diagnosticGrade.label})</div>
-              </div>
-
-              <div className="p-5 bg-surface border border-white/10 rounded-2xl">
-                <div className="text-[11px] font-mono text-zinc-400 uppercase">Quantified Revenue Leak</div>
-                <div className="text-3xl font-black text-rose-400 mt-1">
-                  ${quantifiedLeakMonthly.toLocaleString()} <span className="text-xs font-mono text-zinc-500 font-normal">/ mo</span>
+                <div className="mt-1">
+                  <Badge variant={numericScore >= 70 ? "success" : "warning"} size="sm" dot>
+                    Grade: {diagnosticGrade.grade} ({diagnosticGrade.label})
+                  </Badge>
                 </div>
-                <div className="text-[11px] text-zinc-400 mt-1">${annualLostARR.toLocaleString()} annual lost ARR</div>
-              </div>
+              </GlassCard>
 
-              <div className="p-5 bg-surface border border-white/10 rounded-2xl">
-                <div className="text-[11px] font-mono text-zinc-400 uppercase">Audited Critical Steps</div>
-                <div className="text-3xl font-black text-white mt-1">
-                  9 of 9 Steps
+              <GlassCard className="p-5" spotlight>
+                <div className="text-xs font-mono text-[var(--sigma-text-muted)] uppercase">Revenue Leak</div>
+                <div className="text-3xl font-bold font-mono tabular-nums text-rose-400 mt-1">
+                  ${quantifiedLeakMonthly.toLocaleString()} <span className="text-xs font-mono text-[var(--sigma-text-muted)] font-normal">/ mo</span>
                 </div>
-                <div className="text-[11px] text-emerald-400 mt-1">100% Diagnostic Completion</div>
-              </div>
+                <div className="text-xs text-[var(--sigma-text-muted)] mt-1">${annualLostARR.toLocaleString()} annual lost ARR</div>
+              </GlassCard>
 
-              <div className="p-5 bg-surface border border-white/10 rounded-2xl">
-                <div className="text-[11px] font-mono text-zinc-400 uppercase">Target 90-Day ARR Uplift</div>
-                <div className="text-3xl font-black text-emerald-400 mt-1">
+              <GlassCard className="p-5" spotlight>
+                <div className="text-xs font-mono text-[var(--sigma-text-muted)] uppercase">Audited Steps</div>
+                <div className="text-3xl font-bold font-mono tabular-nums text-[var(--sigma-text)] mt-1">
+                  9 of 9
+                </div>
+                <div className="text-xs text-emerald-400 mt-1">100% Diagnostic Completion</div>
+              </GlassCard>
+
+              <GlassCard className="p-5" spotlight>
+                <div className="text-xs font-mono text-[var(--sigma-text-muted)] uppercase">Target ARR Uplift</div>
+                <div className="text-3xl font-bold font-mono tabular-nums text-emerald-400 mt-1">
                   +${targetARRUplift.toLocaleString()}
                 </div>
-                <div className="text-[11px] text-zinc-400 mt-1">With 4.4x ROAS target</div>
-              </div>
+                <div className="text-xs text-[var(--sigma-text-muted)] mt-1">With 4.4x ROAS target</div>
+              </GlassCard>
             </div>
 
             {/* Section 2: In-Depth Step-by-Step Audit Results with Evidence */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-accent" />
-                  Step-by-Step Technical & Strategic Audit Results (9 Vectors Verified)
+                <h3 className="text-base font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[var(--sigma-primary)]" />
+                  Technical & Strategic Audit Vectors (9 Verified)
                 </h3>
-                <span className="text-xs font-mono text-zinc-500">Autonomous Heuristic Evaluator v4.2</span>
+                <span className="text-xs font-mono text-[var(--sigma-text-muted)]">Autonomous Evaluator v4.2</span>
               </div>
 
               <div className="space-y-4">
                 {auditedVectors.map((stepItem, idx) => (
-                  <div key={idx} className="p-5 bg-surface border border-white/10 rounded-2xl space-y-4 hover:border-white/20 transition-all shadow-md">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                  <GlassCard key={idx} className="p-5 space-y-4" spotlight>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--sigma-border)] pb-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono font-bold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
+                        <Badge variant="vermilion" size="sm">
                           {stepItem.step}
-                        </span>
-                        <h4 className="font-bold text-sm text-white">{stepItem.name}</h4>
+                        </Badge>
+                        <h4 className="font-semibold text-sm text-[var(--sigma-text)]">{stepItem.name}</h4>
                       </div>
 
                       <div className="flex items-center gap-3 font-mono text-xs">
-                        <span className="text-zinc-400">Score: <strong className="text-white">{stepItem.score}/100</strong></span>
-                        <span className={cn(
-                          "px-2 py-0.5 rounded text-[10px] font-bold",
-                          stepItem.status === 'OPTIMAL' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                          stepItem.status === 'CRITICAL_LEAK' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                          "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        )}>
-                          {stepItem.status}
-                        </span>
+                        <span className="text-[var(--sigma-text-muted)]">Score: <strong className="text-[var(--sigma-text)]">{stepItem.score}/100</strong></span>
+                        <Badge
+                          variant={
+                            stepItem.status === 'OPTIMAL' ? 'success' :
+                            stepItem.status === 'CRITICAL_LEAK' ? 'danger' : 'warning'
+                          }
+                          size="xs"
+                          dot
+                        >
+                          {stepItem.status.replace('_', ' ')}
+                        </Badge>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                       <div className="space-y-1">
-                        <div className="font-mono text-zinc-500 uppercase text-[10px]">Empirical Finding</div>
-                        <p className="text-zinc-300 leading-relaxed">{stepItem.finding}</p>
+                        <div className="font-mono text-[var(--sigma-text-muted)] text-[10px] uppercase">Empirical Finding</div>
+                        <p className="text-[var(--sigma-text-secondary)] leading-relaxed">{stepItem.finding}</p>
                       </div>
 
                       <div className="space-y-1">
-                        <div className="font-mono text-rose-400 uppercase text-[10px] font-bold">Estimated Revenue Leak</div>
-                        <p className="text-rose-300 font-semibold">{stepItem.leak}</p>
+                        <div className="font-mono text-rose-400 text-[10px] font-semibold uppercase">Estimated Revenue Leak</div>
+                        <p className="text-rose-400 font-semibold">{stepItem.leak}</p>
                       </div>
 
                       <div className="space-y-1">
-                        <div className="font-mono text-emerald-400 uppercase text-[10px] font-bold">Systemic Remediation</div>
-                        <p className="text-zinc-200">{stepItem.action}</p>
+                        <div className="font-mono text-emerald-400 text-[10px] font-semibold uppercase">Systemic Remediation</div>
+                        <p className="text-[var(--sigma-text)]">{stepItem.action}</p>
                       </div>
                     </div>
 
                     {/* Source Evidence & Visual Screenshot Proof Box */}
-                    <div className="bg-black/50 border border-white/10 rounded-xl p-3.5 space-y-2.5">
+                    <div className="bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-3.5 space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
-                          <span className="text-zinc-500 uppercase font-bold text-[9px]">Verified Source:</span>
-                          <a 
-                            href={stepItem.sourceUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-accent hover:underline flex items-center gap-1 font-bold truncate max-w-xs sm:max-w-md"
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--sigma-text-secondary)]">
+                          <span className="text-[var(--sigma-text-muted)] text-[10px] uppercase font-semibold">Source:</span>
+                          <a
+                            href={stepItem.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[var(--sigma-primary)] hover:underline flex items-center gap-1 font-medium truncate max-w-xs sm:max-w-md"
                           >
                             <span className="truncate">{stepItem.sourceUrl}</span>
                             <ExternalLink size={10} className="shrink-0" />
                           </a>
                         </div>
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 size={10} /> Live Snapshot Verified
-                        </span>
+                        <Badge variant="success" size="xs">
+                          <CheckCircle2 size={10} className="mr-1" /> Verified
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                        <div className="md:col-span-8 bg-black/70 border border-white/5 rounded-lg p-2.5 font-mono text-[11px] text-zinc-300 overflow-x-auto space-y-2">
+                        <div className="md:col-span-8 bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-lg p-2.5 font-mono text-[11px] text-[var(--sigma-text-secondary)] overflow-x-auto space-y-2">
                           <div>
-                            <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                              <Activity size={10} className="text-accent" /> Telemetry Evidence Payload
+                            <div className="text-[10px] text-[var(--sigma-text-muted)] uppercase mb-1 flex items-center gap-1.5">
+                              <Activity size={10} className="text-[var(--sigma-primary)]" /> Telemetry Evidence Payload
                             </div>
-                            <code>{stepItem.evidenceSnippet}</code>
+                            <code className="text-xs text-[var(--sigma-text)]">{stepItem.evidenceSnippet}</code>
                           </div>
-                          <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                          <div className="pt-2 border-t border-[var(--sigma-border)] flex items-center justify-between">
                             <button
                               type="button"
                               onClick={() => setSelectedEvidenceVector(stepItem)}
-                              className="text-[11px] font-mono text-accent hover:text-white flex items-center gap-1.5 font-bold cursor-pointer transition-colors"
+                              className="text-[11px] font-mono text-[var(--sigma-primary)] hover:opacity-80 flex items-center gap-1.5 font-medium cursor-pointer transition-opacity"
                             >
                               <Eye size={12} />
-                              <span>Inspect Full-Res Evidence & Telemetry &rarr;</span>
+                              <span>Inspect Full Telemetry &rarr;</span>
                             </button>
-                            <span className="text-[9px] text-zinc-500 uppercase">Verified Visual Capture</span>
+                            <span className="text-[10px] text-[var(--sigma-text-muted)]">1080p Capture</span>
                           </div>
                         </div>
 
-                        <div 
-                          className="md:col-span-4 rounded-lg overflow-hidden border border-white/10 relative group h-24 bg-zinc-950 flex items-center justify-center cursor-pointer shadow-lg hover:border-accent/50 transition-all"
+                        <div
+                          className="md:col-span-4 rounded-lg overflow-hidden border border-[var(--sigma-border)] relative group h-24 bg-[var(--sigma-bg)] flex items-center justify-center cursor-pointer shadow-sm hover:border-[var(--sigma-primary)] transition-all"
                           onClick={() => setSelectedEvidenceVector(stepItem)}
                           title="Click to inspect full resolution evidence"
                         >
-                          <img 
-                            src={stepItem.screenshotPreview} 
-                            alt={`Evidence for ${stepItem.name}`} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                          <img
+                            src={stepItem.screenshotPreview}
+                            alt={`Evidence for ${stepItem.name}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
-                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
-                            <span className="px-2.5 py-1 rounded-lg bg-black/85 border border-white/20 text-[10px] font-mono text-accent flex items-center gap-1.5 shadow-xl group-hover:scale-105 transition-transform backdrop-blur">
+                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                            <span className="px-2.5 py-1 rounded-lg bg-[var(--sigma-bg)]/90 border border-[var(--sigma-border)] text-[10px] font-mono text-[var(--sigma-primary)] flex items-center gap-1.5 shadow-lg group-hover:scale-105 transition-transform backdrop-blur">
                               <Eye size={11} />
                               <span>Inspect Proof</span>
                             </span>
@@ -1310,122 +1299,122 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                       </div>
                     </div>
 
-                    <div className="text-[10px] font-mono text-zinc-500 pt-2 border-t border-white/5 flex items-center justify-between">
-                      <span>Target Vault: <strong className="text-zinc-300">{stepItem.owner}</strong></span>
+                    <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] pt-2 border-t border-[var(--sigma-border)] flex items-center justify-between">
+                      <span>Target Vault: <strong className="text-[var(--sigma-text-secondary)]">{stepItem.owner}</strong></span>
                       <button
                         onClick={() => notifySuccess(`Remediation Scheduled for ${stepItem.step}`, `Allocated task to ${stepItem.owner} agent swarm.`)}
-                        className="text-accent hover:underline font-bold cursor-pointer"
+                        className="text-[var(--sigma-primary)] hover:underline font-semibold cursor-pointer"
                       >
                         Remediate via Swarm &rarr;
                       </button>
                     </div>
-                  </div>
+                  </GlassCard>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Section 3: Aggressive 90-Day Growth Acceleration Plan */}
-          <div className="p-6 bg-surface border border-white/10 rounded-2xl space-y-6 shadow-xl">
+          <GlassCard className="p-6 space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Target className="w-5 h-5 text-accent" />
+              <h3 className="text-base font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                <Target className="w-4 h-4 text-[var(--sigma-primary)]" />
                 Aggressive 90-Day Business Growth Roadmap
               </h3>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
                 Concrete multi-phase plan to plug all $42k/mo leaks, out-maneuver competitors, and install permanent self-driving growth infrastructure.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Sprint 0 */}
-              <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3 flex flex-col justify-between">
+              <GlassCard className="p-4 space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold text-accent">SPRINT 0: IMMEDIATE (DAYS 1-7)</div>
-                  <h4 className="font-bold text-white text-sm">Plug Critical Leaks</h4>
-                  <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <Badge variant="vermilion" size="xs">SPRINT 0: DAYS 1-7</Badge>
+                  <h4 className="font-semibold text-[var(--sigma-text)] text-sm">Plug Critical Leaks</h4>
+                  <ul className="text-xs text-[var(--sigma-text-secondary)] space-y-1.5 list-disc pl-4 leading-relaxed">
                     <li>Inject 420+ B2B negative keywords into Google Ads.</li>
                     <li>Simplify demo form from 8 inputs to 3.</li>
                     <li>Deploy Meta CAPI server proxy.</li>
                     <li>Verify DNS and edge cache rules.</li>
                   </ul>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-white/5">
-                  Expected Impact: +$14,000/mo saved
+                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-[var(--sigma-border)] font-semibold">
+                  Expected: +$14,000/mo saved
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Phase 1 */}
-              <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3 flex flex-col justify-between">
+              <GlassCard className="p-4 space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold text-accent">PHASE 1 (DAYS 8-30)</div>
-                  <h4 className="font-bold text-white text-sm">AEO & Authority</h4>
-                  <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <Badge variant="vermilion" size="xs">PHASE 1: DAYS 8-30</Badge>
+                  <h4 className="font-semibold text-[var(--sigma-text)] text-sm">AEO & Authority</h4>
+                  <ul className="text-xs text-[var(--sigma-text-secondary)] space-y-1.5 list-disc pl-4 leading-relaxed">
                     <li>Construct 3 authoritative topical pillars.</li>
                     <li>Inject JSON-LD FAQ and Entity schemas.</li>
                     <li>Launch 4 counter-ad creatives vs. Omnivanguard.</li>
                     <li>Benchmark Perplexity & ChatGPT citation rates.</li>
                   </ul>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-white/5">
-                  Expected Impact: +45% AEO Citations
+                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-[var(--sigma-border)] font-semibold">
+                  Expected: +45% AEO Citations
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Phase 2 */}
-              <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3 flex flex-col justify-between">
+              <GlassCard className="p-4 space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold text-accent">PHASE 2 (DAYS 31-60)</div>
-                  <h4 className="font-bold text-white text-sm">Autonomous Media & SDR</h4>
-                  <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <Badge variant="vermilion" size="xs">PHASE 2: DAYS 31-60</Badge>
+                  <h4 className="font-semibold text-[var(--sigma-text)] text-sm">Autonomous Media & SDR</h4>
+                  <ul className="text-xs text-[var(--sigma-text-secondary)] space-y-1.5 list-disc pl-4 leading-relaxed">
                     <li>Scale Vortex-02 spend across LinkedIn & Meta.</li>
                     <li>Deploy Mercury-07 AI SDR for 250 high-ICP accounts.</li>
                     <li>Automate weekly marketing team learnings sync.</li>
                     <li>Reach 4.2x blended ROAS benchmark.</li>
                   </ul>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-white/5">
-                  Expected Impact: 35+ Qualified Demos
+                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-[var(--sigma-border)] font-semibold">
+                  Expected: 35+ Qualified Demos
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Phase 3 */}
-              <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3 flex flex-col justify-between">
+              <GlassCard className="p-4 space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="text-xs font-mono font-bold text-accent">PHASE 3 (DAYS 61-90)</div>
-                  <h4 className="font-bold text-white text-sm">Scale & Sovereignty</h4>
-                  <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <Badge variant="vermilion" size="xs">PHASE 3: DAYS 61-90</Badge>
+                  <h4 className="font-semibold text-[var(--sigma-text)] text-sm">Scale & Sovereignty</h4>
+                  <ul className="text-xs text-[var(--sigma-text-secondary)] space-y-1.5 list-disc pl-4 leading-relaxed">
                     <li>Full agency retirement & zero context loss.</li>
                     <li>Client-owned Second Brain compounding daily.</li>
                     <li>Autonomous viral video storyboard generation.</li>
                     <li>Scale ARR run-rate toward $250k/mo.</li>
                   </ul>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-white/5">
-                  Expected Impact: +$185k ARR Added
+                <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-[var(--sigma-border)] font-semibold">
+                  Expected: +$185k ARR Added
                 </div>
-              </div>
+              </GlassCard>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
 
       {/* TAB 2: UI/UX HEURISTIC CHECKLIST */}
       {activeTab === 'checklist' && (
         <div className="space-y-6">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--sigma-border)]">
               <div>
-                <h3 className="text-xl font-bold silver-text">UI/UX Heuristic Conversion Audit</h3>
-                <p className="text-xs text-zinc-400 mt-1">
-                  18 conversion architecture checkpoints validated against Brand & Website Vault specifications.
+                <h3 className="text-base font-semibold text-[var(--sigma-text)]">UI/UX Heuristic Conversion Audit</h3>
+                <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
+                  18 conversion architecture checkpoints validated against Brand & Website specifications.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-muted">
-                  Passed: <strong className="text-green-400">{passedChecklistCount}</strong> / {checklist.length}
-                </span>
+                <Badge variant="neutral" size="sm">
+                  Passed: <strong className="text-emerald-400 font-mono ml-1">{passedChecklistCount}</strong> / {checklist.length}
+                </Badge>
               </div>
             </div>
 
@@ -1435,8 +1424,8 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                   key={item.id}
                   className={cn(
                     "p-4 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4",
-                    item.status === 'PASSED' ? "bg-white/[0.02] border-white/5" :
-                    item.status === 'REMEDIATED' ? "bg-green-500/5 border-green-500/30" :
+                    item.status === 'PASSED' ? "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)]" :
+                    item.status === 'REMEDIATED' ? "bg-emerald-500/5 border-emerald-500/30" :
                     "bg-rose-500/5 border-rose-500/30"
                   )}
                 >
@@ -1444,9 +1433,9 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                     <button
                       onClick={() => handleToggleChecklistStatus(item.id)}
                       className={cn(
-                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors border",
+                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors border cursor-pointer",
                         item.status === 'PASSED' || item.status === 'REMEDIATED'
-                          ? "bg-green-500/20 border-green-500/40 text-green-400"
+                          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
                           : "bg-rose-500/20 border-rose-500/40 text-rose-400"
                       )}
                     >
@@ -1458,48 +1447,45 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                     </button>
 
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted uppercase">[{item.category}]</span>
-                        <h4 className="text-sm font-bold text-white">{item.checkpoint}</h4>
-                        <span className={cn(
-                          "text-[8px] font-mono uppercase px-1.5 py-0.5 rounded",
-                          item.severity === 'CRITICAL' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                          item.severity === 'HIGH' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                          "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        )}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] uppercase">[{item.category}]</span>
+                        <h4 className="text-sm font-semibold text-[var(--sigma-text)]">{item.checkpoint}</h4>
+                        <Badge
+                          variant={
+                            item.severity === 'CRITICAL' ? 'danger' :
+                            item.severity === 'HIGH' ? 'warning' : 'info'
+                          }
+                          size="xs"
+                        >
                           {item.severity}
-                        </span>
+                        </Badge>
                       </div>
-                      <p className="text-xs text-zinc-400 mt-1">{item.description}</p>
-                      
-                      <div className="text-[11px] font-mono text-zinc-300 mt-2 bg-black/30 p-2 rounded-lg border border-white/5">
-                        <strong className="text-accent">Remediation:</strong> {item.remediationAction}
+                      <p className="text-xs text-[var(--sigma-text-secondary)] mt-1">{item.description}</p>
+
+                      <div className="text-[11px] font-mono text-[var(--sigma-text-secondary)] mt-2 bg-[var(--sigma-bg)] p-2.5 rounded-lg border border-[var(--sigma-border)]">
+                        <strong className="text-[var(--sigma-primary)]">Remediation:</strong> {item.remediationAction}
                       </div>
                     </div>
                   </div>
 
                   {/* Auto Remediate Button */}
                   {item.status === 'FAILED' && item.autoFixableByAgent && (
-                    <button
+                    <Button
+                      variant="primary"
+                      size="xs"
                       onClick={() => handleAutoRemediate(item.id)}
                       disabled={remediatingId === item.id}
-                      className="px-4 py-2 bg-accent/15 hover:bg-accent/30 border border-accent/40 text-accent rounded-xl text-xs font-mono font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 self-end md:self-center"
+                      isLoading={remediatingId === item.id}
+                      icon={!remediatingId ? <Sparkles size={12} /> : undefined}
+                      className="shrink-0 self-end md:self-center"
                     >
-                      {remediatingId === item.id ? (
-                        <>
-                          <RefreshCw size={12} className="animate-spin" /> Remediating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={12} /> Auto-Fix via Agent
-                        </>
-                      )}
-                    </button>
+                      Auto-Fix via Agent
+                    </Button>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
 
@@ -1507,69 +1493,68 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
       {activeTab === 'roadmap' && (
         <div className="space-y-6">
           {/* Phase Filter Tabs */}
-          <div className="flex items-center gap-2">
-            {['ALL', 'Phase 1', 'Phase 2', 'Phase 3'].map(phase => (
-              <button
-                key={phase}
-                onClick={() => setSelectedPhase(phase)}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-xs font-mono uppercase font-bold transition-all",
-                  selectedPhase === phase
-                    ? "bg-white/10 text-white border border-white/20"
-                    : "text-zinc-500 hover:text-white"
-                )}
-              >
-                {phase}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            tabs={[
+              { id: 'ALL', label: 'All phases' },
+              { id: 'Phase 1', label: 'Phase 1' },
+              { id: 'Phase 2', label: 'Phase 2' },
+              { id: 'Phase 3', label: 'Phase 3' },
+            ]}
+            activeTab={selectedPhase}
+            onChange={setSelectedPhase}
+            size="sm"
+            className="w-fit"
+          />
 
           <div className="space-y-4">
-            {filteredRoadmap.map((m, idx) => (
-              <div
+            {filteredRoadmap.map((m) => (
+              <GlassCard
                 key={m.id}
-                className="p-6 bg-surface border border-white/10 rounded-2xl shadow-xl space-y-4 hover:border-white/20 transition-all"
+                className="p-5 space-y-4"
+                spotlight
               >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[var(--sigma-border)] pb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-accent px-2.5 py-1 rounded bg-accent/10 border border-accent/20">
+                    <Badge variant="vermilion" size="sm">
                       {m.dayRange}
-                    </span>
-                    <h3 className="text-base font-bold text-white tracking-tight">{m.title}</h3>
+                    </Badge>
+                    <h3 className="text-sm font-semibold text-[var(--sigma-text)]">{m.title}</h3>
                   </div>
 
-                  <span className={cn(
-                    "text-[10px] font-mono uppercase px-2.5 py-1 rounded font-bold w-fit",
-                    m.status === 'COMPLETED' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                    m.status === 'IN_PROGRESS' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse" :
-                    "bg-white/5 text-zinc-400 border border-white/10"
-                  )}>
-                    {m.status}
-                  </span>
+                  <Badge
+                    variant={
+                      m.status === 'COMPLETED' ? 'success' :
+                      m.status === 'IN_PROGRESS' ? 'warning' : 'neutral'
+                    }
+                    size="xs"
+                    dot={m.status === 'IN_PROGRESS'}
+                  >
+                    {m.status.replace('_', ' ')}
+                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div>
-                    <div className="text-[10px] font-mono uppercase text-muted">Objective</div>
-                    <p className="text-zinc-300 mt-1">{m.objective}</p>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] font-mono uppercase text-muted">Key Deliverable</div>
-                    <p className="text-zinc-300 mt-1">{m.deliverable}</p>
+                    <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)]">Objective</div>
+                    <p className="text-[var(--sigma-text-secondary)] mt-1 leading-relaxed">{m.objective}</p>
                   </div>
 
                   <div>
-                    <div className="text-[10px] font-mono uppercase text-muted">Target Impact</div>
-                    <div className="text-secondary font-mono font-bold mt-1">{m.impactMetric}</div>
+                    <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)]">Key Deliverable</div>
+                    <p className="text-[var(--sigma-text-secondary)] mt-1 leading-relaxed">{m.deliverable}</p>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)]">Target Impact</div>
+                    <div className="text-emerald-400 font-mono font-semibold mt-1">{m.impactMetric}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-white/5 text-xs font-mono text-muted">
-                  <span>Assigned Agent: <strong className="text-white">{m.ownerAgent}</strong></span>
-                  <span className="text-[10px] uppercase text-zinc-500">{m.phase}</span>
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--sigma-border)] text-xs font-mono text-[var(--sigma-text-muted)]">
+                  <span>Assigned Agent: <strong className="text-[var(--sigma-text)]">{m.ownerAgent}</strong></span>
+                  <span className="text-[10px] uppercase text-[var(--sigma-text-muted)]">{m.phase}</span>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
         </div>
@@ -1578,30 +1563,29 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
       {/* Evidence Verification & Screenshot Inspection Modal */}
       <AnimatePresence>
         {selectedEvidenceVector && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-surface border border-white/10 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col"
+              className="bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col"
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-surface/95 backdrop-blur z-20">
+              <div className="p-5 border-b border-[var(--sigma-border)] flex items-center justify-between sticky top-0 bg-[var(--sigma-bg)]/95 backdrop-blur z-20">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-                    <ShieldCheck size={20} className="text-accent" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 flex items-center justify-center">
+                    <ShieldCheck size={18} className="text-[var(--sigma-primary)]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-accent uppercase">
+                      <Badge variant="vermilion" size="xs">
                         {selectedEvidenceVector.step} • Verified Evidence
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-bold uppercase flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>Live Probe Verified</span>
-                      </span>
+                      </Badge>
+                      <Badge variant="success" size="xs" dot>
+                        Live Probe Verified
+                      </Badge>
                     </div>
-                    <h3 className="text-base font-bold silver-text">
+                    <h3 className="text-sm font-semibold text-[var(--sigma-text)] mt-0.5">
                       {selectedEvidenceVector.name}
                     </h3>
                   </div>
@@ -1611,7 +1595,7 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                     setSelectedEvidenceVector(null);
                     setReverifyTelemetry(null);
                   }}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-all cursor-pointer"
+                  className="p-1.5 rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-bg-subtle)] transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -1622,23 +1606,24 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                 {/* Visual Capture Screenshot Showcase */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-zinc-400 font-bold uppercase flex items-center gap-1.5">
-                      <Eye size={12} className="text-accent" />
-                      Empirical Visual Capture (Resolution: 1920x1080)
+                    <span className="text-xs font-mono text-[var(--sigma-text-secondary)] font-medium flex items-center gap-1.5">
+                      <Eye size={12} className="text-[var(--sigma-primary)]" />
+                      Visual Telemetry Capture (1920x1080)
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">
                       Target Domain: {activeDomain}
                     </span>
                   </div>
-                  <div className="rounded-xl overflow-hidden border border-white/15 bg-black/90 shadow-2xl relative group">
-                    <img 
-                      src={selectedEvidenceVector.screenshotPreview} 
-                      alt={`Visual Evidence for ${selectedEvidenceVector.name}`} 
-                      className="w-full h-auto max-h-[460px] object-cover object-top"
+                  <div className="rounded-xl overflow-hidden border border-[var(--sigma-border)] bg-[var(--sigma-bg-subtle)] shadow-lg relative group">
+                    <img
+                      src={selectedEvidenceVector.screenshotPreview}
+                      alt={`Visual Evidence for ${selectedEvidenceVector.name}`}
+                      className="w-full h-auto max-h-[440px] object-cover object-top"
                     />
-                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/80 border border-white/10 backdrop-blur text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 shadow-lg">
-                      <CheckCircle2 size={12} />
-                      <span>Empirical Capture Certified</span>
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="success" size="xs" dot>
+                        Capture Certified
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -1646,78 +1631,80 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
                 {/* Source Provenance & Probe Telemetry */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Verified Source URL Box */}
-                  <div className="p-4 bg-black/60 border border-white/10 rounded-xl space-y-2.5">
-                    <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center justify-between">
+                  <div className="p-4 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl space-y-2.5">
+                    <div className="text-[11px] font-mono text-[var(--sigma-text-secondary)] font-medium flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <Globe size={12} className="text-accent" />
+                        <Globe size={12} className="text-[var(--sigma-primary)]" />
                         Verified Source URL
                       </span>
                       <span className="text-emerald-400">HTTP 200 OK</span>
                     </div>
-                    <div className="p-2.5 rounded-lg bg-black/80 border border-white/5 font-mono text-[11px] text-accent break-all flex items-center justify-between gap-2">
+                    <div className="p-2.5 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)] font-mono text-[11px] text-[var(--sigma-primary)] break-all flex items-center justify-between gap-2">
                       <span className="truncate">{selectedEvidenceVector.sourceUrl}</span>
                       <a
                         href={selectedEvidenceVector.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1 rounded bg-white/5 hover:bg-white/10 text-white shrink-0 cursor-pointer"
+                        className="p-1 rounded hover:bg-[var(--sigma-bg-subtle)] text-[var(--sigma-text)] shrink-0 cursor-pointer"
                         title="Open Source in New Tab"
                       >
                         <ExternalLink size={12} />
                       </a>
                     </div>
-                    <div className="text-[10px] font-mono text-zinc-400 flex justify-between">
-                      <span>Owner Vault: <strong className="text-white">{selectedEvidenceVector.owner}</strong></span>
+                    <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] flex justify-between">
+                      <span>Owner Vault: <strong className="text-[var(--sigma-text)]">{selectedEvidenceVector.owner}</strong></span>
                       <span>Leak Impact: <strong className="text-rose-400">{selectedEvidenceVector.leak}</strong></span>
                     </div>
                   </div>
 
                   {/* Live Re-Verification Probe Box */}
-                  <div className="p-4 bg-black/60 border border-white/10 rounded-xl space-y-2.5 flex flex-col justify-between">
+                  <div className="p-4 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl space-y-2.5 flex flex-col justify-between">
                     <div>
-                      <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center justify-between">
+                      <div className="text-[11px] font-mono text-[var(--sigma-text-secondary)] font-medium flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
                           <Activity size={12} className="text-emerald-400" />
                           Live Handshake Probe
                         </span>
-                        <span className="text-zinc-400 font-mono text-[10px]">
+                        <span className="text-[var(--sigma-text-muted)] font-mono text-[10px]">
                           {reverifyTelemetry ? `Response: ${reverifyTelemetry.latencyMs}ms` : 'Latency: 22ms'}
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 mt-1 font-sans">
+                      <p className="text-xs text-[var(--sigma-text-muted)] mt-1 font-sans">
                         Execute a real-time probe to confirm endpoint accessibility and validate telemetry evidence headers.
                       </p>
                     </div>
 
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleReverifyEvidence(selectedEvidenceVector.step)}
                       disabled={isReverifying}
-                      className="w-full py-2 px-3 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 amber-glow cursor-pointer"
+                      isLoading={isReverifying}
+                      className="w-full"
+                      icon={<RefreshCw size={12} />}
                     >
-                      <RefreshCw size={12} className={cn(isReverifying && "animate-spin text-accent")} />
-                      <span>{isReverifying ? 'Probing Endpoint...' : 'Re-Verify Evidence Probe (Live Ping)'}</span>
-                    </button>
+                      {isReverifying ? 'Probing Endpoint...' : 'Re-Verify Probe (Live Ping)'}
+                    </Button>
                   </div>
                 </div>
 
                 {/* Telemetry Evidence Payload & HTTP Headers */}
-                <div className="p-4 bg-black/70 border border-white/10 rounded-xl space-y-3 font-mono">
+                <div className="p-4 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl space-y-3 font-mono">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-zinc-400 font-bold uppercase flex items-center gap-1.5">
-                      <Server size={12} className="text-accent" />
-                      Inspected Evidence Payload & Telemetry Headers
+                    <span className="text-[var(--sigma-text-secondary)] font-medium flex items-center gap-1.5">
+                      <Server size={12} className="text-[var(--sigma-primary)]" />
+                      Inspected Telemetry Headers & Evidence Payload
                     </span>
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-[10px] text-[var(--sigma-text-muted)]">
                       Verified At: {reverifyTelemetry?.verifiedAt || 'Just now'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-black/90 rounded-lg border border-white/5 text-[11px] text-emerald-400 space-y-1 overflow-x-auto leading-relaxed">
+                  <div className="p-3 bg-[var(--sigma-bg)] rounded-lg border border-[var(--sigma-border)] text-[11px] text-emerald-400 space-y-1 overflow-x-auto leading-relaxed">
                     <div>// Empirical Evidence String:</div>
-                    <div className="text-zinc-300 select-all">{selectedEvidenceVector.evidenceSnippet}</div>
-                    <div className="pt-2 text-zinc-500">// Real HTTP Response Headers:</div>
-                    <div className="text-zinc-400 select-all">
+                    <div className="text-[var(--sigma-text)] select-all">{selectedEvidenceVector.evidenceSnippet}</div>
+                    <div className="pt-2 text-[var(--sigma-text-muted)]">// Real HTTP Response Headers:</div>
+                    <div className="text-[var(--sigma-text-secondary)] select-all">
                       {JSON.stringify(reverifyTelemetry?.httpHeaders || {
                         "server": "cloudflare",
                         "status": "200 OK",
@@ -1732,26 +1719,25 @@ ${roadmap.map(m => `### ${m.dayRange}: ${m.title}
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-white/10 flex items-center justify-between bg-surface/95 backdrop-blur">
-                <a
-                  href={selectedEvidenceVector.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer"
+              <div className="p-5 border-t border-[var(--sigma-border)] flex items-center justify-between bg-[var(--sigma-bg)]/95 backdrop-blur">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(selectedEvidenceVector.sourceUrl, '_blank')}
+                  rightIcon={<ExternalLink size={12} />}
                 >
-                  <span>Open Source in New Tab</span>
-                  <ExternalLink size={12} />
-                </a>
-                <button
-                  type="button"
+                  Open Source URL
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => {
                     setSelectedEvidenceVector(null);
                     setReverifyTelemetry(null);
                   }}
-                  className="px-6 py-2 bg-accent text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 transition-all amber-glow cursor-pointer"
                 >
                   Close Dossier
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

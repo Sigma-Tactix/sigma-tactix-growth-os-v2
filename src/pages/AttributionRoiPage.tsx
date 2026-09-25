@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge, MetricWidget } from '@/src/components/ui';
 
 interface ChannelAttribution {
   channel: string;
@@ -143,97 +144,86 @@ export default function AttributionRoiPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen text-slate-100">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div data-tutorial-id="tut-attribution-dashboard" className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <BarChart3 className="w-6 h-6" />
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div data-tutorial-id="tut-attribution-dashboard" className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">INTELLIGENCE LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">SOVEREIGN ATTRIBUTION</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Attribution & Blended CAC Command</h1>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                  Digital Marketing
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mt-1">
-                De-duplicate ad network double counting, track sovereign Blended CAC, and measure true Marketing Efficiency Ratio (MER).
-              </p>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <BarChart3 className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Attribution & Blended CAC Command
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              De-duplicate ad network double counting, track sovereign Blended CAC, and measure true Marketing Efficiency Ratio (MER).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="primary"
+              onClick={handleRecompute}
+              disabled={isRecomputing}
+              leftIcon={<Sparkles className={cn("w-4 h-4", isRecomputing && "animate-spin")} />}
+            >
+              {isRecomputing ? 'Recalculating...' : 'Recalculate Multi-Touch Attribution'}
+            </Button>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRecompute}
-            disabled={isRecomputing}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black font-semibold text-xs flex items-center gap-2 transition-all shadow disabled:opacity-50"
-          >
-            {isRecomputing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Recalculate Multi-Touch Attribution
-          </button>
-        </div>
-      </div>
+      </GlassCard>
 
       {/* Top Telemetry Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Blended Customer Acquisition Cost</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-white font-mono">${overallBlendedCAC}</div>
-          <div className="text-xs text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> 18.4% lower than last-click estimate
-          </div>
-        </div>
+        <MetricWidget
+          label="Blended Customer Acquisition Cost"
+          value={`$${overallBlendedCAC}`}
+          delta={{ value: "18.4% lower", trend: "up" }}
+          subtext="vs last-click estimate"
+          icon={<DollarSign className="w-4 h-4 text-emerald-400" />}
+        />
 
-        <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Marketing Efficiency Ratio (MER)</span>
-            <TrendingUp className="w-4 h-4 text-teal-400" />
-          </div>
-          <div className="text-2xl font-bold text-white font-mono">{overallMER}x</div>
-          <div className="text-xs text-slate-400">
-            ${(totalRevenue / 1000).toFixed(0)}k Rev / ${(totalSpend / 1000).toFixed(1)}k Spend
-          </div>
-        </div>
+        <MetricWidget
+          label="Marketing Efficiency Ratio (MER)"
+          value={`${overallMER}x`}
+          delta={{ value: "Healthy", trend: "up" }}
+          subtext={`$${(totalRevenue / 1000).toFixed(0)}k Rev / $${(totalSpend / 1000).toFixed(1)}k Spend`}
+          icon={<TrendingUp className="w-4 h-4 text-teal-400" />}
+        />
 
-        <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Total Closed Deals</span>
-            <CheckCircle2 className="w-4 h-4 text-blue-400" />
-          </div>
-          <div className="text-2xl font-bold text-white font-mono">{totalDeals} Enterprise Deals</div>
-          <div className="text-xs text-slate-400">De-duplicated across all channels</div>
-        </div>
+        <MetricWidget
+          label="Total Closed Deals"
+          value={`${totalDeals} Enterprise Deals`}
+          subtext="De-duplicated across all channels"
+          icon={<CheckCircle2 className="w-4 h-4 text-blue-400" />}
+        />
 
-        <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Dark Social Contribution</span>
-            <Info className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-bold text-amber-400 font-mono">29% of Pipeline</div>
-          <div className="text-xs text-slate-400">Originally misattributed to Brand Search</div>
-        </div>
+        <MetricWidget
+          label="Dark Social Contribution"
+          value="29% of Pipeline"
+          delta={{ value: "High Intent", trend: "up" }}
+          subtext="Originally misattributed to Brand Search"
+          icon={<Info className="w-4 h-4 text-amber-400" />}
+        />
       </div>
 
       {/* Attribution Model Selector & Breakdown Table */}
-      <div className="p-6 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <GlassCard elevation="flat" className="p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--sigma-border)] pb-4">
           <div>
             <h3 className="text-base font-semibold text-white">Channel ROI & Payback Telemetry</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Empirical comparison between ad platform claims and real sovereign cash flow.</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Empirical comparison between ad platform claims and real sovereign cash flow.</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Attribution Model:</span>
+            <span className="text-xs text-zinc-400">Attribution Model:</span>
             <select
               value={model}
               onChange={e => setModel(e.target.value as any)}
-              className="px-3 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+              className="px-3 py-1.5 rounded-xl bg-black/60 border border-[var(--sigma-border)] text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]/50"
             >
               <option value="SOVEREIGN_W_SHAPED">Sovereign W-Shaped (Recommended)</option>
               <option value="FIRST_TOUCH">First-Touch (Discovery Bias)</option>
@@ -247,7 +237,7 @@ export default function AttributionRoiPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-white/10 text-slate-400 uppercase tracking-wider text-[11px]">
+              <tr className="border-b border-[var(--sigma-border)] text-zinc-400 uppercase tracking-wider text-[11px] font-mono">
                 <th className="pb-3 font-semibold">Growth Channel</th>
                 <th className="pb-3 font-semibold">Total Spend</th>
                 <th className="pb-3 font-semibold">Platform Claimed CAC</th>
@@ -260,11 +250,11 @@ export default function AttributionRoiPage() {
             <tbody className="divide-y divide-white/5 font-mono">
               {CHANNEL_DATA.map((item, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-3.5 font-sans font-medium text-slate-200">{item.channel}</td>
-                  <td className="py-3.5 text-slate-400">${item.adSpend.toLocaleString()}</td>
-                  <td className="py-3.5 text-slate-500 line-through">${item.reportedCAC.toLocaleString()}</td>
+                  <td className="py-3.5 font-sans font-medium text-zinc-200">{item.channel}</td>
+                  <td className="py-3.5 text-zinc-400">${item.adSpend.toLocaleString()}</td>
+                  <td className="py-3.5 text-zinc-500 line-through">${item.reportedCAC.toLocaleString()}</td>
                   <td className="py-3.5 font-bold text-emerald-400">${item.blendedCAC.toLocaleString()}</td>
-                  <td className="py-3.5 text-slate-300">{item.dealsClosed}</td>
+                  <td className="py-3.5 text-zinc-300">{item.dealsClosed}</td>
                   <td className="py-3.5 font-bold text-white">${item.revenueGenerated.toLocaleString()}</td>
                   <td className="py-3.5 text-right font-bold text-teal-400">{item.mer.toFixed(1)}x</td>
                 </tr>
@@ -272,7 +262,7 @@ export default function AttributionRoiPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Agent Run Results */}
       <div className="mt-10">

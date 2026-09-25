@@ -48,6 +48,7 @@ import {
 import { TokenTelemetrySummary, AIKeyConfig, ClientWorkspace } from '@/src/types';
 import { calculateTokenCost, computeProfitability, TIER_RETAINERS, MODEL_PRICING, ALL_AI_MODELS } from '@/src/lib/tokenCostEngine';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
+import { Button, GlassCard, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
 export type ActiveTab = 
   | 'TELEMETRY' 
@@ -169,7 +170,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
     } else {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['TELEMETRY', 'AI_CONFIG', 'SYSTEM_PROMPTS', 'SKILLS_MCP', 'CRON_JOBS', 'HARNESS_VIEW', 'TENANTS', 'AUDIT_LOGS'].includes(tabParam)) {
+      if (tabParam && ['TELEMETRY', 'AI_CONFIG', 'SYSTEM_PROMPTS', 'MAILBOXES', 'SKILLS_MCP', 'CRON_JOBS', 'HARNESS_VIEW', 'TENANTS', 'AUDIT_LOGS'].includes(tabParam)) {
         setActiveTab(tabParam as ActiveTab);
       }
     }
@@ -277,210 +278,126 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
   };
 
   return (
-    <div className="space-y-10 pb-20">
+    <div className="space-y-8 pb-20">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-8">
         <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <ShieldCheck size={14} className="text-accent" /> Sovereign Architecture • Token Metering & Unit Economics
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="vermilion" size="sm">
+              <ShieldCheck size={12} className="mr-1" /> Sovereign Architecture
+            </Badge>
+            <span className="text-xs font-mono text-[var(--sigma-text-muted)]">Token Metering & Unit Economics</span>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">Admin Command Center</h1>
-          <p className="text-zinc-400 text-base max-w-2xl mt-2 leading-relaxed font-sans">
-            Oversee isolated client enclaves, measure exact token consumption per AI model, configure API model credentials, and monitor monthly agency profit margins.
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[var(--sigma-text)]">Admin Command Center</h1>
+          <p className="text-[var(--sigma-text-secondary)] text-sm max-w-2xl mt-1.5 leading-relaxed">
+            Oversee isolated client enclaves, measure exact token consumption per AI model, configure API credentials, and monitor monthly agency profit margins.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={loadData}
             disabled={loading}
-            className="p-3.5 bg-surface border border-white/10 rounded-xl text-muted hover:text-white hover:border-white/20 transition-all shadow-lg flex items-center gap-2 text-xs font-mono"
+            isLoading={loading}
+            icon={!loading ? <RefreshCw size={14} /> : undefined}
             title="Refresh Telemetry"
           >
-            <RefreshCw size={15} className={cn(loading && "animate-spin text-accent")} /> Refresh
-          </button>
-          <button 
+            Refresh
+          </Button>
+          <Button 
+            variant="primary"
+            size="sm"
             onClick={() => setIsProvisionModalOpen(true)}
-            className="px-6 py-3.5 bg-accent text-background rounded-xl font-black uppercase text-xs tracking-widest hover:opacity-90 transition-all amber-glow shadow-2xl flex items-center gap-2"
+            icon={<Plus size={14} />}
           >
-            <Plus size={16} /> Provision Client Enclave
-          </button>
+            Provision Client Enclave
+          </Button>
         </div>
       </div>
 
       {/* Primary Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-px overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('TELEMETRY')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'TELEMETRY'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Coins size={15} /> Token Economics
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AI_CONFIG')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'AI_CONFIG'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Cpu size={15} /> AI Frontier & Local LLMs
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SYSTEM_PROMPTS')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'SYSTEM_PROMPTS'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Sparkles size={15} /> Agent System Prompts
-        </button>
-
-        <button
-          onClick={() => setActiveTab('MAILBOXES')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'MAILBOXES'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Mail size={15} /> Agent Mailboxes & Inboxes
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SKILLS_MCP')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'SKILLS_MCP'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Zap size={15} /> Skills & MCP Hub
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CRON_JOBS')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'CRON_JOBS'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Calendar size={15} /> Cron Daemons
-        </button>
-
-        <button
-          onClick={() => setActiveTab('HARNESS_VIEW')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'HARNESS_VIEW'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Layers size={15} /> Exploded Topology
-        </button>
-
-        <button
-          onClick={() => setActiveTab('TENANTS')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'TENANTS'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <Building size={15} /> Client Workspaces & Tiers
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AUDIT_LOGS')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3.5 rounded-t-xl font-mono text-xs uppercase tracking-wider transition-all border-b-2 font-bold whitespace-nowrap",
-            activeTab === 'AUDIT_LOGS'
-              ? "bg-accent/10 text-accent border-accent shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-              : "text-muted hover:text-white border-transparent hover:bg-white/[0.02]"
-          )}
-        >
-          <ShieldCheck size={15} /> Enterprise Audit Logs
-        </button>
+      <div className="overflow-x-auto pb-1">
+        <Tabs
+          tabs={[
+            { id: 'TELEMETRY', label: 'Token Economics', icon: <Coins size={14} /> },
+            { id: 'AI_CONFIG', label: 'AI Models & Local LLMs', icon: <Cpu size={14} /> },
+            { id: 'SYSTEM_PROMPTS', label: 'Agent Prompts', icon: <Sparkles size={14} /> },
+            { id: 'MAILBOXES', label: 'Agent Mailboxes', icon: <Mail size={14} /> },
+            { id: 'SKILLS_MCP', label: 'Skills & MCP', icon: <Zap size={14} /> },
+            { id: 'CRON_JOBS', label: 'Cron Daemons', icon: <Calendar size={14} /> },
+            { id: 'HARNESS_VIEW', label: 'Topology', icon: <Layers size={14} /> },
+            { id: 'TENANTS', label: 'Client Workspaces', icon: <Building size={14} /> },
+            { id: 'AUDIT_LOGS', label: 'Audit Logs', icon: <ShieldCheck size={14} /> },
+          ]}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as ActiveTab)}
+        />
       </div>
 
       {/* TAB 1: TOKEN METERING & PROFITABILITY */}
       {activeTab === 'TELEMETRY' && (
-        <div className="space-y-10">
+        <div className="space-y-8">
           {/* Top KPI Scorecards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-surface/80 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-accent/40 transition-all">
-              <div className="flex items-center justify-between text-muted mb-3 font-mono text-[11px] uppercase tracking-wider">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <GlassCard className="p-5" spotlight>
+              <div className="flex items-center justify-between text-[var(--sigma-text-muted)] mb-2 font-mono text-xs uppercase">
                 <span>Total Tokens Metered</span>
-                <Coins size={18} className="text-accent" />
+                <Coins size={16} className="text-[var(--sigma-primary)]" />
               </div>
-              <div className="text-3xl font-heading font-black text-white">
+              <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">
                 {(telemetry?.totalTokens || 0).toLocaleString()}
               </div>
-              <div className="text-xs text-zinc-400 mt-2 font-mono flex items-center justify-between">
+              <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2 font-mono flex items-center justify-between">
                 <span>Prompt: {(telemetry?.promptTokens || 0).toLocaleString()}</span>
                 <span>Output: {(telemetry?.candidateTokens || 0).toLocaleString()}</span>
               </div>
-            </div>
+            </GlassCard>
 
-            <div className="bg-surface/80 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-accent/40 transition-all">
-              <div className="flex items-center justify-between text-muted mb-3 font-mono text-[11px] uppercase tracking-wider">
-                <span>Cumulative AI Compute Cost</span>
-                <Cpu size={18} className="text-amber-400" />
+            <GlassCard className="p-5" spotlight>
+              <div className="flex items-center justify-between text-[var(--sigma-text-muted)] mb-2 font-mono text-xs uppercase">
+                <span>Cumulative Compute Cost</span>
+                <Cpu size={16} className="text-amber-400" />
               </div>
-              <div className="text-3xl font-heading font-black text-amber-400">
-                ${(telemetry?.totalCostUsd || 0).toFixed(4)} <span className="text-xs font-mono text-zinc-400">USD</span>
+              <div className="text-2xl font-bold font-mono tabular-nums text-amber-400">
+                ${(telemetry?.totalCostUsd || 0).toFixed(4)} <span className="text-xs font-mono text-[var(--sigma-text-muted)] font-normal">USD</span>
               </div>
-              <div className="text-xs text-zinc-400 mt-2 font-mono">
+              <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2 font-mono">
                 Across {telemetry?.totalCalls || 0} recorded AI operations
               </div>
-            </div>
+            </GlassCard>
 
-            <div className="bg-surface/80 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-accent/40 transition-all">
-              <div className="flex items-center justify-between text-muted mb-3 font-mono text-[11px] uppercase tracking-wider">
+            <GlassCard className="p-5" spotlight>
+              <div className="flex items-center justify-between text-[var(--sigma-text-muted)] mb-2 font-mono text-xs uppercase">
                 <span>Monthly Client Retainer</span>
-                <DollarSign size={18} className="text-emerald-400" />
+                <DollarSign size={16} className="text-emerald-400" />
               </div>
-              <div className="text-3xl font-heading font-black text-emerald-400">
+              <div className="text-2xl font-bold font-mono tabular-nums text-emerald-400">
                 ${telemetry?.profitability.monthlyRetainerUsd || 1499}
               </div>
-              <div className="text-xs text-zinc-400 mt-2 font-mono">
-                Assigned Tier: {telemetry?.profitability.tierDisplayName || 'Growth OS'}
+              <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2 font-mono">
+                Tier: {telemetry?.profitability.tierDisplayName || 'Growth OS'}
               </div>
-            </div>
+            </GlassCard>
 
-            <div className="bg-surface/80 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-accent/40 transition-all">
-              <div className="flex items-center justify-between text-muted mb-3 font-mono text-[11px] uppercase tracking-wider">
+            <GlassCard className="p-5" spotlight>
+              <div className="flex items-center justify-between text-[var(--sigma-text-muted)] mb-2 font-mono text-xs uppercase">
                 <span>Agency Gross Margin</span>
-                <TrendingUp size={18} className="text-emerald-400" />
+                <TrendingUp size={16} className="text-emerald-400" />
               </div>
-              <div className="text-3xl font-heading font-black text-emerald-400">
+              <div className="text-2xl font-bold font-mono tabular-nums text-emerald-400">
                 {telemetry?.profitability.grossMarginPct || 97.4}%
               </div>
-              <div className="text-xs text-zinc-400 mt-2 font-mono flex items-center gap-2">
-                <span className="text-emerald-400 font-bold">${(telemetry?.profitability.netProfitUsd || 1459.8).toFixed(2)}</span>
+              <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2 font-mono flex items-center gap-2">
+                <span className="text-emerald-400 font-semibold font-mono">${(telemetry?.profitability.netProfitUsd || 1459.8).toFixed(2)}</span>
                 <span>net profit / mo</span>
               </div>
-            </div>
+            </GlassCard>
           </div>
 
           {/* Interactive Profitability & Unit Economics Calculator */}
-          <div className="bg-surface border border-accent/30 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+          <GlassCard className="p-6 md:p-8 space-y-6" spotlight>
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
             
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-white/10 pb-6">
@@ -632,132 +549,132 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/10 text-[11px] text-zinc-400 leading-relaxed font-sans">
-                  💡 <strong>Strategic takeaway:</strong> Running on <strong>Gemini 2.5 Flash</strong> keeps inference cost under <strong>$5/month</strong> even on heavy agent workloads, preserving an exceptional <strong>~97% gross margin</strong> on every managed client retainer.
+                <div className="pt-3 border-t border-[var(--sigma-border)] text-xs text-[var(--sigma-text-muted)] leading-relaxed font-sans">
+                  💡 <strong className="text-[var(--sigma-text)]">Strategic takeaway:</strong> Running on <strong className="text-[var(--sigma-text)]">Gemini 2.5 Flash</strong> keeps inference cost under <strong className="text-emerald-400 font-mono">$5/month</strong> even on heavy agent workloads, preserving an exceptional <strong className="text-emerald-400 font-mono">~97% gross margin</strong> on every managed client retainer.
                 </div>
               </div>
             </div>
-          </div>
+          </GlassCard>
 
           {/* Model & Action Breakdown Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* By AI Model */}
-            <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <GlassCard className="p-5 space-y-4" spotlight>
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Cpu size={18} className="text-accent" />
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-white">Token Usage By Model</h4>
+                  <Cpu size={16} className="text-[var(--sigma-primary)]" />
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)]">Token Usage By Model</h4>
                 </div>
-                <span className="text-xs font-mono text-muted">{Object.keys(telemetry?.byModel || {}).length} Models Active</span>
+                <Badge variant="neutral" size="xs">{Object.keys(telemetry?.byModel || {}).length} Models Active</Badge>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {Object.entries(telemetry?.byModel || {}).length === 0 ? (
-                  <div className="py-8 text-center text-xs font-mono text-zinc-500">
-                    No token usage recorded yet. Run an agent task or creative generation to populate telemetry.
+                  <div className="py-8 text-center text-xs font-mono text-[var(--sigma-text-muted)]">
+                    No token usage recorded yet. Run an agent task to populate telemetry.
                   </div>
                 ) : (
                   Object.entries(telemetry?.byModel || {}).map(([model, data]) => (
-                    <div key={model} className="p-3.5 bg-black/40 border border-white/5 rounded-xl flex items-center justify-between">
+                    <div key={model} className="p-3 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold text-white font-mono">{model}</div>
-                        <div className="text-[10px] font-mono text-muted mt-0.5">{data.calls} calls executed</div>
+                        <div className="text-xs font-semibold text-[var(--sigma-text)] font-mono">{model}</div>
+                        <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">{data.calls} calls executed</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs font-bold text-accent font-mono">{data.totalTokens.toLocaleString()} tokens</div>
-                        <div className="text-[10px] font-mono text-zinc-400 mt-0.5">${data.costUsd.toFixed(6)} USD</div>
+                        <div className="text-xs font-bold text-[var(--sigma-primary)] font-mono">{data.totalTokens.toLocaleString()} tokens</div>
+                        <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">${data.costUsd.toFixed(6)} USD</div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-            </div>
+            </GlassCard>
 
             {/* By Action / Module */}
-            <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <GlassCard className="p-5 space-y-4" spotlight>
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Layers size={18} className="text-secondary" />
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-white">Consumption By Action</h4>
+                  <Layers size={16} className="text-[var(--sigma-primary)]" />
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)]">Consumption By Action</h4>
                 </div>
-                <span className="text-xs font-mono text-muted">{Object.keys(telemetry?.byAction || {}).length} Action Types</span>
+                <Badge variant="neutral" size="xs">{Object.keys(telemetry?.byAction || {}).length} Action Types</Badge>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {Object.entries(telemetry?.byAction || {}).length === 0 ? (
-                  <div className="py-8 text-center text-xs font-mono text-zinc-500">
+                  <div className="py-8 text-center text-xs font-mono text-[var(--sigma-text-muted)]">
                     No operational actions recorded yet.
                   </div>
                 ) : (
                   Object.entries(telemetry?.byAction || {}).map(([action, data]) => (
-                    <div key={action} className="p-3.5 bg-black/40 border border-white/5 rounded-xl flex items-center justify-between">
+                    <div key={action} className="p-3 bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold text-zinc-200 font-mono">{action}</div>
-                        <div className="text-[10px] font-mono text-muted mt-0.5">{data.calls} executions</div>
+                        <div className="text-xs font-semibold text-[var(--sigma-text)] font-mono">{action}</div>
+                        <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">{data.calls} executions</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs font-bold text-secondary font-mono">{data.totalTokens.toLocaleString()} tokens</div>
-                        <div className="text-[10px] font-mono text-zinc-400 mt-0.5">${data.costUsd.toFixed(6)} USD</div>
+                        <div className="text-xs font-bold text-emerald-400 font-mono">{data.totalTokens.toLocaleString()} tokens</div>
+                        <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">${data.costUsd.toFixed(6)} USD</div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-            </div>
+            </GlassCard>
           </div>
 
           {/* Live Recent AI Operations Feed */}
-          <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+          <GlassCard className="overflow-hidden">
+            <div className="p-5 border-b border-[var(--sigma-border)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Activity size={18} className="text-accent" />
-                <h4 className="text-sm font-bold uppercase tracking-wider text-white">Live AI Execution Stream & Metered Costs</h4>
+                <Activity size={16} className="text-[var(--sigma-primary)]" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)]">Live AI Execution Stream & Metered Costs</h4>
               </div>
-              <span className="text-xs font-mono text-muted">
-                Showing {telemetry?.recentRecords?.length || 0} recent transactions
+              <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">
+                {telemetry?.recentRecords?.length || 0} recent transactions
               </span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
                 <thead>
-                  <tr className="bg-black/40 border-b border-white/10 text-muted uppercase text-[10px] tracking-wider">
-                    <th className="px-6 py-4">Action / Scope</th>
-                    <th className="px-6 py-4">Model</th>
-                    <th className="px-6 py-4 text-center">Prompt Tokens</th>
-                    <th className="px-6 py-4 text-center">Candidate Tokens</th>
-                    <th className="px-6 py-4 text-center">Total Tokens</th>
-                    <th className="px-6 py-4 text-right">Computed Cost</th>
-                    <th className="px-6 py-4 text-right">Latency</th>
+                  <tr className="bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] text-[var(--sigma-text-muted)] uppercase text-[10px]">
+                    <th className="px-5 py-3">Action / Scope</th>
+                    <th className="px-5 py-3">Model</th>
+                    <th className="px-5 py-3 text-center">Prompt Tokens</th>
+                    <th className="px-5 py-3 text-center">Candidate Tokens</th>
+                    <th className="px-5 py-3 text-center">Total Tokens</th>
+                    <th className="px-5 py-3 text-right">Computed Cost</th>
+                    <th className="px-5 py-3 text-right">Latency</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-zinc-300">
+                <tbody className="divide-y divide-[var(--sigma-border)] text-[var(--sigma-text-secondary)]">
                   {telemetry?.recentRecords && telemetry.recentRecords.length > 0 ? (
                     telemetry.recentRecords.map((rec) => (
-                      <tr key={rec.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-white">{rec.actionType}</div>
-                          {rec.agentId && <div className="text-[10px] text-muted mt-0.5">Agent: {rec.agentId}</div>}
+                      <tr key={rec.id} className="hover:bg-[var(--sigma-border)]/10 transition-colors">
+                        <td className="px-5 py-3">
+                          <div className="font-semibold text-[var(--sigma-text)]">{rec.actionType}</div>
+                          {rec.agentId && <div className="text-[10px] text-[var(--sigma-text-muted)] mt-0.5">Agent: {rec.agentId}</div>}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-zinc-300">
+                        <td className="px-5 py-3">
+                          <span className="px-2 py-0.5 rounded bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] text-[10px] text-[var(--sigma-text)]">
                             {rec.modelName}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center text-zinc-400">{rec.promptTokens.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-center text-zinc-400">{rec.candidateTokens.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-center font-bold text-accent">{rec.totalTokens.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-right font-bold text-amber-400">
+                        <td className="px-5 py-3 text-center text-[var(--sigma-text-muted)]">{rec.promptTokens.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-center text-[var(--sigma-text-muted)]">{rec.candidateTokens.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-center font-semibold text-[var(--sigma-primary)]">{rec.totalTokens.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-right font-semibold text-emerald-400">
                           ${Number(rec.estimatedCostUsd).toFixed(6)}
                         </td>
-                        <td className="px-6 py-4 text-right text-zinc-500">
+                        <td className="px-5 py-3 text-right text-[var(--sigma-text-muted)]">
                           {rec.durationMs ? `${rec.durationMs}ms` : '—'}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-zinc-500">
+                      <td colSpan={7} className="px-5 py-10 text-center text-[var(--sigma-text-muted)]">
                         No transactions recorded yet. Trigger content generation or agent runs to see metered token streams.
                       </td>
                     </tr>
@@ -765,7 +682,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                 </tbody>
               </table>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
 
@@ -804,19 +721,19 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
 
       {/* TAB 3: CLIENT WORKSPACES & TIERS */}
       {activeTab === 'TENANTS' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Active Tier Entitlement Banner */}
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+          <GlassCard className="p-5 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <div className="text-[10px] font-mono text-muted uppercase tracking-widest mb-1">Current Active Workspace Plan</div>
-              <div className="text-2xl font-heading font-black text-white flex items-center gap-3">
+              <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase tracking-wider mb-1">Current Active Workspace Plan</div>
+              <div className="text-xl font-bold text-[var(--sigma-text)] flex items-center gap-3">
                 {TIER_RETAINERS[activeTier]?.name || 'Growth OS'}
-                <span className="text-xs font-mono px-3 py-1 bg-accent/10 border border-accent/30 text-accent rounded-full font-bold">
+                <Badge variant="vermilion" size="sm">
                   ${TIER_RETAINERS[activeTier]?.priceMonthly || 1499} / mo
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-zinc-400 mt-1">
-                Entitlement policies govern which of the 12 Growth Modules and agent execution quotas are unlocked.
+              <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
+                Entitlement policies govern unlocked Growth Modules and agent execution quotas.
               </p>
             </div>
 
@@ -824,8 +741,8 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
               <button
                 onClick={() => handleChangeTier('starter')}
                 className={cn(
-                  "px-4 py-2.5 rounded-xl text-xs font-mono transition-all border",
-                  activeTier === 'starter' ? "bg-accent text-background font-bold border-accent" : "bg-black/40 border-white/10 text-muted hover:text-white"
+                  "px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all border cursor-pointer",
+                  activeTier === 'starter' ? "bg-[var(--sigma-primary)] text-white font-semibold border-[var(--sigma-primary)]" : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                 )}
               >
                 Starter ($499)
@@ -833,8 +750,8 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
               <button
                 onClick={() => handleChangeTier('growth')}
                 className={cn(
-                  "px-4 py-2.5 rounded-xl text-xs font-mono transition-all border",
-                  activeTier === 'growth' ? "bg-accent text-background font-bold border-accent" : "bg-black/40 border-white/10 text-muted hover:text-white"
+                  "px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all border cursor-pointer",
+                  activeTier === 'growth' ? "bg-[var(--sigma-primary)] text-white font-semibold border-[var(--sigma-primary)]" : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                 )}
               >
                 Growth ($1,499)
@@ -842,81 +759,80 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
               <button
                 onClick={() => handleChangeTier('enterprise')}
                 className={cn(
-                  "px-4 py-2.5 rounded-xl text-xs font-mono transition-all border",
-                  activeTier === 'enterprise' ? "bg-accent text-background font-bold border-accent" : "bg-black/40 border-white/10 text-muted hover:text-white"
+                  "px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all border cursor-pointer",
+                  activeTier === 'enterprise' ? "bg-[var(--sigma-primary)] text-white font-semibold border-[var(--sigma-primary)]" : "bg-[var(--sigma-bg-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                 )}
               >
                 Enterprise ($3,499)
               </button>
             </div>
-          </div>
+          </GlassCard>
 
           {/* Workspaces Table */}
-          <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+          <GlassCard className="overflow-hidden">
+            <div className="p-5 border-b border-[var(--sigma-border)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Building size={18} className="text-accent" />
-                <h4 className="text-sm font-bold uppercase tracking-wider text-white">Sovereign Tenant Enclaves</h4>
+                <Building size={16} className="text-[var(--sigma-primary)]" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)]">Sovereign Tenant Enclaves</h4>
               </div>
-              <span className="text-xs font-mono text-muted">{workspaces.length} Enclaves Provisioned</span>
+              <Badge variant="neutral" size="xs">{workspaces.length} Enclaves Provisioned</Badge>
             </div>
 
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="bg-black/40 border-b border-white/10 text-muted uppercase text-[10px] tracking-wider">
-                  <th className="px-6 py-4">Client / Brand Enclave</th>
-                  <th className="px-6 py-4">Domain</th>
-                  <th className="px-6 py-4">Infrastructure Region</th>
-                  <th className="px-6 py-4">Plan Tier</th>
-                  <th className="px-6 py-4">Security Partition</th>
-                  <th className="px-6 py-4 text-right">Status / Actions</th>
+                <tr className="bg-[var(--sigma-bg-subtle)] border-b border-[var(--sigma-border)] text-[var(--sigma-text-muted)] uppercase text-[10px]">
+                  <th className="px-5 py-3">Client / Brand Enclave</th>
+                  <th className="px-5 py-3">Domain</th>
+                  <th className="px-5 py-3">Region</th>
+                  <th className="px-5 py-3">Plan Tier</th>
+                  <th className="px-5 py-3">Security Partition</th>
+                  <th className="px-5 py-3 text-right">Status / Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-zinc-300">
+              <tbody className="divide-y divide-[var(--sigma-border)] text-[var(--sigma-text-secondary)]">
                 {workspaces.map((ws) => {
                   const isActive = ws.id === currentWorkspaceId;
                   return (
                     <tr 
                       key={ws.id} 
                       className={cn(
-                        "hover:bg-white/[0.02] transition-colors",
-                        isActive && "bg-accent/[0.04] border-l-2 border-l-accent"
+                        "hover:bg-[var(--sigma-border)]/10 transition-colors",
+                        isActive && "bg-[var(--sigma-primary)]/[0.04] border-l-2 border-l-[var(--sigma-primary)]"
                       )}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="font-bold text-white text-sm">{ws.name}</div>
+                          <div className="font-semibold text-[var(--sigma-text)] text-xs">{ws.name}</div>
                           {isActive && (
-                            <span className="px-2 py-0.5 rounded text-[9px] bg-accent/20 border border-accent/40 text-accent font-bold">
-                              CURRENT ACTIVE
-                            </span>
+                            <Badge variant="vermilion" size="xs">
+                              ACTIVE
+                            </Badge>
                           )}
                         </div>
-                        <div className="text-[10px] text-muted">ID: {ws.id} • Created {ws.createdAt}</div>
+                        <div className="text-[10px] text-[var(--sigma-text-muted)] mt-0.5">ID: {ws.id} • Created {ws.createdAt}</div>
                       </td>
-                      <td className="px-6 py-4 text-accent font-bold">{ws.domain}</td>
-                      <td className="px-6 py-4 text-zinc-400">{ws.region}</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[10px] uppercase font-bold text-white">
+                      <td className="px-5 py-3 text-[var(--sigma-primary)] font-medium">{ws.domain}</td>
+                      <td className="px-5 py-3 text-[var(--sigma-text-muted)]">{ws.region}</td>
+                      <td className="px-5 py-3">
+                        <span className="px-2 py-0.5 rounded bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] text-[10px] uppercase font-semibold text-[var(--sigma-text)]">
                           {ws.tier}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-zinc-400">{ws.vaultSecurity}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-5 py-3 text-[var(--sigma-text-muted)]">{ws.vaultSecurity}</td>
+                      <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {isActive ? (
-                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <Badge variant="success" size="xs" dot>
                               ACTIVE
-                            </span>
+                            </Badge>
                           ) : (
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
+                              size="xs"
                               onClick={() => switchWorkspace(ws.id)}
-                              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-accent hover:text-black border border-white/10 text-[10px] font-bold text-zinc-200 transition-all cursor-pointer"
                             >
                               Switch To
-                            </button>
+                            </Button>
                           )}
                           {ws.id !== 'ws-primary' && (
                             <button
@@ -926,7 +842,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                                   deleteWorkspace(ws.id);
                                 }
                               }}
-                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-[var(--sigma-text-muted)] hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                               title="Terminate Client Enclave"
                             >
                               <X size={14} />
@@ -939,7 +855,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                 })}
               </tbody>
             </table>
-          </div>
+          </GlassCard>
         </div>
       )}
 
@@ -968,16 +884,18 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+              className="bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 glass-panel"
             >
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <Building size={20} className="text-accent" />
-                  <h3 className="text-lg font-bold silver-text">Provision New Client Enclave</h3>
+                  <div className="w-8 h-8 rounded-lg bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 flex items-center justify-center text-[var(--sigma-primary)]">
+                    <Building size={16} />
+                  </div>
+                  <h3 className="text-base font-semibold text-[var(--sigma-text)]">Provision New Client Enclave</h3>
                 </div>
                 <button
                   onClick={() => setIsProvisionModalOpen(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-all"
+                  className="p-1 hover:bg-[var(--sigma-bg-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -985,35 +903,35 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
 
               <form onSubmit={handleProvisionClient} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Client Organization Name</label>
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Client Organization Name</label>
                   <input
                     type="text"
                     required
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
                     placeholder="e.g. Apex Health Technologies"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] font-mono transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Client Domain URL</label>
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Client Domain URL</label>
                   <input
                     type="text"
                     required
                     value={newClientDomain}
                     onChange={(e) => setNewClientDomain(e.target.value)}
                     placeholder="e.g. apexhealth.com"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] font-mono transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted">Initial Subscription Tier</label>
+                  <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Initial Subscription Tier</label>
                   <select
                     value={newClientTier}
                     onChange={(e) => setNewClientTier(e.target.value as any)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                    className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] font-mono transition-colors"
                   >
                     <option value="starter">Starter OS ($499/mo)</option>
                     <option value="growth">Growth OS ($1,499/mo)</option>
@@ -1021,20 +939,22 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                   </select>
                 </div>
 
-                <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
-                  <button
+                <div className="pt-3 border-t border-[var(--sigma-border)] flex justify-end gap-2.5">
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setIsProvisionModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-mono text-muted hover:text-white"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="px-6 py-2.5 bg-accent text-background rounded-xl font-bold uppercase text-xs tracking-wider"
+                    variant="primary"
+                    size="sm"
                   >
                     Provision Enclave
-                  </button>
+                  </Button>
                 </div>
               </form>
             </motion.div>

@@ -30,6 +30,7 @@ import {
   CreativeComparisonItem 
 } from '@/src/data/marketingModulesData';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
 export default function CompetitorResearchPage() {
   const { notifySuccess, notifyInfo } = useToast();
@@ -124,122 +125,84 @@ export default function CompetitorResearchPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-[11px] font-mono tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full font-bold">
-              INTELLIGENCE LAYER
-            </span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-zinc-400">SPECTRE-06 AD SPY SWARM</span>
+      <GlassCard spotlight elevation="raised" className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Badge variant="vermilion">INTELLIGENCE LAYER</Badge>
+              <span className="text-zinc-600 text-xs">•</span>
+              <Badge variant="neutral">SPECTRE-06 AD SPY SWARM</Badge>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <Trophy className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Competitor Intelligence & Creative Comparisons
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+              Side-by-side rival ad creative teardowns, offer comparisons, funnel positioning analysis, and automated counter-attack playbooks.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-amber-400" />
-            Competitor Intelligence & Creative Comparisons
-          </h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-            Side-by-side rival ad creative teardowns, offer comparisons, funnel positioning analysis, and automated counter-attack playbooks.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleScanCompetitor}
-            disabled={isScanning}
-            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw className={cn("w-3.5 h-3.5 text-amber-400", isScanning && "animate-spin")} />
-            {isScanning ? 'Scraping Funnel...' : 'Scan Competitor'}
-          </button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleScanCompetitor}
+              disabled={isScanning}
+              leftIcon={<RefreshCw className={cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isScanning && "animate-spin")} />}
+            >
+              {isScanning ? 'Scraping Funnel...' : 'Scan Competitor'}
+            </Button>
 
-          <button
-            onClick={handleDeploySpyAgent}
-            disabled={isDeployingSpy}
-            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
-          >
-            <Swords className="w-3.5 h-3.5" />
-            {isDeployingSpy ? 'Deploying Swarm...' : 'Deploy Counter-Attack Swarm'}
-          </button>
+            <Button
+              variant="primary"
+              onClick={handleDeploySpyAgent}
+              disabled={isDeployingSpy}
+              leftIcon={<Swords className="w-3.5 h-3.5" />}
+            >
+              {isDeployingSpy ? 'Deploying Swarm...' : 'Deploy Counter-Attack Swarm'}
+            </Button>
+          </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Metric Highlights */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Tracked Rivals</div>
-          <div className="text-2xl font-bold text-white flex items-center gap-2">
-            {competitors.length} Competitors
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">107 active ad creatives tracked</div>
-        </div>
+        <MetricWidget
+          label="Tracked Rivals"
+          value={`${competitors.length} Competitors`}
+          subtext="107 active ad creatives tracked"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Estimated Combined Ad Spend</div>
-          <div className="text-2xl font-bold text-amber-400 flex items-center gap-2">
-            $108,000 / mo
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Across Google, Meta, & LinkedIn</div>
-        </div>
+        <MetricWidget
+          label="Estimated Combined Ad Spend"
+          value="$108,000 / mo"
+          subtext="Across Google, Meta, & LinkedIn"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Primary Vulnerability</div>
-          <div className="text-2xl font-bold text-rose-400 flex items-center gap-2">
-            Rented Headcount
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">High retainers, zero client memory</div>
-        </div>
+        <MetricWidget
+          label="Primary Vulnerability"
+          value="Rented Headcount"
+          delta={{ value: "High Risk", trend: "down" }}
+          subtext="High retainers, zero client memory"
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Counter-Ad Win Rate</div>
-          <div className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-            3.4x Higher CTR
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Verified on LinkedIn & Meta</div>
-        </div>
+        <MetricWidget
+          label="Counter-Ad Win Rate"
+          value="3.4x Higher CTR"
+          delta={{ value: "+240%", trend: "up" }}
+          subtext="Verified on LinkedIn & Meta"
+        />
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
-        <button
-          onClick={() => setActiveTab('CREATIVE_MATRIX')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'CREATIVE_MATRIX'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Swords className="w-3.5 h-3.5" />
-          Creative Comparisons Matrix (Rival vs. Sigma Counter-Ad)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('PROFILES')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'PROFILES'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          Competitor Profiles & Tech Stacks
-        </button>
-
-        <button
-          onClick={() => setActiveTab('COUNTER_ATTACK')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2",
-            activeTab === 'COUNTER_ATTACK'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Target className="w-3.5 h-3.5" />
-          Counter-Attack Strategy Playbook
-        </button>
-      </div>
+      <Tabs<'CREATIVE_MATRIX' | 'PROFILES' | 'COUNTER_ATTACK'>
+        tabs={[
+          { id: 'CREATIVE_MATRIX', label: 'Creative Comparisons Matrix (Rival vs. Sigma Counter-Ad)', icon: <Swords className="w-3.5 h-3.5" /> },
+          { id: 'PROFILES', label: 'Competitor Profiles & Tech Stacks', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+          { id: 'COUNTER_ATTACK', label: 'Counter-Attack Strategy Playbook', icon: <Target className="w-3.5 h-3.5" /> }
+        ]}
+        activeTab={activeTab as any}
+        onChange={(tabId) => setActiveTab(tabId as any)}
+      />
 
       {/* TAB 1: CREATIVE COMPARISONS MATRIX */}
       {activeTab === 'CREATIVE_MATRIX' && (

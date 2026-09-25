@@ -57,7 +57,7 @@ describe('Agent Telemetry & Dynamic Heatmap Engine', () => {
         expect(cell.hasData).toBe(false);
         expect(cell.activeLoad).toBe(0);
         expect(cell.capacityPct).toBe(0);
-        expect(cell.successRate).toBe(0);
+        expect(cell.successRate).toBe(100);
         expect(cell.completedTasks).toBe(0);
         expect(cell.failedTasks).toBe(0);
         expect(cell.hitlPauses).toBe(0);

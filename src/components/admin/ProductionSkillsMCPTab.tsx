@@ -1,21 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Wrench, 
-  Server, 
-  ShieldCheck, 
-  Zap, 
-  Sparkles, 
-  CheckCircle2, 
-  AlertCircle, 
-  FileCode, 
-  Search, 
-  Terminal, 
-  ExternalLink, 
-  Layers, 
-  Cpu, 
-  RotateCcw, 
-  Copy, 
-  Check, 
+import {
+  Wrench,
+  Server,
+  ShieldCheck,
+  Zap,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  FileCode,
+  Search,
+  Terminal,
+  ExternalLink,
+  Layers,
+  Cpu,
+  RotateCcw,
+  Copy,
+  Check,
   Filter,
   Flame,
   Scale,
@@ -53,6 +53,17 @@ interface ProductionSkill {
 }
 
 const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
+  {
+    id: 'mcp-agent-reach',
+    name: 'Agent Reach Internet Capability Router',
+    category: 'DATA_ANALYTICS',
+    transport: 'STDIO',
+    command: 'agent-reach doctor --json',
+    toolsCount: 15,
+    status: 'ONLINE',
+    tools: ['jina_web_fetch', 'yt_dlp_subtitles', 'v2ex_hot_topics', 'rss_feed_reader', 'twitter_search', 'reddit_search', 'bilibili_search'],
+    description: 'Multi-backend internet routing across 15 platforms (YouTube, Jina, RSS, X, Reddit, LinkedIn). Zero-wrapper runtime.'
+  },
   {
     id: 'mcp-ponytail',
     name: 'Ponytail Code Optimizer MCP',
@@ -122,6 +133,21 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
 ];
 
 const PRODUCTION_SKILLS_CATALOG: ProductionSkill[] = [
+  {
+    id: 'skill-agent-reach-router',
+    name: 'Agent Reach Multi-Channel Internet Router',
+    source: 'skillspec',
+    category: 'RESEARCH',
+    specStatus: 'VERIFIED',
+    signature: 'agent_reach.route(channel: string, target: string): ReachContentResult',
+    locSavingsEstimate: '15 Integrations Replaced',
+    description: 'Autonomous internet capability router providing zero-config Jina Web extraction, YouTube transcripts, and authenticated social listening backends.',
+    tags: ['Internet Router', '15 Channels', 'Zero-Wrapper', 'Jina + yt-dlp'],
+    sampleCode: `// Fetch markdown via Jina Reader:
+const result = await fetchAgentReachContent({ channel: 'web', target: 'https://stripe.com' });
+// Video transcript extraction:
+const subs = await fetchAgentReachContent({ channel: 'youtube', target: 'https://youtube.com/watch?v=...' });`
+  },
   {
     id: 'skill-sales-lead-intelligence',
     name: 'Sales Lead Intelligence & WhatsApp Qualification (v0.1)',
@@ -215,7 +241,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
     </div>
   );
 }`);
-  
+
   const [optimizationResult, setOptimizationResult] = useState<{
     originalLoc: number;
     optimizedLoc: number;
@@ -258,12 +284,12 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
           </p>
         </div>
 
-        <div className="flex items-center gap-2 p-1 bg-surface border border-white/10 rounded-2xl">
+        <div className="sigma-segmented">
           <button
             onClick={() => setActiveSubTab('ponytail')}
             className={cn(
-              "px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-              activeSubTab === 'ponytail' ? "bg-accent text-background shadow-lg" : "text-muted hover:text-white"
+              "sigma-segment font-mono flex items-center gap-2 cursor-pointer",
+              activeSubTab === 'ponytail' ? "sigma-segment-active" : ""
             )}
           >
             <Flame size={14} /> Ponytail Optimizer
@@ -271,8 +297,8 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
           <button
             onClick={() => setActiveSubTab('mcp')}
             className={cn(
-              "px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-              activeSubTab === 'mcp' ? "bg-accent text-background shadow-lg" : "text-muted hover:text-white"
+              "sigma-segment font-mono flex items-center gap-2 cursor-pointer",
+              activeSubTab === 'mcp' ? "sigma-segment-active" : ""
             )}
           >
             <Server size={14} /> MCP Servers ({MCP_SERVERS_CATALOG.length})
@@ -280,8 +306,8 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
           <button
             onClick={() => setActiveSubTab('skills')}
             className={cn(
-              "px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
-              activeSubTab === 'skills' ? "bg-accent text-background shadow-lg" : "text-muted hover:text-white"
+              "sigma-segment font-mono flex items-center gap-2 cursor-pointer",
+              activeSubTab === 'skills' ? "sigma-segment-active" : ""
             )}
           >
             <Zap size={14} /> Skills Registry ({PRODUCTION_SKILLS_CATALOG.length})

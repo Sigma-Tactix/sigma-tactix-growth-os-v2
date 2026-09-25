@@ -1,425 +1,108 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Zap, 
-  Database, 
-  Bot, 
-  FileText, 
-  Layers, 
-  Search, 
-  Activity, 
-  ChevronRight, 
-  ExternalLink,
-  Radio,
-  Share2,
-  Orbit,
-  Sparkles,
-  LayoutGrid
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { getLivingSystemGraph } from '@/src/data/livingSystemData';
-import LivingSystemCanvas from '@/src/components/LivingSystemCanvas';
-import GrowthOSHolographicView from '@/src/components/hologram/GrowthOSHolographicView';
-import { Orb, OrbSatelliteDef } from '@/src/components/Orb';
-import { cn } from '@/src/lib/utils';
-import { useToast } from '@/src/contexts/ToastContext';
-import { isWebGLAvailable } from '@/src/lib/webglDetection';
+import React, { useMemo, useState } from 'react';
+import { Eye, EyeOff, Gauge, MessageSquareText, ShieldCheck, Sparkles } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import VantaOrb from '@/src/components/vanta/VantaOrb';
+import VantaCommandDock from '@/src/components/vanta/VantaCommandDock';
+import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
+import VantaTopologyPanel from '@/src/components/vanta/VantaTopologyPanel';
+import VantaProviderPanel from '@/src/components/vanta/VantaProviderPanel';
+import { useVanta } from '@/src/contexts/VantaContext';
+import { Button, Badge } from '@/src/components/ui';
+import type { VantaPhase } from '@/src/lib/vanta';
+
+const LAB_PHASES: VantaPhase[] = ['offline', 'idle', 'listening', 'transcribing', 'thinking', 'speaking', 'inspecting', 'proposing', 'awaiting_confirmation', 'success', 'warning', 'error'];
 
 export default function LivingSystemPage() {
-  const navigate = useNavigate();
-  const { notifySuccess } = useToast();
-
-  const { nodes, dependencies } = useMemo(() => getLivingSystemGraph(), []);
-
-  const hasWebGL = useMemo(() => isWebGLAvailable(), []);
-
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('second-brain-core');
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'3D_HOLOGRAM' | 'PARTICLE_ORB' | 'DAG_MATRIX'>('3D_HOLOGRAM');
-  const [energyPulseTrigger, setEnergyPulseTrigger] = useState(1);
-
-  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
-
-  const upstreamNodes = selectedNode 
-    ? nodes.filter(n => selectedNode.dependencies.includes(n.id))
-    : [];
-
-  const downstreamNodes = selectedNode 
-    ? nodes.filter(n => selectedNode.dependents.includes(n.id))
-    : [];
-
-  const handleInjectEnergyPulse = () => {
-    setEnergyPulseTrigger(prev => prev + 1);
-    notifySuccess('Synaptic Pulse Dispatched', 'Fiery energy shockwave radiated through the Second Brain and agent lattice.');
-  };
-
-  // Convert system nodes into satellites for the 60fps Particle Orb view
-  const orbSatellites: OrbSatelliteDef[] = useMemo(() => {
-    return nodes.slice(1, 22).map((node, i) => ({
-      id: node.id,
-      ringIndex: i % 3,
-      phase: (i / 21) * Math.PI * 2,
-      label: node.name,
-      category: node.type === 'VAULT' ? 'vault' : node.type === 'FILE' ? 'file' : node.type === 'AGENT' ? 'tool' : 'connector',
-      subLabel: `${node.type} • ${node.status}`,
-      status: node.status,
-      color: node.color,
-      size: node.type === 'VAULT' ? 4.8 : 3.8,
-      pulse: node.status === 'OPTIMAL' || node.status === 'ACTIVE',
-    }));
-  }, [nodes]);
+  const { state, topology, selectedNodeId, setSelectedNodeId, toggleInspect, transcriptOpen, setTranscriptOpen } = useVanta();
+  const location = useLocation();
+  const labEnabled = new URLSearchParams(location.search).has('vantaLab');
+  const [labPhase, setLabPhase] = useState<VantaPhase>('idle');
+  const displayPhase = labEnabled ? labPhase : state.phase;
+  const selectedNode = useMemo(() => topology.nodes.find(node => node.id === selectedNodeId), [selectedNodeId, topology.nodes]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-[#070402] border border-amber-500/20 rounded-3xl overflow-hidden shadow-2xl">
-      {/* Top Header */}
-      <div className="p-4 bg-black/60 border-b border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+    <main className="relative flex h-[calc(100vh-4rem)] min-h-[680px] flex-col overflow-hidden rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-bg)] shadow-2xl">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.5)_1px,transparent_1px)] [background-size:32px_32px]" />
+
+      <header className="relative z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--sigma-border)] bg-[var(--sigma-surface)]/80 px-4 py-3 backdrop-blur-xl md:px-6">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-300 flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <Zap size={20} className="text-black font-black animate-pulse" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--sigma-vermilion)]/30 bg-[var(--sigma-vermilion)]/10 shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[var(--sigma-vermilion)] shadow-[0_0_8px_var(--sigma-vermilion)]" />
           </div>
-
           <div>
-            <h2 className="text-lg font-heading font-black text-white flex items-center gap-2">
-              <span>Sigma Tactix Living System</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-widest">
-                Biosphere Core
-              </span>
-            </h2>
-            <p className="text-xs text-amber-200/60 font-mono">
-              The Second Brain, files, agents, and pipelines living in dynamic interconnected equilibrium.
-            </p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold tracking-wider text-white uppercase">VANTA</h1>
+              <Badge variant="vermilion" size="sm">Sigma Intelligence</Badge>
+            </div>
+            <p className="text-[11px] text-zinc-400">Inspects evidence, explains causality, and proposes work. Never executes silently.</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-black/30 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 sm:flex">
+            <span className={`h-1.5 w-1.5 rounded-full ${state.provider.verified ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+            {state.provider.label}
+          </span>
+          <VantaProviderPanel />
           <button
-            onClick={handleInjectEnergyPulse}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-mono font-black text-xs rounded-xl shadow-lg shadow-orange-600/30 flex items-center gap-1.5 transition-all active:scale-95"
+            type="button"
+            onClick={() => setTranscriptOpen(!transcriptOpen)}
+            className={`rounded-xl border p-2 text-xs transition ${transcriptOpen ? 'border-[var(--sigma-vermilion)]/40 bg-[var(--sigma-vermilion)]/10 text-white' : 'border-[var(--sigma-border)] text-zinc-400 hover:text-white bg-[var(--sigma-surface)]'}`}
+            aria-label="Toggle transcript"
           >
-            <Zap size={14} /> Inject Neural Pulse
+            <MessageSquareText size={16} />
           </button>
+          <Button
+            variant={state.inspectMode ? "secondary" : "outline"}
+            size="sm"
+            onClick={toggleInspect}
+            leftIcon={state.inspectMode ? <EyeOff size={14} /> : <Eye size={14} />}
+          >
+            <span className="hidden sm:inline">{state.inspectMode ? 'Exit inspect' : 'Inspect system'}</span>
+          </Button>
+        </div>
+      </header>
 
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-0.5">
-            <button
-              onClick={() => setViewMode('3D_HOLOGRAM')}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                viewMode === '3D_HOLOGRAM' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
-              )}
-            >
-              <Sparkles size={13} /> Ultron Neural Hologram
-            </button>
-            <button
-              onClick={() => setViewMode('PARTICLE_ORB')}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                viewMode === 'PARTICLE_ORB' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
-              )}
-            >
-              <Orbit size={13} /> Particle Earth Orb
-            </button>
-            <button
-              onClick={() => setViewMode('DAG_MATRIX')}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5",
-                viewMode === 'DAG_MATRIX' ? "bg-gradient-to-r from-orange-600 to-amber-500 text-black font-bold shadow-md shadow-orange-500/30" : "text-zinc-400 hover:text-white"
-              )}
-            >
-              <LayoutGrid size={13} /> Dependency DAG
-            </button>
+      {labEnabled && (
+        <div className="relative z-20 flex flex-wrap items-center gap-2 border-b border-[var(--sigma-border)] bg-[var(--sigma-surface)] px-4 py-2" aria-label="VANTA visual fidelity lab">
+          <span className="mr-2 flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-[var(--sigma-vermilion)]"><Gauge size={12} /> Fidelity lab</span>
+          <div className="sigma-segmented font-mono">
+            {LAB_PHASES.map(phase => (
+              <button
+                key={phase}
+                type="button"
+                onClick={() => setLabPhase(phase)}
+                className={`sigma-segment uppercase ${labPhase === phase ? 'sigma-segment-active' : ''}`}
+              >
+                {phase.replace('_', ' ')}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Filter and Search Bar */}
-      <div className="px-4 py-2 bg-black/40 border-b border-white/5 flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
-          {[
-            { key: 'ALL', label: `All Elements (${nodes.length})` },
-            { key: 'VAULTS', label: 'Vaults (10)' },
-            { key: 'FILES', label: 'Files (10)' },
-            { key: 'AGENTS', label: 'AI Agents (5)' },
-            { key: 'PIPELINES', label: 'Pipelines (7)' },
-            { key: 'AUDITS', label: 'Governance (3)' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveFilter(tab.key)}
-              className={cn(
-                "px-2.5 py-1 rounded-lg transition-all",
-                activeFilter === tab.key
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold"
-                  : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-transparent"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative min-w-[240px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Search elements or files..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-black/60 border border-white/10 rounded-xl text-xs font-mono text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500"
-          />
-        </div>
-      </div>
-
-      {/* Main Interactive Stage */}
-      <div data-tutorial-id="tut-living-system-canvas" className="relative flex-1 flex overflow-hidden">
-        <div className="relative flex-1 h-full overflow-hidden">
-          {viewMode === '3D_HOLOGRAM' ? (
-            <div className="w-full h-full relative">
-              <GrowthOSHolographicView
-                onOpenVault={(vaultKey) => navigate(`/vaults?tab=${vaultKey}`)}
-                onNavigateTab={(tab) => {
-                  if (tab === 'agents') navigate('/cockpit');
-                  else if (tab === 'sources') navigate('/onboarding');
-                  else navigate(`/vaults`);
-                }}
-                className="h-full border-none rounded-none"
-              />
-            </div>
-          ) : viewMode === 'PARTICLE_ORB' ? (
-            <div className="w-full h-full relative bg-[#050515] flex items-center justify-center">
-              <Orb
-                satellites={orbSatellites}
-                zoom={1.1}
-                className="w-full h-full"
-              />
-              <div className="absolute bottom-4 left-4 pointer-events-none p-3 bg-black/75 backdrop-blur-md border border-[#FF481B]/30 rounded-2xl text-[11px] font-mono text-zinc-400 space-y-1 hidden sm:block shadow-xl">
-                <div className="text-[#FFB088] font-bold flex items-center gap-1.5">
-                  <Radio size={12} className="text-[#FF481B] animate-pulse" /> 60 FPS Particle Earth Orb
-                </div>
-                <div>• Drag to freely rotate continental sphere on any axis</div>
-                <div>• Scroll / pinch to zoom into the core</div>
-                <div>• Hover satellites on orbit rings to inspect live state</div>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full h-full p-6 overflow-y-auto bg-black/50 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Pipelines */}
-                <div className="space-y-3">
-                  <div className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 uppercase pb-2 border-b border-white/10">
-                    <Layers size={13} /> 1. Ingestion Pipelines ({nodes.filter(n => n.type === 'PIPELINE').length})
-                  </div>
-                  {nodes.filter(n => n.type === 'PIPELINE').map(pipe => (
-                    <div
-                      key={pipe.id}
-                      onClick={() => setSelectedNodeId(pipe.id)}
-                      className={cn(
-                        "p-3 rounded-xl border cursor-pointer transition-all space-y-1",
-                        selectedNodeId === pipe.id ? "bg-cyan-500/20 border-cyan-400 shadow-md" : "bg-white/5 border-white/10 hover:border-cyan-500/40"
-                      )}
-                    >
-                      <div className="text-xs font-bold text-white flex items-center justify-between">
-                        <span>{pipe.name}</span>
-                        <span className="text-[10px] text-green-400 font-mono">99%</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 font-mono truncate">{pipe.description}</p>
-                      <div className="text-[9px] text-cyan-300 font-mono">→ Feeds: {pipe.dependents.join(', ')}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Vaults */}
-                <div className="space-y-3">
-                  <div className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5 uppercase pb-2 border-b border-white/10">
-                    <Database size={13} /> 2. Second Brain Vaults (10)
-                  </div>
-                  {nodes.filter(n => n.type === 'VAULT').map(vault => (
-                    <div
-                      key={vault.id}
-                      onClick={() => setSelectedNodeId(vault.id)}
-                      className={cn(
-                        "p-3 rounded-xl border cursor-pointer transition-all space-y-1",
-                        selectedNodeId === vault.id ? "bg-amber-500/20 border-amber-400 shadow-md" : "bg-white/5 border-white/10 hover:border-amber-500/40"
-                      )}
-                    >
-                      <div className="text-xs font-bold text-white flex items-center justify-between">
-                        <span>{vault.name}</span>
-                        <span className="text-[10px] text-amber-400 font-mono">{vault.sizeOrVolume}</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 font-mono truncate">{vault.description}</p>
-                      <div className="text-[9px] text-amber-300 font-mono">Cleared for: {vault.dependents.slice(0, 2).join(', ')}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Files */}
-                <div className="space-y-3">
-                  <div className="text-xs font-mono font-bold text-pink-400 flex items-center gap-1.5 uppercase pb-2 border-b border-white/10">
-                    <FileText size={13} /> 3. Files & Prompts ({nodes.filter(n => n.type === 'FILE').length})
-                  </div>
-                  {nodes.filter(n => n.type === 'FILE').map(file => (
-                    <div
-                      key={file.id}
-                      onClick={() => setSelectedNodeId(file.id)}
-                      className={cn(
-                        "p-3 rounded-xl border cursor-pointer transition-all space-y-1",
-                        selectedNodeId === file.id ? "bg-pink-500/20 border-pink-400 shadow-md" : "bg-white/5 border-white/10 hover:border-pink-500/40"
-                      )}
-                    >
-                      <div className="text-xs font-bold font-mono text-white flex items-center justify-between">
-                        <span className="truncate">{file.name}</span>
-                        <span className="text-[9px] text-pink-300 shrink-0">{file.sizeOrVolume}</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 font-mono truncate">{file.description}</p>
-                      <div className="text-[9px] text-pink-400 font-mono">Bound to: {file.dependents[0]}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Agents */}
-                <div className="space-y-3">
-                  <div className="text-xs font-mono font-bold text-purple-400 flex items-center gap-1.5 uppercase pb-2 border-b border-white/10">
-                    <Bot size={13} /> 4. AI Agents & Execution ({nodes.filter(n => n.type === 'AGENT' || n.type === 'AUDIT').length})
-                  </div>
-                  {nodes.filter(n => n.type === 'AGENT' || n.type === 'AUDIT').map(agent => (
-                    <div
-                      key={agent.id}
-                      onClick={() => setSelectedNodeId(agent.id)}
-                      className={cn(
-                        "p-3 rounded-xl border cursor-pointer transition-all space-y-1",
-                        selectedNodeId === agent.id ? "bg-purple-500/20 border-purple-400 shadow-md" : "bg-white/5 border-white/10 hover:border-purple-500/40"
-                      )}
-                    >
-                      <div className="text-xs font-bold text-white flex items-center justify-between">
-                        <span>{agent.name}</span>
-                        <span className="text-[10px] text-purple-300 font-mono">{agent.healthScore}%</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 font-mono truncate">{agent.description}</p>
-                      <div className="text-[9px] text-purple-300 font-mono">{agent.category}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      <div className="relative z-10 grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_310px]">
+        <section className="relative min-h-[460px] overflow-hidden" aria-label="VANTA neural core">
+          <VantaOrb phase={displayPhase} amplitude={state.audioAmplitude} inspectMode={state.inspectMode || displayPhase === 'inspecting'} topology={topology} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} className="h-full w-full" />
+          <div className="pointer-events-none absolute left-5 top-5 z-10 space-y-1">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Current state</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-white">{displayPhase.replace('_', ' ')}</p>
+          </div>
+          {selectedNode && state.inspectMode && (
+            <div className="absolute left-4 top-20 z-20 max-w-xs rounded-xl border border-[var(--sigma-border)] bg-black/85 p-3.5 backdrop-blur-xl shadow-xl">
+              <div className="text-[9px] font-mono uppercase tracking-widest text-[var(--sigma-vermilion)]">{selectedNode.kind} · {selectedNode.status.replace('_', ' ')}</div>
+              <h2 className="mt-1 text-xs font-bold text-white">{selectedNode.label}</h2>
+              {selectedNode.detail && <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">{selectedNode.detail}</p>}
             </div>
           )}
-        </div>
-
-        {/* Right Inspector Panel */}
-        {selectedNode && (
-          <div className="w-80 md:w-96 bg-black/85 border-l border-amber-500/20 p-5 overflow-y-auto space-y-5 shrink-0 backdrop-blur-md">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md font-bold uppercase tracking-wider bg-white/10 text-amber-400 border border-amber-500/30">
-                  {selectedNode.type} • {selectedNode.status}
-                </span>
-                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 font-bold">
-                  <Activity size={12} /> {selectedNode.healthScore}% Health
-                </span>
-              </div>
-
-              <h4 className="text-lg font-bold text-white flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedNode.color }} />
-                {selectedNode.name}
-              </h4>
-
-              <p className="text-xs text-zinc-300 font-mono leading-relaxed">
-                {selectedNode.description}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                <div className="text-[9px] uppercase text-zinc-500">Volume / Capacity</div>
-                <div className="font-bold text-white">{selectedNode.sizeOrVolume}</div>
-              </div>
-
-              <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                <div className="text-[9px] uppercase text-zinc-500">Latency / Encryption</div>
-                <div className="font-bold text-white">{selectedNode.latencyOrCycle}</div>
-              </div>
-
-              <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                <div className="text-[9px] uppercase text-zinc-500">24h Invocations</div>
-                <div className="font-bold text-amber-400">{selectedNode.accessCount24h.toLocaleString()}</div>
-              </div>
-
-              <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                <div className="text-[9px] uppercase text-zinc-500">Security Zone</div>
-                <div className="font-bold text-emerald-400 truncate">{selectedNode.securityZone || 'ZONE_PUBLIC_BUS'}</div>
-              </div>
-            </div>
-
-            {/* Upstream Dependencies */}
-            <div className="space-y-2">
-              <div className="text-xs font-mono uppercase text-zinc-400 font-bold flex items-center justify-between">
-                <span>Upstream Dependencies ({upstreamNodes.length})</span>
-                <span className="text-[10px] text-amber-400">Inputs</span>
-              </div>
-              {upstreamNodes.length > 0 ? (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {upstreamNodes.map(up => (
-                    <div
-                      key={up.id}
-                      onClick={() => setSelectedNodeId(up.id)}
-                      className="p-2 bg-black/40 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-between cursor-pointer group transition-all"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: up.color }} />
-                        <span className="text-xs font-mono text-zinc-200 group-hover:text-white truncate">{up.name}</span>
-                      </div>
-                      <ChevronRight size={13} className="text-zinc-500 group-hover:text-amber-400 transition-transform group-hover:translate-x-0.5" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-2.5 bg-white/5 border border-white/5 rounded-xl text-xs font-mono text-zinc-500">
-                  Master root entity (no upstream dependencies).
-                </div>
-              )}
-            </div>
-
-            {/* Downstream Dependents */}
-            <div className="space-y-2">
-              <div className="text-xs font-mono uppercase text-zinc-400 font-bold flex items-center justify-between">
-                <span>Downstream Dependents ({downstreamNodes.length})</span>
-                <span className="text-[10px] text-cyan-400">Consumers</span>
-              </div>
-              {downstreamNodes.length > 0 ? (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {downstreamNodes.map(down => (
-                    <div
-                      key={down.id}
-                      onClick={() => setSelectedNodeId(down.id)}
-                      className="p-2 bg-black/40 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-between cursor-pointer group transition-all"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: down.color }} />
-                        <span className="text-xs font-mono text-zinc-200 group-hover:text-white truncate">{down.name}</span>
-                      </div>
-                      <ChevronRight size={13} className="text-zinc-500 group-hover:text-cyan-400 transition-transform group-hover:translate-x-0.5" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-2.5 bg-white/5 border border-white/5 rounded-xl text-xs font-mono text-zinc-500">
-                  Terminal execution endpoint.
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-white/10 space-y-2">
-              <button
-                onClick={() => navigate(selectedNode.linkUrl)}
-                className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-mono font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all"
-              >
-                <span>Open in Growth OS</span>
-                <ExternalLink size={13} />
-              </button>
-            </div>
+          <div className="absolute inset-x-3 bottom-3 z-20 mx-auto max-w-3xl md:inset-x-8 md:bottom-6"><VantaCommandDock /></div>
+          <div className="pointer-events-none absolute bottom-32 left-5 hidden items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-500 md:flex">
+            <ShieldCheck size={12} className="text-emerald-400" /> Evidence before claims · approval before change
           </div>
-        )}
+        </section>
+        <div className="hidden min-h-0 lg:block"><VantaTopologyPanel /></div>
       </div>
-    </div>
+      <VantaTranscriptDrawer />
+    </main>
   );
 }

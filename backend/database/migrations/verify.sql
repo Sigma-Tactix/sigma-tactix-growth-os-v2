@@ -176,3 +176,57 @@ WHERE table_name = 'workspace_state' AND column_name = 'version';
 SELECT tgname AS trigger
 FROM pg_trigger
 WHERE tgrelid = 'public.workspace_state'::regclass AND NOT tgisinternal AND tgname = 'bump_version';
+
+\echo '== 16. VANTA persistence tables exist with RLS enabled =='
+-- Expect four OK rows after 0015_vanta_conversations.sql is applied.
+SELECT expected.table_name,
+       CASE
+         WHEN c.oid IS NULL THEN 'FAIL — table missing'
+         WHEN NOT c.relrowsecurity THEN 'FAIL — RLS OFF'
+         ELSE 'OK'
+       END AS status
+FROM (VALUES
+  ('vanta_settings'),
+  ('vanta_conversations'),
+  ('vanta_messages'),
+  ('vanta_memories')
+) AS expected(table_name)
+LEFT JOIN pg_class c ON c.relname = expected.table_name AND c.relnamespace = 'public'::regnamespace
+ORDER BY expected.table_name;
+
+\echo '== 17. VANTA tables have explicit tenant policies and no anon grants =='
+-- Each table must have at least two policies. The anon privilege query must be empty.
+SELECT expected.table_name,
+       CASE WHEN count(p.policyname) >= 2
+            THEN 'OK (' || count(p.policyname) || ' policies)'
+            ELSE 'FAIL — insufficient policies'
+       END AS status
+FROM (VALUES
+  ('vanta_settings'),
+  ('vanta_conversations'),
+  ('vanta_messages'),
+  ('vanta_memories')
+) AS expected(table_name)
+LEFT JOIN pg_policies p ON p.schemaname = 'public' AND p.tablename = expected.table_name
+GROUP BY expected.table_name
+ORDER BY expected.table_name;
+
+SELECT table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name IN ('vanta_settings','vanta_conversations','vanta_messages','vanta_memories')
+  AND grantee = 'anon'
+ORDER BY table_name, privilege_type;
+
+\echo '== 18. VANTA retention purge is service-role only =='
+SELECT 'purge_expired_vanta_conversations' AS function,
+       CASE
+         WHEN to_regprocedure('public.purge_expired_vanta_conversations()') IS NULL
+           THEN 'FAIL — function missing'
+         WHEN has_function_privilege('anon','public.purge_expired_vanta_conversations()','EXECUTE')
+           OR has_function_privilege('authenticated','public.purge_expired_vanta_conversations()','EXECUTE')
+           THEN 'FAIL — client role can execute purge'
+         WHEN NOT has_function_privilege('service_role','public.purge_expired_vanta_conversations()','EXECUTE')
+           THEN 'FAIL — service role cannot execute purge'
+         ELSE 'OK'
+       END AS status;

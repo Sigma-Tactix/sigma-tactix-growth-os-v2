@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  Compass, 
-  MapPin, 
-  Smartphone, 
-  Monitor, 
-  Target, 
-  BrainCircuit, 
-  CheckCircle2, 
-  Zap, 
-  TrendingUp, 
-  DollarSign, 
-  ShieldCheck, 
+import {
+  Users,
+  Compass,
+  MapPin,
+  Smartphone,
+  Monitor,
+  Target,
+  BrainCircuit,
+  CheckCircle2,
+  Zap,
+  TrendingUp,
+  DollarSign,
+  ShieldCheck,
   Sparkles,
   Award,
   Clock,
   ArrowRight
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { 
-  DEMOGRAPHICS_AGE_DATA, 
-  DEMOGRAPHICS_GENDER_DATA, 
-  DEMOGRAPHICS_GEOMETRO_DATA, 
+import {
+  DEMOGRAPHICS_AGE_DATA,
+  DEMOGRAPHICS_GENDER_DATA,
+  DEMOGRAPHICS_GEOMETRO_DATA,
   DEMOGRAPHICS_DEVICE_DATA,
   PSYCHOGRAPHICS_PERSONAS,
   PSYCHOGRAPHICS_INTENT_TIERS,
@@ -53,14 +53,14 @@ export default function AudienceSegmentationView({ className }: { className?: st
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
+        <div className="sigma-segmented font-mono">
           <button
             onClick={() => setActiveSegmentTab('demographics')}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2",
+              "sigma-segment flex items-center gap-2",
               activeSegmentTab === 'demographics'
-                ? "bg-accent text-background font-black shadow-md"
-                : "text-zinc-400 hover:text-white"
+                ? "sigma-segment-active"
+                : ""
             )}
           >
             <Compass size={13} />
@@ -70,10 +70,10 @@ export default function AudienceSegmentationView({ className }: { className?: st
           <button
             onClick={() => setActiveSegmentTab('psychographics')}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2",
+              "sigma-segment flex items-center gap-2",
               activeSegmentTab === 'psychographics'
-                ? "bg-secondary text-background font-black shadow-md"
-                : "text-zinc-400 hover:text-white"
+                ? "sigma-segment-active"
+                : ""
             )}
           >
             <BrainCircuit size={13} />
@@ -127,8 +127,8 @@ export default function AudienceSegmentationView({ className }: { className?: st
                         <td className="py-2.5">
                           <div className="flex items-center gap-2">
                             <div className="w-20 h-2 rounded-full bg-white/10 overflow-hidden">
-                              <div 
-                                className="h-full bg-accent rounded-full" 
+                              <div
+                                className="h-full bg-accent rounded-full"
                                 style={{ width: `${item.shareOfConversions * 2}%` }}
                               />
                             </div>
@@ -164,8 +164,8 @@ export default function AudienceSegmentationView({ className }: { className?: st
                         <span className="text-white font-bold">{g.percentage}%</span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                        <div 
-                          className="h-full bg-secondary rounded-full" 
+                        <div
+                          className="h-full bg-secondary rounded-full"
                           style={{ width: `${g.percentage}%` }}
                         />
                       </div>
@@ -280,8 +280,8 @@ export default function AudienceSegmentationView({ className }: { className?: st
                   onClick={() => setSelectedPersona(p)}
                   className={cn(
                     "p-4 rounded-xl text-left border transition-all space-y-1.5 relative overflow-hidden",
-                    isSelected 
-                      ? "bg-accent/15 border-accent shadow-lg" 
+                    isSelected
+                      ? "bg-accent/15 border-accent shadow-lg"
                       : "bg-black/40 border-white/10 hover:border-white/20"
                   )}
                 >

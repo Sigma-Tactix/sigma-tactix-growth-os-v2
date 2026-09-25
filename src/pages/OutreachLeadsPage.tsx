@@ -40,6 +40,7 @@ import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import WhatsAppLeadIntelligenceStudio from '@/src/components/outreach/WhatsAppLeadIntelligenceStudio';
 import DealDocumentsStudio from '@/src/components/outreach/DealDocumentsStudio';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
+import { Button, GlassCard, Badge, Tabs, MetricWidget } from '@/src/components/ui';
 import { 
   SEED_LEAD_PROSPECTS, 
   LeadProspect 
@@ -402,195 +403,118 @@ export default function OutreachLeadsPage() {
 <div id="sigmatactix-capture-dock" data-domain="${activeDomain}" data-theme="dark"></div>
 <script src="https://${activeDomain}/api/embed/dock.js" async></script>`;
 
+  const outreachTabs = [
+    { id: 'PIPELINE', label: `CRM Pipeline (${pipelineLeads.length})`, icon: <Kanban className="w-3.5 h-3.5" /> },
+    { id: 'DEAL_DOCUMENTS', label: 'Deal Documents', icon: <Briefcase className="w-3.5 h-3.5" />, badge: 'Agreements' },
+    { id: 'WHATSAPP_INTELLIGENCE', label: 'WhatsApp Intel', icon: <MessageSquare className="w-3.5 h-3.5" />, badge: 'v0.1' },
+    { id: 'CAPTURE_DOCK', label: 'Capture Dock', icon: <Code2 className="w-3.5 h-3.5" /> },
+    { id: 'PROSPECTS', label: 'Enriched Accounts', icon: <Users className="w-3.5 h-3.5" /> },
+    { id: 'SEQUENCES', label: 'Sequence Builder', icon: <Mail className="w-3.5 h-3.5" /> },
+    { id: 'SDR_AGENT', label: 'Mercury-07 SDR', icon: <Bot className="w-3.5 h-3.5" /> }
+  ];
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl backdrop-blur-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-[11px] font-mono tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full font-bold">
-              SOVEREIGN REVENUE ENGINE
-            </span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-zinc-400">MERCURY-07 SDR + NATIVE CRM</span>
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="brand" size="xs">SOVEREIGN REVENUE ENGINE</Badge>
+              <span className="text-xs font-mono text-[var(--sigma-muted)]">MERCURY-07 SDR + NATIVE CRM</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
+              <Kanban className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+              Lead Engine & Sovereign CRM Pipeline
+            </h1>
+            <p className="text-[var(--sigma-muted)] text-sm max-w-2xl leading-relaxed">
+              Autonomous buyer prospecting, embeddable lead capture dock, native CRM pipeline stages, and closed-loop revenue attribution without requiring third-party subscriptions.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Kanban className="w-7 h-7 text-amber-400" />
-            Lead Engine & Sovereign CRM Pipeline
-          </h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-            Autonomous buyer prospecting, embeddable lead capture dock, native CRM pipeline stages, and closed-loop revenue attribution without requiring third-party subscriptions.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              onClick={() => setIsAddLeadModalOpen(true)}
+              variant="primary"
+              size="md"
+              icon={<Plus className="w-4 h-4" />}
+            >
+              Add Prospect
+            </Button>
+
+            <Button
+              onClick={handleEnrichLeads}
+              disabled={isEnriching}
+              variant="outline"
+              size="md"
+              icon={<RefreshCw className={cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isEnriching && "animate-spin")} />}
+            >
+              {isEnriching ? 'Enriching...' : 'Enrich Signals'}
+            </Button>
+
+            <Button
+              onClick={handleDeploySdr}
+              disabled={isDeployingSdr}
+              variant="secondary"
+              size="md"
+              icon={<Play className="w-3.5 h-3.5" />}
+            >
+              {isDeployingSdr ? 'Executing...' : 'Deploy AI SDR'}
+            </Button>
+          </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setIsAddLeadModalOpen(true)}
-            className="px-4 py-2.5 bg-accent text-background font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-lg amber-glow"
-          >
-            <Plus className="w-4 h-4" />
-            Add Prospect
-          </button>
-
-          <button
-            onClick={handleEnrichLeads}
-            disabled={isEnriching}
-            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw className={cn("w-3.5 h-3.5 text-amber-400", isEnriching && "animate-spin")} />
-            {isEnriching ? 'Enriching...' : 'Enrich Signals'}
-          </button>
-
-          <button
-            onClick={handleDeploySdr}
-            disabled={isDeployingSdr}
-            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
-          >
-            <Play className="w-3.5 h-3.5 fill-black" />
-            {isDeployingSdr ? 'Executing...' : 'Deploy AI SDR'}
-          </button>
-        </div>
-      </div>
+      </GlassCard>
 
       {/* Metric Highlights */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Active Pipeline Accounts</div>
-          <div className="text-2xl font-bold text-white flex items-center gap-2">
-            {pipelineLeads.length} Leads
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Native Sovereign Pipeline</div>
-        </div>
+        <MetricWidget
+          label="Active Pipeline Accounts"
+          value={`${pipelineLeads.length} Leads`}
+          subtext="Native Sovereign Pipeline"
+          icon={<Users className="w-4 h-4 text-[var(--sigma-muted)]" />}
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Total Pipeline ARR</div>
-          <div className="text-2xl font-bold text-amber-400 flex items-center gap-2">
-            ${totalPipelineValue.toFixed(1)}M
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Sum of weighted qualified leads</div>
-        </div>
+        <MetricWidget
+          label="Total Pipeline ARR"
+          value={`$${totalPipelineValue.toFixed(1)}M`}
+          subtext="Sum of weighted qualified leads"
+          icon={<DollarSign className="w-4 h-4 text-[var(--sigma-vermilion)]" />}
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Won / Contracted ARR</div>
-          <div className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-            ${wonARR.toFixed(1)}M
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-[11px] text-emerald-400/80 mt-1">5 Closed Retainers Target</div>
-        </div>
+        <MetricWidget
+          label="Won / Contracted ARR"
+          value={`$${wonARR.toFixed(1)}M`}
+          delta={{ value: '+12.4%', trend: 'up' }}
+          subtext="5 Closed Retainers Target"
+          icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
+        />
 
-        <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-xl">
-          <div className="text-xs font-mono text-zinc-400 mb-1">Cold Reply Rate</div>
-          <div className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
-            18.4%
-            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Driven by empirical audit teardowns</div>
-        </div>
+        <MetricWidget
+          label="Cold Reply Rate"
+          value="18.4%"
+          delta={{ value: '+4.2%', trend: 'up' }}
+          subtext="Driven by empirical audit teardowns"
+          icon={<CheckCircle2 className="w-4 h-4 text-sky-400" />}
+        />
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('PIPELINE')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'PIPELINE'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Kanban className="w-3.5 h-3.5" />
-          Sovereign CRM Pipeline ({pipelineLeads.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('DEAL_DOCUMENTS')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'DEAL_DOCUMENTS'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Briefcase className="w-3.5 h-3.5 text-amber-400" />
-          Deal Documents & Contracts Studio
-          <span className="rounded bg-amber-400/20 px-1.5 py-0.2 text-[10px] text-amber-400 font-bold">Agreements</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('WHATSAPP_INTELLIGENCE')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'WHATSAPP_INTELLIGENCE'
-              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold shadow-sm"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-          WhatsApp Lead Intel (Rubric & Drip)
-          <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] text-emerald-400">v0.1</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CAPTURE_DOCK')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'CAPTURE_DOCK'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Code2 className="w-3.5 h-3.5" />
-          Embeddable Capture Dock (Zero CRM Needed)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('PROSPECTS')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'PROSPECTS'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Users className="w-3.5 h-3.5" />
-          Enriched Accounts & ICP Scoring
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SEQUENCES')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'SEQUENCES'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Mail className="w-3.5 h-3.5" />
-          Empirical Sequence Builder
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SDR_AGENT')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap",
-            activeTab === 'SDR_AGENT'
-              ? "bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-          )}
-        >
-          <Bot className="w-3.5 h-3.5" />
-          Mercury-07 Autonomous SDR Swarm
-        </button>
+      <div className="border-b border-[var(--sigma-border)] pb-3">
+        <Tabs
+          tabs={outreachTabs}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as any)}
+          variant="pill"
+          size="sm"
+        />
       </div>
 
       {/* TAB 1: KANBAN PIPELINE (SOVEREIGN MINI-CRM) */}
       {activeTab === 'PIPELINE' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <div className="flex items-center justify-between text-xs font-mono text-[var(--sigma-muted)]">
             <span>Sovereign Native Pipeline • Real-time closed-loop progression</span>
-            <span className="text-zinc-500">Click arrows to advance leads across stages</span>
+            <span>Click arrows to advance leads across stages</span>
           </div>
 
           <div data-tutorial-id="tut-pipeline-kanban" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto pb-4">
@@ -599,49 +523,49 @@ export default function OutreachLeadsPage() {
               const stageLeads = pipelineLeads.filter(l => l.stage === stageKey);
 
               return (
-                <div key={stageKey} className="flex flex-col min-w-[210px] bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-3 space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                    <span className={cn("text-xs font-mono font-bold px-2 py-0.5 rounded border", config.bg, config.color, config.border)}>
+                <div key={stageKey} className="flex flex-col min-w-[220px] bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-2xl p-3 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--sigma-border)]">
+                    <Badge variant={stageKey === 'CLOSED_WON' ? 'success' : stageKey === 'REPLIED_WARM' ? 'brand' : 'neutral'} size="xs">
                       {config.label}
-                    </span>
-                    <span className="text-xs font-mono text-zinc-400 font-bold">{stageLeads.length}</span>
+                    </Badge>
+                    <span className="text-xs font-mono text-[var(--sigma-muted)] font-semibold">{stageLeads.length}</span>
                   </div>
 
                   <div className="space-y-2 flex-1 min-h-[140px]">
                     {stageLeads.length === 0 ? (
-                      <div className="h-full flex items-center justify-center text-[11px] font-mono text-zinc-600 p-4 text-center">
+                      <div className="h-full flex items-center justify-center text-[11px] font-mono text-[var(--sigma-muted)] p-4 text-center">
                         No leads in this stage
                       </div>
                     ) : (
                       stageLeads.map((lead) => (
-                        <div key={lead.id} className="p-3 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-2 hover:border-zinc-700 transition-all shadow-sm">
+                        <div key={lead.id} className="p-3 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl space-y-2 hover:border-[var(--sigma-border-hover)] transition-all shadow-xs group">
                           <div className="flex items-start justify-between gap-1">
                             <div>
-                              <div className="text-xs font-bold text-white leading-tight">{lead.company}</div>
-                              <div className="text-[11px] text-zinc-400">{lead.name}</div>
+                              <div className="text-xs font-semibold text-[var(--sigma-text)] leading-tight">{lead.company}</div>
+                              <div className="text-[11px] text-[var(--sigma-muted)]">{lead.name}</div>
                             </div>
-                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                            <Badge variant="success" size="xs">
                               {lead.icpScore}%
-                            </span>
+                            </Badge>
                           </div>
 
-                          <div className="text-[10px] font-mono text-zinc-400 flex items-center justify-between">
+                          <div className="text-[10px] font-mono text-[var(--sigma-muted)] flex items-center justify-between">
                             <span>{lead.sourceVector}</span>
-                            <span className="text-amber-400 font-bold">{lead.estimatedArr}</span>
+                            <span className="text-[var(--sigma-vermilion)] font-semibold">{lead.estimatedArr}</span>
                           </div>
 
                           {lead.notes && (
-                            <p className="text-[10px] text-zinc-400 line-clamp-2 italic bg-zinc-900/60 p-1.5 rounded">
+                            <p className="text-[10px] text-[var(--sigma-muted)] line-clamp-2 italic bg-[var(--sigma-bg)] p-1.5 rounded-lg border border-[var(--sigma-border)]">
                               "{lead.notes}"
                             </p>
                           )}
 
                           {/* Stage Transition Controls */}
-                          <div className="flex items-center justify-between pt-1 border-t border-zinc-800/60">
+                          <div className="flex items-center justify-between pt-1.5 border-t border-[var(--sigma-border)]">
                             <button
                               onClick={() => handleMoveStage(lead.id, 'backward')}
                               disabled={STAGES.indexOf(lead.stage) === 0}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-20 cursor-pointer"
+                              className="p-1 rounded-md text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)] disabled:opacity-20 cursor-pointer transition-colors"
                               title="Move back"
                             >
                               <ArrowLeft className="w-3 h-3" />
@@ -652,21 +576,21 @@ export default function OutreachLeadsPage() {
                                 setSelectedLeadForDocsId(lead.id);
                                 setActiveTab('DEAL_DOCUMENTS');
                               }}
-                              className="px-2 py-0.5 rounded bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-[9px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all"
+                              className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/10 hover:bg-[var(--sigma-vermilion)]/20 text-[var(--sigma-vermilion)] border border-[var(--sigma-vermilion)]/25 text-[9px] font-mono font-medium flex items-center gap-1 cursor-pointer transition-all"
                               title="Create Deal Documents & Agreements"
                             >
                               <FileText className="w-2.5 h-2.5" />
                               Docs
                             </button>
 
-                            <span className="text-[9px] font-mono text-zinc-500">
+                            <span className="text-[9px] font-mono text-[var(--sigma-muted)]">
                               {lead.capturedAt}
                             </span>
 
                             <button
                               onClick={() => handleMoveStage(lead.id, 'forward')}
                               disabled={STAGES.indexOf(lead.stage) === STAGES.length - 1}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-20 cursor-pointer"
+                              className="p-1 rounded-md text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)] disabled:opacity-20 cursor-pointer transition-colors"
                               title="Advance lead"
                             >
                               <ArrowRight className="w-3 h-3" />

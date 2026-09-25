@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
+import { GlassCard, Button, Badge, Input } from '@/src/components/ui';
 import { SECOND_BRAIN_VAULTS } from '@/src/data/secondBrainVaults';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
@@ -134,166 +135,138 @@ export default function IntakeEngine() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
-        <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <Zap size={14} className="text-accent" /> Foundation • Automated Onboarding Engine
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="vermilion" size="sm">
+                <Zap size={12} className="mr-1 inline" /> Automated Onboarding
+              </Badge>
+              <Badge variant="success" size="sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5 animate-pulse" />
+                Audit Routing Active
+              </Badge>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+              Dynamic Intake & Configuration Engine
+            </h1>
+            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+              Client onboarding questionnaire with real-time "Audit-to-Configuration" data routing. Parsed fields populate the 10 Second Brain Vaults and automatically arm execution modules.
+            </p>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">
-            Dynamic Intake & Config
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
-            Client onboarding questionnaire with real-time "Audit-to-Configuration" data routing. Parsed fields populate the 10 Second Brain Vaults and automatically activate corresponding execution modules.
-          </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-xs font-mono text-green-400 flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Audit Routing Active
-          </span>
-        </div>
-      </div>
+      </GlassCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left: Questionnaire Form */}
-        <div className="lg:col-span-7 bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4">
-            <div className="flex items-center gap-2.5">
-              <FileSpreadsheet size={20} className="text-accent" />
-              <h3 className="text-lg font-bold silver-text">Client Onboarding Questionnaire</h3>
+        <div className="lg:col-span-7">
+          <GlassCard elevation="raised" className="p-6 lg:p-8 border border-[var(--sigma-border)] space-y-6">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet size={18} className="text-[var(--sigma-vermilion)]" />
+                <h3 className="text-base font-bold text-white">Client Onboarding Questionnaire</h3>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase">Interactive Schema v3.2</span>
             </div>
-            <span className="text-[10px] font-mono text-muted uppercase">Interactive Schema v3.2</span>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono uppercase text-muted">Company Name</label>
-                <input
-                  type="text"
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Company Name"
                   required
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                 />
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono uppercase text-muted">Primary Domain / URL</label>
-                <input
-                  type="text"
+                <Input
+                  label="Primary Domain / URL"
                   required
                   value={formData.websiteUrl}
                   onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono uppercase text-muted">Monthly Revenue Scale</label>
-                <select
-                  value={formData.monthlyRevenue}
-                  onChange={(e) => setFormData({ ...formData, monthlyRevenue: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
-                >
-                  <option value="< $50k">&lt; $50k ARR</option>
-                  <option value="$50k - $150k">$50k - $150k ARR</option>
-                  <option value="$150k - $500k">$150k - $500k ARR (Scaling)</option>
-                  <option value="$500k+">$500k+ ARR (Enterprise)</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono uppercase text-zinc-400">Monthly Revenue Scale</label>
+                  <select
+                    value={formData.monthlyRevenue}
+                    onChange={(e) => setFormData({ ...formData, monthlyRevenue: e.target.value })}
+                    className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                  >
+                    <option value="< $50k">&lt; $50k ARR</option>
+                    <option value="$50k - $150k">$50k - $150k ARR</option>
+                    <option value="$150k - $500k">$150k - $500k ARR (Scaling)</option>
+                    <option value="$500k+">$500k+ ARR (Enterprise)</option>
+                  </select>
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono uppercase text-muted">Monthly Media / Ad Spend</label>
-                <input
-                  type="text"
+                <Input
+                  label="Monthly Media / Ad Spend"
                   value={formData.monthlyAdSpend}
                   onChange={(e) => setFormData({ ...formData, monthlyAdSpend: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono uppercase text-muted">Target ICP (Ideal Customer Profile)</label>
-              <input
-                type="text"
+              <Input
+                label="Target ICP (Ideal Customer Profile)"
                 required
                 value={formData.primaryICP}
                 onChange={(e) => setFormData({ ...formData, primaryICP: e.target.value })}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono uppercase text-muted">Core Competitive Differentiator</label>
-              <input
-                type="text"
+              <Input
+                label="Core Competitive Differentiator"
                 value={formData.competitorDifferentiator}
                 onChange={(e) => setFormData({ ...formData, competitorDifferentiator: e.target.value })}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono uppercase text-muted">Brand Voice & Editorial Mandates</label>
-              <input
-                type="text"
+              <Input
+                label="Brand Voice & Editorial Mandates"
                 value={formData.brandVoiceTone}
                 onChange={(e) => setFormData({ ...formData, brandVoiceTone: e.target.value })}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono uppercase text-muted">Primary Digital Growth Bottleneck</label>
-              <textarea
-                rows={2}
-                value={formData.primaryBottleneck}
-                onChange={(e) => setFormData({ ...formData, primaryBottleneck: e.target.value })}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-
-            <div className="pt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted">
-                <ShieldCheck size={14} className="text-secondary" />
-                <span>Zero-Knowledge AES-256 Vault Encryption</span>
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono uppercase text-zinc-400">Primary Digital Growth Bottleneck</label>
+                <textarea
+                  rows={2}
+                  value={formData.primaryBottleneck}
+                  onChange={(e) => setFormData({ ...formData, primaryBottleneck: e.target.value })}
+                  className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                />
               </div>
 
-              <button
-                data-tutorial-id="tut-intake-submit-btn"
-                type="submit"
-                disabled={isSubmitting}
-                className="px-8 py-3.5 bg-accent text-background font-black uppercase text-xs tracking-widest rounded-xl hover:opacity-90 transition-all amber-glow shadow-xl flex items-center gap-2 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" /> Ingesting & Routing...
-                  </>
-                ) : (
-                  <>
-                    <Send size={14} /> Ingest & Execute Route
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              <div className="pt-4 flex items-center justify-between border-t border-[var(--sigma-border)]">
+                <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>Zero-Knowledge AES-256 Vault Encryption</span>
+                </div>
+
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={isSubmitting}
+                  isLoading={isSubmitting}
+                  leftIcon={<Send size={14} />}
+                >
+                  {isSubmitting ? "Ingesting & Routing..." : "Ingest & Execute Route"}
+                </Button>
+              </div>
+            </form>
+          </GlassCard>
         </div>
 
         {/* Right: Live Dynamic Routing Pipeline */}
         <div className="lg:col-span-5 space-y-6">
           {/* Real-time routing diagram */}
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <GlassCard elevation="raised" className="p-6 border border-[var(--sigma-border)] space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
               <div className="flex items-center gap-2">
-                <Cpu size={18} className="text-secondary" />
-                <h3 className="text-sm font-bold silver-text uppercase tracking-tight">Audit-to-Configuration Pipeline</h3>
+                <Cpu size={16} className="text-[var(--sigma-vermilion)]" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Audit-to-Configuration Pipeline</h3>
               </div>
-              <span className="text-[10px] font-mono text-accent">Auto-Router Active</span>
+              <Badge variant="outline" size="sm">Auto-Router Active</Badge>
             </div>
 
             <p className="text-xs text-zinc-400">
@@ -311,23 +284,23 @@ export default function IntakeEngine() {
                   className={cn(
                     "p-3.5 rounded-xl border transition-all",
                     isSubmitting && activePipelineStep === i + 1 
-                      ? "bg-accent/15 border-accent shadow-md ring-1 ring-accent"
-                      : "bg-black/40 border-white/5 hover:border-white/15"
+                      ? "bg-[var(--sigma-surface-raised)] border-[var(--sigma-vermilion)]/60 shadow-md ring-1 ring-[var(--sigma-vermilion)]/30" 
+                      : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-white/15"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[9px] font-mono text-muted uppercase font-bold">{route.sourceField}</span>
-                    <ArrowRight size={12} className="text-muted" />
-                    <span className="text-[9px] font-mono text-secondary font-bold">{route.targetVault.split(' ')[0]}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 uppercase font-semibold">{route.sourceField}</span>
+                    <ArrowRight size={12} className="text-zinc-500" />
+                    <span className="text-[10px] font-mono text-[var(--sigma-vermilion)] font-semibold">{route.targetVault.split(' ')[0]}</span>
                   </div>
 
-                  <div className="text-xs font-bold text-white mb-1">
+                  <div className="text-xs font-semibold text-white mb-1">
                     {route.actionTriggered}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-white/5">
-                    <span className="text-muted">Arming Agent:</span>
-                    <span className="text-accent font-bold">{route.activeModule}</span>
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-[var(--sigma-border)]">
+                    <span className="text-zinc-500">Arming Agent:</span>
+                    <span className="text-zinc-200 font-medium">{route.activeModule}</span>
                   </div>
                 </motion.div>
               ))}
@@ -338,36 +311,37 @@ export default function IntakeEngine() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-300 space-y-2"
+                className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2"
               >
-                <div className="flex items-center gap-2 font-bold text-xs">
-                  <CheckCircle2 size={16} className="text-green-400" />
+                <div className="flex items-center gap-2 font-semibold text-xs">
+                  <CheckCircle2 size={15} className="text-emerald-400" />
                   <span>Onboarding Ingested & Second Brain Synchronized</span>
                 </div>
-                <p className="text-[11px] text-green-200/80 leading-relaxed font-sans">
+                <p className="text-[11px] text-emerald-200/80 leading-relaxed font-sans">
                   The 10 Vaults have been updated. Authority Builder (AURORA-01) and Performance Re-allocator (VORTEX-02) have received context vectors.
                 </p>
                 <div className="pt-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleReset}
-                    className="px-3 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-[10px] font-mono uppercase tracking-wider text-green-300 transition-colors"
                   >
                     Reset Questionnaire
-                  </button>
+                  </Button>
                 </div>
               </motion.div>
             )}
-          </div>
+          </GlassCard>
 
           {/* Quick Info Box */}
-          <div className="p-5 rounded-2xl bg-surface/40 border border-white/5 space-y-2 text-xs text-zinc-400">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <ShieldCheck size={16} className="text-secondary" /> Strict Vault Boundary Guarantee
+          <GlassCard elevation="flat" className="p-5 border border-[var(--sigma-border)] space-y-2 text-xs text-zinc-400">
+            <h4 className="font-semibold text-white flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-400" /> Strict Vault Boundary Guarantee
             </h4>
-            <p className="leading-relaxed">
+            <p className="leading-relaxed text-zinc-400">
               Data ingested via this form is tagged with security classifications and isolated to your tenant schema. External agents cannot query outside their scoped RBAC permissions.
             </p>
-          </div>
+          </GlassCard>
         </div>
       </div>
 

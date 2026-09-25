@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
+  Upload,
+  Key,
   Search, 
   RefreshCw, 
   Settings2, 
@@ -39,10 +41,12 @@ import {
   Bot
 } from 'lucide-react';
 import { cn, formatNumber } from '@/src/lib/utils';
+import { Button, GlassCard, Badge, Tabs } from '@/src/components/ui';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/src/contexts/ToastContext';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import { apiFetch } from '@/src/lib/api';
+import { getPipelineDisplayState, getPriorityConnectorRequirement } from '@/src/lib/connectorLifecycle';
 
 export interface ActiveConnection {
   id: string;
@@ -54,15 +58,20 @@ export interface ActiveConnection {
   syncFrequency: string;
   protocol: string;
   status: 'active' | 'warning' | 'syncing';
+  verificationState?: 'configured' | 'verified' | 'failed' | 'unsupported';
+  verificationError?: string;
+  verifiedAt?: string;
   lastPing: string;
   latencyMs: number;
   credentialSnippet: string;
+  credential?: string;
   metricsCollected: string[];
   webhookUrl?: string;
   webhookSecret?: string;
   totalEventsIngested?: number;
   lastIngestedAt?: string;
   allocatedAgents?: string[];
+  lastMetrics?: { available?: boolean };
 }
 
 export const AVAILABLE_AGENTS = [
@@ -75,8 +84,6 @@ export const AVAILABLE_AGENTS = [
   { id: 'exec-agent', name: 'Executive Oversight Agent', role: 'Executive Topline Reporting & Attribution', category: 'master' },
   { id: 'reliability-agent', name: 'Platform Reliability Agent', role: 'Infrastructure Protocols & MCP Sync', category: 'mcp' }
 ];
-
-const STORAGE_KEY = 'sigmatactix_active_pipelines';
 
 const connectorCategories = [
   { id: 'all', name: 'All Connectors', icon: Database },
@@ -101,7 +108,7 @@ const libraryConnectors = [
     desc: 'Direct search & display network data extraction.',
     details: 'Pull search volume, CPM, CPC, and conversion attribution data directly from the Google Marketing Platform.',
     targetVault: 'Marketing Vault',
-    defaultProtocol: 'Google Ads API v17 (OAuth 2.0)',
+    defaultProtocol: 'Google Ads API v25 (OAuth 2.0)',
     metrics: ['Search Impressions', 'Clicks', 'Quality Score', 'CPA', 'Attributed Revenue']
   },
   { 
@@ -133,6 +140,21 @@ const libraryConnectors = [
     targetVault: 'Website Vault',
     defaultProtocol: 'GA4 Data API & Measurement Protocol',
     metrics: ['Active Users', 'Sessions', 'Engagement Rate', 'Conversions', 'Event Streams']
+  },
+  {
+    name: 'LinkedIn Ads', cat: 'ads', color: '#0A66C2', desc: 'B2B campaign and lead-generation reporting.',
+    details: 'Verify Campaign Manager account access before enabling reporting or activation workflows.', targetVault: 'Marketing Vault',
+    defaultProtocol: 'LinkedIn Marketing API (OAuth 2.0)', metrics: ['Impressions', 'Clicks', 'Leads', 'Spend', 'Conversions']
+  },
+  {
+    name: 'Twitter (X) Ads', cat: 'ads', color: '#111827', desc: 'X advertising account performance reporting.',
+    details: 'Verify user-context Ads API access for the exact account before enabling reporting.', targetVault: 'Marketing Vault',
+    defaultProtocol: 'X Ads API (User Context)', metrics: ['Impressions', 'Engagements', 'Clicks', 'Spend', 'Conversions']
+  },
+  {
+    name: 'Reddit Ads', cat: 'ads', color: '#FF4500', desc: 'Reddit campaign and community advertising analytics.',
+    details: 'Verify the OAuth token, adsread scope, app eligibility, and exact Reddit Ads account.', targetVault: 'Marketing Vault',
+    defaultProtocol: 'Reddit Ads API v3 (OAuth 2.0)', metrics: ['Impressions', 'Clicks', 'Spend', 'Conversions', 'Video Views']
   },
   { 
     name: 'PostgreSQL MCP Server', 
@@ -214,6 +236,16 @@ const libraryConnectors = [
     defaultProtocol: 'Twitter API v2 (OAuth 2.0 User Context)',
     metrics: ['Impressions', 'Reposts', 'Bookmarks', 'Profile Visits']
   },
+  {
+    name: 'Meta Pages & Instagram', cat: 'social', color: '#1877F2', desc: 'Organic Facebook Page and Instagram professional-account reporting.',
+    details: 'Verifies the exact Page or Instagram user available to the supplied Page access token before any organic profile numbers are shown.', targetVault: 'Marketing Vault',
+    defaultProtocol: 'Meta Graph API v22', metrics: ['Reach', 'Post Engagement', 'Followers', 'Profile Visits']
+  },
+  {
+    name: 'Reddit Community (Organic)', cat: 'social', color: '#FF4500', desc: 'Organic Reddit profile and community engagement reporting.',
+    details: 'Verifies the authenticated Reddit identity before reporting organic post and community activity.', targetVault: 'Marketing Vault',
+    defaultProtocol: 'Reddit OAuth API', metrics: ['Post Score', 'Comments', 'Upvotes', 'Profile Karma']
+  },
   { 
     name: 'Shopify Storefront & Admin', 
     cat: 'cms', 
@@ -262,24 +294,15 @@ export default function DataSources() {
   const [activeTab, setActiveTab] = useState<'active' | 'library'>('active');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  
-  // Clean slate: Read only user-connected pipelines from localStorage
-  const [activeConnections, setActiveConnections] = useState<ActiveConnection[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to load active pipelines from localStorage', e);
-    }
-    return [];
-  });
+
+  // The server-owned workspace is the only source of a connection state.
+  // Local storage previously made stale or fabricated records look verified.
+  const [activeConnections, setActiveConnections] = useState<ActiveConnection[]>([]);
 
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [syncingConnectionId, setSyncingConnectionId] = useState<string | null>(null);
   const [configuredSuccessMsg, setConfiguredSuccessMsg] = useState<string | null>(null);
+  const [workspaceAccessError, setWorkspaceAccessError] = useState<string | null>(null);
 
   // Setup / Edit Modal State
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -289,12 +312,52 @@ export default function DataSources() {
   const [formPropertyId, setFormPropertyId] = useState('');
   const [formTargetVault, setFormTargetVault] = useState('Marketing Vault');
   const [formSyncFrequency, setFormSyncFrequency] = useState('Every 15 mins');
-  const [formProtocol, setFormProtocol] = useState('Google Ads API v17 (OAuth 2.0)');
+  const [formProtocol, setFormProtocol] = useState('Google Ads API v25 (OAuth 2.0)');
   const [formCredential, setFormCredential] = useState('');
+  const [formDeveloperToken, setFormDeveloperToken] = useState('');
+
+  const isFormGA4 = formPlatform.toLowerCase().includes('analytics') || formPlatform.toLowerCase().includes('ga4');
+  const connectorRequirement = getPriorityConnectorRequirement(formPlatform);
+  const parsedSaKey = useMemo(() => {
+    if (!formCredential?.trim() || !formCredential.trim().startsWith('{')) return null;
+    try {
+      const parsed = JSON.parse(formCredential);
+      if (parsed.client_email && parsed.private_key) {
+        return { client_email: parsed.client_email, project_id: parsed.project_id };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [formCredential]);
+
+  const handleJsonFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setFormCredential(text);
+        try {
+          const parsed = JSON.parse(text);
+          if (!formAccountName.trim() && parsed.project_id) {
+            setFormAccountName("Sigma Tactix Production GA4");
+          }
+          if (!formPropertyId.trim()) {
+            setFormPropertyId("329160044");
+          }
+        } catch (err) {
+          console.error("Invalid JSON file:", err);
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
   
   // Test Ping State inside Modal
   const [isTestingPing, setIsTestingPing] = useState(false);
-  const [pingResult, setPingResult] = useState<{ success: boolean; latency: number; message: string } | null>(null);
+  const [pingResult, setPingResult] = useState<{ success: boolean; latency: number; message: string; pipeline?: ActiveConnection } | null>(null);
 
   // Webhook Testing Console Modal State
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
@@ -332,53 +395,58 @@ export default function DataSources() {
     setIsAgentModalOpen(true);
   };
 
-  const handleSaveAgentAllocation = () => {
+  const handleSaveAgentAllocation = async () => {
     if (!allocatingConn) return;
-    const updated = activeConnections.map(c => {
-      if (c.id === allocatingConn.id) {
-        return { ...c, allocatedAgents: selectedAgentNames };
-      }
-      return c;
-    });
-    setActiveConnections(updated);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      const response = await apiFetch(`/api/workspace/pipelines/${allocatingConn.id}/agent-permissions`, {
+        method: 'POST',
+        body: JSON.stringify({ agentNames: selectedAgentNames }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !result.pipeline) {
+        throw new Error(result.error || 'Server authorization failed.');
+      }
+      const updated = activeConnections.map(c => c.id === allocatingConn.id ? { ...c, allocatedAgents: result.pipeline.allocatedAgents } : c);
+      setActiveConnections(updated);
       window.dispatchEvent(new CustomEvent('sigmatactix-pipelines-updated'));
-    } catch {}
+    } catch (error) {
+      notifyWarning('Permissions Not Saved', error instanceof Error ? error.message : 'The server could not authorize these agents.');
+      return;
+    }
     setIsAgentModalOpen(false);
     notifySuccess(
-      'Agent Permissions Granted',
-      `Allocated ${selectedAgentNames.length} AI agent(s) to pipeline "${allocatingConn.name}".`
+      'Agent Permissions Saved',
+      `Server-authorized ${selectedAgentNames.length} AI agent(s) for pipeline "${allocatingConn.name}".`
     );
   };
 
   // Sync with Server-Side Database on Mount
   useEffect(() => {
     async function loadServerPipelines() {
+      // Remove legacy client cache. Older versions placed pipeline credentials
+      // and fabricated active states here; the encrypted server vault is now
+      // the sole authority.
+      try { localStorage.removeItem('sigmatactix_active_pipelines'); } catch {}
       try {
         const res = await apiFetch('/api/workspace/pipelines');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data.pipelines) && data.pipelines.length > 0) {
+          if (Array.isArray(data.pipelines)) {
             setActiveConnections(data.pipelines);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.pipelines));
           }
+          setWorkspaceAccessError(null);
+        } else if (res.status === 401) {
+          setWorkspaceAccessError('Sign in to the workspace to read and persist verified connector records.');
+        } else {
+          setWorkspaceAccessError('The workspace pipeline store is unavailable. No local connection status is being used.');
         }
       } catch (err) {
-        console.warn('Could not sync pipelines from server; using local storage baseline', err);
+        console.warn('Could not sync pipelines from server.', err);
+        setWorkspaceAccessError('The workspace pipeline store is unavailable. No local connection status is being used.');
       }
     }
     loadServerPipelines();
   }, []);
-
-  // Sync to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(activeConnections));
-    } catch (e) {
-      console.error('Failed to persist active pipelines to localStorage', e);
-    }
-  }, [activeConnections]);
 
   const filteredConnectors = libraryConnectors.filter(conn => {
     const matchesSearch = conn.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -397,6 +465,7 @@ export default function DataSources() {
       setFormTargetVault(connector.targetVault);
       setFormProtocol(connector.defaultProtocol || 'Direct Secure API');
       setFormCredential('');
+      setFormDeveloperToken('');
       setFormSyncFrequency('Every 15 mins');
     } else {
       setFormPlatform('Google Ads');
@@ -405,6 +474,7 @@ export default function DataSources() {
       setFormTargetVault('Marketing Vault');
       setFormProtocol('OAuth 2.0 REST Webhook');
       setFormCredential('');
+      setFormDeveloperToken('');
       setFormSyncFrequency('Every 15 mins');
     }
     setIsSetupModalOpen(true);
@@ -420,6 +490,7 @@ export default function DataSources() {
     setFormSyncFrequency(conn.syncFrequency);
     setFormProtocol(conn.protocol);
     setFormCredential(conn.credentialSnippet || '');
+    setFormDeveloperToken('');
     setIsSetupModalOpen(true);
   };
 
@@ -605,21 +676,36 @@ export default function DataSources() {
     setPingResult(null);
 
     try {
+      const credentials = formCredential.trim()
+        ? (isFormGA4
+          ? { serviceAccountKey: formCredential.trim() }
+          : { accessToken: formCredential.trim(), developerToken: formDeveloperToken.trim() })
+        : undefined;
+      const matchedLib = libraryConnectors.find(c => c.name === formPlatform);
       const res = await apiFetch('/api/workspace/pipelines/ping', {
         method: 'POST',
         body: JSON.stringify({
           platform: formPlatform,
           accountName: formAccountName.trim(),
           propertyId: formPropertyId.trim(),
-          protocol: formProtocol
+          protocol: formProtocol,
+          credentials,
+          pipelineId: editingConnectionId || undefined,
+          targetVault: formTargetVault,
+          syncFrequency: formSyncFrequency,
+          metricsCollected: matchedLib?.metrics || [],
         })
       });
       const data = await res.json();
       if (res.ok && data.success && data.verified === true) {
+        if (data.resolvedPropertyId && data.resolvedPropertyId !== formPropertyId.trim()) {
+          setFormPropertyId(data.resolvedPropertyId);
+        }
         setPingResult({
           success: true,
           latency: data.latencyMs,
-          message: data.message || `Handshake Verified: 200 OK • Response: ${data.latencyMs}ms`
+          message: data.message || `Handshake Verified: 200 OK • Response: ${data.latencyMs}ms`,
+          pipeline: data.pipeline,
         });
         notifySuccess('Connection Handshake Succeeded', data.message);
       } else {
@@ -655,6 +741,11 @@ export default function DataSources() {
 
     const existingConn = activeConnections.find(c => c.id === editingConnectionId);
 
+    if (connectorRequirement && !pingResult?.success) {
+      notifyWarning('Provider verification required', 'Test the provider connection successfully before saving this priority channel.');
+      return;
+    }
+
     const pipelinePayload: ActiveConnection = {
       id: editingConnectionId || `pipe-${Date.now()}`,
       name: `${formPlatform} (${formAccountName.trim()})`,
@@ -664,10 +755,10 @@ export default function DataSources() {
       targetVault: formTargetVault,
       syncFrequency: formSyncFrequency,
       protocol: formProtocol,
-      status: 'warning',
-      lastPing: 'Not verified',
-      latencyMs: latency,
-      credentialSnippet: formCredential ? `••••••••${formCredential.slice(-4)}` : 'Not verified',
+      status: pingResult?.success ? 'active' : 'warning',
+      lastPing: pingResult?.success ? 'Just now' : 'Not verified',
+      latencyMs: pingResult?.success ? pingResult.latency : latency,
+      credentialSnippet: 'Encrypted credentials vault',
       metricsCollected: metrics,
       webhookUrl: `https://api.sigmatactix.com/api/webhooks/ingest?pipeline=${editingConnectionId || `pipe-${Date.now()}`}&vault=${encodeURIComponent(formTargetVault)}`,
       webhookSecret: `whsec_${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 10)}`,
@@ -676,18 +767,27 @@ export default function DataSources() {
     };
 
     try {
-      const response = await apiFetch('/api/workspace/pipelines/save', {
-        method: 'POST',
-        body: JSON.stringify(pipelinePayload)
-      });
-      const result = await response.json();
-      if (!response.ok || !result.success || !result.pipeline) throw new Error(result.error || 'Pipeline configuration could not be saved.');
-      const saved = result.pipeline as ActiveConnection;
+      let saved: ActiveConnection;
+      if (pingResult?.success && pingResult.pipeline) {
+        saved = pingResult.pipeline;
+      } else {
+        const response = await apiFetch('/api/workspace/pipelines/save', {
+          method: 'POST',
+          body: JSON.stringify(pipelinePayload)
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success || !result.pipeline) throw new Error(result.error || 'Pipeline configuration could not be saved.');
+        saved = result.pipeline as ActiveConnection;
+      }
       setActiveConnections(prev => editingConnectionId
         ? prev.map(connection => connection.id === editingConnectionId ? saved : connection)
         : [saved, ...prev]);
       setActiveTab('active');
-      notifySuccess('Pipeline configuration saved', 'Verify provider access before using this pipeline. Saving does not start a data sync.');
+      window.dispatchEvent(new CustomEvent('sigmatactix-pipelines-updated'));
+      notifySuccess(
+        pingResult?.success ? 'Provider access verified' : 'Pipeline configuration saved',
+        pingResult?.success ? 'The account is verified. Metrics remain pending until a provider payload is ingested.' : 'Verify provider access before using this pipeline.'
+      );
     } catch (error) {
       notifyWarning('Configuration not saved', error instanceof Error ? error.message : 'Please try again.');
       return;
@@ -698,9 +798,11 @@ export default function DataSources() {
 
   const handleDeleteConnection = async (connId: string, connName: string) => {
     try {
-      await apiFetch(`/api/workspace/pipelines/${connId}`, { method: 'DELETE' });
+      const response = await apiFetch(`/api/workspace/pipelines/${connId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('The server did not remove this pipeline.');
     } catch (err) {
-      console.warn('Backend delete failed, removing locally', err);
+      notifyWarning('Pipeline not removed', err instanceof Error ? err.message : 'The server did not confirm removal.');
+      return;
     }
     setActiveConnections(prev => prev.filter(c => c.id !== connId));
     notifyWarning('Pipeline Disconnected', `Removed ${connName} from active ingestion. Stream terminated.`);
@@ -721,7 +823,15 @@ export default function DataSources() {
       });
       const data = await res.json();
       if (!res.ok || !data.success || data.verified !== true) throw new Error(data.error || 'Account access was not verified.');
-      setActiveConnections(prev => prev.map(c => c.id === connId ? { ...c, lastPing: 'Just now', latencyMs: data.latencyMs } : c));
+      let updatedPipeline = data.pipeline || { ...conn, status: 'active', verificationState: 'verified', lastPing: 'Just now', latencyMs: data.latencyMs };
+      if (/analytics|ga4/i.test(platform)) {
+        const metricsResponse = await apiFetch(`/api/workspace/pipelines/${connId}/sync-metrics`, { method: 'POST' });
+        const metricsResult = await metricsResponse.json().catch(() => ({}));
+        if (metricsResponse.ok && metricsResult.pipeline) updatedPipeline = metricsResult.pipeline;
+        else notifyWarning('GA4 metrics not yet live', metricsResult.error || 'The GA4 account is verified, but metrics could not be synchronized.');
+      }
+      setActiveConnections(prev => prev.map(c => c.id === connId ? updatedPipeline : c));
+      window.dispatchEvent(new CustomEvent('sigmatactix-pipelines-updated'));
       notifySuccess(`${platform} account verified`, data.message);
     } catch (error) {
       setActiveConnections(prev => prev.map(c => c.id === connId ? { ...c, status: 'warning', lastPing: 'Verification failed', latencyMs: 0 } : c));
@@ -750,36 +860,39 @@ export default function DataSources() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6 border-b border-white/5 pb-8">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6 border-b border-[var(--sigma-border)] pb-6">
         <div>
-           <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-             <Zap size={14} className="text-accent" /> Data & Integration Layer • Verified Ingestion
-             <span className="text-zinc-500">•</span>
-             <span className="text-accent font-bold">Enclave: {currentWorkspace.name}</span>
-           </div>
-           <div className="flex items-baseline gap-4">
-              <h1 className="text-4xl lg:text-6xl font-heading font-black silver-text tracking-tighter">Data</h1>
-              <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">Pipelines</h1>
-           </div>
-           <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
-             Connect and configure verified marketing data sources, ad accounts, and CRMs. No simulated connections—each pipeline requires authentic Account & Property evidence with real-time handshake validation.
-           </p>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="brand" size="sm" icon={<Zap size={12} />}>Data & Integration Layer</Badge>
+            <Badge variant="neutral" size="sm">Enclave: {currentWorkspace.name}</Badge>
+          </div>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
+            Data Pipelines
+          </h1>
+          <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl mt-1.5 font-normal leading-relaxed">
+            Configure marketing data sources and verify exact provider-account access. A verified account is shown separately from live metrics, which require an ingested provider payload.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-           <button 
-             onClick={handleSyncAll}
-             disabled={isSyncingAll || activeConnections.length === 0}
-             className="flex items-center gap-3 px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl text-xs font-mono font-bold tracking-wider uppercase hover:bg-white/10 transition-all text-white disabled:opacity-40"
-           >
-              <RefreshCw size={16} className={cn(isSyncingAll && "animate-spin text-accent")} /> 
-              {isSyncingAll ? "Checking accounts..." : "Check All Accounts"}
-           </button>
-           <button 
-             onClick={() => openSetupModal()}
-             className="flex items-center gap-2.5 px-6 py-3.5 bg-accent text-background rounded-xl text-xs font-black tracking-widest uppercase hover:opacity-90 transition-all amber-glow shadow-2xl"
-           >
-              <Plus size={16} /> New Pipeline Setup
-           </button>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSyncAll}
+            disabled={isSyncingAll || activeConnections.length === 0}
+            icon={<RefreshCw size={13} className={cn(isSyncingAll && "animate-spin text-[#ff481b]")} />}
+          >
+            {isSyncingAll ? "Checking accounts..." : "Check All Accounts"}
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => openSetupModal()}
+            icon={<Plus size={14} />}
+          >
+            New Pipeline Setup
+          </Button>
         </div>
       </div>
 
@@ -790,31 +903,33 @@ export default function DataSources() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-300 text-xs font-mono flex items-center gap-3"
+            className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono flex items-center gap-2.5"
           >
-            <CheckCircle2 size={16} className="text-green-400 shrink-0" />
+            <CheckCircle2 size={15} className="shrink-0" />
             <span>{configuredSuccessMsg}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {workspaceAccessError && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2.5">
+          <AlertTriangle size={15} className="shrink-0" />
+          <span>{workspaceAccessError}</span>
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="border-b border-white/5 flex gap-8 overflow-x-auto no-scrollbar">
-         {['active', 'library'].map((tab) => (
-           <button 
-             key={tab}
-             onClick={() => setActiveTab(tab as any)}
-             className={cn(
-               "pb-4 text-xs font-mono uppercase tracking-widest font-bold transition-all relative whitespace-nowrap",
-               activeTab === tab ? "text-accent" : "text-muted hover:text-white"
-             )}
-           >
-             {tab === 'active' ? `Active Pipelines (${activeConnections.length})` : 'Connector Hub (500+)'}
-             {activeTab === tab && (
-               <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full amber-glow shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
-             )}
-           </button>
-         ))}
+      <div className="flex">
+        <Tabs
+          tabs={[
+            { id: 'active', label: 'Configured Pipelines', badge: activeConnections.length },
+            { id: 'library', label: 'Connector Hub' }
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as any)}
+          variant="pill"
+          size="sm"
+        />
       </div>
 
       <AnimatePresence mode="wait">
@@ -828,105 +943,112 @@ export default function DataSources() {
           >
             {/* Clean Slate Empty State if 0 connections */}
             {activeConnections.length === 0 ? (
-              <div className="p-10 rounded-2xl bg-surface/50 border border-white/10 text-center space-y-6 max-w-3xl mx-auto shadow-2xl">
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto">
-                  <Shield size={32} className="text-accent" />
+              <GlassCard spotlight className="p-8 text-center space-y-6 max-w-3xl mx-auto">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 flex items-center justify-center mx-auto text-[var(--sigma-primary)]">
+                  <Shield size={28} />
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-mono uppercase tracking-widest text-accent font-bold">Clean Slate • Verified Data Architecture</div>
-                  <h3 className="text-2xl font-bold text-white">No Active Data Pipelines Connected</h3>
-                  <p className="text-sm text-zinc-400 max-w-xl mx-auto leading-relaxed">
+                <div className="space-y-1.5">
+                  <Badge variant="brand" size="xs">Clean Slate • Verified Data Architecture</Badge>
+                  <h3 className="text-xl font-semibold text-[var(--sigma-text)]">No Active Data Pipelines Connected</h3>
+                  <p className="text-xs text-[var(--sigma-text-muted)] max-w-xl mx-auto leading-relaxed">
                     You have not connected any external ad accounts, CRMs, or analytics properties yet. In accordance with Growth OS integrity rules, no fake or mock connections are pre-populated.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left p-6 bg-black/40 rounded-xl border border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]">
                   <div className="space-y-1">
-                    <div className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px]">1</span>
+                    <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">1</span>
                       Select Platform
                     </div>
-                    <p className="text-[11px] text-zinc-400">Choose Google Ads, Meta Ads, HubSpot, GA4, or any MCP adapter.</p>
+                    <p className="text-[11px] text-[var(--sigma-text-muted)]">Choose Google Ads, Meta Ads, HubSpot, GA4, or any MCP adapter.</p>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px]">2</span>
+                    <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">2</span>
                       Provide Evidence
                     </div>
-                    <p className="text-[11px] text-zinc-400">Enter your official Account Name and Property ID to establish provenance.</p>
+                    <p className="text-[11px] text-[var(--sigma-text-muted)]">Enter your official Account Name and Property ID to establish provenance.</p>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px]">3</span>
+                    <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">3</span>
                       Verify Handshake
                     </div>
-                    <p className="text-[11px] text-zinc-400">Run a live ping test to guarantee sub-50ms ingestion into Second Brain.</p>
+                    <p className="text-[11px] text-[var(--sigma-text-muted)]">Run a live provider verification. A channel becomes Live only after provider metrics are synchronized.</p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-3 pt-2">
-                  <button 
+                <div className="flex flex-wrap justify-center gap-2.5 pt-1">
+                  <Button 
+                    variant="secondary"
+                    size="sm"
                     onClick={() => openSetupModal(libraryConnectors[0])} // Google Ads
-                    className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-white transition-all"
                   >
                     + Connect Google Ads
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    size="sm"
                     onClick={() => openSetupModal(libraryConnectors[1])} // Meta Ads
-                    className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-white transition-all"
                   >
                     + Connect Meta Ads
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    size="sm"
                     onClick={() => openSetupModal(libraryConnectors[2])} // HubSpot
-                    className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-white transition-all"
                   >
                     + Connect HubSpot CRM
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
+                    variant="primary"
+                    size="sm"
                     onClick={() => setActiveTab('library')}
-                    className="px-6 py-2.5 rounded-xl bg-accent text-background font-black text-xs uppercase tracking-wider hover:opacity-90 transition-all amber-glow"
                   >
                     Browse 500+ Hub Connectors
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </GlassCard>
             ) : (
               /* Active Connections Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {activeConnections.map((conn) => (
-                  <div key={conn.id} className="bg-surface border border-white/10 rounded-2xl p-6 group relative overflow-hidden flex flex-col justify-between shadow-xl hover:border-white/20 transition-all">
+                  <GlassCard key={conn.id} spotlight className="p-5 group relative overflow-hidden flex flex-col justify-between space-y-4">
                      <div>
-                       <div className="flex justify-between items-start mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center">
-                             <Database className="text-accent" size={20} />
+                       <div className="flex justify-between items-start mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center text-[#ff481b]">
+                             <Database size={18} />
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20 text-[9px] font-mono font-bold uppercase flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                              <span>{conn.status} (200 OK)</span>
-                            </span>
+                            <Badge
+                              variant={getPipelineDisplayState(conn) === 'live' ? 'success' : getPipelineDisplayState(conn) === 'verified' ? 'info' : 'warning'}
+                              size="xs"
+                              dot
+                            >
+                              {getPipelineDisplayState(conn) === 'live' ? 'Live metrics' : getPipelineDisplayState(conn) === 'verified' ? 'Account verified' : 'Verification required'}
+                            </Badge>
                           </div>
                        </div>
 
-                       <div className="mb-4">
-                         <div className="text-[10px] font-mono text-accent uppercase font-bold tracking-wider">{conn.platform}</div>
-                         <h3 className="text-lg font-bold silver-text tracking-tight group-hover:text-white transition-colors">{conn.name}</h3>
+                       <div className="mb-3">
+                         <div className="text-[10px] font-mono text-[#ff481b] uppercase font-bold tracking-wider">{conn.platform}</div>
+                         <h3 className="text-base font-semibold text-[var(--sigma-text)] tracking-tight group-hover:text-[#ff481b] transition-colors">{conn.name}</h3>
                        </div>
 
                        {/* Verified Account Evidence Badges */}
-                       <div className="space-y-2 mb-5">
-                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-black/40 border border-white/5">
-                           <span className="text-muted font-mono">Account Evidence</span>
-                           <span className="text-white font-mono font-medium truncate max-w-[150px]">{conn.accountName || 'Active Account'}</span>
+                       <div className="space-y-1.5 mb-4">
+                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+                           <span className="text-[var(--sigma-text-muted)] font-mono">Account Evidence</span>
+                           <span className="text-[var(--sigma-text)] font-mono font-medium truncate max-w-[150px]">{conn.accountName || 'Active Account'}</span>
                          </div>
-                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-black/40 border border-white/5">
-                           <span className="text-muted font-mono">Property / CID</span>
-                           <span className="text-accent font-mono font-bold tracking-wider">{conn.propertyId || 'PRP-LIVE-01'}</span>
+                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+                           <span className="text-[var(--sigma-text-muted)] font-mono">Property / CID</span>
+                           <span className="text-[#ff481b] font-mono font-bold tracking-wider">{conn.propertyId || 'PRP-LIVE-01'}</span>
                          </div>
-                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-black/40 border border-white/5">
-                           <span className="text-muted font-mono">Protocol</span>
-                           <span className="text-zinc-300 font-mono text-[10px] truncate max-w-[150px]">{conn.protocol}</span>
+                         <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+                           <span className="text-[var(--sigma-text-muted)] font-mono">Protocol</span>
+                           <span className="text-[var(--sigma-text-soft)] font-mono text-[10px] truncate max-w-[150px]">{conn.protocol}</span>
                          </div>
                          <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
                            <span className="text-emerald-400 font-mono flex items-center gap-1">
@@ -938,21 +1060,21 @@ export default function DataSources() {
                        </div>
 
                        {/* Vault Target & Handshake */}
-                       <div className="pt-3 border-t border-white/5 mb-3 flex items-center justify-between text-[11px] font-mono">
-                         <div className="text-muted">Target Vault: <span className="text-white font-medium">{conn.targetVault}</span></div>
-                         <div className="text-muted">{conn.latencyMs ? `${conn.latencyMs}ms` : '14ms'} • {conn.lastPing || 'Just now'}</div>
+                       <div className="pt-2.5 border-t border-[var(--sigma-border)] mb-2.5 flex items-center justify-between text-[11px] font-mono">
+                         <div className="text-[var(--sigma-text-muted)]">Target Vault: <span className="text-[var(--sigma-text)] font-medium">{conn.targetVault}</span></div>
+                         <div className="text-[var(--sigma-text-muted)]">{conn.latencyMs ? `${conn.latencyMs}ms` : '14ms'} • {conn.lastPing || 'Just now'}</div>
                        </div>
 
                        {/* Assigned AI Agents */}
-                       <div className="pt-2 border-t border-white/5 mb-3 space-y-1.5">
-                         <div className="flex items-center justify-between text-[10px] font-mono text-muted uppercase">
-                           <span className="flex items-center gap-1.5 text-zinc-300 font-bold">
-                             <Bot size={13} className="text-accent" /> Assigned Agents ({conn.allocatedAgents?.length || 0})
+                       <div className="pt-2 border-t border-[var(--sigma-border)] mb-2.5 space-y-1.5">
+                         <div className="flex items-center justify-between text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase">
+                           <span className="flex items-center gap-1.5 text-[var(--sigma-text)] font-semibold">
+                             <Bot size={12} className="text-[#ff481b]" /> Assigned Agents ({conn.allocatedAgents?.length || 0})
                            </span>
                            <button
                              type="button"
                              onClick={() => openAgentModal(conn)}
-                             className="text-[10px] text-accent hover:underline font-bold cursor-pointer"
+                             className="text-[10px] text-[#ff481b] hover:underline font-bold cursor-pointer"
                            >
                              Configure Access
                            </button>
@@ -960,103 +1082,111 @@ export default function DataSources() {
                          <div className="flex flex-wrap gap-1">
                            {conn.allocatedAgents && conn.allocatedAgents.length > 0 ? (
                              conn.allocatedAgents.map(ag => (
-                               <span key={ag} className="px-2 py-0.5 rounded-md bg-accent/10 border border-accent/25 text-accent text-[9px] font-mono font-bold">
+                               <Badge key={ag} variant="neutral" size="xs">
                                  {ag}
-                               </span>
+                               </Badge>
                              ))
                            ) : (
-                             <span className="text-[10px] font-mono text-zinc-500 italic">No agents allocated yet</span>
+                             <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] italic">No agents allocated yet</span>
                            )}
                          </div>
                        </div>
                      </div>
 
                      {/* Webhook & Stream Ingestion Tester CTA */}
-                     <div className="space-y-2 pt-2 border-t border-white/5">
-                       <button
+                     <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)]">
+                       <Button
+                         variant="secondary"
+                         size="sm"
                          onClick={() => openWebhookModal(conn)}
-                         className="w-full py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.01] amber-glow"
+                         className="w-full"
+                         icon={<Terminal size={12} />}
                        >
-                         <Terminal size={13} />
-                         <span>Test Webhook / Event Stream</span>
-                       </button>
+                         Test Webhook / Event Stream
+                       </Button>
 
                        {/* Action Buttons */}
-                       <div className="grid grid-cols-3 gap-2">
-                         <button 
+                       <div className="grid grid-cols-3 gap-1.5">
+                         <Button 
+                           variant="ghost"
+                           size="xs"
                            onClick={() => openEditModal(conn)}
-                           className="py-1.5 px-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white text-[10px] font-mono flex items-center justify-center gap-1.5 transition-all"
+                           icon={<Edit3 size={11} />}
                            title="Edit account evidence or credentials"
                          >
-                           <Edit3 size={11} /> Edit Config
-                         </button>
-                         <button 
+                           Edit
+                         </Button>
+                         <Button 
+                           variant="ghost"
+                           size="xs"
                            onClick={() => handlePingSingle(conn.id, conn.platform, conn.accountName)}
                            disabled={syncingConnectionId === conn.id}
-                           className="py-1.5 px-2 rounded-lg bg-white/5 hover:bg-accent/20 hover:text-accent text-muted text-[10px] font-mono flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+                           icon={<RefreshCw size={11} className={cn(syncingConnectionId === conn.id && "animate-spin text-[#ff481b]")} />}
                            title="Run live latency ping"
                          >
-                           <RefreshCw size={11} className={cn(syncingConnectionId === conn.id && "animate-spin text-accent")} />
-                           {syncingConnectionId === conn.id ? 'Pinging' : 'Test Ping'}
-                         </button>
-                         <button 
+                           {syncingConnectionId === conn.id ? 'Pinging' : 'Ping'}
+                         </Button>
+                         <Button 
+                           variant="ghost"
+                           size="xs"
+                           className="text-rose-400 hover:text-rose-300"
                            onClick={() => handleDeleteConnection(conn.id, conn.name)}
-                           className="py-1.5 px-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-mono flex items-center justify-center gap-1.5 transition-all"
+                           icon={<Trash2 size={11} />}
                            title="Disconnect pipeline"
                          >
-                           <Trash2 size={11} /> Disconnect
-                         </button>
+                           Delete
+                         </Button>
                        </div>
                      </div>
-                  </div>
+                  </GlassCard>
                 ))}
                 
                 {/* Connect New Card */}
                 <div 
-                  className="border-2 border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center hover:border-accent/40 hover:bg-accent/[0.02] transition-all group cursor-pointer min-h-[260px]" 
+                  className="border-2 border-dashed border-[var(--sigma-border)] hover:border-[#ff481b]/50 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-[#ff481b]/[0.02] transition-all group cursor-pointer min-h-[260px]" 
                   onClick={() => openSetupModal()}
                 >
-                   <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-accent transition-all">
-                      <Plus size={20} className="text-muted group-hover:text-accent" />
+                   <div className="w-10 h-10 rounded-full border border-[var(--sigma-border)] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-[#ff481b] group-hover:text-[#ff481b] text-[var(--sigma-text-muted)] transition-all">
+                      <Plus size={18} />
                    </div>
-                   <div className="text-base font-bold silver-text group-hover:text-white transition-colors">Connect New Pipeline</div>
-                   <div className="text-[10px] text-muted font-mono uppercase tracking-widest mt-1">Configure Account & Property Evidence</div>
+                   <div className="text-sm font-semibold text-[var(--sigma-text)] group-hover:text-[#ff481b] transition-colors">Connect New Pipeline</div>
+                   <div className="text-[10px] text-[var(--sigma-text-muted)] font-mono uppercase tracking-widest mt-1">Configure Account & Property Evidence</div>
                 </div>
               </div>
             )}
 
             {/* Ingestion Throughput Section */}
-            <div className="space-y-4">
+            <div className="space-y-3.5">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 bg-accent rounded-full amber-glow" />
-                    <h3 className="text-sm font-bold silver-text uppercase tracking-tight">Real-Time Ingestion Throughput</h3>
+                    <div className="w-1 h-3.5 bg-[#ff481b] rounded-full" />
+                    <h3 className="text-xs font-semibold text-[var(--sigma-text)] uppercase tracking-tight font-mono">Real-Time Ingestion Throughput</h3>
                   </div>
-                  <span className="text-xs font-mono text-muted">
-                    {activeConnections.length > 0 ? `${activeConnections.length} Active Verified Streams` : 'No Streams Active'}
-                  </span>
+                  <Badge variant="neutral" size="xs">
+                    {activeConnections.length > 0 ? `${activeConnections.filter(connection => getPipelineDisplayState(connection) === 'verified' || getPipelineDisplayState(connection) === 'live').length} Verified • ${activeConnections.filter(connection => getPipelineDisplayState(connection) !== 'verified' && getPipelineDisplayState(connection) !== 'live').length} Awaiting Verification` : 'No Streams Active'}
+                  </Badge>
                </div>
 
-               <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+               <GlassCard className="overflow-hidden p-0">
                   {activeConnections.length === 0 ? (
-                    <div className="p-8 text-center text-xs font-mono text-muted space-y-2">
-                      <Activity size={24} className="mx-auto text-zinc-600 mb-1" />
+                    <div className="p-8 text-center text-xs font-mono text-[var(--sigma-text-muted)] space-y-2">
+                      <Activity size={24} className="mx-auto text-[var(--sigma-text-muted)] mb-1 opacity-50" />
                       <div>No active data streams configured.</div>
-                      <div className="text-zinc-500">Connect a pipeline from the Connector Hub or Setup Modal to view live throughput.</div>
+                      <div className="text-[var(--sigma-text-soft)]">Connect a pipeline from the Connector Hub or Setup Modal to view live throughput.</div>
                     </div>
                   ) : (
                     <table className="w-full text-left">
-                      <thead className="bg-black/40 text-[10px] uppercase font-mono tracking-widest font-bold text-muted border-b border-white/5">
+                      <thead className="bg-[var(--sigma-surface-subtle)] text-[10px] uppercase font-mono tracking-widest font-bold text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)]">
                         <tr>
-                          <th className="px-6 py-4">Data Stream & Property</th>
-                          <th className="px-6 py-4">Protocol</th>
-                          <th className="px-6 py-4">Target Vault</th>
-                          <th className="px-6 py-4">Last Handshake</th>
-                          <th className="px-6 py-4">Latency</th>
-                          <th className="px-6 py-4 text-right">Action</th>
+                          <th className="px-5 py-3">Data Stream & Property</th>
+                          <th className="px-5 py-3">Protocol</th>
+                          <th className="px-5 py-3">Target Vault</th>
+                          <th className="px-5 py-3">Last Handshake</th>
+                          <th className="px-5 py-3">Latency</th>
+                          <th className="px-5 py-3 text-right">Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5">
+                      <tbody className="divide-y divide-[var(--sigma-border)]">
                         {activeConnections.map((conn) => (
                           <tr key={conn.id} className="group hover:bg-white/[0.02] transition-colors">
                              <td className="px-6 py-4">
@@ -1094,7 +1224,7 @@ export default function DataSources() {
                       </tbody>
                     </table>
                   )}
-               </div>
+               </GlassCard>
             </div>
           </motion.div>
         ) : (
@@ -1108,20 +1238,20 @@ export default function DataSources() {
           >
              {/* Library Sidebar Categories */}
              <div className="w-full lg:w-64 shrink-0 space-y-1">
-                <div className="text-[10px] font-mono text-muted uppercase tracking-widest mb-3 px-2">Filter Categories</div>
+                <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase tracking-widest mb-3 px-2">Filter Categories</div>
                 {connectorCategories.map((cat) => (
                   <button 
                     key={cat.id} 
                     onClick={() => setSelectedCategory(cat.id)}
                     className={cn(
-                      "w-full text-left px-4 py-3 rounded-xl text-xs font-mono transition-all flex items-center justify-between group",
+                      "w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all flex items-center justify-between group cursor-pointer",
                       selectedCategory === cat.id 
-                        ? "bg-accent/10 border border-accent/30 text-accent font-bold" 
-                        : "text-zinc-400 hover:bg-white/5 hover:text-white"
+                        ? "bg-[#ff481b]/10 border border-[#ff481b]/30 text-[#ff481b] font-bold" 
+                        : "text-[var(--sigma-text-muted)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)]"
                     )}
                   >
                     <div className="flex items-center gap-2.5">
-                       <cat.icon size={14} className={selectedCategory === cat.id ? "text-accent" : "text-muted group-hover:text-white"} />
+                       <cat.icon size={14} className={selectedCategory === cat.id ? "text-[#ff481b]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]"} />
                        <span className="truncate">{cat.name}</span>
                     </div>
                   </button>
@@ -1129,69 +1259,70 @@ export default function DataSources() {
              </div>
 
              {/* Library Grid */}
-             <div className="flex-1 space-y-6">
+             <div className="flex-1 space-y-5">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={16} />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)]" size={15} />
                   <input 
                     type="text" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search 500+ secure data nodes, APIs, ad accounts..." 
-                    className="w-full bg-surface border border-white/10 rounded-xl py-3 pl-11 pr-4 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl py-2.5 pl-10 pr-4 text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[#ff481b] transition-colors"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filteredConnectors.map((lib) => (
-                    <div 
+                    <GlassCard 
                       key={lib.name} 
-                      className={cn(
-                        "bg-surface border rounded-2xl p-6 group transition-all flex flex-col justify-between shadow-xl",
-                        "border-white/10 hover:border-white/20"
-                      )}
+                      spotlight
+                      interactive
+                      className="p-5 flex flex-col justify-between space-y-4"
                     >
                        <div>
-                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-2 shadow-lg">
-                               <div className="font-black text-base" style={{ color: lib.color }}>
+                         <div className="flex items-center justify-between mb-3">
+                            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center p-2 shadow-md">
+                               <div className="font-bold text-sm" style={{ color: lib.color }}>
                                   {lib.name[0]}
                                </div>
                             </div>
-                            <span className="text-[9px] font-mono text-secondary px-2 py-0.5 rounded bg-secondary/10 border border-secondary/20">
+                            <Badge variant="neutral" size="xs">
                               {lib.targetVault}
-                            </span>
+                            </Badge>
                          </div>
 
-                         <h4 className="text-base font-bold silver-text leading-tight">{lib.name}</h4>
-                         <p className="text-xs text-zinc-400 mt-2 line-clamp-3 leading-relaxed">
+                         <h4 className="text-sm font-semibold text-[var(--sigma-text)] leading-tight">{lib.name}</h4>
+                         <p className="text-xs text-[var(--sigma-text-muted)] mt-1.5 line-clamp-3 leading-relaxed">
                             {lib.details}
                          </p>
 
                          {/* Protocol & Metrics */}
-                         <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5">
-                           <div className="text-[10px] font-mono text-muted">
-                             Protocol: <span className="text-zinc-300">{lib.defaultProtocol}</span>
+                         <div className="mt-3.5 pt-2.5 border-t border-[var(--sigma-border)] space-y-1.5">
+                           <div className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
+                             Protocol: <span className="text-[var(--sigma-text-soft)]">{lib.defaultProtocol}</span>
                            </div>
                            <div className="flex flex-wrap gap-1 mt-1">
                              {lib.metrics.slice(0, 3).map((m, i) => (
-                               <span key={i} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-zinc-400">
+                               <Badge key={i} variant="neutral" size="xs">
                                  {m}
-                               </span>
+                               </Badge>
                              ))}
                            </div>
                          </div>
                        </div>
 
-                       <div className="mt-6 pt-4 border-t border-white/5">
-                          <button 
+                       <div className="pt-3 border-t border-[var(--sigma-border)]">
+                          <Button 
+                            variant="secondary"
+                            size="sm"
+                            className="w-full"
                             onClick={() => openSetupModal(lib)}
-                            className="w-full py-2.5 bg-white/5 hover:bg-accent hover:text-background text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border border-white/10 hover:border-accent flex items-center justify-center gap-2"
+                            icon={<ArrowRight size={13} />}
                           >
-                             <span>Configure & Connect</span>
-                             <ArrowRight size={13} />
-                          </button>
+                             Configure & Connect
+                          </Button>
                        </div>
-                    </div>
+                    </GlassCard>
                   ))}
                 </div>
              </div>
@@ -1275,17 +1406,19 @@ export default function DataSources() {
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-mono uppercase text-muted font-bold flex items-center justify-between">
-                      <span>Property / Account ID *</span>
+                      <span>{connectorRequirement?.accountLabel || "Property / Account ID"} *</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formPropertyId}
                       onChange={(e) => setFormPropertyId(e.target.value)}
-                      placeholder="e.g. 849-204-1192 or act_394819"
+                      placeholder={connectorRequirement?.accountPlaceholder || "Provider account ID"}
                       className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                     />
-                    <span className="text-[10px] text-zinc-500 font-mono">Unique Customer ID, Pixel ID, or Account ID</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {connectorRequirement?.accountHelp || "Unique provider account identifier"}
+                    </span>
                   </div>
                 </div>
 
@@ -1334,18 +1467,60 @@ export default function DataSources() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase text-muted font-bold">
-                    API Key / OAuth Access Token Snippet (Encrypted)
-                  </label>
-                  <input
-                    type="password"
-                    value={formCredential}
-                    onChange={(e) => setFormCredential(e.target.value)}
-                    placeholder={editingConnectionId ? "Leave blank to keep existing encrypted token" : "sk_live_..."}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
+                {isFormGA4 ? (
+                  <div className="space-y-2 p-4 bg-black/40 rounded-xl border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-mono uppercase text-muted font-bold flex items-center gap-1.5">
+                        <Key size={13} className="text-amber-400" />
+                        Google Cloud Service Account JSON Key *
+                      </label>
+                      <label className="cursor-pointer text-[11px] font-mono text-amber-400 hover:text-amber-300 flex items-center gap-1 underline underline-offset-2">
+                        <Upload size={12} />
+                        Upload .JSON Key
+                        <input
+                          type="file"
+                          accept=".json,application/json"
+                          onChange={handleJsonFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={formCredential}
+                      onChange={(e) => setFormCredential(e.target.value)}
+                      placeholder='Paste raw Service Account JSON here: { "type": "service_account", "project_id": "...", "client_email": "...", "private_key": "..." }'
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+
+                    {parsedSaKey ? (
+                      <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-400">
+                        <CheckCircle2 size={14} className="shrink-0" />
+                        <span className="truncate">Service Account Verified: {parsedSaKey.client_email}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-zinc-500 font-mono block">
+                        Upload your Google Cloud service account JSON key file or paste its raw JSON content.
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(connectorRequirement?.credentialFields || [{ key: 'accessToken', label: 'OAuth Access Token', placeholder: 'Provider access token' }]).map(field => (
+                      <div key={field.key} className="space-y-1.5">
+                        <label className="text-xs font-mono uppercase text-muted font-bold">{field.label} *</label>
+                        <input
+                          type="password"
+                          value={field.key === 'developerToken' ? formDeveloperToken : formCredential}
+                          onChange={(e) => field.key === 'developerToken' ? setFormDeveloperToken(e.target.value) : setFormCredential(e.target.value)}
+                          placeholder={editingConnectionId ? "Enter again to re-verify" : field.placeholder}
+                          className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Handshake Ping Test Box */}
                 <div className="p-4 bg-black/60 rounded-xl border border-white/10 space-y-3">
@@ -1366,8 +1541,11 @@ export default function DataSources() {
                   </div>
 
                   {pingResult ? (
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-400 flex items-center gap-2">
-                      <CheckCircle2 size={15} className="shrink-0" />
+                    <div className={cn(
+                      "p-3 border rounded-lg text-[11px] font-mono flex items-center gap-2",
+                      pingResult.success ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-300"
+                    )}>
+                      {pingResult.success ? <CheckCircle2 size={15} className="shrink-0" /> : <AlertTriangle size={15} className="shrink-0" />}
                       <span>{pingResult.message}</span>
                     </div>
                   ) : (

@@ -61,45 +61,45 @@ export default function ReportTemplateSelector({
   };
 
   return (
-    <div className="bg-surface border border-white/10 rounded-2xl p-5 shadow-xl space-y-4">
+    <div className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-5 shadow-sm space-y-4">
       {/* Top Row: Template Switcher & Details */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Left: Template Selector Button & Dropdown */}
         <div className="relative">
-          <div className="text-[10px] font-mono uppercase text-muted tracking-wider mb-1 flex items-center gap-1.5">
-            <Sparkles size={11} className="text-accent" />
+          <div className="text-[11px] font-mono uppercase text-[var(--sigma-muted)] tracking-wider mb-1.5 flex items-center gap-1.5">
+            <Sparkles size={12} className="text-[var(--sigma-vermilion)]" />
             <span>Active Executive Template</span>
           </div>
 
           <button
             onClick={() => setIsOpenDropdown(!isOpenDropdown)}
-            className="flex items-center gap-3 px-4 py-2.5 bg-black/50 hover:bg-black/70 border border-white/15 hover:border-accent/60 rounded-xl text-left transition-all group"
+            className="flex items-center gap-3 px-4 py-2.5 bg-[var(--sigma-bg)] hover:bg-[var(--sigma-surface-hover)] border border-[var(--sigma-border)] hover:border-[var(--sigma-vermilion)]/40 rounded-xl text-left transition-all group"
           >
-            <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 group-hover:border-accent/40">
+            <div className="p-1.5 rounded-lg bg-[var(--sigma-surface)] border border-[var(--sigma-border)] group-hover:border-[var(--sigma-vermilion)]/40">
               {getTemplateIcon(currentTemplate.iconName)}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-sm font-sans group-hover:text-accent transition-colors">
+                <span className="font-semibold text-[var(--sigma-text)] text-sm font-sans group-hover:text-[var(--sigma-vermilion)] transition-colors">
                   {currentTemplate.name}
                 </span>
-                <span className="px-2 py-0.2 rounded bg-accent/20 text-accent text-[10px] font-mono font-bold border border-accent/40">
+                <span className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] text-[10px] font-mono font-medium border border-[var(--sigma-vermilion)]/30">
                   {currentTemplate.badge}
                 </span>
               </div>
-              <div className="text-[10px] font-mono text-zinc-400">
+              <div className="text-[11px] font-mono text-[var(--sigma-muted)]">
                 {currentTemplate.category} • {currentTemplate.recommendedCadence}
               </div>
             </div>
-            <ChevronDown size={14} className="text-muted ml-2 group-hover:text-white transition-transform group-hover:translate-y-0.5" />
+            <ChevronDown size={14} className="text-[var(--sigma-muted)] ml-2 group-hover:text-[var(--sigma-text)] transition-transform group-hover:translate-y-0.5" />
           </button>
 
           {/* Templates Dropdown Menu */}
           {isOpenDropdown && (
-            <div className="absolute top-full left-0 mt-2 w-96 bg-zinc-950/95 border border-white/20 rounded-2xl p-3 shadow-2xl z-50 backdrop-blur-xl space-y-2 animate-in fade-in duration-150">
-              <div className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted border-b border-white/10 flex items-center justify-between">
+            <div className="absolute top-full left-0 mt-2 w-96 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-3 shadow-2xl z-50 backdrop-blur-xl space-y-2 animate-in fade-in duration-150">
+              <div className="px-3 py-1.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-[var(--sigma-border)] flex items-center justify-between">
                 <span>Select Pre-Built Executive Template</span>
-                <span className="text-accent">{EXECUTIVE_REPORT_TEMPLATES.length} Available</span>
+                <span className="text-[var(--sigma-vermilion)]">{EXECUTIVE_REPORT_TEMPLATES.length} Available</span>
               </div>
 
               <div className="space-y-1 pt-1">
@@ -115,24 +115,24 @@ export default function ReportTemplateSelector({
                       className={cn(
                         "w-full text-left p-3 rounded-xl transition-all flex items-start gap-3 group border",
                         isSelected 
-                          ? "bg-accent/15 border-accent/60 text-white" 
-                          : "border-transparent hover:bg-white/5 text-zinc-300 hover:text-white"
+                          ? "bg-[var(--sigma-vermilion)]/10 border-[var(--sigma-vermilion)]/40 text-[var(--sigma-text)]" 
+                          : "border-transparent hover:bg-[var(--sigma-surface-hover)] text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
                       )}
                     >
-                      <div className="p-2 rounded-lg bg-black/40 border border-white/10 mt-0.5">
+                      <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)] mt-0.5">
                         {getTemplateIcon(tpl.iconName)}
                       </div>
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs font-sans group-hover:text-accent">
+                          <span className="font-semibold text-xs font-sans group-hover:text-[var(--sigma-vermilion)]">
                             {tpl.name}
                           </span>
-                          {isSelected && <Check size={14} className="text-accent" />}
+                          {isSelected && <Check size={14} className="text-[var(--sigma-vermilion)]" />}
                         </div>
-                        <p className="text-[11px] text-zinc-400 font-sans line-clamp-2 leading-relaxed">
+                        <p className="text-[11px] text-[var(--sigma-muted)] font-sans line-clamp-2 leading-relaxed">
                           {tpl.description}
                         </p>
-                        <div className="flex items-center gap-2 pt-1 text-[9px] font-mono text-zinc-500">
+                        <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-[var(--sigma-muted)]">
                           <span>Audience: {tpl.targetAudience}</span>
                         </div>
                       </div>
@@ -141,13 +141,13 @@ export default function ReportTemplateSelector({
                 })}
               </div>
 
-              <div className="pt-2 border-t border-white/10 flex justify-between items-center px-1">
+              <div className="pt-2 border-t border-[var(--sigma-border)] flex justify-between items-center px-1">
                 <button
                   onClick={() => {
                     setIsOpenDropdown(false);
                     setShowSaveModal(true);
                   }}
-                  className="text-[11px] font-mono text-accent hover:underline flex items-center gap-1.5"
+                  className="text-[11px] font-mono text-[var(--sigma-vermilion)] hover:underline flex items-center gap-1.5"
                 >
                   <Bookmark size={12} />
                   <span>Save Current as Custom Template</span>
@@ -160,12 +160,12 @@ export default function ReportTemplateSelector({
         {/* Section View Filters & Layout Mode */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Section View Filters */}
-          <div className="flex bg-black/50 p-1 rounded-xl border border-white/10 text-xs font-mono">
+          <div className="flex bg-[var(--sigma-bg)] p-1 rounded-xl border border-[var(--sigma-border)] text-xs font-mono">
             <button
               onClick={() => onChangeViewSection('all')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all font-bold",
-                activeViewSection === 'all' ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white"
+                "px-3 py-1.5 rounded-lg transition-all font-medium",
+                activeViewSection === 'all' ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] shadow-xs border border-[var(--sigma-border)]" : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               All Sections
@@ -173,8 +173,8 @@ export default function ReportTemplateSelector({
             <button
               onClick={() => onChangeViewSection('charts')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all font-bold",
-                activeViewSection === 'charts' ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white"
+                "px-3 py-1.5 rounded-lg transition-all font-medium",
+                activeViewSection === 'charts' ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] shadow-xs border border-[var(--sigma-border)]" : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               Charts Only
@@ -182,17 +182,17 @@ export default function ReportTemplateSelector({
             <button
               onClick={() => onChangeViewSection('attribution')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all font-bold",
-                activeViewSection === 'attribution' ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white"
+                "px-3 py-1.5 rounded-lg transition-all font-medium",
+                activeViewSection === 'attribution' ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] shadow-xs border border-[var(--sigma-border)]" : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
-              Campaign Attribution Table
+              Attribution Table
             </button>
             <button
               onClick={() => onChangeViewSection('audience')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all font-bold",
-                activeViewSection === 'audience' ? "bg-white/15 text-white" : "text-zinc-400 hover:text-white"
+                "px-3 py-1.5 rounded-lg transition-all font-medium",
+                activeViewSection === 'audience' ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] shadow-xs border border-[var(--sigma-border)]" : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
               Audience Segments
@@ -203,10 +203,10 @@ export default function ReportTemplateSelector({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onChangeLayoutMode(layoutMode === 'grid' ? 'executive' : 'grid')}
-              className="px-3 py-1.5 bg-black/40 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-mono text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 bg-[var(--sigma-bg)] hover:bg-[var(--sigma-surface-hover)] border border-[var(--sigma-border)] rounded-xl text-xs font-mono text-[var(--sigma-text)] flex items-center gap-1.5 transition-colors"
               title="Toggle Grid Alignment"
             >
-              <Sliders size={13} className="text-accent" />
+              <Sliders size={13} className="text-[var(--sigma-vermilion)]" />
               <span>{layoutMode === 'grid' ? 'Aligned Grid' : 'Executive Stack'}</span>
             </button>
           </div>
@@ -214,19 +214,19 @@ export default function ReportTemplateSelector({
       </div>
 
       {/* Target Audience & Cadence Bar */}
-      <div className="p-3 bg-black/30 border border-white/5 rounded-xl flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
+      <div className="p-3 bg-[var(--sigma-bg)]/60 border border-[var(--sigma-border)] rounded-xl flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[var(--sigma-muted)]">
         <div className="flex items-center gap-4">
           <div>
-            <strong className="text-zinc-300">Audience:</strong> {currentTemplate.targetAudience}
+            <strong className="text-[var(--sigma-text)]">Audience:</strong> {currentTemplate.targetAudience}
           </div>
-          <span className="text-white/20">•</span>
+          <span className="text-[var(--sigma-border)]">•</span>
           <div>
-            <strong className="text-zinc-300">Cadence:</strong> {currentTemplate.recommendedCadence}
+            <strong className="text-[var(--sigma-text)]">Cadence:</strong> {currentTemplate.recommendedCadence}
           </div>
         </div>
 
-        <div className="text-[11px] text-zinc-500">
-          Template ID: <span className="text-zinc-400">{currentTemplate.id}</span>
+        <div className="text-[11px] text-[var(--sigma-muted)]">
+          Template ID: <span className="font-mono text-[var(--sigma-text)]">{currentTemplate.id}</span>
         </div>
       </div>
 

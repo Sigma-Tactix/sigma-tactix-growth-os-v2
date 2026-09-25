@@ -4,7 +4,6 @@ import { useToast } from '@/src/contexts/ToastContext';
 
 const WORKSPACES_STORAGE_KEY = 'sigmatactix_client_workspaces';
 const ACTIVE_WORKSPACE_ID_KEY = 'sigmatactix_current_workspace_id';
-const ACTIVE_PIPELINES_KEY = 'sigmatactix_active_pipelines';
 
 export const DEFAULT_PRIMARY_WORKSPACE: ClientWorkspace = {
   id: 'ws-primary',
@@ -129,34 +128,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       connectors: clientData.connectors || []
     };
 
-    // If client specified connectors, automatically register into DataSources active pipelines
-    if (clientData.connectors && clientData.connectors.length > 0) {
-      try {
-        const storedPipelines = localStorage.getItem(ACTIVE_PIPELINES_KEY);
-        let currentPipelines = storedPipelines ? JSON.parse(storedPipelines) : [];
-        if (!Array.isArray(currentPipelines)) currentPipelines = [];
-
-        const newPipelines = clientData.connectors.map((c, i) => ({
-          id: `pipe-${Date.now()}-${i}`,
-          name: `${c.platform.toUpperCase()} (${c.accountName})`,
-          platform: c.platform,
-          accountName: c.accountName,
-          propertyId: c.propertyId,
-          targetVault: c.platform === 'gsc' || c.platform === 'ga4' ? 'Website Vault' : 'Marketing Vault',
-          syncFrequency: 'Every 15 mins',
-          protocol: 'Direct REST API (OAuth 2.0)',
-          status: 'active' as const,
-          lastPing: 'Just now',
-          latencyMs: Math.floor(Math.random() * 30) + 25,
-          credentialSnippet: '••••••••Auth-Token-Live',
-          metricsCollected: ['Core Performance Streams', 'Attribution Deltas']
-        }));
-
-        localStorage.setItem(ACTIVE_PIPELINES_KEY, JSON.stringify([...newPipelines, ...currentPipelines]));
-      } catch (e) {
-        console.error('Failed to register initial connectors', e);
-      }
-    }
+    // Connector choices are onboarding intent, not verified data pipelines.
+    // A pipeline is created only by the server after provider verification.
 
     // Add to workspaces and set active
     setWorkspaces(prev => [newWorkspace, ...prev]);

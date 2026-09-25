@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Layers, 
-  Server, 
-  Database, 
-  Cloud, 
-  Cpu, 
-  Activity, 
-  CheckCircle2, 
-  AlertCircle, 
-  RefreshCw, 
-  Maximize2, 
-  Sliders, 
-  Terminal, 
-  ExternalLink, 
-  ShieldCheck, 
-  Globe, 
-  Zap, 
-  Info, 
-  FileCode2, 
+import {
+  Layers,
+  Server,
+  Database,
+  Cloud,
+  Cpu,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Maximize2,
+  Sliders,
+  Terminal,
+  ExternalLink,
+  ShieldCheck,
+  Globe,
+  Zap,
+  Info,
+  FileCode2,
   ArrowUpRight,
   Download,
   Check,
@@ -32,18 +32,21 @@ import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { getHarnessStatus } from '@/src/lib/api';
 
-export type ArchifyRegion = 
+export type ArchifyRegion =
   | 'PRESENTATION_INGRESS'
   | 'GATEWAY_RUNTIME'
   | 'INTELLIGENCE_EXEC'
   | 'PERSISTENCE_VAULTS'
   | 'EXTERNAL_SERVICES';
 
-export type ProductionGradeStatus = 
+export type ProductionGradeStatus =
   | 'PRODUCTION_GRADE_ACTIVE'
   | 'HARDWARE_LOCAL_SOVEREIGN'
   | 'MANAGED_CLOUD_SAAS'
   | 'DEVELOPMENT_SANDBOX';
+
+export type OperationalStatus = 'VERIFIED' | 'PARTIAL' | 'BLOCKED' | 'UNVERIFIED' | 'NOT_IMPLEMENTED' | 'SIMULATED' | 'LOCAL_ONLY';
+export type OperationalHealth = 'HEALTHY' | 'DEGRADED' | 'BLOCKED' | 'UNKNOWN' | 'SIMULATED';
 
 export interface ArchifyComponent {
   id: string;
@@ -69,6 +72,14 @@ export interface ArchifyComponent {
   ingressFrom: Array<{ id: string; label: string; channel: string }>;
   egressTo: Array<{ id: string; label: string; channel: string }>;
   diagramAppearances: string[];
+  operationalStatus?: OperationalStatus;
+  health?: OperationalHealth;
+  dependencies?: string[];
+  requirements?: string[];
+  blockers?: string[];
+  suggestions?: string[];
+  nextSteps?: string[];
+  evidence?: string[];
 }
 
 export const ARCHIFY_COMPONENTS: ArchifyComponent[] = [
@@ -637,9 +648,61 @@ export const ARCHIFY_COMPONENTS: ArchifyComponent[] = [
   }
 ];
 
+type OperationalDossier = {
+  operationalStatus: OperationalStatus;
+  health: OperationalHealth;
+  dependencies: string[];
+  requirements: string[];
+  blockers: string[];
+  suggestions: string[];
+  nextSteps: string[];
+  evidence: string[];
+};
+
+const dossier = (
+  operationalStatus: OperationalStatus,
+  health: OperationalHealth,
+  dependencies: string[],
+  requirements: string[],
+  blockers: string[],
+  suggestions: string[],
+  nextSteps: string[],
+  evidence: string[],
+): OperationalDossier => ({ operationalStatus, health, dependencies, requirements, blockers, suggestions, nextSteps, evidence });
+
+/**
+ * Evidence-backed runtime dossier. This intentionally separates the visual
+ * architecture catalogue from production claims: a node can exist in the
+ * intended topology while still being unverified or not implemented locally.
+ */
+export const OPERATIONAL_DOSSIERS: Record<string, OperationalDossier> = {
+  'comp-users': dossier('PARTIAL', 'DEGRADED', ['Supabase Auth', 'Workspace RBAC'], ['Real tenant users', 'Session expiry checks'], ['No production tenant/test-account evidence in this workspace'], ['Run desktop/mobile auth and isolation checks'], ['Record deployment and tenant-isolation smoke results'], ['User/session paths exist in the app; no live tenant test performed']),
+  'comp-spa': dossier('PARTIAL', 'DEGRADED', ['React 19', 'Vite 6', 'Growth OS API'], ['Production deployment', 'Accessibility and mobile checks'], ['Main bundle remains ~4 MB minified; mobile and full accessibility checks remain open'], ['Split the remaining shared bundle and add route-level browser checks'], ['Run mobile, reduced-motion, keyboard and WebGL-fallback checks'], ['TypeScript and production build pass; local desktop render was inspected']),
+  'comp-api': dossier('PARTIAL', 'DEGRADED', ['Express server', 'Supabase client', 'Provider adapters'], ['Deployed environment', 'Secrets and rate-limit configuration'], ['Live provider authentication, token refresh, deployment smoke test and full RLS validation are unverified'], ['Keep provider adapters fail-closed and add integration fixtures per connector'], ['Run authenticated staging smoke tests and capture response evidence'], ['Server build passes; connector/reporting/document routes are implemented locally']),
+  'comp-gateway-mtls': dossier('NOT_IMPLEMENTED', 'BLOCKED', ['External reverse proxy or ingress'], ['Managed gateway deployment', 'mTLS certificates', 'WAF policy'], ['No infra/ingress gateway manifest or live edge endpoint is present in this workspace'], ['Remove active claims until deployment evidence exists'], ['Create and deploy the gateway, then verify TLS/WAF/mTLS probes'], ['Current app listens through the local Express/Vite workflow']),
+  'comp-kafka': dossier('NOT_IMPLEMENTED', 'BLOCKED', ['Kafka cluster', 'Kafka client/producer', 'DLQ'], ['Broker deployment', 'Topic ownership', 'Replay/retention policy'], ['No Kafka dependency, broker configuration or production event path is present'], ['Use the current persisted webhook path as the honest baseline'], ['Design event contract and deploy only after a real consumer/producer exists'], ['Architecture catalogue only; no local Kafka runtime found']),
+  'comp-orchestrator': dossier('PARTIAL', 'DEGRADED', ['Growth OS API', 'Agent policies', 'Gemini or configured model'], ['Server-side agent authorization', 'HITL approval records', 'Live model key'], ['Agent allocation is now server-persisted, but execution-time pipeline authorization and live provider checks remain open'], ['Bind every external action to a server permission decision and audit event'], ['Add denied-execution tests for each connector/action class'], ['Policy, pipeline and agent tests pass; live model/provider validation is pending']),
+  'comp-crawler': dossier('PARTIAL', 'UNKNOWN', ['Playwright/Cheerio utilities', 'Target website'], ['Sandboxed browser runtime', 'Network policy', 'Crawler health probe'], ['The catalogue path references a crawler module that is not a verified deployed service'], ['Label crawl results with provenance and failure state'], ['Verify the actual audit fetch/screenshot path in staging'], ['Site fetch and audit code exist; isolated crawler deployment is unverified']),
+  'comp-supabase': dossier('PARTIAL', 'UNKNOWN', ['Supabase Auth', 'PostgreSQL', 'Workspace RLS'], ['Configured project', 'Applied migrations', 'RLS integration tests'], ['No production project or RLS smoke evidence was supplied'], ['Add a deployment checklist with tenant-cross-read and rollback tests'], ['Run migrations and verify workspace isolation with two test tenants'], ['Supabase adapters and workspace persistence code are present']),
+  'comp-rag': dossier('PARTIAL', 'DEGRADED', ['Supabase documents', 'Vault upload/storage', 'Agent policies'], ['Durable documents table', 'Embedding worker', 'Vault move/delete transactions'], ['Authored vault-record UI remains locally rendered; full move/delete and end-to-end persistence are outstanding'], ['Keep unmatched classification pending and expose source hashes/provenance'], ['Complete server-backed record CRUD and RAG retrieval integration tests'], ['Upload, hashing, spreadsheet extraction and document indexing routes are implemented']),
+  'comp-redis': dossier('NOT_IMPLEMENTED', 'BLOCKED', ['Redis cluster', 'Queue/cache clients'], ['Redis deployment', 'Failover configuration', 'Cache invalidation tests'], ['No Redis dependency or Sentinel configuration is present'], ['Do not claim cache health or queue durability until a real adapter is installed'], ['Choose a queue/cache implementation and add failure-mode tests'], ['No local Redis runtime found in the current application']),
+  'comp-audit': dossier('PARTIAL', 'UNKNOWN', ['Workspace state', 'Audit log UI', 'Server persistence'], ['Append-only store', 'Tamper-evident chain', 'Retention policy'], ['WORM/7-year retention claims are not verified by a deployed store'], ['Display audit provenance and distinguish UI records from immutable storage'], ['Implement hash chaining in the authoritative persistence layer'], ['Audit log surfaces exist; immutable archive evidence is absent']),
+  'comp-gemini': dossier('PARTIAL', 'UNKNOWN', ['Gemini SDK', 'Workspace provider key'], ['Configured provider key', 'Quota/error handling', 'Cost telemetry'], ['No live model key or provider request was exercised in this review'], ['Show provider health as unknown until a real inference probe succeeds'], ['Run authenticated inference and record latency/cost evidence'], ['Gemini server integration and token accounting code exist']),
+  'comp-stripe': dossier('PARTIAL', 'UNKNOWN', ['Stripe SDK', 'Webhook endpoint', 'Workspace billing'], ['Stripe test/live keys', 'Webhook signing secret', 'Test account'], ['Billing deployment and webhook verification were not live-tested'], ['Keep money paths fail-closed and test signed webhook replay/rejection'], ['Run Stripe test-mode checkout and webhook smoke tests'], ['Stripe integration code exists; no live billing validation performed']),
+  'comp-export': dossier('PARTIAL', 'HEALTHY', ['Browser APIs', 'html2canvas/jsPDF/PPTX/XLSX exporters'], ['Representative report data', 'Browser download permissions'], ['Exports are client-side and have not completed cross-browser verification'], ['Add export snapshot tests for each requested format'], ['Verify PDF/PPTX/XLSX on desktop and mobile browsers'], ['Export code paths are present and build successfully']),
+  'comp-lmstudio': dossier('LOCAL_ONLY', 'UNKNOWN', ['Apple Silicon host', 'LM Studio local server'], ['Local model server on configured port', 'Operator-managed model'], ['No local runtime health result is persisted; not a production cloud dependency'], ['Keep clearly marked local-only and never report it as SaaS production health'], ['Probe the configured local endpoint before enabling local routing'], ['Local provider is represented in the UI; runtime availability is unknown']),
+  'comp-ollama': dossier('LOCAL_ONLY', 'UNKNOWN', ['Apple Silicon host', 'Ollama local server'], ['Ollama runtime', 'Downloaded model', 'Local endpoint'], ['No local runtime health result is persisted'], ['Expose model and endpoint evidence in the health dossier'], ['Run a local inference smoke test when the operator enables it'], ['Local provider is represented in the UI; runtime availability is unknown']),
+  'comp-omniroute': dossier('NOT_IMPLEMENTED', 'BLOCKED', ['Model provider credentials', 'Routing policy'], ['Concrete router adapter', 'Provider health signals', 'Fallback tests'], ['No verified Omniroute adapter or live routing evidence is present'], ['Remove claims of 200+ provider failover until adapters are real'], ['Implement one routed adapter with deterministic fallback tests'], ['Architecture catalogue only; no verified runtime found']),
+};
+
+const withOperationalDossier = (component: ArchifyComponent): ArchifyComponent => ({
+  ...component,
+  ...(OPERATIONAL_DOSSIERS[component.id] || dossier('UNVERIFIED', 'UNKNOWN', [], ['Source implementation and deployment evidence'], ['No evidence recorded yet'], ['Verify before calling production-grade'], ['Add evidence and acceptance checks'], ['No verification record supplied'])),
+});
+
 export default function FullHarnessExplodedView() {
-  const [components, setComponents] = useState<ArchifyComponent[]>(ARCHIFY_COMPONENTS);
-  const [selectedComp, setSelectedComp] = useState<ArchifyComponent | null>(ARCHIFY_COMPONENTS[0]);
+  const [components, setComponents] = useState<ArchifyComponent[]>(() => ARCHIFY_COMPONENTS.map(withOperationalDossier));
+  const [selectedComp, setSelectedComp] = useState<ArchifyComponent | null>(() => withOperationalDossier(ARCHIFY_COMPONENTS[0]));
   const [explodedRatio, setExplodedRatio] = useState<number>(85); // 0 = flat blueprint, 100 = 3D isometric exploded
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('ALL');
   const [gradeFilter, setGradeFilter] = useState<string>('ALL');
@@ -679,11 +742,13 @@ export default function FullHarnessExplodedView() {
   const filteredComponents = useMemo(() => {
     return components.filter(c => {
       const matchesRegion = selectedRegionFilter === 'ALL' || c.archifyRegion === selectedRegionFilter;
-      const matchesGrade = gradeFilter === 'ALL' 
-        ? true 
-        : gradeFilter === 'PROD_ONLY' 
-          ? c.productionGrade.isProductionGrade 
-          : c.productionGrade.gradeStatus === gradeFilter;
+      const matchesGrade = gradeFilter === 'ALL'
+        ? true
+        : gradeFilter === 'VERIFIED'
+          ? c.operationalStatus === 'VERIFIED'
+          : gradeFilter === 'ATTENTION'
+            ? ['PARTIAL', 'BLOCKED', 'UNVERIFIED', 'NOT_IMPLEMENTED'].includes(c.operationalStatus || '')
+            : c.operationalStatus === gradeFilter;
       const matchesDiagram = activeDiagramView === 'ALL'
         ? true
         : c.diagramAppearances.some(d => d.toLowerCase().includes(activeDiagramView.toLowerCase()));
@@ -691,9 +756,10 @@ export default function FullHarnessExplodedView() {
     });
   }, [components, selectedRegionFilter, gradeFilter, activeDiagramView]);
 
-  const prodGradeCount = components.filter(c => c.productionGrade.isProductionGrade).length;
+  const verifiedCount = components.filter(c => c.operationalStatus === 'VERIFIED').length;
+  const attentionCount = components.filter(c => ['BLOCKED', 'NOT_IMPLEMENTED', 'UNVERIFIED', 'PARTIAL'].includes(c.operationalStatus || '')).length;
   const activeCount = components.filter(c => c.liveStatus === 'ACTIVE').length;
-  const localCount = components.filter(c => c.productionGrade.gradeStatus === 'HARDWARE_LOCAL_SOVEREIGN').length;
+  const localCount = components.filter(c => c.operationalStatus === 'LOCAL_ONLY').length;
 
   const getGradeBadge = (status: ProductionGradeStatus, isProd: boolean) => {
     switch (status) {
@@ -725,6 +791,23 @@ export default function FullHarnessExplodedView() {
           </span>
         );
     }
+  };
+
+  const getOperationalBadge = (status: OperationalStatus = 'UNVERIFIED', health: OperationalHealth = 'UNKNOWN') => {
+    const styles: Record<OperationalStatus, string> = {
+      VERIFIED: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+      PARTIAL: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
+      BLOCKED: 'bg-rose-500/15 border-rose-500/30 text-rose-300',
+      UNVERIFIED: 'bg-zinc-800 border-white/10 text-zinc-300',
+      NOT_IMPLEMENTED: 'bg-rose-950/50 border-rose-500/30 text-rose-300',
+      SIMULATED: 'bg-purple-500/15 border-purple-500/30 text-purple-300',
+      LOCAL_ONLY: 'bg-sky-500/15 border-sky-500/30 text-sky-300',
+    };
+    return (
+      <span className={cn('px-2.5 py-0.5 rounded-full border text-[10px] font-mono font-bold inline-flex items-center gap-1.5', styles[status])}>
+        <span className="w-1.5 h-1.5 rounded-full bg-current" /> {status.replace('_', ' ')} · {health}
+      </span>
+    );
   };
 
   const planes = [
@@ -782,7 +865,7 @@ export default function FullHarnessExplodedView() {
             Archify Exploded Topology & Component Registry
           </h2>
           <p className="text-zinc-400 text-sm max-w-3xl leading-relaxed">
-            Every architectural element from the <span className="text-amber-300 font-mono">sigmatactix-architecture.html</span> and <span className="text-amber-300 font-mono">ARCHITECTURE_DIAGRAMS</span> artifacts rendered in an interactive 3D exploded perspective, detailing live ports, use cases, and production-grade verification audits.
+            The intended runtime topology rendered as an interactive exploded view, with evidence-backed status, health, dependencies, requirements, blockers, suggestions, next steps, and source evidence for every node.
           </p>
         </div>
 
@@ -809,19 +892,19 @@ export default function FullHarnessExplodedView() {
       {/* KPI Cards: Production Grade Verification Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-surface/80 border border-white/10 rounded-2xl p-4">
-          <div className="text-[11px] font-mono text-muted uppercase">Production Grade Verified</div>
+          <div className="text-[11px] font-mono text-muted uppercase">Evidence Verified</div>
           <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
-            {prodGradeCount} / {components.length}
+            {verifiedCount} / {components.length}
           </div>
           <div className="text-[10px] font-mono text-emerald-400/80 mt-1 flex items-center gap-1">
-            <CheckCircle2 size={10} /> 100% Core Path Compliant
+            <CheckCircle2 size={10} /> Not a deployment certification
           </div>
         </div>
 
         <div className="bg-surface/80 border border-white/10 rounded-2xl p-4">
           <div className="text-[11px] font-mono text-muted uppercase">Live Listening Nodes</div>
           <div className="text-2xl font-bold font-mono text-white mt-1">
-            {activeCount} Active
+            {activeCount} Port-active / {attentionCount} attention
           </div>
           <div className="text-[10px] font-mono text-zinc-400 mt-1">Ports 3000, 24678, 1234, 11434</div>
         </div>
@@ -829,7 +912,7 @@ export default function FullHarnessExplodedView() {
         <div className="bg-surface/80 border border-white/10 rounded-2xl p-4">
           <div className="text-[11px] font-mono text-muted uppercase">MacBook Local Runtimes</div>
           <div className="text-2xl font-bold font-mono text-amber-400 mt-1">
-            {localCount} Air-Gapped
+            {localCount} Local-only
           </div>
           <div className="text-[10px] font-mono text-zinc-400 mt-1">Metal GPU ($0 Compute Cost)</div>
         </div>
@@ -837,9 +920,9 @@ export default function FullHarnessExplodedView() {
         <div className="bg-surface/80 border border-white/10 rounded-2xl p-4">
           <div className="text-[11px] font-mono text-muted uppercase">Archify Blueprint Frame</div>
           <div className="text-2xl font-bold font-mono text-accent mt-1">
-            5 Regions
+            {components.filter(c => c.operationalStatus === 'BLOCKED' || c.operationalStatus === 'NOT_IMPLEMENTED').length} Blocked
           </div>
-          <div className="text-[10px] font-mono text-zinc-400 mt-1">Archify 2.17.0 Standards</div>
+            <div className="text-[10px] font-mono text-zinc-400 mt-1">Evidence review, not deployment certification</div>
         </div>
       </div>
 
@@ -892,33 +975,30 @@ export default function FullHarnessExplodedView() {
         </div>
 
         {/* Grade Filter Pill Buttons */}
-        <div className="flex items-center gap-2 border-t border-white/5 pt-3 overflow-x-auto text-xs font-mono">
+        <div className="flex items-center gap-2 border-t border-[var(--sigma-border)] pt-3 text-xs font-mono">
           <span className="text-muted shrink-0 text-[11px] uppercase">Compliance Filter:</span>
-          {[
-            { id: 'ALL', label: 'All 18 Components' },
-            { id: 'PROD_ONLY', label: 'Production Grade Only' },
-            { id: 'HARDWARE_LOCAL_SOVEREIGN', label: 'Hardware Local ($0 Cost)' },
-            { id: 'MANAGED_CLOUD_SAAS', label: 'Managed Cloud SaaS' }
-          ].map(g => (
-            <button
-              key={g.id}
-              onClick={() => setGradeFilter(g.id)}
-              className={cn(
-                "px-3 py-1 rounded-lg transition-all whitespace-nowrap text-[11px]",
-                gradeFilter === g.id
-                  ? "bg-white/15 text-white font-bold border border-white/25"
-                  : "text-zinc-400 hover:text-white bg-black/30 border border-white/5"
-              )}
-            >
-              {g.label}
-            </button>
-          ))}
+          <div className="sigma-segmented">
+            {[
+              { id: 'ALL', label: 'All 18 Components' },
+              { id: 'PROD_ONLY', label: 'Production Grade Only' },
+              { id: 'HARDWARE_LOCAL_SOVEREIGN', label: 'Hardware Local ($0 Cost)' },
+              { id: 'MANAGED_CLOUD_SAAS', label: 'Managed Cloud SaaS' }
+            ].map(g => (
+              <button
+                key={g.id}
+                onClick={() => setGradeFilter(g.id)}
+                className={cn("sigma-segment text-[11px]", gradeFilter === g.id ? "sigma-segment-active" : "")}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main View: Exploded 3D Stage & Inspector Drawer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left Column: 3D Isometric Exploded Canvas */}
         <div className="lg:col-span-8 bg-zinc-950/95 border border-white/10 rounded-3xl p-6 relative overflow-hidden min-h-[700px] flex flex-col justify-between shadow-2xl">
           {/* Subtle Grid Pattern */}
@@ -998,7 +1078,7 @@ export default function FullHarnessExplodedView() {
 
                             {/* Production Grade Pill */}
                             <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                              {getGradeBadge(comp.productionGrade.gradeStatus, comp.productionGrade.isProductionGrade)}
+                              {getOperationalBadge(comp.operationalStatus, comp.health)}
                               <span className="text-[9px] font-mono text-zinc-500 group-hover:text-accent transition-colors">
                                 Dossier ➔
                               </span>
@@ -1015,8 +1095,8 @@ export default function FullHarnessExplodedView() {
 
           {/* Footer Guide */}
           <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-4 border-t border-white/5">
-            <span>Archify Spec: 5 Sovereign Runtime Planes • ISO/SOC2 Compliance Audited</span>
-            <span>Click any node to view use case & production verification</span>
+            <span>5 topology planes • operational review state is separate from catalogue intent</span>
+            <span>Click any node for the complete dossier</span>
           </div>
         </div>
 
@@ -1034,7 +1114,7 @@ export default function FullHarnessExplodedView() {
                   <h3 className="text-lg font-bold text-white font-mono mt-1">{selectedComp.label}</h3>
                   <div className="text-xs text-zinc-400 mt-0.5">{selectedComp.sublabel}</div>
                 </div>
-                {getGradeBadge(selectedComp.productionGrade.gradeStatus, selectedComp.productionGrade.isProductionGrade)}
+                {getOperationalBadge(selectedComp.operationalStatus, selectedComp.health)}
               </div>
 
               {/* Explicit Project Use Case (As requested by user) */}
@@ -1047,19 +1127,37 @@ export default function FullHarnessExplodedView() {
                 </p>
               </div>
 
-              {/* Production Grade Verification Audit */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                {[
+                  ['Dependencies', selectedComp.dependencies],
+                  ['Requirements', selectedComp.requirements],
+                  ['Blockers', selectedComp.blockers],
+                  ['Suggestions', selectedComp.suggestions],
+                  ['Next steps', selectedComp.nextSteps],
+                  ['Evidence', selectedComp.evidence],
+                ].map(([label, values]) => (
+                  <div key={String(label)} className="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-accent font-bold">{label}</div>
+                    <ul className="space-y-1 text-zinc-300">
+                      {(values as string[] | undefined || ['Not recorded']).map((value, index) => <li key={index}>• {value}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {/* Legacy catalogue claims are retained for traceability, not used as release status. */}
               <div className="space-y-2.5 bg-black/50 p-4 rounded-xl border border-white/10">
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="font-bold text-white uppercase flex items-center gap-1.5">
-                    <ShieldCheck size={14} className="text-emerald-400" /> Production Grade Audit
+                    <Info size={14} className="text-amber-400" /> Catalogue checklist (verify before release)
                   </span>
-                  <span className="text-emerald-400 font-bold text-[11px]">{selectedComp.productionGrade.complianceScore}</span>
+                  <span className="text-amber-300 font-bold text-[11px]">{selectedComp.productionGrade.complianceScore}</span>
                 </div>
 
                 <div className="space-y-1.5 pt-1">
                   {selectedComp.productionGrade.checklist.map((item, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-[11px] font-mono">
-                      <CheckCircle2 size={12} className="text-emerald-400 mt-0.5 shrink-0" />
+                      <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0" />
                       <div>
                         <span className="text-white font-semibold">{item.title}:</span>{' '}
                         <span className="text-zinc-400">{item.note}</span>
@@ -1086,7 +1184,7 @@ export default function FullHarnessExplodedView() {
                 {/* Archify Connected Channels */}
                 <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-2">
                   <div className="text-[10px] text-muted uppercase">Archify Connector Arrows</div>
-                  
+
                   {selectedComp.ingressFrom.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-[10px] text-zinc-500">Inbound From:</div>

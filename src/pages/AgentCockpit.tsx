@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
+import { Button, GlassCard, Badge, Tabs, type TabItem } from '@/src/components/ui';
 import { 
   SCOPED_AGENTS, 
   INITIAL_HITL_TASKS, 
@@ -597,164 +598,160 @@ export default function AgentCockpit() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
         <div>
-          <div className="text-[10px] text-muted font-mono uppercase tracking-[0.4em] font-black mb-3 flex items-center gap-2">
-            <Bot size={14} className="text-accent" /> Agent Layer • Guarded Multi-Agent Growth OS
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="brand" size="sm" icon={<Bot size={12} />}>Agent Governance Layer</Badge>
+            <Badge variant="neutral" size="sm">Multi-Agent Growth OS</Badge>
           </div>
-          <h1 className="text-4xl lg:text-6xl font-heading font-black amber-text tracking-tighter">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
             Autonomous Agent Cockpit
           </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mt-3 leading-relaxed font-sans">
+          <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl mt-1.5 font-normal leading-relaxed">
             Orchestrate scoped autonomous execution across content, SEO authority, performance marketing, and operations with strict RBAC boundaries, dedicated sub-agents, live learning loops, and Human-in-the-Loop (HITL) gates.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant={isSimulationMode || activeTab === 'simulation' ? "primary" : "secondary"}
+            size="sm"
+            icon={<Sliders size={13} />}
             onClick={() => {
               const nextMode = !isSimulationMode;
               setIsSimulationMode(nextMode);
               if (nextMode) setActiveTab('simulation');
               else if (activeTab === 'simulation') setActiveTab('dag');
             }}
-            className={cn(
-              "px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 border shadow-lg",
-              isSimulationMode || activeTab === 'simulation'
-                ? "bg-amber-500 text-background font-black border-amber-400 shadow-amber-500/30 ring-2 ring-amber-400/40"
-                : "bg-gradient-to-r from-amber-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 border-amber-500/40 text-amber-300 hover:text-white"
-            )}
-            title="Test impact of changing Orchestrator instructions on DAG in virtual sandbox"
           >
-            <Sliders size={14} className={cn(isSimulationMode || activeTab === 'simulation' ? "text-background" : "text-amber-400")} />
-            <span>{isSimulationMode || activeTab === 'simulation' ? "Exit Simulation" : "Simulation Mode (Beta)"}</span>
-          </button>
+            {isSimulationMode || activeTab === 'simulation' ? "Exit Simulation" : "Simulation Mode"}
+          </Button>
 
-          <button
+          <Button
+            variant={activeTab === 'dag' && !isSimulationMode ? "primary" : "secondary"}
+            size="sm"
+            icon={<Workflow size={13} />}
             onClick={() => {
               setIsSimulationMode(false);
               setActiveTab('dag');
             }}
-            className={cn(
-              "px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 border shadow-lg",
-              activeTab === 'dag' && !isSimulationMode
-                ? "bg-purple-500/30 border-purple-400 text-white shadow-purple-500/20" 
-                : "bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:text-white"
-            )}
-            title="Interactive DAG dependency mapping between Orchestrator and Sub-Agents"
           >
-            <Workflow size={14} className="text-purple-400" />
-            <span>Data Flow DAG</span>
-          </button>
+            Data Flow DAG
+          </Button>
 
-          <button
+          <Button
+            variant={activeTab === 'analytics' ? "primary" : "secondary"}
+            size="sm"
+            icon={<Activity size={13} />}
             onClick={() => setActiveTab('analytics')}
-            className={cn(
-              "px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 border shadow-lg",
-              activeTab === 'analytics' 
-                ? "bg-accent/30 border-accent text-white shadow-accent/20" 
-                : "bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:text-white"
-            )}
-            title="Recharts longitudinal telemetry for efficiency, token burn, and error decay"
           >
-            <Activity size={14} className="text-accent" />
-            <span>Learning Analytics</span>
-          </button>
+            Telemetry
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Crown size={13} className="text-purple-400" />}
             onClick={() => {
               setSelectedAgent(orchestratorAgent);
               handleTriggerAgentRun(orchestratorAgent);
             }}
             disabled={isTriggeringRun}
-            className="px-4 py-2.5 bg-gradient-to-r from-purple-500/20 via-accent/20 to-secondary/20 hover:from-purple-500/30 hover:via-accent/30 hover:to-secondary/30 border border-purple-500/40 text-white rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
           >
-            <Crown size={14} className="text-purple-300" />
-            <span>Orchestrate Full Pipeline</span>
-          </button>
+            Orchestrate Pipeline
+          </Button>
 
-          <div className="px-4 py-2.5 bg-amber-500/10 border border-accent/30 rounded-xl text-xs font-mono text-accent font-bold flex items-center gap-2">
-            <AlertTriangle size={14} />
-            <span>HITL Gate: {pendingHitlCount} Actions Pending</span>
-          </div>
+          <Badge variant={pendingHitlCount > 0 ? "warning" : "neutral"} size="md" dot={pendingHitlCount > 0} icon={<AlertTriangle size={12} />}>
+            HITL Gate: {pendingHitlCount} Pending
+          </Badge>
         </div>
       </div>
 
       {/* HITL Pending Approvals Section */}
-      <div data-tutorial-id="tut-hitl-queue" className="bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl space-y-6">
-        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
-              <ShieldCheck size={20} />
+      <GlassCard spotlight className="space-y-5" data-tutorial-id="tut-hitl-queue">
+        <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 flex items-center justify-center text-[var(--sigma-primary)]">
+              <ShieldCheck size={16} />
             </div>
             <div>
-              <h3 className="text-xl font-bold silver-text tracking-tight">Human-in-the-Loop (HITL) Approval Queue</h3>
-              <p className="text-xs text-zinc-400">Guarded state machine: destructive actions, public releases, and major budget shifts require explicit sign-off.</p>
+              <h3 className="text-base font-semibold text-[var(--sigma-text)]">Human-in-the-Loop (HITL) Approval Queue</h3>
+              <p className="text-xs text-[var(--sigma-text-muted)]">Guarded state machine: destructive actions, public releases, and major budget shifts require explicit sign-off.</p>
             </div>
           </div>
-          <span className="text-xs font-mono text-muted">{pendingHitlCount} Pending Review</span>
+          <Badge variant={pendingHitlCount > 0 ? "warning" : "neutral"} size="sm">
+            {pendingHitlCount} Pending Review
+          </Badge>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {hitlTasks.map(task => (
             <div
               key={task.id}
               className={cn(
-                "p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4",
-                task.status === 'PENDING' ? "bg-black/40 border-accent/40 shadow-lg" :
-                task.status === 'APPROVED' ? "bg-green-950/10 border-green-500/20 opacity-70" :
-                "bg-rose-950/10 border-rose-500/20 opacity-70"
+                "p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3.5 bg-[var(--sigma-surface-subtle)]",
+                task.status === 'PENDING' ? "border-[#ff481b]/30 shadow-md" :
+                task.status === 'APPROVED' ? "border-emerald-500/20 opacity-70" :
+                "border-rose-500/20 opacity-70"
               )}
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={cn(
-                    "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold",
-                    task.riskLevel === 'HIGH' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                    task.riskLevel === 'MEDIUM' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                    "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                  )}>
+                  <Badge
+                    variant={task.riskLevel === 'HIGH' ? 'danger' : task.riskLevel === 'MEDIUM' ? 'warning' : 'info'}
+                    size="xs"
+                  >
                     {task.riskLevel} RISK
-                  </span>
-                  <span className="text-[10px] font-mono text-muted">{task.requestedAt}</span>
+                  </Badge>
+                  <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{task.requestedAt}</span>
                 </div>
 
-                <h4 className="text-sm font-bold text-white leading-snug">{task.title}</h4>
-                <div className="text-[10px] font-mono text-accent mt-1">{task.agentName}</div>
+                <h4 className="text-xs font-semibold text-[var(--sigma-text)] leading-snug">{task.title}</h4>
+                <div className="text-[10px] font-mono text-[#ff481b] mt-0.5">{task.agentName}</div>
 
-                <p className="text-xs text-zinc-300 mt-3 bg-black/40 p-3 rounded-xl border border-white/5 leading-relaxed">
+                <p className="text-xs text-[var(--sigma-text-soft)] mt-2.5 bg-[var(--sigma-bg)] p-2.5 rounded-lg border border-[var(--sigma-border)] leading-relaxed">
                   {task.proposedAction}
                 </p>
 
-                <div className="text-[11px] text-zinc-400 mt-2 space-y-1">
-                  <div><strong className="text-white">Rationale:</strong> {task.rationale}</div>
-                  <div><strong className="text-secondary">Expected Impact:</strong> {task.impactEstimate}</div>
-                  <div><strong className="text-muted">Target Vault:</strong> {task.vaultAffected}</div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2.5 space-y-1">
+                  <div><strong className="text-[var(--sigma-text)]">Rationale:</strong> {task.rationale}</div>
+                  <div><strong className="text-[#ff481b]">Expected Impact:</strong> {task.impactEstimate}</div>
+                  <div><strong className="text-[var(--sigma-text-muted)]">Target Vault:</strong> {task.vaultAffected}</div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+              <div className="pt-3 border-t border-[var(--sigma-border)] flex items-center justify-between">
                 {task.status === 'PENDING' ? (
                   <div className="flex items-center gap-2 w-full">
-                    <button
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      icon={<X size={12} />}
                       onClick={() => handleRejectHITL(task.id)}
-                      className="flex-1 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1"
                     >
-                      <X size={12} /> Reject
-                    </button>
-                    <button
+                      Reject
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="flex-1"
+                      icon={<Check size={12} />}
                       onClick={() => handleApproveHITL(task.id)}
-                      className="flex-1 py-2 bg-accent text-background hover:opacity-90 font-black uppercase text-xs tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 amber-glow"
                     >
-                      <Check size={12} /> Approve
-                    </button>
+                      Approve
+                    </Button>
                   </div>
                 ) : (
-                  <div className="w-full text-center py-1 text-xs font-mono font-bold flex items-center justify-center gap-2">
+                  <div className="w-full text-center py-0.5 text-xs font-mono font-medium flex items-center justify-center gap-1.5">
                     {task.status === 'APPROVED' ? (
-                      <span className="text-green-400 flex items-center gap-1"><CheckCircle2 size={14} /> Approved & Executed</span>
+                      <Badge variant="success" size="sm" icon={<CheckCircle2 size={12} />}>
+                        Approved & Executed
+                      </Badge>
                     ) : (
-                      <span className="text-rose-400 flex items-center gap-1"><XCircle size={14} /> Rejected by Admin</span>
+                      <Badge variant="danger" size="sm" icon={<XCircle size={12} />}>
+                        Rejected by Admin
+                      </Badge>
                     )}
                   </div>
                 )}
@@ -762,7 +759,7 @@ export default function AgentCockpit() {
             </div>
           ))}
         </div>
-      </div>
+      </GlassCard>
 
       {/* D3 Visual Heatmap: Active Agent Load & Execution Success Rates */}
       <AgentHeatmap 
@@ -784,29 +781,31 @@ export default function AgentCockpit() {
               <button
                 type="button"
                 onClick={handleSelectAllAgents}
-                className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                className="p-1 rounded hover:bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors cursor-pointer"
                 title={selectedAgentIds.length === agents.length ? "Deselect All Agents" : "Select All Agents"}
               >
                 {selectedAgentIds.length === agents.length ? (
-                  <CheckSquare size={16} className="text-accent" />
+                  <CheckSquare size={16} className="text-[#ff481b]" />
                 ) : (
-                  <Square size={16} className="text-zinc-600 hover:text-zinc-400" />
+                  <Square size={16} className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]" />
                 )}
               </button>
-              <h3 className="text-lg font-bold silver-text">Agent Fleet Hierarchy</h3>
+              <h3 className="text-base font-semibold text-[var(--sigma-text)]">Agent Fleet Hierarchy</h3>
             </div>
-            <span className="text-xs font-mono text-muted">{agents.length} Nodes Configured</span>
+            <Badge variant="neutral" size="xs">{agents.length} Nodes Configured</Badge>
           </div>
 
           {/* Master Orchestrator Highlight Card */}
           {orchestratorAgent && (
-            <div
+            <GlassCard
+              spotlight
+              interactive
               onClick={() => setSelectedAgent(orchestratorAgent)}
               className={cn(
-                "p-4 rounded-2xl border text-left cursor-pointer transition-all relative overflow-hidden",
+                "p-4 text-left transition-all relative overflow-hidden",
                 selectedAgent.id === orchestratorAgent.id 
-                  ? "bg-purple-950/30 border-purple-500/80 shadow-2xl ring-2 ring-purple-500/40" 
-                  : "bg-purple-950/15 border-purple-500/30 hover:border-purple-500/60"
+                  ? "ring-1 ring-purple-500/80 border-purple-500/50 bg-purple-950/20 shadow-lg" 
+                  : "border-purple-500/20 hover:border-purple-500/40 bg-purple-950/10"
               )}
             >
               <div className="flex items-center justify-between mb-2">
@@ -814,22 +813,22 @@ export default function AgentCockpit() {
                   <button
                     type="button"
                     onClick={(e) => handleToggleSelectAgent(orchestratorAgent.id, e)}
-                    className="p-1 rounded hover:bg-white/10 transition-colors"
+                    className="p-1 rounded hover:bg-[var(--sigma-surface-subtle)] transition-colors cursor-pointer"
                     title={selectedAgentIds.includes(orchestratorAgent.id) ? "Deselect Agent" : "Select Agent for Batch Operations"}
                   >
                     {selectedAgentIds.includes(orchestratorAgent.id) ? (
                       <CheckSquare size={15} className="text-purple-400" />
                     ) : (
-                      <Square size={15} className="text-zinc-600 hover:text-zinc-400" />
+                      <Square size={15} className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]" />
                     )}
                   </button>
 
-                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-xs font-black flex items-center gap-1">
-                    <Crown size={12} /> {orchestratorAgent.codename}
-                  </span>
-                  <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">
+                  <Badge variant="neutral" size="xs" icon={<Crown size={10} className="text-purple-400" />}>
+                    {orchestratorAgent.codename}
+                  </Badge>
+                  <Badge variant="neutral" size="xs">
                     MASTER ORCHESTRATOR
-                  </span>
+                  </Badge>
                 </div>
 
                 {orchestratorAgent.status === 'PAUSED' ? (
@@ -858,31 +857,32 @@ export default function AgentCockpit() {
                   >
                     <button
                       type="button"
-                      className="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 flex items-center gap-1 cursor-pointer"
+                      className="cursor-pointer"
                     >
-                      <span>PAUSED</span>
-                      <Wrench size={10} />
+                      <Badge variant="warning" size="xs" dot icon={<Wrench size={9} />}>
+                        PAUSED
+                      </Badge>
                     </button>
                   </QuickFixAssistant>
                 ) : (
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
+                  <Badge variant="success" size="xs" dot>
                     {orchestratorAgent.status}
-                  </span>
+                  </Badge>
                 )}
               </div>
 
-              <h4 className="font-bold text-sm text-white mb-1">{orchestratorAgent.name}</h4>
-              <p className="text-xs text-zinc-300 line-clamp-2">{orchestratorAgent.description}</p>
+              <h4 className="font-semibold text-xs text-[var(--sigma-text)] mb-1">{orchestratorAgent.name}</h4>
+              <p className="text-xs text-[var(--sigma-text-muted)] line-clamp-2 leading-relaxed">{orchestratorAgent.description}</p>
 
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-purple-500/20 text-[10px] font-mono text-zinc-400">
-                <span>Skills: <strong className="text-white">{orchestratorAgent.skills.length}</strong></span>
-                <span>Sub-Agents: <strong className="text-secondary">{orchestratorAgent.subAgents.length}</strong></span>
-                <span>Accuracy: <strong className="text-accent">{orchestratorAgent.accuracyRate}</strong></span>
+              <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--sigma-border)] text-[10px] font-mono text-[var(--sigma-text-muted)]">
+                <span>Skills: <strong className="text-[var(--sigma-text)] font-semibold">{orchestratorAgent.skills.length}</strong></span>
+                <span>Sub-Agents: <strong className="text-purple-400 font-semibold">{orchestratorAgent.subAgents.length}</strong></span>
+                <span>Accuracy: <strong className="text-[#ff481b] font-semibold">{orchestratorAgent.accuracyRate}</strong></span>
               </div>
-            </div>
+            </GlassCard>
           )}
 
-          <div className="text-xs font-mono uppercase text-muted tracking-wider pt-2">
+          <div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider pt-2">
             Specialized Execution Agents
           </div>
 
@@ -892,16 +892,17 @@ export default function AgentCockpit() {
               const isMultiSelected = selectedAgentIds.includes(agent.id);
 
               return (
-                <div
+                <GlassCard
                   key={agent.id}
+                  interactive
                   onClick={() => setSelectedAgent(agent)}
                   className={cn(
-                    "p-4 rounded-xl border text-left cursor-pointer transition-all",
+                    "p-3.5 text-left transition-all",
                     isSelected 
-                      ? "bg-surface border-accent/80 shadow-lg ring-1 ring-accent/40" 
+                      ? "ring-1 ring-[#ff481b]/50 border-[#ff481b]/40 shadow-sm" 
                       : isMultiSelected
-                        ? "bg-surface/80 border-accent/40 ring-1 ring-accent/20"
-                        : "bg-surface/50 border-white/5 hover:border-white/20"
+                        ? "border-[#ff481b]/25 bg-[#ff481b]/5"
+                        : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1.5">
@@ -909,18 +910,18 @@ export default function AgentCockpit() {
                       <button
                         type="button"
                         onClick={(e) => handleToggleSelectAgent(agent.id, e)}
-                        className="p-1 rounded hover:bg-white/10 transition-colors"
+                        className="p-0.5 rounded hover:bg-[var(--sigma-surface-subtle)] transition-colors cursor-pointer"
                         title={isMultiSelected ? "Deselect Agent" : "Select Agent for Batch Operations"}
                       >
                         {isMultiSelected ? (
-                          <CheckSquare size={15} className="text-accent" />
+                          <CheckSquare size={14} className="text-[#ff481b]" />
                         ) : (
-                          <Square size={15} className="text-zinc-600 hover:text-zinc-400" />
+                          <Square size={14} className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]" />
                         )}
                       </button>
 
-                      <span className="font-mono text-xs font-bold text-accent">{agent.codename}</span>
-                      <h4 className="font-bold text-sm text-white">{agent.name}</h4>
+                      <span className="font-mono text-xs font-semibold text-[#ff481b]">{agent.codename}</span>
+                      <h4 className="font-semibold text-xs text-[var(--sigma-text)] truncate">{agent.name}</h4>
                     </div>
 
                     {agent.status === 'AWAITING_APPROVAL' ? (
@@ -950,11 +951,12 @@ export default function AgentCockpit() {
                       >
                         <button
                           type="button"
-                          className="text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 flex items-center gap-1 cursor-pointer animate-pulse"
+                          className="cursor-pointer"
                           title="Hover for Quick Fix Assistant"
                         >
-                          <span>{agent.status}</span>
-                          <Wrench size={10} />
+                          <Badge variant="warning" size="xs" dot icon={<Wrench size={9} />}>
+                            APPROVAL
+                          </Badge>
                         </button>
                       </QuickFixAssistant>
                     ) : agent.status === 'PAUSED' ? (
@@ -983,28 +985,29 @@ export default function AgentCockpit() {
                       >
                         <button
                           type="button"
-                          className="text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-zinc-500/20 text-zinc-300 border border-zinc-500/40 hover:bg-zinc-500/30 flex items-center gap-1 cursor-pointer"
+                          className="cursor-pointer"
                           title="Hover for Quick Fix Assistant"
                         >
-                          <span>{agent.status}</span>
-                          <Wrench size={10} />
+                          <Badge variant="neutral" size="xs" icon={<Wrench size={9} />}>
+                            PAUSED
+                          </Badge>
                         </button>
                       </QuickFixAssistant>
                     ) : (
-                      <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-green-500/10 text-green-400 border border-green-500/20">
+                      <Badge variant="success" size="xs" dot>
                         {agent.status}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
-                  <p className="text-xs text-zinc-400 line-clamp-2">{agent.description}</p>
+                  <p className="text-xs text-[var(--sigma-text-muted)] line-clamp-2 leading-relaxed">{agent.description}</p>
 
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 text-[10px] font-mono text-muted">
-                    <span>Skills: <strong className="text-white">{agent.skills.length}</strong></span>
-                    <span>Sub-Agents: <strong className="text-secondary">{agent.subAgents.length}</strong></span>
-                    <span>Accuracy: <strong className="text-accent">{agent.accuracyRate}</strong></span>
+                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[var(--sigma-border)] text-[10px] font-mono text-[var(--sigma-text-muted)]">
+                    <span>Skills: <strong className="text-[var(--sigma-text)] font-semibold">{agent.skills.length}</strong></span>
+                    <span>Sub-Agents: <strong className="text-[var(--sigma-primary)] font-semibold">{agent.subAgents.length}</strong></span>
+                    <span>Accuracy: <strong className="text-[#ff481b] font-semibold">{agent.accuracyRate}</strong></span>
                   </div>
-                </div>
+                </GlassCard>
               );
             })}
           </div>
@@ -1012,174 +1015,86 @@ export default function AgentCockpit() {
 
         {/* Right: Selected Agent Multi-Capability Inspector */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Agent Inspector Header Banner */}
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-5">
+          {/* Agent Inspector Card */}
+          <GlassCard spotlight className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--sigma-border)] pb-5">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={cn(
-                    "px-2.5 py-0.5 rounded font-mono text-xs font-bold",
-                    selectedAgent.isOrchestrator ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "bg-accent/10 text-accent border border-accent/20"
-                  )}>
+                  <Badge variant={selectedAgent.isOrchestrator ? "neutral" : "brand"} size="sm">
                     {selectedAgent.codename}
-                  </span>
+                  </Badge>
                   {selectedAgent.isOrchestrator && (
-                    <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono text-[10px] font-bold border border-purple-500/20 flex items-center gap-1">
-                      <Crown size={10} /> MASTER ORCHESTRATOR
-                    </span>
+                    <Badge variant="neutral" size="sm" icon={<Crown size={10} className="text-purple-400" />}>
+                      MASTER ORCHESTRATOR
+                    </Badge>
                   )}
-                  <h3 className="text-xl font-bold silver-text">{selectedAgent.name}</h3>
+                  <h3 className="text-lg font-semibold text-[var(--sigma-text)]">{selectedAgent.name}</h3>
                 </div>
-                <p className="text-xs text-zinc-400 mt-1">{selectedAgent.role}</p>
+                <p className="text-xs text-[var(--sigma-text-muted)] mt-1">{selectedAgent.role}</p>
               </div>
 
               {/* Action Buttons: Run, Export .md, Import .md */}
               <div className="flex items-center gap-2 flex-wrap">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Download size={13} />}
                   onClick={() => setMdModal({ isOpen: true, mode: 'export' })}
-                  className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5"
                   title="Export agent configuration to Markdown (.md)"
                 >
-                  <Download size={13} /> Export .md
-                </button>
+                  Export .md
+                </Button>
 
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Upload size={13} />}
                   onClick={() => setMdModal({ isOpen: true, mode: 'import' })}
-                  className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5"
                   title="Import agent configuration from Markdown (.md)"
                 >
-                  <Upload size={13} /> Import .md
-                </button>
+                  Import .md
+                </Button>
 
-                <button
-                  onClick={() => handleTriggerAgentRun(selectedAgent)}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={isTriggeringRun ? <RefreshCw size={13} className="animate-spin" /> : <Play size={13} />}
                   disabled={isTriggeringRun}
-                  className={cn(
-                    "px-5 py-2 text-background font-black uppercase text-xs font-mono tracking-wider rounded-xl transition-all shadow-xl flex items-center gap-2 disabled:opacity-50",
-                    selectedAgent.isOrchestrator ? "bg-purple-400 hover:bg-purple-300 shadow-purple-500/20" : "bg-accent hover:opacity-90 amber-glow"
-                  )}
+                  onClick={() => handleTriggerAgentRun(selectedAgent)}
                 >
-                  {isTriggeringRun ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
                   {selectedAgent.isOrchestrator ? 'Trigger Orchestration' : 'Trigger Run'}
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Navigation Tabs for Selected Agent */}
-            <div className="flex flex-wrap gap-1 border-b border-white/5 pb-3">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'overview' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Lock size={12} /> Overview & RBAC
-              </button>
-
-              <button
-                onClick={() => setActiveTab('skills')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'skills' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Zap size={12} /> Skills ({selectedAgent.skills.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('instructions')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'instructions' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <FileCode size={12} /> Instructions & Directives
-              </button>
-
-              <button
-                onClick={() => setActiveTab('subagents')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'subagents' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Layers size={12} /> Sub-Agents ({selectedAgent.subAgents.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('learning')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'learning' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <BrainCircuit size={12} /> Self-Learning Loop
-              </button>
-
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'analytics' ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Activity size={12} /> Learning Analytics & Telemetry
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsSimulationMode(false);
-                  setActiveTab('files');
+            <div className="overflow-x-auto no-scrollbar pb-1">
+              <Tabs
+                tabs={[
+                  { id: 'overview', label: 'Overview & RBAC', icon: <Lock size={12} /> },
+                  { id: 'skills', label: 'Skills', icon: <Zap size={12} />, badge: selectedAgent.skills.length },
+                  { id: 'instructions', label: 'Instructions', icon: <FileCode size={12} /> },
+                  { id: 'subagents', label: 'Sub-Agents', icon: <Layers size={12} />, badge: selectedAgent.subAgents.length },
+                  { id: 'learning', label: 'Self-Learning', icon: <BrainCircuit size={12} /> },
+                  { id: 'analytics', label: 'Telemetry', icon: <Activity size={12} /> },
+                  { id: 'files', label: 'Configs', icon: <FolderGit2 size={12} /> },
+                  { id: 'dag', label: 'Data Flow DAG', icon: <Workflow size={12} /> },
+                  { id: 'simulation', label: 'Simulation', icon: <Sliders size={12} /> },
+                  { id: 'logs', label: 'Logs', icon: <Terminal size={12} /> },
+                ]}
+                activeTab={activeTab}
+                onChange={(tabId) => {
+                  if (tabId === 'simulation') {
+                    setIsSimulationMode(true);
+                    setActiveTab('simulation');
+                  } else {
+                    setIsSimulationMode(false);
+                    setActiveTab(tabId as any);
+                  }
                 }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'files' && !isSimulationMode ? "bg-accent text-background font-black shadow-sm" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <FolderGit2 size={12} /> Files & Configs
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsSimulationMode(false);
-                  setActiveTab('dag');
-                }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'dag' && !isSimulationMode ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Workflow size={12} /> Data Flow DAG
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsSimulationMode(true);
-                  setActiveTab('simulation');
-                }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'simulation' || isSimulationMode 
-                    ? "bg-amber-500 text-background font-black shadow-lg shadow-amber-500/20" 
-                    : "bg-amber-500/10 text-amber-300 hover:text-white hover:bg-amber-500/20 border border-amber-500/30"
-                )}
-              >
-                <Sliders size={12} /> Simulation Mode (Beta)
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsSimulationMode(false);
-                  setActiveTab('logs');
-                }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5",
-                  activeTab === 'logs' && !isSimulationMode ? "bg-accent text-background font-black" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Terminal size={12} /> Agent Logs
-              </button>
+                variant="pill"
+                size="sm"
+              />
             </div>
 
             {/* TAB CONTENT: 1. OVERVIEW & RBAC */}
@@ -1424,7 +1339,7 @@ export default function AgentCockpit() {
                 }}
               />
             )}
-          </div>
+          </GlassCard>
         </div>
       </div>
 
@@ -1435,65 +1350,63 @@ export default function AgentCockpit() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#0d1017]/95 border border-accent/40 shadow-2xl rounded-2xl p-3 px-5 backdrop-blur-2xl flex items-center gap-3 sm:gap-4 shadow-accent/10"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--sigma-surface)]/95 border border-[#ff481b]/30 shadow-2xl rounded-2xl p-2 px-3.5 backdrop-blur-2xl flex items-center gap-3 sm:gap-4"
           >
-            <div className="flex items-center gap-2 border-r border-white/10 pr-3 sm:pr-4">
-              <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-              <div className="text-xs font-mono font-bold text-white whitespace-nowrap">
-                <span>{selectedAgentIds.length}</span>
-                <span className="text-muted font-normal"> of {agents.length} Agents Selected</span>
+            <div className="flex items-center gap-2 border-r border-[var(--sigma-border)] pr-3 sm:pr-4">
+              <span className="w-2 h-2 rounded-full bg-[#ff481b] animate-pulse" />
+              <div className="text-xs font-mono font-medium text-[var(--sigma-text)] whitespace-nowrap">
+                <span className="font-bold">{selectedAgentIds.length}</span>
+                <span className="text-[var(--sigma-text-muted)] font-normal"> of {agents.length} Selected</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                variant="secondary"
+                size="xs"
                 onClick={handleBatchPauseToggle}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 hover:text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5"
-                title="Pause or resume all selected agents"
-              >
-                {agents.filter(a => selectedAgentIds.includes(a.id)).every(a => a.status === 'PAUSED') ? (
-                  <>
-                    <PlayCircle size={14} className="text-green-400" />
-                    <span>Resume Selected</span>
-                  </>
+                icon={agents.filter(a => selectedAgentIds.includes(a.id)).every(a => a.status === 'PAUSED') ? (
+                  <PlayCircle size={13} className="text-emerald-400" />
                 ) : (
-                  <>
-                    <PauseCircle size={14} className="text-amber-400" />
-                    <span>Pause Selected</span>
-                  </>
+                  <PauseCircle size={13} className="text-amber-400" />
                 )}
-              </button>
+              >
+                {agents.filter(a => selectedAgentIds.includes(a.id)).every(a => a.status === 'PAUSED') ? 'Resume' : 'Pause'}
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
+                size="xs"
                 onClick={handleBatchSync}
                 disabled={isBatchSyncing}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 hover:text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 disabled:opacity-50"
-                title="Synchronize Second Brain vector embeddings across selected agents"
+                icon={<RefreshCw size={13} className={cn("text-sky-400", isBatchSyncing && "animate-spin")} />}
               >
-                <RefreshCw size={14} className={cn("text-cyan-400", isBatchSyncing && "animate-spin")} />
-                <span>{isBatchSyncing ? 'Syncing...' : 'Sync Knowledge'}</span>
-              </button>
+                {isBatchSyncing ? 'Syncing...' : 'Sync Knowledge'}
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
+                size="xs"
                 onClick={handleBatchExport}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 hover:text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5"
-                title="Download multi-agent configuration package (.md)"
+                icon={<Download size={13} className="text-[#ff481b]" />}
               >
-                <Download size={14} className="text-accent" />
-                <span>Export Bundle (.md)</span>
-              </button>
+                Export Bundle (.md)
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
+                size="xs"
                 onClick={handleBatchBenchmark}
-                className="hidden sm:flex px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 hover:text-white text-xs font-mono font-bold transition-all items-center gap-1.5"
+                className="hidden sm:flex"
+                icon={<Zap size={13} className="text-amber-400" />}
               >
-                <Zap size={14} className="text-yellow-400" />
-                <span>Benchmark</span>
-              </button>
+                Benchmark
+              </Button>
 
               <button
+                type="button"
                 onClick={handleDeselectAll}
-                className="p-1.5 rounded-xl hover:bg-white/10 text-muted hover:text-white transition-all ml-1"
+                className="p-1 rounded-lg hover:bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all ml-1 cursor-pointer"
                 title="Clear selection"
               >
                 <X size={14} />

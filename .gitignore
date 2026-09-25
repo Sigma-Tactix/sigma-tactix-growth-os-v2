@@ -58,3 +58,11 @@ Thumbs.db
 graphify-out/cache/
 tmp/
 temp/
+
+
+# Vibe Video
+.vv-secrets.json
+.temp/
+video-clip/*.mp4
+first-frames/*.png
+output/*.mp4

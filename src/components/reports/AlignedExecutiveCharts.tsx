@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  CartesianGrid, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  Legend 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  PieChart as PieIcon, 
-  BarChart3, 
-  Activity, 
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  PieChart as PieIcon,
+  BarChart3,
+  Activity,
   Maximize2,
   Sparkles,
   Layers,
@@ -34,9 +34,10 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { 
-  REVENUE_TIMELINE_SERIES, 
-  CHANNEL_SHARE_DONUT_DATA 
+import { Tabs } from '@/src/components/ui';
+import {
+  REVENUE_TIMELINE_SERIES,
+  CHANNEL_SHARE_DONUT_DATA
 } from '@/src/data/executiveReportsData';
 
 interface AlignedExecutiveChartsProps {
@@ -138,8 +139,8 @@ const AUTH_PACING = [
   { label: 'Multi-Agent GTM Swarms', actual: 2, target: 5, diff: '#2 Rank', metric: '', note: 'Perplexity & Gemini Citations' }
 ];
 
-export default function AlignedExecutiveCharts({ 
-  layoutMode = 'grid', 
+export default function AlignedExecutiveCharts({
+  layoutMode = 'grid',
   className,
   templateId = 'tpl-omnichannel'
 }: AlignedExecutiveChartsProps) {
@@ -235,7 +236,7 @@ export default function AlignedExecutiveCharts({
     <div className={cn("space-y-6", className)}>
       {/* Aligned Grid Row 1: Primary Velocity Chart + Channel Mix Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
+
         {/* Main Chart Card (8 Cols) */}
         <div className="lg:col-span-8 bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between relative overflow-hidden">
           {/* Card Header */}
@@ -253,35 +254,16 @@ export default function AlignedExecutiveCharts({
             </div>
 
             {/* Metric Toggle */}
-            <div className="flex bg-black/40 p-1 rounded-lg border border-white/10 text-[11px] font-mono">
-              <button
-                onClick={() => setActiveMetricTab('both')}
-                className={cn(
-                  "px-3 py-1 rounded transition-all",
-                  activeMetricTab === 'both' ? "bg-accent text-background font-bold" : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Combined
-              </button>
-              <button
-                onClick={() => setActiveMetricTab('revenue')}
-                className={cn(
-                  "px-3 py-1 rounded transition-all",
-                  activeMetricTab === 'revenue' ? "bg-accent text-background font-bold" : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Primary Only
-              </button>
-              <button
-                onClick={() => setActiveMetricTab('roas')}
-                className={cn(
-                  "px-3 py-1 rounded transition-all",
-                  activeMetricTab === 'roas' ? "bg-accent text-background font-bold" : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Efficiency Only
-              </button>
-            </div>
+            <Tabs<'revenue' | 'roas' | 'both'>
+              tabs={[
+                { id: 'both', label: 'Combined' },
+                { id: 'revenue', label: 'Primary only' },
+                { id: 'roas', label: 'Efficiency only' },
+              ]}
+              activeTab={activeMetricTab}
+              onChange={setActiveMetricTab}
+              size="sm"
+            />
           </div>
 
           {/* Recharts Canvas */}
@@ -300,24 +282,24 @@ export default function AlignedExecutiveCharts({
                 </defs>
 
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#71717a" 
-                  fontSize={10} 
+
+                <XAxis
+                  dataKey="date"
+                  stroke="#71717a"
+                  fontSize={10}
                   fontFamily="monospace"
-                  tickLine={false} 
+                  tickLine={false}
                 />
-                
-                <YAxis 
-                  stroke="#71717a" 
-                  fontSize={10} 
+
+                <YAxis
+                  stroke="#71717a"
+                  fontSize={10}
                   fontFamily="monospace"
-                  tickLine={false} 
+                  tickLine={false}
                   tickFormatter={(val) => val >= 1000 ? `$${(val / 1000).toFixed(0)}k` : val}
                 />
 
-                <Tooltip 
+                <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
@@ -347,36 +329,36 @@ export default function AlignedExecutiveCharts({
                 />
 
                 {(activeMetricTab === 'both' || activeMetricTab === 'revenue') && (
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    name={config.primaryMetricLabel} 
-                    stroke="#f59e0b" 
-                    strokeWidth={2.5} 
-                    fillOpacity={1} 
-                    fill="url(#primaryGradient)" 
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    name={config.primaryMetricLabel}
+                    stroke="#f59e0b"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#primaryGradient)"
                   />
                 )}
 
                 {(activeMetricTab === 'both' || activeMetricTab === 'revenue') && (
-                  <Area 
-                    type="monotone" 
-                    dataKey="adSpend" 
-                    name={config.secondaryMetricLabel} 
-                    stroke="#06b6d4" 
-                    strokeWidth={2} 
-                    fillOpacity={1} 
-                    fill="url(#secondaryGradient)" 
+                  <Area
+                    type="monotone"
+                    dataKey="adSpend"
+                    name={config.secondaryMetricLabel}
+                    stroke="#06b6d4"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#secondaryGradient)"
                   />
                 )}
 
                 {(activeMetricTab === 'both' || activeMetricTab === 'roas') && (
-                  <Line 
-                    type="monotone" 
-                    dataKey={(d: any) => (d.roas || 4.5) * 4000} 
-                    name="Efficiency Curve" 
-                    stroke="#10b981" 
-                    strokeWidth={2} 
+                  <Line
+                    type="monotone"
+                    dataKey={(d: any) => (d.roas || 4.5) * 4000}
+                    name="Efficiency Curve"
+                    stroke="#10b981"
+                    strokeWidth={2}
                     strokeDasharray="4 4"
                     dot={{ r: 3, fill: '#10b981' }}
                   />
@@ -438,10 +420,10 @@ export default function AlignedExecutiveCharts({
                     onMouseLeave={() => setActiveChannelHover(null)}
                   >
                     {config.donutData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.fill} 
-                        stroke="#09090b" 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.fill}
+                        stroke="#09090b"
                         strokeWidth={2}
                       />
                     ))}
@@ -476,8 +458,8 @@ export default function AlignedExecutiveCharts({
           {/* Breakdown Legend List */}
           <div className="space-y-2 pt-2 border-t border-white/5 text-xs font-mono">
             {config.donutData.map((ch) => (
-              <div 
-                key={ch.name} 
+              <div
+                key={ch.name}
                 className={cn(
                   "flex items-center justify-between p-1.5 rounded-lg transition-colors",
                   activeChannelHover === ch.name ? "bg-white/10" : "hover:bg-white/[0.02]"
@@ -534,9 +516,9 @@ export default function AlignedExecutiveCharts({
               </div>
 
               <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-400 rounded-full" 
-                  style={{ width: `${Math.min(100, (item.actual / (item.target || 1)) * 100)}%` }} 
+                <div
+                  className="h-full bg-emerald-400 rounded-full"
+                  style={{ width: `${Math.min(100, (item.actual / (item.target || 1)) * 100)}%` }}
                 />
               </div>
 

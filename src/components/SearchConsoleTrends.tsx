@@ -107,8 +107,8 @@ function TrendChart({ timeSeries, metric, color, label }: {
         {/* Grid lines */}
         {yLabels.map((l, i) => (
           <g key={i}>
-            <line x1={padding.left} y1={l.y} x2={width - padding.right} y2={l.y} stroke="#27272a" strokeWidth="0.5" />
-            <text x={padding.left - 6} y={l.y + 3} textAnchor="end" fill="#52525b" fontSize="9" fontFamily="monospace">
+            <line x1={padding.left} y1={l.y} x2={width - padding.right} y2={l.y} stroke="var(--sigma-border-strong)" strokeWidth="0.5" />
+            <text x={padding.left - 6} y={l.y + 3} textAnchor="end" fill="var(--sigma-text-muted)" fontSize="9" fontFamily="monospace">
               {l.value >= 1000 ? `${(l.value / 1000).toFixed(1)}k` : l.value}
             </text>
           </g>
@@ -124,7 +124,7 @@ function TrendChart({ timeSeries, metric, color, label }: {
             x={points[idx].x}
             y={height - 4}
             textAnchor="middle"
-            fill="#52525b"
+            fill="var(--sigma-text-muted)"
             fontSize="8"
             fontFamily="monospace"
           >

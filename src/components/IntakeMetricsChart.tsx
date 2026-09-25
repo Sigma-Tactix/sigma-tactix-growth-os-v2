@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  AreaChart, 
-  Area, 
+import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   Line,
   ComposedChart,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { 
-  Database, 
-  Zap, 
-  Activity, 
-  ArrowUpRight, 
-  Layers, 
-  RefreshCw, 
-  Filter, 
+import {
+  Database,
+  Zap,
+  Activity,
+  ArrowUpRight,
+  Layers,
+  RefreshCw,
+  Filter,
   Sparkles,
   Server,
   Globe,
@@ -83,9 +83,9 @@ const CustomIntakeTooltip = ({ active, payload, label }: any) => {
           {payload.map((entry: any, index: number) => (
             <div key={`item-${index}`} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div 
-                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" 
-                  style={{ backgroundColor: entry.color, color: entry.color }} 
+                <div
+                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
+                  style={{ backgroundColor: entry.color, color: entry.color }}
                 />
                 <span className="text-zinc-300 capitalize text-[11px] font-mono">{entry.name}:</span>
               </div>
@@ -105,7 +105,7 @@ const CustomIntakeTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function IntakeMetricsChart() {
+export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolean }) {
   const [timeRange, setTimeRange] = useState<TimeRange>('24H');
   const [viewMode, setViewMode] = useState<ViewMode>('OVERVIEW');
   const [isSimulatingBurst, setIsSimulatingBurst] = useState(false);
@@ -127,11 +127,12 @@ export default function IntakeMetricsChart() {
     setChartData(baseData);
   }, [baseData]);
 
-  // Live real-time incoming intake pulse
+  // Only animate telemetry when a caller supplies an authoritative live mode.
   useEffect(() => {
+    if (!isLive) return;
     const timer = setInterval(() => {
       setLivePulseCount(prev => prev + Math.floor(Math.random() * 24 + 8));
-      
+
       setChartData(prev => {
         const lastIdx = prev.length - 1;
         const current = prev[lastIdx];
@@ -148,7 +149,7 @@ export default function IntakeMetricsChart() {
     }, 3500);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isLive]);
 
   const handleSimulateBurst = () => {
     setIsSimulatingBurst(true);
@@ -190,38 +191,38 @@ export default function IntakeMetricsChart() {
   return (
     <div className="bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden space-y-6">
       {/* Background Accent Grid */}
-      <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-        style={{ 
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
           backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)',
-          backgroundSize: '24px 24px' 
-        }} 
+          backgroundSize: '24px 24px'
+        }}
       />
 
       {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/5 pb-6 relative z-10">
         <div>
           <div className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-accent flex items-center gap-2 mb-1.5">
-            <Radio size={14} className="text-accent animate-pulse" /> Recharts Trend Analysis Engine
+            <Radio size={14} className="text-accent" /> Data intake overview
           </div>
           <div className="flex items-center gap-3">
             <h3 className="text-2xl font-heading font-black silver-text tracking-tight">
               Incoming Data Intake Metrics
             </h3>
             <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />
-              Live Stream Active
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              {isLive ? 'Live stream' : 'Sample dataset'}
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1 max-w-xl">
-            Real-time telemetry of omnichannel data ingestion, pgvector 1536-dimensional embeddings, and pipeline sync rates across 10 Second Brain Vaults.
+            {isLive ? 'Current connector telemetry for data intake and indexing.' : 'Interactive sample data for planning. Connect a verified ingestion source to display current telemetry.'}
           </p>
         </div>
 
         {/* Action Buttons & Time Toggles */}
         <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Selector */}
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+          <div className="sigma-segmented">
             {[
               { id: 'OVERVIEW', label: 'Overview' },
               { id: 'SOURCES', label: 'By Source' },
@@ -231,10 +232,10 @@ export default function IntakeMetricsChart() {
                 key={mode.id}
                 onClick={() => setViewMode(mode.id as ViewMode)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all",
+                  "sigma-segment font-mono",
                   viewMode === mode.id
-                    ? "bg-accent text-background font-black shadow-md amber-glow"
-                    : "text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {mode.label}
@@ -243,16 +244,16 @@ export default function IntakeMetricsChart() {
           </div>
 
           {/* Time Range Selector */}
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+          <div className="sigma-segmented">
             {(['24H', '7D', '30D'] as TimeRange[]).map(range => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all",
+                  "sigma-segment font-mono",
                   timeRange === range
-                    ? "bg-white/15 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {range}
@@ -281,7 +282,7 @@ export default function IntakeMetricsChart() {
             {totalEventsSum.toLocaleString()}
           </div>
           <div className="text-[10px] font-mono text-green-400 mt-0.5 flex items-center gap-1">
-            <ArrowUpRight size={12} /> +18.4% velocity
+            <ArrowUpRight size={12} /> {isLive ? 'Current period' : 'Illustrative'}
           </div>
         </div>
 
@@ -301,17 +302,17 @@ export default function IntakeMetricsChart() {
             {avgThroughput} MB/hr
           </div>
           <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
-            Zero dropouts
+            {isLive ? 'Reported throughput' : 'Sample throughput'}
           </div>
         </div>
 
         <div className="p-4 rounded-xl bg-black/30 border border-white/5">
           <div className="text-[10px] font-mono uppercase text-muted tracking-wider">Parsing Success</div>
           <div className="text-xl font-heading font-black text-emerald-400 mt-1">
-            99.94%
+            {isLive ? '—' : '99.94%'}
           </div>
           <div className="text-[10px] font-mono text-emerald-500/80 mt-0.5">
-            Verified HMAC SHA-256
+            {isLive ? 'Awaiting source field' : 'Illustrative rate'}
           </div>
         </div>
       </div>
@@ -332,58 +333,58 @@ export default function IntakeMetricsChart() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
-              <XAxis 
-                dataKey="time" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }} 
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }}
                 dy={8}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }}
                 tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}
               />
               <Tooltip content={<CustomIntakeTooltip />} />
-              <Area 
-                type="monotone" 
-                dataKey="totalEvents" 
+              <Area
+                type="monotone"
+                dataKey="totalEvents"
                 name="Intake Events"
-                stroke="#F59E0B" 
+                stroke="#F59E0B"
                 strokeWidth={2.5}
-                fillOpacity={1} 
-                fill="url(#intakeEventsGrad)" 
+                fillOpacity={1}
+                fill="url(#intakeEventsGrad)"
               />
-              <Area 
-                type="monotone" 
-                dataKey="vectors" 
+              <Area
+                type="monotone"
+                dataKey="vectors"
                 name="Vectors Embedded"
-                stroke="#06B6D4" 
+                stroke="#06B6D4"
                 strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#vectorsGrad)" 
+                fillOpacity={1}
+                fill="url(#vectorsGrad)"
               />
             </AreaChart>
           ) : viewMode === 'SOURCES' ? (
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
-              <XAxis 
-                dataKey="time" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }} 
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }}
                 dy={8}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }}
                 tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}
               />
               <Tooltip content={<CustomIntakeTooltip />} />
-              <Legend 
-                wrapperStyle={{ paddingTop: '10px', fontSize: '11px', fontFamily: 'monospace' }} 
+              <Legend
+                wrapperStyle={{ paddingTop: '10px', fontSize: '11px', fontFamily: 'monospace' }}
                 iconType="circle"
               />
               <Bar dataKey="ga4" name="GA4 Web Analytics" stackId="sources" fill="#4285F4" radius={[0, 0, 0, 0]} />
@@ -394,26 +395,26 @@ export default function IntakeMetricsChart() {
           ) : (
             <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
-              <XAxis 
-                dataKey="time" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }} 
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#A1A1AA', fontSize: 10, fontFamily: 'monospace' }}
                 dy={8}
               />
-              <YAxis 
+              <YAxis
                 yAxisId="left"
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }} 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }}
                 tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}
               />
-              <YAxis 
+              <YAxis
                 yAxisId="right"
                 orientation="right"
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#10B981', fontSize: 10, fontFamily: 'monospace' }} 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#10B981', fontSize: 10, fontFamily: 'monospace' }}
                 domain={[99.5, 100]}
                 tickFormatter={(val) => `${val}%`}
               />
@@ -438,7 +439,7 @@ export default function IntakeMetricsChart() {
         </div>
         <div className="flex items-center gap-2.5 text-zinc-400 md:justify-end">
           <CheckCircle2 size={14} className="text-green-400" />
-          <span>Sync Status: <strong>Zero Loss / Idempotent</strong></span>
+          <span>Data status: <strong>{isLive ? 'Connector supplied' : 'Sample data'}</strong></span>
         </div>
       </div>
     </div>

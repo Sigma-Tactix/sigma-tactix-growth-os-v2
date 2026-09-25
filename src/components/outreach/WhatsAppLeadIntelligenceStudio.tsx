@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { 
-  MessageSquare, 
-  Sparkles, 
-  Send, 
-  CheckCircle2, 
-  Clock, 
-  Calendar, 
-  Phone, 
-  FileCode, 
-  Copy, 
-  Check, 
-  Download, 
-  Play, 
-  AlertTriangle, 
-  ShieldCheck, 
-  TrendingUp, 
-  ArrowRight, 
-  Users, 
-  RefreshCw, 
-  Flame, 
-  Zap, 
-  Sliders, 
-  Globe, 
+import {
+  MessageSquare,
+  Sparkles,
+  Send,
+  CheckCircle2,
+  Clock,
+  Calendar,
+  Phone,
+  FileCode,
+  Copy,
+  Check,
+  Download,
+  Play,
+  AlertTriangle,
+  ShieldCheck,
+  TrendingUp,
+  ArrowRight,
+  Users,
+  RefreshCw,
+  Flame,
+  Zap,
+  Sliders,
+  Globe,
   Database,
   Building2,
   Lock,
@@ -340,7 +340,7 @@ export default function WhatsAppLeadIntelligenceStudio() {
         ? `أهلاً ${leadName.split(' ')[0]}، شكراً لتواصلك مع سيجما تاكتيكس. اطلعت على متطلباتك بخصوص النمو والتسويق المدعوم بالذكاء الاصطناعي ويسعدنا جداً التعاون معك. يمكنك حجز جلسة تشخيص استراتيجي مباشرة عبر هذا الرابط: ${activeSkin.bookingLink}.`
         : `Hi ${leadName.split(' ')[0]}, thank you for reaching out to ${activeSkin.name}. I reviewed your note regarding ${leadCompany}'s growth goals, and our Growth Diagnostic is built specifically to solve this. You can secure a 20-minute diagnostic session directly on our calendar here: ${activeSkin.bookingLink}.`;
 
-      const internalNote = tier === 'hot' 
+      const internalNote = tier === 'hot'
         ? `High priority inbound (${leadAuthority}) with explicit pain and verified budget anchor. Instant WhatsApp alert dispatched to founders.`
         : `Warm lead queued for automated two-way WhatsApp nurturing and 3-step follow-up scheduler.`;
 
@@ -403,7 +403,7 @@ export default function WhatsAppLeadIntelligenceStudio() {
       if (isLegal) {
         triggerHandoff = true;
         handoffReason = 'Legal / Contract Query: Lead requested NDA or legal agreements';
-        replyText = isArabic 
+        replyText = isArabic
           ? 'بخصوص الاتفاقيات القانونية وحفظ السرية، سأقوم بتحويل المحادثة إلى أحد الشركاء المؤسسين للتواصل معك مباشرة اليوم.'
           : 'For legal agreements and NDAs, I am having one of our founding partners review this and message you directly today. They will follow up shortly.';
       } else if (isCustomPricing) {
@@ -1490,7 +1490,7 @@ Hard Rules for WhatsApp Agent:
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
             {/* File Switcher Tabs */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="sigma-segmented">
               {[
                 { key: 'N8N_03', label: '03-followup-scheduler.json', icon: Clock },
                 { key: 'N8N_01', label: '01-lead-intake-qualify.json', icon: Zap },
@@ -1505,10 +1505,10 @@ Hard Rules for WhatsApp Agent:
                     key={tabItem.key}
                     onClick={() => setActiveCodeFile(tabItem.key as any)}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-mono transition-all',
+                      'sigma-segment flex items-center gap-1.5 font-mono',
                       activeCodeFile === tabItem.key
-                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-sm'
-                        : 'border border-white/10 bg-black/40 text-slate-400 hover:text-white hover:bg-white/5'
+                        ? 'sigma-segment-active'
+                        : ''
                     )}
                   >
                     <Icon size={12} />

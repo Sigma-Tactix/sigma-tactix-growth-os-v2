@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Target, 
   Search, 
@@ -49,10 +49,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
+import { Button, GlassCard, Badge, Tabs } from '@/src/components/ui';
 import { useToast } from '@/src/contexts/ToastContext';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { INDUSTRY_MEDIA_PLAN_TEMPLATES, MediaPlanTemplate } from '@/src/data/mediaPlanTemplates';
+import { apiFetch } from '@/src/lib/api';
+import { parseMediaPlanText } from '@/src/lib/mediaPlanParser';
 
 // Interfaces for Performance Marketing Suite
 export interface MediaPlan {
@@ -65,6 +68,7 @@ export interface MediaPlan {
   targetBlendedCac: number;
   targetBlendedRoas: number;
   status: 'ACTIVE' | 'DRAFT' | 'COMPLETED';
+  sourceEvidence?: string[];
 }
 
 export interface IntentAudience {
@@ -340,17 +344,18 @@ export default function PaidAdsPage() {
   const { currentWorkspace } = useWorkspace();
   const navigate = useNavigate();
 
-  const hasConnectedAdAccounts = useMemo(() => {
-    try {
-      const cached = localStorage.getItem('sigmatactix_active_pipelines');
-      if (!cached) return false;
-      const parsed = JSON.parse(cached);
-      return Array.isArray(parsed) && parsed.some((p: any) => 
-        p.status === 'CONNECTED' && (p.type === 'GOOGLE_ADS' || p.type === 'META_ADS' || p.type === 'LINKEDIN_ADS')
-      );
-    } catch {
-      return false;
-    }
+  const [hasConnectedAdAccounts, setHasConnectedAdAccounts] = useState(false);
+  useEffect(() => {
+    const loadVerifiedAdAccounts = async () => {
+      try {
+        const response = await apiFetch('/api/workspace/pipelines');
+        const data = await response.json();
+        setHasConnectedAdAccounts(Boolean(response.ok && data.pipelines?.some((p: any) =>
+          p.status === 'active' && p.verificationState === 'verified' && /ads|ad manager|campaign manager/i.test(String(p.platform || '')),
+        )));
+      } catch { setHasConnectedAdAccounts(false); }
+    };
+    void loadVerifiedAdAccounts();
   }, []);
 
   const [showBenchmarkDemo, setShowBenchmarkDemo] = useState(false);
@@ -471,37 +476,53 @@ export default function PaidAdsPage() {
     );
   };
 
-  const handleSimulatePlanUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSimulatePlanUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedFileName(file.name);
     setIsUploadingPlan(true);
+    try {
+      let sourceText = '';
+      if (/\.(csv|txt|md|json)$/i.test(file.name)) {
+        sourceText = await file.text();
+      } else if (/\.xlsx?$/i.test(file.name)) {
+        const XLSX = await import('xlsx');
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        sourceText = workbook.SheetNames.map(sheet => XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])).join('\n');
+      } else {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiFetch('/api/workspace/vault/analyze-document', { method: 'POST', body: formData });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success || !result.analysis?.content) throw new Error(result.error || 'The file could not be read.');
+        sourceText = result.analysis.content;
+      }
 
-    setTimeout(() => {
-      setIsUploadingPlan(false);
-      setIsUploadPlanModalOpen(false);
-
+      const parsed = parseMediaPlanText(sourceText, file.name);
       const parsedPlan: MediaPlan = {
         id: `mp-uploaded-${Date.now()}`,
-        name: `Imported Plan (${file.name.replace(/\.[^/.]+$/, '')})`,
-        objective: 'Omnichannel Growth & Demand Capture',
-        flightStart: '2026-10-15',
-        flightEnd: '2026-12-31',
-        totalBudget: 55000,
-        targetBlendedCac: 42,
-        targetBlendedRoas: 5.2,
-        status: 'ACTIVE'
+        name: parsed.name,
+        objective: parsed.objective,
+        flightStart: parsed.flightStart,
+        flightEnd: parsed.flightEnd,
+        totalBudget: parsed.totalBudget,
+        targetBlendedCac: parsed.targetBlendedCac,
+        targetBlendedRoas: parsed.targetBlendedRoas,
+        status: 'DRAFT',
+        sourceEvidence: parsed.evidence,
       };
-
-      setMediaPlans([parsedPlan, ...mediaPlans]);
+      setMediaPlans(prev => [parsedPlan, ...prev]);
       setSelectedPlanId(parsedPlan.id);
       setFlightBudget(parsedPlan.totalBudget);
-
-      notifySuccess(
-        'Media Plan Extracted by AI',
-        `Successfully extracted flight budget ($55,000), 4 target channels, and CAC targets from "${file.name}".`
-      );
-    }, 1400);
+      if (Object.keys(parsed.channelWeights).length) setChannelWeights(parsed.channelWeights);
+      setIsUploadPlanModalOpen(false);
+      notifySuccess('Media Plan Parsed', `Imported verified fields from "${file.name}". Review the draft before activation.`);
+    } catch (error) {
+      notifyWarning('Media Plan Not Imported', error instanceof Error ? error.message : 'The file could not be parsed.');
+    } finally {
+      setIsUploadingPlan(false);
+      e.target.value = '';
+    }
   };
 
   const handleApplyRecommendedMix = () => {
@@ -740,43 +761,40 @@ export default function PaidAdsPage() {
   return (
     <div className="space-y-8 pb-16">
       {/* Top Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-6 sm:p-8 bg-zinc-900/70 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 text-[10px] font-mono tracking-wider text-accent bg-accent/15 border border-accent/30 rounded-full font-bold">
-              PERFORMANCE MARKETING ENGINE
-            </span>
-            <span className="text-zinc-500 text-xs">•</span>
-            <span className="text-xs font-mono text-zinc-300 font-bold bg-white/5 px-2 py-0.5 rounded border border-white/10">
-              ENCLAVE: {currentWorkspace.name}
-            </span>
+            <Badge variant="brand" size="sm" icon={<Target size={12} />}>Performance Marketing Engine</Badge>
+            <Badge variant="neutral" size="sm">Enclave: {currentWorkspace.name}</Badge>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-black silver-text tracking-tight flex items-center gap-3">
-            <Target className="text-accent" size={32} />
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
             Performance Marketing & Media Strategy
           </h1>
-          <p className="text-zinc-400 text-sm mt-2 max-w-3xl leading-relaxed">
+          <p className="text-sm text-[var(--sigma-text-muted)] mt-1.5 max-w-3xl leading-relaxed">
             End-to-end performance engine: Media Plan creation, Intent & Signal Audience discovery, dynamic channel & device budget allocation, universal campaign telemetry, and automated UTM tracking.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => notifyInfo('Safety Gate Verified', 'Vortex-02 is strictly bound by the $1,000/day autonomous shift cap. Excess shifts route to Admin HITL queue.')}
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl text-xs font-mono flex items-center gap-2 transition-all cursor-pointer"
+            icon={<ShieldCheck size={13} className="text-emerald-400" />}
           >
-            <ShieldCheck size={14} className="text-emerald-400" />
             HITL Cap: $1,000/day
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleDeployVortexSwarm}
             disabled={isDeployingVortex}
-            className="px-5 py-2.5 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all hover:opacity-90 amber-glow shadow-xl disabled:opacity-50"
+            isLoading={isDeployingVortex}
+            icon={<Play size={13} />}
           >
-            <Play size={14} className={cn("fill-current", isDeployingVortex && "animate-spin")} />
             {isDeployingVortex ? 'Executing Swarm...' : 'Deploy Performance Swarm'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1034,30 +1052,21 @@ export default function PaidAdsPage() {
       </div>
 
       {/* Main Suite Tabs */}
-      <div className="border-b border-white/10 flex gap-4 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'MEDIA_PLAN', label: '1. Media Plan Creator', icon: Calendar },
-          { id: 'AUDIENCE_INTENT', label: '2. Intent & Signal Audiences', icon: Users },
-          { id: 'CHANNELS_DEVICES', label: '3. Channel & Device Allocator', icon: Sliders },
-          { id: 'CAMPAIGN_METRICS', label: '4. Universal Campaign Metrics', icon: BarChart3 },
-          { id: 'UTM_BUILDER', label: '5. Automatic UTM Builder', icon: Link },
-          { id: 'SEARCH_ADS', label: 'Ad Creatives & RSA Studio', icon: Search }
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id as any)}
-            className={cn(
-              "pb-4 text-xs font-mono uppercase tracking-wider font-bold transition-all relative whitespace-nowrap flex items-center gap-2",
-              activeTab === t.id ? "text-accent" : "text-muted hover:text-white"
-            )}
-          >
-            <t.icon size={14} />
-            <span>{t.label}</span>
-            {activeTab === t.id && (
-              <motion.div layoutId="perfTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full amber-glow shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
-            )}
-          </button>
-        ))}
+      <div className="overflow-x-auto no-scrollbar pb-1">
+        <Tabs
+          tabs={[
+            { id: 'MEDIA_PLAN', label: '1. Media Plan Creator', icon: <Calendar size={13} /> },
+            { id: 'AUDIENCE_INTENT', label: '2. Intent & Signal Audiences', icon: <Users size={13} /> },
+            { id: 'CHANNELS_DEVICES', label: '3. Channel & Device Allocator', icon: <Sliders size={13} /> },
+            { id: 'CAMPAIGN_METRICS', label: '4. Universal Campaign Metrics', icon: <BarChart3 size={13} /> },
+            { id: 'UTM_BUILDER', label: '5. Automatic UTM Builder', icon: <Link size={13} /> },
+            { id: 'SEARCH_ADS', label: 'Ad Creatives & RSA Studio', icon: <Search size={13} /> }
+          ]}
+          activeTab={activeTab}
+          onChange={(t) => setActiveTab(t as any)}
+          variant="pill"
+          size="sm"
+        />
       </div>
 
       {/* ========================================================================= */}
@@ -1067,79 +1076,85 @@ export default function PaidAdsPage() {
         <div className="space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold silver-text">Active Media Plans</h3>
-              <p className="text-xs text-zinc-400">Manage multi-channel flights, budget envelopes, and blended performance targets.</p>
+              <h3 className="text-base font-semibold text-[var(--sigma-text)]">Active Media Plans</h3>
+              <p className="text-xs text-[var(--sigma-text-muted)]">Manage multi-channel flights, budget envelopes, and blended performance targets.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setIsUploadPlanModalOpen(true)}
-                className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                icon={<Upload size={13} className="text-[#ff481b]" />}
               >
-                <Upload size={14} className="text-accent" /> Upload Media Plan (.csv / .xlsx)
-              </button>
+                Upload Media Plan (.csv / .xlsx)
+              </Button>
 
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setIsPlanModalOpen(true)}
-                className="px-4 py-2.5 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 amber-glow cursor-pointer shadow-lg"
+                icon={<Plus size={14} />}
               >
-                <Plus size={14} /> Create Custom Plan
-              </button>
+                Create Custom Plan
+              </Button>
             </div>
           </div>
 
           {/* Active Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {mediaPlans.map((plan) => (
-              <div
+              <GlassCard
                 key={plan.id}
+                spotlight
+                interactive
                 onClick={() => {
                   setSelectedPlanId(plan.id);
                   setFlightBudget(plan.totalBudget);
                   setUtmCampaign(plan.name.toLowerCase().replace(/[^a-z0-9]/g, '_'));
                 }}
                 className={cn(
-                  "p-6 bg-surface border rounded-2xl cursor-pointer transition-all space-y-4 relative overflow-hidden",
-                  selectedPlanId === plan.id ? "border-accent shadow-2xl bg-accent/[0.02]" : "border-white/10 hover:border-white/20"
+                  "p-5 cursor-pointer transition-all space-y-4 relative overflow-hidden",
+                  selectedPlanId === plan.id ? "border-[#ff481b]/50 ring-1 ring-[#ff481b]/30 shadow-md" : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-mono text-[10px] font-bold">
+                  <Badge variant="brand" size="xs">
                     {plan.objective}
-                  </span>
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                  </Badge>
+                  <Badge variant={plan.status === 'ACTIVE' ? 'success' : 'neutral'} size="xs" dot>
                     {plan.status}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-bold text-white mb-1">{plan.name}</h4>
-                  <div className="text-xs font-mono text-zinc-400">
+                  <h4 className="text-base font-semibold text-[var(--sigma-text)] mb-1">{plan.name}</h4>
+                  <div className="text-xs font-mono text-[var(--sigma-text-muted)]">
                     Flight Duration: {plan.flightStart} → {plan.flightEnd}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 p-3 bg-black/40 rounded-xl border border-white/5 text-xs font-mono">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)] text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-muted uppercase">Flight Budget:</span>
-                    <div className="text-white font-bold mt-0.5">${plan.totalBudget.toLocaleString()}</div>
+                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Flight Budget:</span>
+                    <div className="text-[var(--sigma-text)] font-semibold mt-0.5">${plan.totalBudget.toLocaleString()}</div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted uppercase">Target CAC:</span>
-                    <div className="text-amber-400 font-bold mt-0.5">${plan.targetBlendedCac}</div>
+                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Target CAC:</span>
+                    <div className="text-amber-400 font-semibold mt-0.5">${plan.targetBlendedCac}</div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted uppercase">Target ROAS:</span>
-                    <div className="text-emerald-400 font-bold mt-0.5">{plan.targetBlendedRoas}x</div>
+                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Target ROAS:</span>
+                    <div className="text-emerald-400 font-semibold mt-0.5">{plan.targetBlendedRoas}x</div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs font-mono">
-                  <span className="text-zinc-400">Allocated to Multi-Network Channels</span>
-                  <span className="text-accent flex items-center gap-1 font-bold">
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--sigma-border)] text-xs font-mono">
+                  <span className="text-[var(--sigma-text-muted)]">Multi-Network Channel Envelope</span>
+                  <span className="text-[#ff481b] flex items-center gap-1 font-semibold">
                     {selectedPlanId === plan.id ? 'Selected for Execution ✓' : 'Select Plan →'}
                   </span>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
 
@@ -1161,16 +1176,16 @@ export default function PaidAdsPage() {
               </div>
 
               {/* Industry Filter Buttons */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5">
+              <div className="sigma-segmented font-mono">
                 {['ALL', 'B2B Enterprise SaaS', 'E-Commerce & D2C Brands', 'Professional Advisory & Services', 'HealthTech & Digital Health', 'FinTech & Capital Infrastructure'].map(ind => (
                   <button
                     key={ind}
                     onClick={() => setSelectedIndustryFilter(ind)}
                     className={cn(
-                      "px-2.5 py-1 text-[11px] font-mono rounded-lg transition-all cursor-pointer whitespace-nowrap",
+                      "sigma-segment !min-h-8 !py-1 text-[11px] cursor-pointer",
                       selectedIndustryFilter === ind
-                        ? "bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30"
-                        : "text-zinc-400 hover:text-white"
+                        ? "sigma-segment-active"
+                        : ""
                     )}
                   >
                     {ind === 'ALL' ? 'All Verticals' : ind.split(' ')[0]}

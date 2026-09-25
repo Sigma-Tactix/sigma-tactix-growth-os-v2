@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  Zap, 
-  Check, 
-  X, 
-  Plus, 
-  Terminal, 
-  Search, 
-  Copy, 
-  Edit3, 
-  Trash2, 
-  Upload, 
-  Download, 
-  FileCode, 
-  Code, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Zap,
+  Check,
+  X,
+  Plus,
+  Terminal,
+  Search,
+  Copy,
+  Edit3,
+  Trash2,
+  Upload,
+  Download,
+  FileCode,
+  Code,
+  CheckCircle2,
+  AlertCircle,
   FileText,
   Layers,
   Sparkles
@@ -22,10 +22,10 @@ import {
 import { AgentSkill, ScopedAgent } from '@/src/data/agentCockpitData';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
-import { 
-  parseSkillFile, 
-  exportSkillToJSON, 
-  exportSkillToMarkdown 
+import {
+  parseSkillFile,
+  exportSkillToJSON,
+  exportSkillToMarkdown
 } from '@/src/services/agentFilesService';
 
 interface AgentSkillsManagerProps {
@@ -365,16 +365,16 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
       {/* Search & Category Filter Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Category filters */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="sigma-segmented font-mono">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all",
+                "sigma-segment !min-h-8 !py-1 text-[11px]",
                 selectedCategory === cat
-                  ? "bg-accent text-background font-black shadow-sm"
-                  : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               {cat}
@@ -472,7 +472,7 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                     title={skill.isActive ? "Disable Skill" : "Enable Skill"}
                     className={cn(
                       "w-7 h-7 rounded-lg flex items-center justify-center transition-all border shrink-0",
-                      skill.isActive 
+                      skill.isActive
                         ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
                         : "bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700"
                     )}
@@ -577,15 +577,15 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
             </div>
 
             {/* Navigation Tabs in Edit Modal */}
-            <div className="flex items-center gap-2 px-5 pt-3 border-b border-white/5 bg-black/20">
+            <div className="sigma-segmented mx-5 mt-3">
               <button
                 type="button"
                 onClick={() => setEditTab('general')}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg transition-all border-b-2",
+                  "sigma-segment font-mono",
                   editTab === 'general'
-                    ? "border-accent text-accent bg-white/5"
-                    : "border-transparent text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 General Settings
@@ -594,10 +594,10 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                 type="button"
                 onClick={() => setEditTab('schema')}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg transition-all border-b-2 flex items-center gap-1.5",
+                  "sigma-segment font-mono flex items-center gap-1.5",
                   editTab === 'schema'
-                    ? "border-accent text-accent bg-white/5"
-                    : "border-transparent text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 <Code size={12} /> Parameters Schema (JSON)
@@ -606,10 +606,10 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                 type="button"
                 onClick={() => setEditTab('code')}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg transition-all border-b-2 flex items-center gap-1.5",
+                  "sigma-segment font-mono flex items-center gap-1.5",
                   editTab === 'code'
-                    ? "border-accent text-accent bg-white/5"
-                    : "border-transparent text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 <FileCode size={12} /> Execution Handler (TS/JS)
@@ -618,10 +618,10 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                 type="button"
                 onClick={() => setEditTab('doc')}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg transition-all border-b-2 flex items-center gap-1.5",
+                  "sigma-segment font-mono flex items-center gap-1.5",
                   editTab === 'doc'
-                    ? "border-accent text-accent bg-white/5"
-                    : "border-transparent text-zinc-400 hover:text-white"
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 <FileText size={12} /> SKILL.md Doc

@@ -2,7 +2,7 @@ export type ConnectorPlatform =
   | 'Slack' | 'Microsoft Teams' | 'Notion' | 'Jira' | 'Linear' | 'Confluence'
   | 'LinkedIn Ads' | 'TikTok Ads' | 'Twitter (X) Ads' | 'Apple Search Ads'
   | 'Reddit Ads' | 'Pinterest Ads' | 'HubSpot CRM' | 'Meta Ads' | 'Google Ads'
-  | 'LinkedIn (Organic)' | 'Twitter/X (Organic)' | 'Facebook Pages' | 'WordPress'
+  | 'LinkedIn (Organic)' | 'Twitter/X (Organic)' | 'Facebook Pages' | 'Instagram (Organic)' | 'Reddit (Organic)' | 'WordPress'
   | 'Snapchat Ads' | 'Amazon Ads' | 'Microsoft Ads' | 'Shopify' | 'Klaviyo'
   | 'Mailchimp' | 'Salesforce' | 'Google My Business' | 'Google Analytics'
   | 'Google Search Console' | 'Semrush' | 'Ahrefs' | 'Similarweb' | 'WhatsApp Business';
@@ -14,6 +14,8 @@ export interface ConnectorCredentialsInput {
   accessToken?: string;
   developerToken?: string;
   accountId?: string;
+  propertyId?: string;
+  serviceAccountKey?: string;
   webhookUrl?: string;
   siteUrl?: string;
 }
@@ -22,6 +24,10 @@ export interface Connector {
   id: string;
   platform: ConnectorPlatform;
   status: 'Connected' | 'Disconnected';
+  /** Server-owned verification state. `Connected` is retained for compatibility. */
+  verificationState?: 'configured' | 'verified' | 'syncing' | 'stale' | 'unsupported' | 'failed' | 'disconnected';
+  verificationError?: string;
+  verifiedAt?: string;
   lastSyncedAt?: string;
   connectedBy: string;
   credentials?: {
@@ -115,6 +121,7 @@ export interface SecondBrain {
     storagePath?: string;
     documentId?: string;
     mimeType?: string;
+    sha256?: string;
   }>;
   connectors: Connector[];
   internalStack: Array<{
@@ -137,14 +144,37 @@ export interface ActivePipeline {
   syncFrequency: string;
   protocol: string;
   status: 'active' | 'warning' | 'syncing';
+  /** Set only after a server-side provider adapter succeeds. */
+  verificationState?: 'configured' | 'verified' | 'failed' | 'unsupported';
+  verificationError?: string;
+  verifiedAt?: string;
   lastPing: string;
   latencyMs: number;
   credentialSnippet: string;
+  credential?: string;
   metricsCollected: string[];
   webhookUrl?: string;
   webhookSecret?: string;
   totalEventsIngested?: number;
   lastIngestedAt?: string;
+  allocatedAgents?: string[];
+  lastMetrics?: NormalizedMetrics;
+}
+
+export interface NormalizedMetrics {
+  source: string;
+  observedAt: string;
+  spend: number;
+  conversions: number;
+  revenue: number;
+  roas: number;
+  available: boolean;
+  /** Organic channel metrics have no required spend or revenue. */
+  mediaType?: 'organic' | 'paid';
+  activeUsers?: number;
+  sessions?: number;
+  engagements?: number;
+  impressions?: number;
 }
 
 export type GrowthFindingCategory =
@@ -472,6 +502,88 @@ export interface ClientWorkspace {
     platform: string;
     accountName: string;
     propertyId: string;
+  }>;
+}
+
+export interface AgentReachChannelStatus {
+  id: string;
+  name: string;
+  tier: number;
+  status: 'ok' | 'warn' | 'off' | 'error';
+  message: string;
+  backends: string[];
+  activeBackend: string | null;
+  fixCommand?: string;
+}
+
+export interface AgentReachDoctorSummary {
+  timestamp: string;
+  cliAvailable: boolean;
+  cliVersion?: string;
+  totalChannels: number;
+  readyCount: number;
+  warningCount: number;
+  offlineCount: number;
+  channels: Record<string, AgentReachChannelStatus>;
+}
+
+export interface AgentReachFetchResult {
+  success: boolean;
+  channel: string;
+  target: string;
+  title?: string;
+  content: string;
+  byteCount: number;
+  metadata?: Record<string, any>;
+  error?: string;
+}
+
+export interface CompetitorBattlecard {
+  competitorName: string;
+  targetUrl: string;
+  valueProposition: string;
+  coreStrengths: string[];
+  vulnerabilities: string[];
+  pricingSignals: string;
+  counterPositioning: string;
+  salesTalkTrack: string;
+  sourceDossierSummary: string;
+  timestamp: string;
+}
+
+export interface RepurposedArticle {
+  title: string;
+  subtitle: string;
+  format: string;
+  targetAudience: string;
+  markdownContent: string;
+  keyTakeaways: string[];
+  citedQuotes: Array<{ quote: string; context: string; sourceUrl: string }>;
+  estimatedReadTime: string;
+  sourceUrl: string;
+  sourceTitle?: string;
+  sourceThumbnail?: string;
+}
+
+export interface RepurposedCarouselAndThread {
+  sourceUrl: string;
+  sourceTitle?: string;
+  sourceThumbnail?: string;
+  slides: Array<{
+    slideNumber: number;
+    badge: string;
+    title: string;
+    subtitle: string;
+    contentPoints: string[];
+    takeaway: string;
+    visualCue: string;
+  }>;
+  tweetThread: Array<{
+    tweetNumber: number;
+    text: string;
+    characterCount: number;
+    hashtags: string[];
+    engagementHook: string;
   }>;
 }
 

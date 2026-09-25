@@ -41,6 +41,7 @@ import ReportTemplateSelector from '@/src/components/reports/ReportTemplateSelec
 import AlignedExecutiveCharts from '@/src/components/reports/AlignedExecutiveCharts';
 import ChannelAttributionTable from '@/src/components/reports/ChannelAttributionTable';
 import AudienceSegmentationView from '@/src/components/reports/AudienceSegmentationView';
+import { Button, GlassCard, Badge } from '@/src/components/ui';
 
 const widgetLibrary = [
   { 
@@ -313,28 +314,28 @@ export default function Reports() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-120px)] gap-4 -m-8 overflow-hidden bg-[#09090B]">
+    <div className="flex h-[calc(100vh-120px)] gap-4 -m-8 overflow-hidden bg-[var(--sigma-bg)] text-[var(--sigma-text)]">
       
       {/* ==================================================================== */}
       {/* LEFT SIDEBAR: WIDGETS & TEMPLATE SHORTCUTS */}
       {/* ==================================================================== */}
       <div className={cn(
-        "border-r border-white/5 flex flex-col bg-[#09090B] transition-all duration-300 z-20",
+        "border-r border-[var(--sigma-border)] flex flex-col bg-[var(--sigma-surface)]/60 backdrop-blur-md transition-all duration-300 z-20",
         isLeftSidebarOpen ? "w-64" : "w-14"
       )}>
-        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--sigma-border)] flex items-center justify-between">
           {isLeftSidebarOpen ? (
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] silver-text">
-              <Sparkles size={14} className="text-accent" />
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-[var(--sigma-text)]">
+              <Sparkles size={14} className="text-[var(--sigma-vermilion)]" />
               <span>Report Palette</span>
             </div>
           ) : (
-            <Sparkles size={16} className="text-accent mx-auto" />
+            <Sparkles size={16} className="text-[var(--sigma-vermilion)] mx-auto" />
           )}
 
           <button
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="p-1 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-colors"
+            className="p-1 hover:bg-[var(--sigma-surface-hover)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
             title={isLeftSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isLeftSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
@@ -342,10 +343,10 @@ export default function Reports() {
         </div>
 
         {isLeftSidebarOpen && (
-          <div className="flex-1 p-5 space-y-6 overflow-y-auto no-scrollbar">
+          <div className="flex-1 p-4 space-y-5 overflow-y-auto no-scrollbar">
             {/* Quick Template Switcher in Sidebar */}
             <div className="space-y-2">
-              <h4 className="text-[10px] font-black uppercase text-muted tracking-widest">
+              <h4 className="text-[11px] font-mono font-medium text-[var(--sigma-muted)] uppercase tracking-wider">
                 Templates
               </h4>
               <div className="space-y-1">
@@ -356,14 +357,14 @@ export default function Reports() {
                       key={tpl.id}
                       onClick={() => handleSelectTemplate(tpl)}
                       className={cn(
-                        "w-full text-left px-3 py-2 rounded-xl text-xs font-sans transition-all flex items-center justify-between group",
+                        "w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-between group",
                         isSelected 
-                          ? "bg-accent/20 text-accent font-bold border border-accent/40" 
-                          : "text-zinc-400 hover:text-white hover:bg-white/5"
+                          ? "bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] font-semibold border border-[var(--sigma-vermilion)]/30" 
+                          : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)]"
                       )}
                     >
                       <span className="truncate">{tpl.name}</span>
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[var(--sigma-vermilion)] shadow-sm" />}
                     </button>
                   );
                 })}
@@ -372,8 +373,8 @@ export default function Reports() {
 
             {/* Widget Groups */}
             {widgetLibrary.map((group) => (
-              <div key={group.id} className="space-y-3">
-                <h4 className="text-[10px] font-black uppercase text-muted tracking-widest">
+              <div key={group.id} className="space-y-2">
+                <h4 className="text-[11px] font-mono font-medium text-[var(--sigma-muted)] uppercase tracking-wider">
                   {group.type}
                 </h4>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -381,10 +382,10 @@ export default function Reports() {
                     <button
                       key={item.name}
                       onClick={() => setActiveViewSection(item.targetSection as any)}
-                      className="flex items-center gap-2.5 p-2.5 bg-surface border border-white/5 rounded-xl hover:bg-white/5 hover:border-accent/40 transition-all text-left group"
+                      className="flex items-center gap-2.5 p-2.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl hover:border-[var(--sigma-vermilion)]/40 hover:bg-[var(--sigma-surface-hover)] transition-all text-left group"
                     >
-                      <item.icon size={15} className="text-muted group-hover:text-accent transition-colors" />
-                      <span className="text-xs font-medium text-zinc-300 group-hover:text-white truncate">
+                      <item.icon size={15} className="text-[var(--sigma-muted)] group-hover:text-[var(--sigma-vermilion)] transition-colors" />
+                      <span className="text-xs font-medium text-[var(--sigma-text)] truncate">
                         {item.name}
                       </span>
                     </button>
@@ -402,50 +403,48 @@ export default function Reports() {
       <div className="flex-1 flex flex-col relative overflow-hidden">
         
         {/* Top Header Bar */}
-        <div className="h-16 border-b border-white/5 flex items-center justify-between px-6 lg:px-8 bg-background z-10">
+        <div className="h-16 border-b border-[var(--sigma-border)] flex items-center justify-between px-6 lg:px-8 bg-[var(--sigma-surface)]/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
-            <div className="text-sm font-black silver-text flex items-center gap-2">
-              <span>Executive Report:</span> 
-              <span className="text-accent">{currentTemplate.name}</span>
+            <div className="text-sm font-semibold flex items-center gap-2 text-[var(--sigma-text)]">
+              <span className="text-[var(--sigma-muted)]">Executive Report:</span> 
+              <span className="font-bold text-[var(--sigma-vermilion)]">{currentTemplate.name}</span>
             </div>
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-400">
-              <Calendar size={11} className="text-accent" />
-              <span>Q4 2023 (Oct 1 - Nov 30)</span>
-            </div>
+            <Badge variant="neutral" size="xs" icon={<Calendar size={11} className="text-[var(--sigma-vermilion)]" />}>
+              Q4 (Oct 1 - Nov 30)
+            </Badge>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button 
+          <div className="flex items-center gap-2.5">
+            <Button 
               onClick={handleSaveReport}
-              className="flex items-center gap-2 px-4 py-2 bg-accent text-background rounded-xl text-xs font-black uppercase tracking-wider hover:opacity-90 transition-all shadow-md"
+              variant="primary"
+              size="sm"
+              icon={<Save size={14} />}
             >
-              <Save size={14} /> 
-              <span className="hidden sm:inline">Save Report</span>
-            </button>
+              Save Report
+            </Button>
 
-            <button 
+            <Button 
               onClick={() => setIsShareModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 border border-white/10 hover:border-white/20 rounded-xl text-xs font-bold text-zinc-300 hover:text-white transition-all bg-white/5"
+              variant="outline"
+              size="sm"
+              icon={<Share2 size={14} />}
             >
-              <Share2 size={14} /> 
-              <span className="hidden sm:inline">Share</span>
-            </button>
+              Share
+            </Button>
 
             {/* Export Dropdown */}
             <div className="relative">
-              <button 
+              <Button 
                 onClick={() => setShowExportOptions(!showExportOptions)}
                 disabled={isExporting}
-                className="flex items-center gap-2 px-3.5 py-2 bg-white/5 border border-white/10 hover:border-accent/40 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
+                variant="outline"
+                size="sm"
+                icon={isExporting ? <span className="animate-spin h-3.5 w-3.5 border-2 border-[var(--sigma-vermilion)] border-t-transparent rounded-full" /> : <Download size={14} className="text-[var(--sigma-vermilion)]" />}
               >
-                {isExporting ? (
-                  <span className="animate-spin h-3 w-3 border-2 border-accent border-t-transparent rounded-full" />
-                ) : (
-                  <Download size={14} className="text-accent" />
-                )}
-                <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export"}</span>
-                <ChevronDown size={12} className="text-muted" />
-              </button>
+                <span>{isExporting ? "Exporting..." : "Export"}</span>
+                <ChevronDown size={12} className="text-[var(--sigma-muted)] ml-1" />
+              </Button>
               
               <AnimatePresence>
                 {showExportOptions && (
@@ -453,47 +452,47 @@ export default function Reports() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full right-0 mt-2 w-72 bg-zinc-950/95 border border-white/20 rounded-2xl p-2 shadow-2xl z-50 text-left space-y-1 backdrop-blur-xl"
+                    className="absolute top-full right-0 mt-2 w-72 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-2 shadow-2xl z-50 text-left space-y-1 backdrop-blur-xl"
                   >
-                    <div className="px-3 py-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-muted border-b border-white/5">
+                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-[var(--sigma-border)]">
                       Structured Executive Exports
                     </div>
 
                     <button 
                       onClick={handleExportSummaryCSV}
-                      className="w-full text-left px-3 py-2.5 hover:bg-white/5 rounded-xl flex items-center justify-between group transition-colors"
+                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
                         <FileSpreadsheet size={16} className="text-emerald-400" />
                         <div>
-                          <div className="text-xs font-bold text-white group-hover:text-accent">Campaign Attribution (CSV)</div>
-                          <div className="text-[9px] font-mono text-zinc-400">Channels, Source, Medium & CPA</div>
+                          <div className="text-xs font-semibold text-[var(--sigma-text)] group-hover:text-[var(--sigma-vermilion)]">Campaign Attribution (CSV)</div>
+                          <div className="text-[10px] font-mono text-[var(--sigma-muted)]">Channels, Source, Medium & CPA</div>
                         </div>
                       </div>
-                      <Download size={12} className="text-muted opacity-0 group-hover:opacity-100" />
+                      <Download size={12} className="text-[var(--sigma-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
 
                     <button 
                       onClick={handleExportSummaryPDF}
-                      className="w-full text-left px-3 py-2.5 hover:bg-white/5 rounded-xl flex items-center justify-between group transition-colors"
+                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
                         <FileText size={16} className="text-rose-400" />
                         <div>
-                          <div className="text-xs font-bold text-white group-hover:text-accent">Executive Summary (PDF)</div>
-                          <div className="text-[9px] font-mono text-zinc-400">Branded report for stakeholders</div>
+                          <div className="text-xs font-semibold text-[var(--sigma-text)] group-hover:text-[var(--sigma-vermilion)]">Executive Summary (PDF)</div>
+                          <div className="text-[10px] font-mono text-[var(--sigma-muted)]">Branded report for stakeholders</div>
                         </div>
                       </div>
-                      <Download size={12} className="text-muted opacity-0 group-hover:opacity-100" />
+                      <Download size={12} className="text-[var(--sigma-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
 
-                    <div className="px-3 py-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-muted border-b border-t border-white/5 mt-1">
+                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-t border-[var(--sigma-border)] mt-1">
                       Visual Artifacts
                     </div>
 
                     <button 
                       onClick={handleExportCanvasPDF}
-                      className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl flex items-center gap-2.5 text-xs font-medium text-zinc-300 hover:text-white"
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
                     >
                       <LayoutIcon size={14} className="text-secondary" />
                       <span>Visual Canvas (PDF)</span>
@@ -501,9 +500,9 @@ export default function Reports() {
 
                     <button 
                       onClick={handleExportPPTX}
-                      className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl flex items-center gap-2.5 text-xs font-medium text-zinc-300 hover:text-white"
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
                     >
-                      <FileJson size={14} className="text-accent" />
+                      <FileJson size={14} className="text-[var(--sigma-vermilion)]" />
                       <span>Presentation Deck (PPTX)</span>
                     </button>
                   </motion.div>
@@ -517,8 +516,8 @@ export default function Reports() {
               className={cn(
                 "p-2 rounded-xl border transition-colors",
                 isRightSidebarOpen 
-                  ? "bg-accent/20 border-accent/40 text-accent" 
-                  : "bg-white/5 border-white/10 text-muted hover:text-white"
+                  ? "bg-[var(--sigma-vermilion)]/15 border-[var(--sigma-vermilion)]/40 text-[var(--sigma-vermilion)]" 
+                  : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] text-[var(--sigma-muted)] hover:text-[var(--sigma-text)]"
               )}
               title="Toggle Widget Properties & Dimension Inspector"
             >
@@ -542,7 +541,7 @@ export default function Reports() {
 
         {/* Scrollable Aligned Canvas */}
         <div 
-          className="flex-1 bg-[#09090B] overflow-y-auto custom-scrollbar p-6 lg:p-8 space-y-8"
+          className="flex-1 bg-[var(--sigma-bg)] overflow-y-auto custom-scrollbar p-6 lg:p-8 space-y-8"
           id="report-canvas"
         >
           {/* Subtle Grid Accent Pattern */}
@@ -565,31 +564,33 @@ export default function Reports() {
           {/* 2. Aligned Executive KPI Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {currentTemplate.kpiSummary.map((kpi, idx) => (
-              <div 
+              <GlassCard 
                 key={kpi.label}
-                className="p-5 bg-surface border border-white/10 rounded-2xl shadow-xl space-y-2 relative overflow-hidden group hover:border-accent/40 transition-colors"
+                spotlight
+                elevation="flat"
+                className="p-5 space-y-2 relative group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
+                  <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-[var(--sigma-muted)]">
                     {kpi.label}
                   </span>
-                  <span className={cn(
-                    "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1",
-                    kpi.isPositive ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"
-                  )}>
-                    <TrendingUp size={10} />
+                  <Badge
+                    variant={kpi.isPositive ? "success" : "danger"}
+                    size="xs"
+                    icon={<TrendingUp size={10} />}
+                  >
                     {kpi.change}
-                  </span>
+                  </Badge>
                 </div>
 
-                <div className="text-2xl font-black silver-text font-mono tracking-tight">
+                <div className="text-2xl font-bold text-[var(--sigma-text)] font-mono tracking-tight">
                   {kpi.value}
                 </div>
 
-                <div className="text-[11px] text-zinc-400 font-sans truncate">
+                <div className="text-[11px] text-[var(--sigma-muted)] font-sans truncate">
                   {kpi.subtext}
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
 
@@ -660,77 +661,79 @@ export default function Reports() {
       {/* RIGHT SIDEBAR: PROPERTIES & DIMENSION INSPECTOR */}
       {/* ==================================================================== */}
       {isRightSidebarOpen && (
-        <div className="w-80 border-l border-white/5 flex flex-col bg-background z-20 animate-in slide-in-from-right duration-200">
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <div className="w-80 border-l border-[var(--sigma-border)] flex flex-col bg-[var(--sigma-surface)]/80 backdrop-blur-md z-20 animate-in slide-in-from-right duration-200">
+          <div className="p-4 border-b border-[var(--sigma-border)] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Settings2 size={16} className="text-accent" />
-              <h4 className="text-xs font-black uppercase text-accent tracking-[0.2em]">Dimension Inspector</h4>
+              <Settings2 size={15} className="text-[var(--sigma-vermilion)]" />
+              <h4 className="text-xs font-semibold text-[var(--sigma-text)] tracking-wide">Dimension Inspector</h4>
             </div>
-            <X 
-              size={16} 
-              className="text-muted cursor-pointer hover:text-white transition-colors" 
+            <button 
               onClick={() => setIsRightSidebarOpen(false)}
-            />
+              className="p-1 rounded-md text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)] transition-colors"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          <div className="flex-1 p-6 space-y-6 overflow-y-auto no-scrollbar">
+          <div className="flex-1 p-5 space-y-5 overflow-y-auto no-scrollbar">
             {/* Inspected Campaign Card */}
             {selectedCampaign && (
-              <div className="p-4 bg-surface border border-accent/30 rounded-xl space-y-3 shadow-lg">
-                <span className="text-[10px] font-mono uppercase text-accent font-bold tracking-wider block">
-                  Active Selected Entity
-                </span>
-                <div className="font-bold text-white text-xs font-mono break-all">
+              <GlassCard spotlight elevation="flat" className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="brand" size="xs">Active Selection</Badge>
+                  <span className="text-[10px] font-mono text-[var(--sigma-muted)]">{selectedCampaign.channel}</span>
+                </div>
+                <div className="font-semibold text-xs text-[var(--sigma-text)] font-mono break-all">
                   {selectedCampaign.campaignName}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-zinc-300 pt-2 border-t border-white/10">
-                  <div>Channel: <strong className="text-white block">{selectedCampaign.channel}</strong></div>
-                  <div>Medium: <strong className="text-white block">{selectedCampaign.medium}</strong></div>
-                  <div>Spend: <strong className="text-white block">${selectedCampaign.spend.toLocaleString()}</strong></div>
-                  <div>ROAS: <strong className="text-emerald-400 block">{selectedCampaign.roas}x</strong></div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[var(--sigma-muted)] pt-2 border-t border-[var(--sigma-border)]">
+                  <div>Channel: <strong className="text-[var(--sigma-text)] block">{selectedCampaign.channel}</strong></div>
+                  <div>Medium: <strong className="text-[var(--sigma-text)] block">{selectedCampaign.medium}</strong></div>
+                  <div>Spend: <strong className="text-[var(--sigma-text)] block">${selectedCampaign.spend.toLocaleString()}</strong></div>
+                  <div>ROAS: <strong className="text-emerald-500 block">{selectedCampaign.roas}x</strong></div>
                 </div>
-              </div>
+              </GlassCard>
             )}
 
             {/* Ingestion Data Sources */}
             <PropertySection label="Ingestion Data Sources">
-              <div className="space-y-2">
-                <div className="p-3 bg-surface border border-white/10 rounded-xl flex items-center justify-between cursor-pointer group hover:border-accent">
+              <div className="space-y-1.5">
+                <div className="p-3 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between hover:border-[var(--sigma-vermilion)]/40 transition-colors">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-accent" />
-                    <span className="text-xs text-white">Google Ads API & PMax</span>
+                    <div className="w-2 h-2 rounded-full bg-[var(--sigma-vermilion)]" />
+                    <span className="text-xs text-[var(--sigma-text)]">Google Ads API & PMax</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">Live</span>
+                  <Badge variant="success" size="xs">Live</Badge>
                 </div>
-                <div className="p-3 bg-surface border border-white/10 rounded-xl flex items-center justify-between cursor-pointer group hover:border-secondary">
+                <div className="p-3 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between hover:border-[var(--sigma-vermilion)]/40 transition-colors">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-secondary" />
-                    <span className="text-xs text-white">Meta Ads Manager</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-xs text-[var(--sigma-text)]">Meta Ads Manager</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">Live</span>
+                  <Badge variant="success" size="xs">Live</Badge>
                 </div>
-                <div className="p-3 bg-surface border border-white/10 rounded-xl flex items-center justify-between cursor-pointer group hover:border-blue-400">
+                <div className="p-3 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between hover:border-[var(--sigma-vermilion)]/40 transition-colors">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-400" />
-                    <span className="text-xs text-white">HubSpot CRM Attribution</span>
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-xs text-[var(--sigma-text)]">HubSpot CRM Attribution</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">Live</span>
+                  <Badge variant="success" size="xs">Live</Badge>
                 </div>
               </div>
             </PropertySection>
 
             {/* Active Metrics */}
             <PropertySection label="Active Report Metrics">
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {['Attributed Spend', 'Blended Revenue', 'ROAS Pacing', 'Conversions & CPA', 'CTR %', 'LTV Prediction'].map((m) => (
                   <div key={m} className="flex items-center justify-between group">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <div className="w-4 h-4 border-2 border-accent rounded flex items-center justify-center bg-accent/20">
-                        <div className="w-2 h-2 bg-accent rounded-sm" />
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <div className="w-3.5 h-3.5 border border-[var(--sigma-border)] rounded flex items-center justify-center bg-[var(--sigma-vermilion)]/15">
+                        <div className="w-1.5 h-1.5 bg-[var(--sigma-vermilion)] rounded-sm" />
                       </div>
-                      <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{m}</span>
+                      <span className="text-xs text-[var(--sigma-muted)] group-hover:text-[var(--sigma-text)] transition-colors">{m}</span>
                     </label>
-                    <span className="text-[9px] font-mono text-zinc-500">Auto</span>
+                    <span className="text-[10px] font-mono text-[var(--sigma-muted)]">Auto</span>
                   </div>
                 ))}
               </div>
@@ -738,32 +741,34 @@ export default function Reports() {
 
             {/* Appearance */}
             <PropertySection label="Appearance Palette">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted">Theme Tone</span>
-                  <span className="text-xs font-mono text-accent font-bold">Sigma Obsidian</span>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--sigma-muted)]">Theme Mode</span>
+                  <span className="font-mono text-[var(--sigma-vermilion)] font-semibold">Sigma Obsidian</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted">Accents</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--sigma-muted)]">Primary Accent</span>
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 bg-accent rounded-full ring-2 ring-accent/40" />
-                    <div className="w-3 h-3 bg-secondary rounded-full" />
-                    <div className="w-3 h-3 bg-emerald-400 rounded-full" />
+                    <div className="w-3 h-3 bg-[var(--sigma-vermilion)] rounded-full ring-2 ring-[var(--sigma-vermilion)]/40" />
+                    <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full" />
                   </div>
                 </div>
               </div>
             </PropertySection>
 
-            <div className="pt-4 border-t border-white/5">
-              <button 
+            <div className="pt-3 border-t border-[var(--sigma-border)]">
+              <Button 
                 onClick={() => {
                   notifySuccess('Second Brain Synced', 'Refreshed dimensional mappings with Customer & Marketing Vaults.');
                 }}
-                className="w-full py-3 bg-white/5 border border-dashed border-white/10 rounded-xl text-xs font-mono text-muted hover:border-accent/40 hover:text-white transition-all flex items-center justify-center gap-2"
+                variant="outline"
+                size="sm"
+                className="w-full justify-center"
+                icon={<Sparkles size={13} className="text-[var(--sigma-vermilion)]" />}
               >
-                <Sparkles size={13} className="text-accent" />
-                <span>Sync Relational Dimensions</span>
-              </button>
+                Sync Relational Dimensions
+              </Button>
             </div>
           </div>
         </div>
@@ -774,88 +779,93 @@ export default function Reports() {
       {/* ==================================================================== */}
       <AnimatePresence>
         {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/15 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+              exit={{ scale: 0.96, opacity: 0 }}
+              className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <Share2 size={18} className="text-accent" />
-                  <h3 className="text-base font-bold silver-text">External Report & Data Sharing</h3>
+                  <Share2 size={18} className="text-[var(--sigma-vermilion)]" />
+                  <h3 className="text-base font-semibold text-[var(--sigma-text)]">External Report & Data Sharing</h3>
                 </div>
                 <button
                   onClick={() => setIsShareModalOpen(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg text-muted hover:text-white transition-colors"
+                  className="p-1 hover:bg-[var(--sigma-surface-hover)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+              <p className="text-xs text-[var(--sigma-muted)] leading-relaxed">
                 Generate a secure, client-accessible external summary portal link. External stakeholders can inspect read-only performance velocity and download verified CSV / PDF summaries.
               </p>
 
-              <div className="space-y-3">
-                <div className="text-[10px] font-mono uppercase text-muted">Secure Access Link</div>
+              <div className="space-y-2">
+                <div className="text-[11px] font-mono uppercase text-[var(--sigma-muted)]">Secure Access Link</div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value="https://sigmatactix.io/share/summary/token_sec_9941a8e"
-                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-zinc-300 select-all"
+                    className="flex-1 bg-[var(--sigma-bg)] border border-[var(--sigma-border)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--sigma-text)] select-all focus:outline-none"
                   />
-                  <button
+                  <Button
                     onClick={handleCopyShareLink}
-                    className="px-4 py-2 bg-accent text-background font-black text-xs font-mono rounded-xl hover:opacity-90 flex items-center gap-1.5 transition-all shadow-md"
+                    variant="primary"
+                    size="sm"
+                    icon={isCopiedLink ? <Check size={14} /> : <Copy size={14} />}
                   >
-                    {isCopiedLink ? <Check size={14} /> : <Copy size={14} />}
-                    <span>{isCopiedLink ? "Copied!" : "Copy"}</span>
-                  </button>
+                    {isCopiedLink ? "Copied!" : "Copy"}
+                  </Button>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-black/30 rounded-xl border border-white/5 space-y-2 text-xs font-mono">
-                <div className="flex items-center justify-between text-zinc-400">
+              <div className="p-3.5 bg-[var(--sigma-bg)]/80 rounded-xl border border-[var(--sigma-border)] space-y-2 text-xs font-mono">
+                <div className="flex items-center justify-between text-[var(--sigma-muted)]">
                   <span className="flex items-center gap-1.5">
-                    <ShieldCheck size={13} className="text-green-400" /> Security Token:
+                    <ShieldCheck size={13} className="text-emerald-500" /> Security Token:
                   </span>
-                  <span className="text-white">HMAC SHA-256 Encrypted</span>
+                  <span className="text-[var(--sigma-text)]">HMAC SHA-256 Encrypted</span>
                 </div>
-                <div className="flex items-center justify-between text-zinc-400">
+                <div className="flex items-center justify-between text-[var(--sigma-muted)]">
                   <span>Expiration:</span>
-                  <span className="text-accent">7 Days (Auto-Revoking)</span>
+                  <span className="text-[var(--sigma-vermilion)]">7 Days (Auto-Revoking)</span>
                 </div>
-                <div className="flex items-center justify-between text-zinc-400">
+                <div className="flex items-center justify-between text-[var(--sigma-muted)]">
                   <span>Included Snapshots:</span>
-                  <span className="text-secondary">CSV + Executive PDF</span>
+                  <span className="text-[var(--sigma-text)]">CSV + Executive PDF</span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-2">
+              <div className="flex justify-between items-center pt-2 border-t border-[var(--sigma-border)]">
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={handleExportSummaryCSV}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-mono text-zinc-300 hover:text-white flex items-center gap-1.5"
+                    variant="outline"
+                    size="xs"
+                    icon={<FileSpreadsheet size={13} className="text-emerald-400" />}
                   >
-                    <FileSpreadsheet size={13} className="text-emerald-400" /> Export CSV
-                  </button>
-                  <button
+                    Export CSV
+                  </Button>
+                  <Button
                     onClick={handleExportSummaryPDF}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-mono text-zinc-300 hover:text-white flex items-center gap-1.5"
+                    variant="outline"
+                    size="xs"
+                    icon={<FileText size={13} className="text-rose-400" />}
                   >
-                    <FileText size={13} className="text-rose-400" /> Export PDF
-                  </button>
+                    Export PDF
+                  </Button>
                 </div>
-                <button
-                  type="button"
+                <Button
                   onClick={() => setIsShareModalOpen(false)}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-mono"
+                  variant="secondary"
+                  size="sm"
                 >
                   Done
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

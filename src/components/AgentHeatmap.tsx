@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
-import { 
-  Activity, 
-  CheckCircle2, 
-  AlertTriangle, 
-  TrendingUp, 
-  Clock, 
-  Zap, 
-  Cpu, 
-  ShieldCheck, 
-  Bot, 
-  Layers, 
-  Filter, 
+import {
+  Activity,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Clock,
+  Zap,
+  Cpu,
+  ShieldCheck,
+  Bot,
+  Layers,
+  Filter,
   Info,
   Maximize2,
   RefreshCw,
@@ -103,14 +103,14 @@ export default function AgentHeatmap({
     setIsDispatching(true);
     setTimeout(() => {
       setIsDispatching(false);
-      
+
       // Generate real telemetry batch for agents across mid-day window
       const sampleIntervals = currentIntervals.slice(8, 14);
       const newEvents: AgentTelemetryEvent[] = [];
 
       SCOPED_AGENTS.forEach((agent) => {
         const runsCount = agent.isOrchestrator ? 8 : (agent.id === 'agent-performance' ? 14 : Math.floor(Math.random() * 6) + 3);
-        
+
         for (let i = 0; i < runsCount; i++) {
           const chosenInterval = sampleIntervals[Math.floor(Math.random() * sampleIntervals.length)];
           const isFailed = Math.random() < 0.05; // 95%+ success
@@ -166,11 +166,11 @@ export default function AgentHeatmap({
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove(); // clear prior render
 
-    const margin = { 
-      top: 36, 
-      right: 24, 
-      bottom: 40, 
-      left: 170 
+    const margin = {
+      top: 36,
+      right: 24,
+      bottom: 40,
+      left: 170
     };
 
     const innerWidth = dimensions.width - margin.left - margin.right;
@@ -238,10 +238,10 @@ export default function AgentHeatmap({
 
     // Draw Y-axis agent labels
     const yAxisGroup = g.append('g');
-    
+
     SCOPED_AGENTS.forEach(agent => {
       const yPos = (yScale(agent.id) ?? 0) + (yScale.bandwidth() / 2);
-      
+
       const labelG = yAxisGroup.append('g')
         .attr('transform', `translate(-14, ${yPos})`)
         .style('cursor', 'pointer')
@@ -415,14 +415,14 @@ export default function AgentHeatmap({
           </div>
 
           {/* Metric Selector */}
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
+          <div className="sigma-segmented font-mono">
             <button
               onClick={() => setMetricMode('load')}
               className={cn(
-                "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
-                metricMode === 'load' 
-                  ? "bg-accent text-background font-black shadow-md" 
-                  : "text-zinc-400 hover:text-white"
+                "sigma-segment flex items-center gap-1.5",
+                metricMode === 'load'
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               <Cpu size={12} />
@@ -432,10 +432,10 @@ export default function AgentHeatmap({
             <button
               onClick={() => setMetricMode('success')}
               className={cn(
-                "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
-                metricMode === 'success' 
-                  ? "bg-emerald-500 text-zinc-950 font-black shadow-md" 
-                  : "text-zinc-400 hover:text-white"
+                "sigma-segment flex items-center gap-1.5",
+                metricMode === 'success'
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               <CheckCircle2 size={12} />
@@ -445,10 +445,10 @@ export default function AgentHeatmap({
             <button
               onClick={() => setMetricMode('composite')}
               className={cn(
-                "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
-                metricMode === 'composite' 
-                  ? "bg-secondary text-background font-black shadow-md" 
-                  : "text-zinc-400 hover:text-white"
+                "sigma-segment flex items-center gap-1.5",
+                metricMode === 'composite'
+                  ? "sigma-segment-active"
+                  : ""
               )}
             >
               <Sparkles size={12} />
@@ -457,7 +457,7 @@ export default function AgentHeatmap({
           </div>
 
           {/* Time Window Switcher */}
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
+          <div className="sigma-segmented font-mono">
             {[
               { id: '24h', label: '24 Hours' },
               { id: 'peak', label: 'Peak Window' },
@@ -467,10 +467,10 @@ export default function AgentHeatmap({
                 key={w.id}
                 onClick={() => setTimeWindow(w.id as TimeWindow)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg transition-all",
-                  timeWindow === w.id 
-                    ? "bg-white/15 text-white font-bold" 
-                    : "text-zinc-400 hover:text-white"
+                  "sigma-segment",
+                  timeWindow === w.id
+                    ? "sigma-segment-active"
+                    : ""
                 )}
               >
                 {w.label}
@@ -502,16 +502,16 @@ export default function AgentHeatmap({
 
       {/* SVG Container */}
       <div ref={containerRef} className="w-full overflow-x-auto relative min-h-[300px]">
-        <svg 
-          ref={svgRef} 
-          width={dimensions.width} 
+        <svg
+          ref={svgRef}
+          width={dimensions.width}
           height={dimensions.height}
           className="mx-auto"
         />
 
         {/* Hover Tooltip */}
         {hoveredCell && tooltipPos && (
-          <div 
+          <div
             className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full mb-2 bg-zinc-950/95 border border-white/20 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs font-mono w-64 space-y-2 animate-in fade-in zoom-in-95"
             style={{ left: tooltipPos.x, top: tooltipPos.y }}
           >
@@ -519,7 +519,7 @@ export default function AgentHeatmap({
               <span className="font-bold text-accent">{hoveredCell.agentCode}</span>
               <span className="text-zinc-400">{hoveredCell.interval}</span>
             </div>
-            
+
             {hoveredCell.hasData ? (
               <div className="space-y-1 text-[11px]">
                 <div className="flex justify-between">
@@ -562,7 +562,7 @@ export default function AgentHeatmap({
         {/* Dynamic Color Scale Bar */}
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-muted">Idle / Clean (#141416)</span>
-          <div 
+          <div
             className="w-44 h-3 rounded-full overflow-hidden border border-white/10"
             style={{
               background: metricMode === 'load'

@@ -1,0 +1,169 @@
+{
+  "name": "sigmatactix-growth-os",
+  "description": "SigmaTactix Growth OS AI Agent Architecture & System Harness",
+  "default_agent": "sigmatactix-orchestrator",
+  "subagents": [
+    {
+      "name": "code-architect",
+      "mode": "subagent",
+      "description": "Guides system architecture, domain modeling, and deep module boundaries across the platform.",
+      "role_file": ".agents/subagents/code-architect/SUBAGENT.md",
+      "skills": [
+        "codebase-design",
+        "domain-modeling",
+        "prototype",
+        "research",
+        "improve-codebase-architecture",
+        "wayfinder"
+      ],
+      "permission": {
+        "edit": {
+          "src/**": "allow",
+          "docs/**": "allow",
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "quality-engineer",
+      "mode": "subagent",
+      "description": "Enforces test-driven development, performs code reviews, triages defects, and diagnoses bugs.",
+      "role_file": ".agents/subagents/quality-engineer/SUBAGENT.md",
+      "skills": [
+        "tdd",
+        "code-review",
+        "diagnosing-bugs",
+        "resolving-merge-conflicts",
+        "triage"
+      ],
+      "permission": {
+        "edit": {
+          "src/**/*.test.*": "allow",
+          "tests/**": "allow",
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "agent-trainer",
+      "mode": "subagent",
+      "description": "Develops agent prompts, skills, documentation, and stress-tests plans via relentless grilling.",
+      "role_file": ".agents/subagents/agent-trainer/SUBAGENT.md",
+      "skills": [
+        "ask-matt",
+        "grill-me",
+        "grill-with-docs",
+        "grilling",
+        "teach",
+        "wait-what",
+        "wizard",
+        "writing-for-agents",
+        "setup-matt-pocock-skills"
+      ],
+      "permission": {
+        "edit": {
+          ".agents/**": "allow",
+          "docs/**": "allow",
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "delivery-lead",
+      "mode": "subagent",
+      "description": "Manages implementation workflows, tickets, specifications, and seamless agent handoffs.",
+      "role_file": ".agents/subagents/delivery-lead/SUBAGENT.md",
+      "skills": [
+        "implement",
+        "handoff",
+        "to-spec",
+        "to-tickets",
+        "to-questionnaire"
+      ],
+      "permission": {
+        "edit": {
+          "src/**": "allow",
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "frontend-agent",
+      "mode": "subagent",
+      "description": "Implements frontend features from SDD specs.",
+      "role_file": ".agents/subagents/frontend-agent/SUBAGENT.md",
+      "permission": {
+        "edit": {
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "backend-agent",
+      "mode": "subagent",
+      "description": "Implements backend features from SDD specs.",
+      "role_file": ".agents/subagents/backend-agent/SUBAGENT.md",
+      "permission": {
+        "edit": {
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "review-agent",
+      "mode": "subagent",
+      "description": "Reviews PRs for correctness and SDD compliance.",
+      "role_file": ".agents/subagents/review-agent/SUBAGENT.md",
+      "permission": {
+        "edit": {
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    {
+      "name": "qa-agent",
+      "mode": "subagent",
+      "description": "Writes and runs tests against the implemented features.",
+      "role_file": ".agents/subagents/qa-agent/SUBAGENT.md",
+      "permission": {
+        "edit": {
+          "progress/**": "allow",
+          "feature_list.json": "allow",
+          "*": "deny"
+        }
+      }
+    }
+  ],
+  "steering": [
+    {
+      "name": "codebase-standards",
+      "file": "steering/codebase-standards.md",
+      "description": "Core architecture standards, deep-module principles, and quality constraints.",
+      "applies_to": [
+        "*"
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "event": "pre-save",
+      "script": "hooks/pre-save.sh",
+      "description": "Performs fast static syntax and quality checks before saving files.",
+      "on_failure": "warn"
+    }
+  ]
+}
