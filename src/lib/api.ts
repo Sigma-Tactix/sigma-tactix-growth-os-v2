@@ -6,7 +6,8 @@ import {
   AgentReachFetchResult,
   CompetitorBattlecard,
   RepurposedArticle,
-  RepurposedCarouselAndThread
+  RepurposedCarouselAndThread,
+  GoogleAdsMcpStatus,
 } from '../types';
 
 // One fetch wrapper for every call to our own backend — attaches the
@@ -241,6 +242,24 @@ export async function getAgentReachDoctor(): Promise<AgentReachDoctorSummary> {
   return data.summary;
 }
 
+export async function getGoogleAdsMcpStatus(): Promise<GoogleAdsMcpStatus> {
+  const res = await apiFetch('/api/workspace/google-ads-mcp/status');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Google Ads MCP status check failed: ${res.statusText}`);
+  return data.status;
+}
+
+export async function discoverGoogleAdsMcpCustomers(): Promise<{
+  customers: string[];
+  verified: boolean;
+  checkedAt: string;
+}> {
+  const res = await apiFetch('/api/workspace/google-ads-mcp/customers', { method: 'POST' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Google Ads MCP customer discovery failed: ${res.statusText}`);
+  return data;
+}
+
 export async function fetchAgentReachContent(payload: {
   channel: string;
   target: string;
@@ -331,5 +350,3 @@ export async function repurposeCarouselWithAgentReach(payload: {
   }
   return res.json();
 }
-
-

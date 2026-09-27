@@ -527,6 +527,20 @@ export interface AgentReachDoctorSummary {
   channels: Record<string, AgentReachChannelStatus>;
 }
 
+export interface GoogleAdsMcpStatus {
+  checkedAt: string;
+  installed: boolean;
+  reachable: boolean;
+  configured: boolean;
+  verified: boolean;
+  readOnly: boolean;
+  command: string;
+  serverVersion?: string;
+  tools: string[];
+  missingConfiguration: string[];
+  detail: string;
+}
+
 export interface AgentReachFetchResult {
   success: boolean;
   channel: string;
@@ -586,4 +600,3 @@ export interface RepurposedCarouselAndThread {
     engagementHook: string;
   }>;
 }
-

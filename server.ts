@@ -60,6 +60,8 @@ import {
   repurposeToCarouselAndThread 
 } from "./src/server/agentReachService.js";
 import { createAgentReachRouter } from "./src/server/routes/agentReachRoutes.js";
+import { createGoogleAdsMcpRouter } from "./src/server/routes/googleAdsMcpRoutes.js";
+import { getGoogleAdsMcpStatus, listGoogleAdsMcpCustomers } from "./src/server/googleAdsMcpService.js";
 import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
 import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
 import { createCapabilityRouter } from "./src/server/routes/capabilityRoutes.js";
@@ -3231,6 +3233,15 @@ app.use(
     resolveEffectiveGeminiKey,
     resolveEffectiveGeminiModel,
   })
+);
+
+app.use(
+  "/api/workspace/google-ads-mcp",
+  createGoogleAdsMcpRouter({
+    expensiveLimiter,
+    getStatus: getGoogleAdsMcpStatus,
+    listCustomers: listGoogleAdsMcpCustomers,
+  }),
 );
 
 // Token Metering & Client Profitability Telemetry

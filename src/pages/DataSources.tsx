@@ -47,6 +47,7 @@ import { useToast } from '@/src/contexts/ToastContext';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import { apiFetch } from '@/src/lib/api';
 import { getPipelineDisplayState, getPriorityConnectorRequirement } from '@/src/lib/connectorLifecycle';
+import { GoogleAdsMcpControl } from '@/src/components/connectors/GoogleAdsMcpControl';
 
 export interface ActiveConnection {
   id: string;
@@ -478,6 +479,14 @@ export default function DataSources() {
       setFormSyncFrequency('Every 15 mins');
     }
     setIsSetupModalOpen(true);
+  };
+
+  const openGoogleAdsCustomer = (customerId: string) => {
+    const connector = libraryConnectors.find(item => item.name === 'Google Ads');
+    openSetupModal(connector);
+    setFormPropertyId(customerId);
+    setFormAccountName(`Google Ads ${customerId}`);
+    setFormProtocol('Official Google Ads MCP 0.0.4 (read-only reporting)');
   };
 
   const openEditModal = (conn: ActiveConnection) => {
@@ -1270,6 +1279,10 @@ export default function DataSources() {
                     className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl py-2.5 pl-10 pr-4 text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[#ff481b] transition-colors"
                   />
                 </div>
+
+                {(selectedCategory === 'all' || selectedCategory === 'ads' || selectedCategory === 'mcp') && (
+                  <GoogleAdsMcpControl onSelectCustomer={openGoogleAdsCustomer} />
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filteredConnectors.map((lib) => (
