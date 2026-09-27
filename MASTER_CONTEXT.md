@@ -1,8 +1,19 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-09-18  
-> **Version**: v0.2.0-rc (Post-Agent Reach & VANTA & Theme Engine Integration)  
-> **Status**: Pre-release (Production-ready & Governed)
+> **Last updated**: 2026-09-27  
+> **Version**: v0.2.0-rc (Governed Integration Hardening In Progress)  
+> **Status**: Pre-release; local implementation is not production-certified until provider authentication, deployment, tenant isolation, and end-to-end checks pass
+
+### Active integration work order — 2026-09-27
+
+This implementation is intentionally limited to the smallest set of immediately necessary additions from the saved-repository assessment:
+
+1. Correct MCP and channel capability states so catalogue entries and fallbacks cannot impersonate verified runtime availability.
+2. Harden the existing Agent Reach integration and expose evidence-backed controls in its current product section.
+3. Add the official read-only Google Ads MCP behind the existing connector/reporting seam, with exact-account verification and no campaign-write authority.
+4. Add governed agent-trace inspection to the Agent Cockpit only if it can be integrated without exposing prompts, credentials, or client data.
+
+Deferred until a demonstrated product need or prerequisite exists: wholesale skill-pack imports, HyperFrames rendering infrastructure, Mautic, n8n, OpenBot/Rakazo execution planes, and additional agent frameworks. Final verified results and unresolved user-supplied credential/configuration gates will be recorded here when this work order closes.
 
 ---
 
