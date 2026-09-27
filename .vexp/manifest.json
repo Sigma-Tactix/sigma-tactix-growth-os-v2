@@ -98,6 +98,7 @@
     "backend/agent-skills/engineering-webassembly-engineer/SKILL.md": "7c71974339cd3bf24f0d2e5ed567fa7514b7b893e60047dcfbda5286ba6cd96f",
     "backend/agent-skills/esg-sustainability-officer/SKILL.md": "f5cb08779cf48cd34a8adcf2afedfd47c016adbcafd7d6a45474b066f911b8b6",
     "backend/agent-skills/gemini-api-dev/SKILL.md": "fb09e1957ce74c21faa644b306d6c99034d643efc1b2047cdaa038dc97c6ccb1",
+    "backend/agent-skills/gemini-interactions-api/SKILL.md": "f7b80c9212de9915e8300f4ab3df6145cb4fc2e0f2244c94012acc904e379378",
     "backend/agent-skills/language-translator/SKILL.md": "eb59f884a79e45bbd6dcc088e2e105648a2009227beb50e9fa6e71b6d5cc0b5a",
     "backend/agent-skills/marketing-ai-citation-strategist/SKILL.md": "d66e8e4fcdcd25268390bbeeffb25ac1e28ec3e338903522c921f5f8716bf203",
     "backend/agent-skills/marketing-app-store-optimizer/SKILL.md": "fa57074f851cb3cbe45c59e6f23254b6aa37a7123278a3a9c3727ecfc7860401",
@@ -144,12 +145,13 @@
     "backend/database/migrations/0013_match_documents_scoped.sql": "a8e62e2cc4fafbfb8245050085d2b018a90a4c51d8d3b59fa77d790f6b743574",
     "backend/database/migrations/0014_token_metering.sql": "926774dccc72148fe2484c6b1cc9cce052302ee5538db1c4ee355a848240021f",
     "backend/database/migrations/0015_vanta_conversations.sql": "8965d4d66fbc2e9a00b14acb9931d31a58ee9a95d357e2e7c70c66fc6f21b5e3",
+    "backend/database/migrations/0016_decision_traces.sql": "eaf3c0965a86f16dff6ec2bd0e2465028675ee6b550d266953ce738b3e18cf5b",
     "backend/database/migrations/init.legacy.sql": "ff97fa1ab1a112b148a7f5bc872287f4894a689988784a323ee98d120e8e69e3",
     "backend/database/migrations/init.sql": "58b99c12590f4b9fab841ea5cf86901de0846a9d050a43ec6677ff9463f7db10",
     "backend/database/migrations/verify.sql": "abb9cd2d1c3c02925a3d3382a1b461484dff26554fb7b1f5ea7e64ed70fa28fe"
   },
-  "indexed_at_commit": "16d4cd736605d89fe607450acc31c1f5d71209d9",
-  "indexed_at_timestamp": "2026-09-25T07:34:53.652644+00:00",
+  "indexed_at_commit": "e16268a22c1d44b1beb96e1e9d02c6a1bab1ad93",
+  "indexed_at_timestamp": "2026-09-27T18:47:59.995399+00:00",
   "languages": {
     "bash": {
       "calls": 0,
@@ -161,18 +163,19 @@
     },
     "markdown": {
       "calls": 0,
-      "nodes": 1839
+      "nodes": 1917
     },
     "sql": {
       "calls": 0,
-      "nodes": 110
+      "nodes": 113
     }
   },
+  "parser_version": "3.2.5",
   "schema_version": 3,
   "stats": {
-    "total_edges": 1715,
-    "total_files": 147,
-    "total_nodes": 1969
+    "total_edges": 1792,
+    "total_files": 149,
+    "total_nodes": 2050
   },
-  "vexp_version": "3.2.4"
+  "vexp_version": "3.2.5"
 }
