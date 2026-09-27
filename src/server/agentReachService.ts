@@ -15,6 +15,10 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+interface AgentReachDoctorOptions {
+  runDoctor?: () => Promise<{ stdout: string }>;
+}
+
 const KNOWN_CLI_PATHS = [
   '/Users/mac/.local/bin/agent-reach',
   '/usr/local/bin/agent-reach',
@@ -111,19 +115,21 @@ const CHANNEL_FIX_COMMANDS: Record<string, string> = {
 /**
  * Executes `agent-reach doctor --json` and formats output for the Growth OS application.
  */
-export async function getAgentReachDoctor(): Promise<AgentReachDoctorSummary> {
+export async function getAgentReachDoctor(options: AgentReachDoctorOptions = {}): Promise<AgentReachDoctorSummary> {
   const binary = resolveAgentReachBinary();
   const timestamp = new Date().toISOString();
 
   try {
-    const { stdout } = await execFileAsync(binary, ['doctor', '--json'], {
-      timeout: 15000,
-      env: {
-        ...process.env,
-        PATH: EXTENDED_PATH,
-        AGENT_REACH_LANG: 'en',
-      },
-    });
+    const { stdout } = await (options.runDoctor
+      ? options.runDoctor()
+      : execFileAsync(binary, ['doctor', '--json'], {
+          timeout: 15000,
+          env: {
+            ...process.env,
+            PATH: EXTENDED_PATH,
+            AGENT_REACH_LANG: 'en',
+          },
+        }));
 
     const parsed = JSON.parse(stdout.trim());
     const channels: Record<string, AgentReachChannelStatus> = {};
@@ -161,34 +167,27 @@ export async function getAgentReachDoctor(): Promise<AgentReachDoctorSummary> {
     };
   } catch (err: any) {
     console.warn('agent-reach doctor --json failed or timed out:', err.message);
-
-    // Fallback known baseline channels
-    const fallbackChannels: Record<string, AgentReachChannelStatus> = {
-      web: { id: 'web', name: 'Web & Documentation (Jina)', tier: 0, status: 'ok', message: 'Accessible via Jina Reader (curl https://r.jina.ai/)', backends: ['Jina Reader'], activeBackend: 'Jina Reader' },
-      youtube: { id: 'youtube', name: 'YouTube Video & Subtitles', tier: 0, status: 'ok', message: 'yt-dlp and oEmbed engines active', backends: ['yt-dlp', 'oEmbed API'], activeBackend: 'yt-dlp' },
-      rss: { id: 'rss', name: 'RSS / Atom Feeds', tier: 0, status: 'ok', message: 'Standard feedparser and XML readers active', backends: ['feedparser'], activeBackend: 'feedparser' },
-      v2ex: { id: 'v2ex', name: 'V2EX Community Feed', tier: 0, status: 'ok', message: 'Public hot topics JSON API active', backends: ['V2EX API (public)'], activeBackend: 'V2EX API (public)' },
-      bilibili: { id: 'bilibili', name: 'Bilibili Tech & Media', tier: 1, status: 'ok', message: 'Search API reachable', backends: ['B站搜索 API'], activeBackend: 'B站搜索 API' },
-      github: { id: 'github', name: 'GitHub Repos & Trends', tier: 0, status: 'warn', message: 'gh CLI installed; token unconfigured', backends: ['gh CLI'], activeBackend: null },
-      twitter: { id: 'twitter', name: 'Twitter / X Pulse', tier: 1, status: 'off', message: 'Requires twitter-cli session token', backends: ['twitter-cli', 'OpenCLI'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.twitter },
-      reddit: { id: 'reddit', name: 'Reddit Discussions', tier: 1, status: 'off', message: 'Requires OpenCLI Chrome session', backends: ['OpenCLI', 'rdt-cli'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.reddit },
-      facebook: { id: 'facebook', name: 'Facebook Groups & Pages', tier: 1, status: 'off', message: 'Requires OpenCLI Chrome session', backends: ['OpenCLI'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.facebook },
-      instagram: { id: 'instagram', name: 'Instagram Creator Feed', tier: 1, status: 'off', message: 'Requires OpenCLI Chrome session', backends: ['OpenCLI'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.instagram },
-      linkedin: { id: 'linkedin', name: 'LinkedIn Professional & Jobs', tier: 2, status: 'off', message: 'Requires mcp-server-linkedin login', backends: ['mcp-server-linkedin', 'Jina Reader'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.linkedin },
-      xiaohongshu: { id: 'xiaohongshu', name: 'XiaoHongShu (RED) Notes', tier: 1, status: 'off', message: 'Requires Cookie-Editor session export', backends: ['OpenCLI', 'xiaohongshu-mcp'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.xiaohongshu },
-      xueqiu: { id: 'xueqiu', name: 'Xueqiu Financials & Stocks', tier: 1, status: 'off', message: 'Requires Xueqiu Cookie', backends: ['Xueqiu API'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.xueqiu },
-      xiaoyuzhou: { id: 'xiaoyuzhou', name: 'Xiaoyuzhou Podcasts', tier: 1, status: 'off', message: 'Requires Whisper transcription script', backends: ['groq-whisper'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.xiaoyuzhou },
-      exa_search: { id: 'exa_search', name: 'Exa AI Semantic Search', tier: 0, status: 'off', message: 'Requires mcporter + Exa MCP key', backends: ['Exa via mcporter'], activeBackend: null, fixCommand: CHANNEL_FIX_COMMANDS.exa_search },
-    };
+    const failureMessage = `Health check failed: ${err?.message || 'Agent Reach CLI did not respond.'}`;
+    const fallbackChannels = Object.fromEntries(
+      Object.entries(CHANNEL_NAMES_EN).map(([id, name]) => [id, {
+        id,
+        name,
+        tier: 0,
+        status: 'error' as const,
+        message: failureMessage,
+        backends: [],
+        activeBackend: null,
+        fixCommand: CHANNEL_FIX_COMMANDS[id],
+      }]),
+    );
 
     return {
       timestamp,
       cliAvailable: false,
-      cliVersion: '1.5.0 (Fallback Adapter)',
-      totalChannels: 15,
-      readyCount: 5,
-      warningCount: 1,
-      offlineCount: 9,
+      totalChannels: Object.keys(fallbackChannels).length,
+      readyCount: 0,
+      warningCount: 0,
+      offlineCount: Object.keys(fallbackChannels).length,
       channels: fallbackChannels,
     };
   }

@@ -46,36 +46,19 @@ import {
   AgentReachFetchResult
 } from '@/src/types';
 
-const FALLBACK_DOCTOR_SUMMARY: AgentReachDoctorSummary = {
+const EMPTY_DOCTOR_SUMMARY: AgentReachDoctorSummary = {
   timestamp: new Date().toISOString(),
-  cliAvailable: true,
-  cliVersion: '1.5.0',
-  totalChannels: 15,
-  readyCount: 6,
-  warningCount: 9,
+  cliAvailable: false,
+  totalChannels: 0,
+  readyCount: 0,
+  warningCount: 0,
   offlineCount: 0,
-  channels: {
-    web: { id: 'web', name: 'Web & Documentation', tier: 0, status: 'ok', message: 'Zero-config via r.jina.ai parser', backends: ['jina_reader', 'curl'], activeBackend: 'jina_reader' },
-    youtube: { id: 'youtube', name: 'YouTube Video & Audio', tier: 0, status: 'ok', message: 'Zero-config transcript extraction', backends: ['yt-dlp', 'jina_transcripts'], activeBackend: 'yt-dlp' },
-    v2ex: { id: 'v2ex', name: 'V2EX Tech Community', tier: 0, status: 'ok', message: 'Zero-config JSON API', backends: ['public_api', 'rss'], activeBackend: 'public_api' },
-    rss: { id: 'rss', name: 'Global RSS / Atom Feeds', tier: 0, status: 'ok', message: 'Zero-config standard XML parser', backends: ['xml_parser'], activeBackend: 'xml_parser' },
-    bilibili: { id: 'bilibili', name: 'Bilibili Tech & Media', tier: 0, status: 'ok', message: 'Public video metadata available', backends: ['jina_reader', 'opencli'], activeBackend: 'jina_reader' },
-    github: { id: 'github', name: 'GitHub Code & Trends', tier: 0, status: 'ok', message: 'Unauthenticated public rate limit 60/hr', backends: ['github_api', 'gh_cli'], activeBackend: 'github_api' },
-    hackernews: { id: 'hackernews', name: 'Hacker News (Y Combinator)', tier: 0, status: 'ok', message: 'Zero-config open REST API', backends: ['firebase_api', 'algolia'], activeBackend: 'firebase_api' },
-    yahoo_finance: { id: 'yahoo_finance', name: 'Yahoo Finance Market Data', tier: 0, status: 'ok', message: 'Delayed public market data', backends: ['query_api', 'jina'], activeBackend: 'query_api' },
-    twitter: { id: 'twitter', name: 'X / Twitter Pulse', tier: 1, status: 'warn', message: 'Requires TWITTER_BEARER_TOKEN or cookie session', backends: ['twitter_api_v2', 'cookie_session'], activeBackend: null },
-    reddit: { id: 'reddit', name: 'Reddit Discussions', tier: 1, status: 'warn', message: 'Requires REDDIT_CLIENT_ID / SECRET for high volume', backends: ['reddit_api', 'json_feed'], activeBackend: null },
-    linkedin: { id: 'linkedin', name: 'LinkedIn Professional & Jobs', tier: 1, status: 'warn', message: 'Requires LI_AT cookie or browser profile', backends: ['cookie_session', 'jina'], activeBackend: null },
-    threads: { id: 'threads', name: 'Meta Threads', tier: 1, status: 'warn', message: 'Requires Meta Graph access token', backends: ['threads_api'], activeBackend: null },
-    bluesky: { id: 'bluesky', name: 'Bluesky (AT Protocol)', tier: 1, status: 'ok', message: 'Public ATProto endpoint active', backends: ['atproto_api'], activeBackend: 'atproto_api' },
-    xiaohongshu: { id: 'xiaohongshu', name: 'XiaoHongShu (RED)', tier: 2, status: 'warn', message: 'Requires QR login session in agent-reach CLI', backends: ['browser_cookie', 'playwright'], activeBackend: null },
-    weibo: { id: 'weibo', name: 'Weibo Hot Trends', tier: 2, status: 'warn', message: 'Requires Weibo session credentials', backends: ['cookie_session', 'opencli'], activeBackend: null },
-  }
+  channels: {},
 };
 
 export default function AgentReachPage() {
   const { notifySuccess, notifyInfo, notifyError } = useToast();
-  const [summary, setSummary] = useState<AgentReachDoctorSummary>(FALLBACK_DOCTOR_SUMMARY);
+  const [summary, setSummary] = useState<AgentReachDoctorSummary>(EMPTY_DOCTOR_SUMMARY);
   const [isLoadingDoctor, setIsLoadingDoctor] = useState(false);
   const [backendNeedsRestart, setBackendNeedsRestart] = useState(false);
   const [filterTier, setFilterTier] = useState<'ALL' | 'READY' | 'TIER_0' | 'TIER_1' | 'TIER_2'>('ALL');
@@ -106,10 +89,9 @@ export default function AgentReachPage() {
       const elapsed = ((performance.now() - start) / 1000).toFixed(1);
       setScanDuration(`${elapsed}s`);
       setLastScannedTime(new Date().toLocaleTimeString());
-      notifySuccess(
-        'Doctor Diagnostics Complete',
-        `Scanned ${data.totalChannels} channels in ${elapsed}s: ${data.readyCount} active, ${data.warningCount} pending auth.`
-      );
+      const message = `Scanned ${data.totalChannels} channels in ${elapsed}s: ${data.readyCount} ready, ${data.warningCount} warnings, ${data.offlineCount} unavailable.`;
+      if (data.cliAvailable) notifySuccess('Doctor Diagnostics Complete', message);
+      else notifyInfo('Agent Reach Runtime Unavailable', message);
     } catch (err: any) {
       console.warn('Agent Reach doctor notice:', err.message);
       if (err.message.includes('restart the backend server') || err.message.includes('not registered') || err.message.includes('Unexpected token')) {
@@ -203,7 +185,9 @@ export default function AgentReachPage() {
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="vermilion">AGENT CAPABILITY</Badge>
               <span className="text-zinc-600 text-xs">•</span>
-              <Badge variant="neutral">ROUTER v1.5.0</Badge>
+              <Badge variant={summary.cliAvailable ? 'success' : 'warning'}>
+                {summary.cliAvailable ? `RUNTIME ${summary.cliVersion || 'DETECTED'}` : 'RUNTIME UNAVAILABLE'}
+              </Badge>
               <span className="text-xs text-zinc-500 font-mono ml-1">
                 /Users/mac/.local/bin/agent-reach
               </span>
@@ -214,7 +198,7 @@ export default function AgentReachPage() {
               Internet Capability Router
             </h1>
             <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
-              Give your SigmaTactix AI swarms real-world eyes. Zero-wrapper routing across 15 platforms with automated fallback to Jina Reader, yt-dlp, and authenticated CLI adapters.
+              Evidence-backed routing across supported research channels. A channel is marked ready only when the Agent Reach doctor reports a working backend.
             </p>
           </div>
 
@@ -242,32 +226,32 @@ export default function AgentReachPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricWidget
           label="Total Platforms"
-          value={summary?.totalChannels || 15}
-          subtext="15 Standard Router Channels"
+          value={summary.totalChannels}
+          subtext="Channels returned by the latest doctor run"
           icon={<Globe size={16} className="text-zinc-400" />}
         />
 
         <MetricWidget
           label="Instant Zero-Config"
-          value={`${summary?.readyCount || 5} Active`}
-          delta={{ value: "Online", trend: "up" }}
-          subtext="YouTube, Jina, RSS, V2EX, Bilibili"
+          value={`${summary.readyCount} Ready`}
+          delta={{ value: summary.cliAvailable ? 'Checked' : 'Unavailable', trend: summary.cliAvailable ? 'up' : 'neutral' }}
+          subtext="Backends confirmed by runtime health check"
           icon={<CheckCircle2 size={16} className="text-emerald-400" />}
         />
 
         <MetricWidget
           label="Login / Cookie Channels"
-          value={`${summary?.warningCount || 1} Pending`}
+          value={`${summary.warningCount} Warning`}
           delta={{ value: "Config Req", trend: "neutral" }}
-          subtext="Twitter, Reddit, Meta, XHS, Xueqiu"
+          subtext="Authentication or dependency action required"
           icon={<AlertTriangle size={16} className="text-amber-400" />}
         />
 
         <MetricWidget
           label="Runtime Engine"
-          value="Python 3.14.7"
-          delta={{ value: "Pipx", trend: "up" }}
-          subtext="CLI Online in System PATH"
+          value={summary.cliAvailable ? (summary.cliVersion || 'Detected') : 'Unavailable'}
+          delta={{ value: summary.cliAvailable ? 'CLI' : 'Failed', trend: summary.cliAvailable ? 'up' : 'neutral' }}
+          subtext={summary.cliAvailable ? 'Doctor command completed' : 'No runtime readiness claims'}
           icon={<Cpu size={16} className="text-sky-400" />}
         />
       </div>
@@ -467,7 +451,7 @@ export default function AgentReachPage() {
                   : 'text-zinc-400 hover:text-white'
               )}
             >
-              {tier === 'ALL' ? 'All (15)' : tier === 'READY' ? 'Ready (5)' : tier.replace('_', ' ')}
+              {tier === 'ALL' ? `All (${summary.totalChannels})` : tier === 'READY' ? `Ready (${summary.readyCount})` : tier.replace('_', ' ')}
             </button>
           ))}
         </div>

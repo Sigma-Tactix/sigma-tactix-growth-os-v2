@@ -24,6 +24,21 @@ describe('agentReachService', () => {
     expect(doctor.readyCount).toBeGreaterThan(0);
   }, 25000);
 
+  it('does not mark fallback channels ready when the CLI health check fails', async () => {
+    const doctor = await getAgentReachDoctor({
+      runDoctor: async () => {
+        throw new Error('agent-reach is unavailable');
+      },
+    });
+
+    expect(doctor.cliAvailable).toBe(false);
+    expect(doctor.readyCount).toBe(0);
+    expect(doctor.warningCount).toBe(0);
+    expect(doctor.offlineCount).toBe(15);
+    expect(Object.values(doctor.channels).every(channel => channel.status === 'error')).toBe(true);
+    expect(doctor.channels.web.message).toContain('Health check failed');
+  });
+
   it('rejects SSRF targeting localhost or private IPs', async () => {
     await expect(assertPublicHost('http://localhost:8080')).rejects.toThrow(/Security Exception/);
     await expect(assertPublicHost('http://127.0.0.1:3000')).rejects.toThrow(/Security Exception/);
