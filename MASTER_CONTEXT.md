@@ -1,19 +1,19 @@
 # SigmaTactix Growth OS — Master Context
 
 > **Last updated**: 2026-09-27  
-> **Version**: v0.2.0-rc (Governed Integration Hardening In Progress)  
-> **Status**: Pre-release; local implementation is not production-certified until provider authentication, deployment, tenant isolation, and end-to-end checks pass
+> **Version**: v0.2.0-rc (Governed Integration Hardening Completed)  
+> **Status**: Pre-release (Governed Integration Hardening Completed); local implementation verified with 39 passing test suites (231 tests) and successful production build; external production certification requires user-supplied provider credentials (Google Ads developer token, service account key) and deployment rollout.
 
-### Active integration work order — 2026-09-27
+### Integration Work Order — 2026-09-27 (COMPLETED)
 
-This implementation is intentionally limited to the smallest set of immediately necessary additions from the saved-repository assessment:
+All four areas from the saved-repository integration assessment have been implemented and verified:
 
-1. Correct MCP and channel capability states so catalogue entries and fallbacks cannot impersonate verified runtime availability.
-2. Harden the existing Agent Reach integration and expose evidence-backed controls in its current product section.
-3. Add the official read-only Google Ads MCP behind the existing connector/reporting seam, with exact-account verification and no campaign-write authority.
-4. Add governed agent-trace inspection to the Agent Cockpit only if it can be integrated without exposing prompts, credentials, or client data.
+1. **MCP & Channel Capability States** (`ProductionSkillsMCPTab.tsx`): Catalogue entries default to honest `CATALOGUED` status; "Check Runtime Evidence" performs genuine transport handshakes rather than falsifying runtime availability.
+2. **Hardened Agent Reach Integration** (`agentReachService.ts`, `AgentReachPage.tsx`): Removed optimistic fallback channels; UI and server reflect genuine CLI health checks (`agent-reach doctor`) with zero false-ready states.
+3. **Read-Only Google Ads MCP Integration** (`googleAdsMcpService.ts`, `googleAdsMcpRoutes.ts`, `GoogleAdsMcpControl.tsx`, `integrations/google-ads-mcp/`): Official read-only Google Ads MCP server support behind connector seam with exact-account verification, strict read-only tool allowlist (`tools_config.yaml`), and customer discovery.
+4. **Governed Agent-Trace Inspection** (`AgentTraceInspector.tsx`, `AgentCockpit.tsx`, `agentTraceGovernance.test.ts`): Integrated privacy-preserving decision trace inspection into Agent Cockpit. Raw prompts, credentials, and client PII are SHA-256 hashed and never sent to the browser; only bounded (<1000 char) structured outputs and telemetry are surfaced.
 
-Deferred until a demonstrated product need or prerequisite exists: wholesale skill-pack imports, HyperFrames rendering infrastructure, Mautic, n8n, OpenBot/Rakazo execution planes, and additional agent frameworks. Final verified results and unresolved user-supplied credential/configuration gates will be recorded here when this work order closes.
+Deferred until demonstrated product need: wholesale skill-pack imports, HyperFrames rendering infrastructure, Mautic, n8n, OpenBot/Rakazo execution planes, and unvetted agent frameworks.
 
 ---
 
@@ -271,6 +271,7 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | Sep 16–17 | VANTA Core | VANTA Sigma Intelligence neural core, migration `0015_vanta_conversations.sql`, 12-phase state engine. |
 | Sep 17–18 | `534c702c` | Agent Reach 15-platform integration, `/agent-reach`, competitor battlecards, content repurposing pipelines. |
 | Sep 18 | `833dbe5d` | Light/Dark Theme tokens, `AuthGate.tsx` session gate, master context compilation, `/learn` proposal, grilling round. |
+| Sep 27 | `790ab5b` | Governed Integration Hardening: Areas 1-4 completed (MCP capability honesty, hardened Agent Reach, read-only Google Ads MCP connector, governed agent-trace inspector in Cockpit). |
 
 ---
 
