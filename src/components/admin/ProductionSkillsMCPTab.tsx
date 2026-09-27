@@ -26,6 +26,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/src/contexts/ToastContext';
+import { getAgentReachDoctor, getGoogleAdsMcpStatus } from '@/src/lib/api';
 
 interface MCPServerInfo {
   id: string;
@@ -34,7 +35,7 @@ interface MCPServerInfo {
   transport: 'STDIO' | 'SSE' | 'WEBSOCKET';
   command: string;
   toolsCount: number;
-  status: 'ONLINE' | 'STANDBY' | 'INITIALIZING';
+  status: 'CATALOGUED';
   tools: string[];
   description: string;
 }
@@ -60,9 +61,20 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'agent-reach doctor --json',
     toolsCount: 15,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['jina_web_fetch', 'yt_dlp_subtitles', 'v2ex_hot_topics', 'rss_feed_reader', 'twitter_search', 'reddit_search', 'bilibili_search'],
     description: 'Multi-backend internet routing across 15 platforms (YouTube, Jina, RSS, X, Reddit, LinkedIn). Zero-wrapper runtime.'
+  },
+  {
+    id: 'mcp-google-ads',
+    name: 'Official Google Ads MCP',
+    category: 'DATA_ANALYTICS',
+    transport: 'STDIO',
+    command: 'google-ads-mcp',
+    toolsCount: 3,
+    status: 'CATALOGUED',
+    tools: ['customers_list_accessible_customers', 'metadata_get_resource_metadata', 'search_search'],
+    description: 'Official read-only Google Ads account discovery, resource metadata, and GAQL reporting runtime.'
   },
   {
     id: 'mcp-ponytail',
@@ -71,7 +83,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'npx -y @dietrichgebert/ponytail mcp',
     toolsCount: 6,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['ponytail_optimize', 'ponytail_review', 'ponytail_audit', 'ponytail_debt', 'ponytail_gain', 'ponytail_help'],
     description: 'Autonomous minimalist code reducer implementing the 7-rung senior developer ladder. Cuts ~54% of unnecessary code.'
   },
@@ -82,7 +94,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'npx -y @modelcontextprotocol/server-puppeteer',
     toolsCount: 26,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['lighthouse_audit', 'performance_analyze_insight', 'take_heapsnapshot', 'click', 'navigate_page', 'take_screenshot'],
     description: 'Deep headless browser automation, Core Web Vitals (LCP/INP) auditing, and DOM accessibility inspection.'
   },
@@ -93,7 +105,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'node ./mcp/context-vault/index.js',
     toolsCount: 12,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['get_context', 'save_context', 'ingest_project', 'create_snapshot', 'recall', 'publish_to_team'],
     description: 'Long-term vector retrieval, session memory consolidation, and Second Brain vault synchronization.'
   },
@@ -104,7 +116,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'node ./mcp/spline/index.js',
     toolsCount: 32,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['3d_generate_3d_model', '3d_run_code', '2d_generate_images', '2d_update_scene', '2d_export_html'],
     description: 'Generative interactive 3D web scenes, living system biospheres, and dynamic vector graphics.'
   },
@@ -115,7 +127,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'npx -y @google-cloud/data-agent-kit',
     toolsCount: 8,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['get_active_gcp_connection', 'list_resource_templates', 'read_resource', 'execute_bigquery_sql'],
     description: 'Enterprise data warehouse querying, real-time analytics streaming, and Dataform ELT management.'
   },
@@ -126,7 +138,7 @@ const MCP_SERVERS_CATALOG: MCPServerInfo[] = [
     transport: 'STDIO',
     command: 'npx -y genkit start',
     toolsCount: 10,
-    status: 'ONLINE',
+    status: 'CATALOGUED',
     tools: ['list_flows', 'run_flow', 'get_trace', 'start_runtime'],
     description: 'End-to-end multi-agent orchestration runtime with telemetry traces and latency metrics.'
   }
@@ -251,6 +263,39 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
   } | null>(null);
 
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [checkingServerId, setCheckingServerId] = useState<string | null>(null);
+  const [runtimeStates, setRuntimeStates] = useState<Record<string, 'REACHABLE' | 'FAILED'>>({});
+
+  const handleCheckTransport = async (server: MCPServerInfo) => {
+    setCheckingServerId(server.id);
+    try {
+      if (server.id === 'mcp-agent-reach') {
+        const doctor = await getAgentReachDoctor();
+        const reachable = doctor.cliAvailable;
+        setRuntimeStates(current => ({ ...current, [server.id]: reachable ? 'REACHABLE' : 'FAILED' }));
+        (reachable ? notifySuccess : notifyInfo)(
+          reachable ? 'Agent Reach runtime checked' : 'Agent Reach runtime unavailable',
+          `${doctor.readyCount} ready, ${doctor.warningCount} warnings, ${doctor.offlineCount} unavailable.`,
+        );
+        return;
+      }
+      if (server.id === 'mcp-google-ads') {
+        const status = await getGoogleAdsMcpStatus();
+        setRuntimeStates(current => ({ ...current, [server.id]: status.reachable ? 'REACHABLE' : 'FAILED' }));
+        (status.reachable ? notifySuccess : notifyInfo)(
+          status.reachable ? 'Google Ads MCP handshake succeeded' : 'Google Ads MCP unavailable',
+          status.detail,
+        );
+        return;
+      }
+      notifyInfo('Catalogue entry only', `${server.name} has no registered runtime handshake in Growth OS.`);
+    } catch (error) {
+      setRuntimeStates(current => ({ ...current, [server.id]: 'FAILED' }));
+      notifyInfo('Runtime check failed', error instanceof Error ? error.message : 'No runtime evidence was returned.');
+    } finally {
+      setCheckingServerId(null);
+    }
+  };
 
   // Handle Ponytail Optimization Simulation
   const handleRunPonytail = () => {
@@ -467,8 +512,15 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                         {server.name}
                       </h4>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-mono font-bold border border-emerald-500/30 shrink-0">
-                      {server.status}
+                    <span className={cn(
+                      'px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border shrink-0',
+                      runtimeStates[server.id] === 'REACHABLE'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : runtimeStates[server.id] === 'FAILED'
+                          ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                          : 'bg-white/5 text-zinc-400 border-white/10',
+                    )}>
+                      {runtimeStates[server.id] || server.status}
                     </span>
                   </div>
 
@@ -498,10 +550,12 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
 
                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                   <button
-                    onClick={() => notifySuccess(`Pinged ${server.name}: 12ms roundtrip, all ${server.toolsCount} tools responsive!`)}
+                    onClick={() => void handleCheckTransport(server)}
+                    disabled={checkingServerId === server.id}
                     className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-mono text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    <Activity size={12} className="text-emerald-400" /> Ping Tool Transport
+                    <Activity size={12} className={cn('text-zinc-400', checkingServerId === server.id && 'animate-pulse')} />
+                    {checkingServerId === server.id ? 'Checking Runtime…' : 'Check Runtime Evidence'}
                   </button>
                 </div>
               </div>
