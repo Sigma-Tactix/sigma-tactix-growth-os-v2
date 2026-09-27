@@ -67,6 +67,7 @@ import AgentDAGVisualization from '@/src/components/AgentDAGVisualization';
 import QuickFixAssistant from '@/src/components/QuickFixAssistant';
 import AgentSimulationMode from '@/src/components/AgentSimulationMode';
 import AgentFilesManager from '@/src/components/AgentFilesManager';
+import AgentTraceInspector from '@/src/components/AgentTraceInspector';
 import { downloadAgentMarkdown, downloadMultiAgentBundleMarkdown } from '@/src/services/agentMarkdownService';
 import { useToast } from '@/src/contexts/ToastContext';
 
@@ -87,7 +88,7 @@ export default function AgentCockpit() {
   const [isBatchSyncing, setIsBatchSyncing] = useState(false);
 
   // Active Inspector Tab & Simulation Mode state
-  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'instructions' | 'subagents' | 'learning' | 'analytics' | 'files' | 'dag' | 'simulation' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'instructions' | 'subagents' | 'learning' | 'analytics' | 'traces' | 'files' | 'dag' | 'simulation' | 'logs'>('overview');
   const [isSimulationMode, setIsSimulationMode] = useState<boolean>(false);
 
   // Markdown Modal state
@@ -1077,6 +1078,7 @@ export default function AgentCockpit() {
                   { id: 'subagents', label: 'Sub-Agents', icon: <Layers size={12} />, badge: selectedAgent.subAgents.length },
                   { id: 'learning', label: 'Self-Learning', icon: <BrainCircuit size={12} /> },
                   { id: 'analytics', label: 'Telemetry', icon: <Activity size={12} /> },
+                  { id: 'traces', label: 'Traces', icon: <Eye size={12} /> },
                   { id: 'files', label: 'Configs', icon: <FolderGit2 size={12} /> },
                   { id: 'dag', label: 'Data Flow DAG', icon: <Workflow size={12} /> },
                   { id: 'simulation', label: 'Simulation', icon: <Sliders size={12} /> },
@@ -1273,6 +1275,14 @@ export default function AgentCockpit() {
             )}
 
             {/* TAB CONTENT: 6b. AGENT FILES & CONFIGS REPOSITORY */}
+            {activeTab === 'traces' && !isSimulationMode && (
+              <AgentTraceInspector
+                agentId={selectedAgent.id}
+                agentName={selectedAgent.name}
+                agentCodename={selectedAgent.codename}
+              />
+            )}
+
             {activeTab === 'files' && !isSimulationMode && (
               <AgentFilesManager
                 agent={selectedAgent}

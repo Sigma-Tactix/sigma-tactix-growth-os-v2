@@ -8,6 +8,7 @@ import {
   RepurposedArticle,
   RepurposedCarouselAndThread,
   GoogleAdsMcpStatus,
+  DecisionTraceRecord,
 } from '../types';
 
 // One fetch wrapper for every call to our own backend — attaches the
@@ -349,4 +350,11 @@ export async function repurposeCarouselWithAgentReach(payload: {
     throw new Error(err.error || `Carousel repurposing failed: ${res.statusText}`);
   }
   return res.json();
+}
+
+export async function fetchDecisionTraces(limit: number = 25): Promise<DecisionTraceRecord[]> {
+  const res = await apiFetch(`/api/workspace/decisions/traces?limit=${limit}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Decision traces unavailable: ${res.statusText}`);
+  return data.traces || [];
 }

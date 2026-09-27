@@ -600,3 +600,20 @@ export interface RepurposedCarouselAndThread {
     engagementHook: string;
   }>;
 }
+
+export interface DecisionTraceRecord {
+  id: string;
+  operation: 'triage' | 'route' | 'safety';
+  provider: string;
+  mode: 'shadow' | 'active' | 'fallback';
+  authoritative_engine: string;
+  selected_value: Record<string, unknown>;
+  confidence: number;
+  probabilities: Record<string, number>;
+  requires_hitl: boolean;
+  policy_override: boolean;
+  shadow_provider: string | null;
+  shadow_decision: Record<string, unknown> | null;
+  duration_ms: number;
+  created_at: string;
+}
