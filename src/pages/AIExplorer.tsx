@@ -174,11 +174,11 @@ export default function AIExplorer() {
               <span className="text-zinc-600 text-xs">•</span>
               <Badge variant="neutral">NATURAL LANGUAGE SQL & TELEMETRY</Badge>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
               <BrainCircuit className="w-7 h-7 text-[var(--sigma-vermilion)]" />
               AI Insight Explorer
             </h1>
-            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+            <p className="text-[var(--sigma-text-muted)] text-sm mt-1 max-w-2xl leading-relaxed">
               {isAdmin 
                 ? "Query your enterprise data in natural language to reveal hidden patterns, attribution leaks, and growth opportunities."
                 : "Explore campaign insights and performance metrics across all channels."}
@@ -188,13 +188,13 @@ export default function AIExplorer() {
           <div className="relative">
             <button 
               onClick={() => setShowDateOptions(!showDateOptions)}
-              className="px-4 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl hover:bg-white/5 transition-all text-xs font-mono text-zinc-300 flex items-center gap-2.5 cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl hover:bg-[var(--sigma-surface-muted)] transition-all text-xs font-mono text-[var(--sigma-text-muted)] flex items-center gap-2.5 cursor-pointer shadow-sm"
             >
               <Calendar size={14} className="text-[var(--sigma-vermilion)]" />
               <span className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] font-bold text-[10px] font-mono border border-[var(--sigma-vermilion)]/30">
                 {selectedPreset}
               </span>
-              <span className="text-zinc-200">
+              <span className="text-[var(--sigma-text)] font-medium">
                 {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd, yyyy')}
               </span>
             </button>
@@ -277,12 +277,12 @@ export default function AIExplorer() {
         )}
 
         <div className="mt-5 flex flex-wrap gap-2 items-center">
-          <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mr-1">Suggestions:</span>
+          <span className="text-[10px] text-[var(--sigma-text-muted)] font-mono uppercase tracking-wider mr-1">Suggestions:</span>
           {['Lifetime Value Trend', 'Churn Prediction', 'Revenue Attribution'].map((s) => (
             <button 
               key={s} 
               onClick={() => setQuery(s)}
-              className="px-3 py-1 rounded-full border border-[var(--sigma-border)] text-xs text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-white/5 transition-all cursor-pointer"
+              className="px-3 py-1 rounded-full border border-[var(--sigma-border)] text-xs text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:border-accent/40 hover:bg-[var(--sigma-surface-subtle)] transition-all cursor-pointer"
             >
               {s}
             </button>
@@ -308,7 +308,7 @@ export default function AIExplorer() {
                  {isAdmin ? (
                    <button 
                      onClick={handleExportData}
-                     className="p-2 hover:bg-white/5 rounded-lg text-muted transition-colors cursor-pointer hover:text-white" 
+                     className="p-2 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-text-muted)] transition-colors cursor-pointer hover:text-[var(--sigma-text)]" 
                      title="Export dataset (.xlsx)"
                    >
                      <Download size={18} />
@@ -319,8 +319,8 @@ export default function AIExplorer() {
                  <button 
                    onClick={() => setIsMaximized(!isMaximized)}
                    className={cn(
-                     "p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer",
-                     isMaximized ? "text-accent bg-accent/10" : "text-muted hover:text-white"
+                     "p-2 hover:bg-[var(--sigma-surface-subtle)] rounded-lg transition-colors cursor-pointer",
+                     isMaximized ? "text-accent bg-accent/10" : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                    )}
                    title={isMaximized ? "Restore view" : "Maximize chart"}
                  >

@@ -49,6 +49,7 @@ export function GlassCard({
         'bg-[var(--sigma-glass)] backdrop-blur-xl',
         'border border-[var(--sigma-border)]',
         'shadow-[inset_0_1px_0_0_var(--sigma-highlight)]',
+        'text-[var(--sigma-text)]',
         elevationClasses[elevation],
         interactive && 'hover:border-[var(--sigma-border-strong)] hover:shadow-[var(--sigma-shadow-md)] cursor-pointer active:scale-[0.995]',
         className

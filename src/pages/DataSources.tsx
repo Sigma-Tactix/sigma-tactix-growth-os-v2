@@ -1200,29 +1200,29 @@ export default function DataSources() {
                           <tr key={conn.id} className="group hover:bg-white/[0.02] transition-colors">
                              <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                  <div className="w-8 h-8 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center shrink-0">
                                      <Database size={14} className="text-accent" />
                                   </div>
                                   <div>
-                                    <div className="text-xs font-bold text-white">{conn.platform}</div>
-                                    <div className="text-[10px] font-mono text-zinc-400">{conn.accountName} • ID: {conn.propertyId}</div>
+                                    <div className="text-xs font-bold text-[var(--sigma-text)]">{conn.platform}</div>
+                                    <div className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{conn.accountName} • ID: {conn.propertyId}</div>
                                   </div>
                                 </div>
                              </td>
-                             <td className="px-6 py-4 text-xs font-mono text-muted">{conn.protocol}</td>
+                             <td className="px-6 py-4 text-xs font-mono text-[var(--sigma-text-muted)]">{conn.protocol}</td>
                              <td className="px-6 py-4 text-xs font-mono text-secondary font-bold">{conn.targetVault}</td>
-                             <td className="px-6 py-4 text-xs font-mono text-zinc-300">{conn.lastPing}</td>
+                             <td className="px-6 py-4 text-xs font-mono text-[var(--sigma-text-soft)]">{conn.lastPing}</td>
                              <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                  <span className="text-xs font-mono text-emerald-400 font-bold">{conn.latencyMs}ms</span>
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span className="text-xs font-mono text-emerald-500 font-bold">{conn.latencyMs}ms</span>
                                 </div>
                              </td>
                              <td className="px-6 py-4 text-right">
                                 <button 
                                   onClick={() => handlePingSingle(conn.id, conn.platform, conn.accountName)}
                                   disabled={syncingConnectionId === conn.id}
-                                  className="px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase transition-all bg-white/5 text-muted border border-white/10 hover:bg-white/10 hover:text-white flex items-center gap-1.5 ml-auto disabled:opacity-50"
+                                  className="px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase transition-all bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)] hover:bg-[var(--sigma-surface-muted)] hover:text-[var(--sigma-text)] flex items-center gap-1.5 ml-auto disabled:opacity-50"
                                 >
                                   <RefreshCw size={10} className={cn(syncingConnectionId === conn.id && "animate-spin text-accent")} />
                                   <span>{syncingConnectionId === conn.id ? 'Syncing...' : 'Sync Now'}</span>
@@ -1391,7 +1391,7 @@ export default function DataSources() {
                       }
                       setPingResult(null);
                     }}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     {libraryConnectors.map(c => (
                       <option key={c.name} value={c.name}>{c.name} ({c.cat.toUpperCase()})</option>
@@ -1412,7 +1412,7 @@ export default function DataSources() {
                       value={formAccountName}
                       onChange={(e) => setFormAccountName(e.target.value)}
                       placeholder="e.g. Sigma Tactix Primary Production"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                     <span className="text-[10px] text-zinc-500 font-mono">Actual name as displayed in ad/CRM console</span>
                   </div>
@@ -1427,7 +1427,7 @@ export default function DataSources() {
                       value={formPropertyId}
                       onChange={(e) => setFormPropertyId(e.target.value)}
                       placeholder={connectorRequirement?.accountPlaceholder || "Provider account ID"}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                     <span className="text-[10px] text-zinc-500 font-mono">
                       {connectorRequirement?.accountHelp || "Unique provider account identifier"}
@@ -1442,7 +1442,7 @@ export default function DataSources() {
                     <select
                       value={formTargetVault}
                       onChange={(e) => setFormTargetVault(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="Marketing Vault">Marketing Vault (Paid ads, CAC, ROAS)</option>
                       <option value="Customer Vault">Customer Vault (CRM, Leads, LTV)</option>
@@ -1458,7 +1458,7 @@ export default function DataSources() {
                     <select
                       value={formSyncFrequency}
                       onChange={(e) => setFormSyncFrequency(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="Real-time Event Stream">Real-time Event Stream (Webhooks)</option>
                       <option value="Every 15 mins">Every 15 mins (Standard Polling)</option>
@@ -1504,16 +1504,16 @@ export default function DataSources() {
                       value={formCredential}
                       onChange={(e) => setFormCredential(e.target.value)}
                       placeholder='Paste raw Service Account JSON here: { "type": "service_account", "project_id": "...", "client_email": "...", "private_key": "..." }'
-                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:ring-1 focus:ring-accent"
                     />
 
                     {parsedSaKey ? (
-                      <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-400">
+                      <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-500">
                         <CheckCircle2 size={14} className="shrink-0" />
                         <span className="truncate">Service Account Verified: {parsedSaKey.client_email}</span>
                       </div>
                     ) : (
-                      <span className="text-[10px] text-zinc-500 font-mono block">
+                      <span className="text-[10px] text-[var(--sigma-text-muted)] font-mono block">
                         Upload your Google Cloud service account JSON key file or paste its raw JSON content.
                       </span>
                     )}
@@ -1528,7 +1528,7 @@ export default function DataSources() {
                           value={field.key === 'developerToken' ? formDeveloperToken : formCredential}
                           onChange={(e) => field.key === 'developerToken' ? setFormDeveloperToken(e.target.value) : setFormCredential(e.target.value)}
                           placeholder={editingConnectionId ? "Enter again to re-verify" : field.placeholder}
-                          className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                          className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                         />
                       </div>
                     ))}
@@ -1536,17 +1536,17 @@ export default function DataSources() {
                 )}
 
                 {/* Handshake Ping Test Box */}
-                <div className="p-4 bg-black/60 rounded-xl border border-white/10 space-y-3">
+                <div className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)] space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-mono text-zinc-300 font-bold flex items-center gap-2">
-                      <Shield size={14} className="text-emerald-400" />
+                    <div className="text-xs font-mono text-[var(--sigma-text)] font-bold flex items-center gap-2">
+                      <Shield size={14} className="text-emerald-500" />
                       Handshake Integrity Verification
                     </div>
                     <button
                       type="button"
                       onClick={handleTestPing}
                       disabled={isTestingPing}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-1.5 bg-[var(--sigma-surface-muted)] hover:bg-[var(--sigma-surface-strong)] text-[var(--sigma-text)] rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 disabled:opacity-50"
                     >
                       <RefreshCw size={12} className={cn(isTestingPing && "animate-spin text-accent")} />
                       {isTestingPing ? "Testing Ping..." : "Test Connection Ping"}
@@ -1556,24 +1556,24 @@ export default function DataSources() {
                   {pingResult ? (
                     <div className={cn(
                       "p-3 border rounded-lg text-[11px] font-mono flex items-center gap-2",
-                      pingResult.success ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-300"
+                      pingResult.success ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-rose-500/10 border-rose-500/20 text-rose-500"
                     )}>
                       {pingResult.success ? <CheckCircle2 size={15} className="shrink-0" /> : <AlertTriangle size={15} className="shrink-0" />}
                       <span>{pingResult.message}</span>
                     </div>
                   ) : (
-                    <div className="text-[11px] font-mono text-zinc-500">
+                    <div className="text-[11px] font-mono text-[var(--sigma-text-muted)]">
                       Run a test ping to verify endpoint reachability and latency before saving.
                     </div>
                   )}
                 </div>
 
                 {/* Modal Footer */}
-                <div className="pt-2 flex justify-end gap-3 border-t border-white/10">
+                <div className="pt-2 flex justify-end gap-3 border-t border-[var(--sigma-border)]">
                   <button
                     type="button"
                     onClick={() => setIsSetupModalOpen(false)}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-muted hover:text-white rounded-xl text-xs font-mono font-bold transition-all"
+                    className="px-5 py-2.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold transition-all border border-[var(--sigma-border)]"
                   >
                     Cancel
                   </button>
@@ -1703,7 +1703,7 @@ export default function DataSources() {
                           "py-2 px-3 rounded-xl text-xs font-mono text-left transition-all border",
                           selectedEventType === ev.id
                             ? "bg-accent/15 border-accent text-accent font-bold amber-glow"
-                            : "bg-black/30 border-white/10 text-muted hover:border-white/20 hover:text-white"
+                            : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:border-accent/40 hover:text-[var(--sigma-text)]"
                         )}
                       >
                         {ev.label}
@@ -1731,7 +1731,7 @@ export default function DataSources() {
                     value={webhookPayloadJson}
                     onChange={(e) => setWebhookPayloadJson(e.target.value)}
                     rows={9}
-                    className="w-full bg-black/80 border border-white/10 rounded-xl p-3 text-[11px] font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
+                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-[11px] font-mono text-emerald-500 focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
                     spellCheck={false}
                   />
                 </div>
@@ -1756,24 +1756,24 @@ export default function DataSources() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                        <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wide">
+                        <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                        <span className="text-xs font-mono font-bold text-emerald-500 uppercase tracking-wide">
                           HTTP {webhookReceipt.httpStatus} OK • Ingestion Confirmed
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-300/80 bg-emerald-500/20 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-mono text-emerald-600 bg-emerald-500/20 px-2 py-0.5 rounded">
                         {webhookReceipt.ingestedAt}
                       </span>
                     </div>
 
-                    <div className="space-y-1.5 text-[11px] font-mono text-zinc-300 pt-2 border-t border-emerald-500/15">
+                    <div className="space-y-1.5 text-[11px] font-mono text-[var(--sigma-text-muted)] pt-2 border-t border-emerald-500/15">
                       <div className="flex justify-between">
                         <span className="text-muted">Event ID:</span>
-                        <span className="text-white font-bold">{webhookReceipt.eventId}</span>
+                        <span className="text-[var(--sigma-text)] font-bold">{webhookReceipt.eventId}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted">Payload Hash:</span>
-                        <span className="text-emerald-300 select-all font-mono text-[10px] truncate max-w-[280px]">
+                        <span className="text-emerald-500 select-all font-mono text-[10px] truncate max-w-[280px]">
                           {webhookReceipt.payloadHash}
                         </span>
                       </div>
@@ -1783,7 +1783,7 @@ export default function DataSources() {
                       </div>
                     </div>
 
-                    <div className="text-[10px] font-mono text-emerald-400/90 bg-black/40 p-2.5 rounded-lg border border-emerald-500/20">
+                    <div className="text-[10px] font-mono text-emerald-600 bg-[var(--sigma-surface-subtle)] p-2.5 rounded-lg border border-emerald-500/20">
                       ✓ Telemetry payload parsed, HMAC signature verified, and committed into Second Brain memory for automated multi-agent analysis.
                     </div>
                   </motion.div>
@@ -1791,11 +1791,11 @@ export default function DataSources() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-6 border-t border-white/10 flex justify-end bg-surface/95 backdrop-blur">
+              <div className="p-6 border-t border-[var(--sigma-border)] flex justify-end bg-[var(--sigma-surface)]">
                 <button
                   type="button"
                   onClick={() => setIsWebhookModalOpen(false)}
-                  className="px-6 py-2 bg-white/5 hover:bg-white/10 text-muted hover:text-white rounded-xl text-xs font-mono font-bold transition-all"
+                  className="px-6 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold transition-all border border-[var(--sigma-border)]"
                 >
                   Close Console
                 </button>
@@ -1808,15 +1808,15 @@ export default function DataSources() {
       {/* Agent Allocation Modal */}
       <AnimatePresence>
         {isAgentModalOpen && allocatingConn && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-surface border border-white/10 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
+              className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-surface/95 backdrop-blur z-10">
+              <div className="p-6 border-b border-[var(--sigma-border)] flex items-center justify-between sticky top-0 bg-[var(--sigma-surface)] z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
                     <Bot size={20} className="text-accent" />
@@ -1836,7 +1836,7 @@ export default function DataSources() {
                 <button
                   type="button"
                   onClick={() => setIsAgentModalOpen(false)}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-all"
+                  className="p-2 rounded-lg bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all border border-[var(--sigma-border)]"
                 >
                   <X size={16} />
                 </button>
@@ -1844,7 +1844,7 @@ export default function DataSources() {
 
               {/* Body */}
               <div className="p-6 space-y-4">
-                <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+                <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed font-sans">
                   Select which specialized AI agents are granted access to ingest data, pull telemetry, and execute operations through this connector.
                 </p>
 
@@ -1864,23 +1864,23 @@ export default function DataSources() {
                         className={cn(
                           "p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between",
                           isSelected
-                            ? "bg-accent/10 border-accent/40 text-white"
-                            : "bg-black/30 border-white/5 text-zinc-400 hover:border-white/15 hover:text-zinc-200"
+                            ? "bg-accent/10 border-accent/40 text-[var(--sigma-text)]"
+                            : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:border-accent/30 hover:text-[var(--sigma-text)]"
                         )}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-5 h-5 rounded-md flex items-center justify-center border transition-all",
-                            isSelected ? "bg-accent border-accent text-black" : "border-white/20 bg-black/40"
+                            isSelected ? "bg-accent border-accent text-black" : "border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)]"
                           )}>
                             {isSelected && <Check size={13} className="stroke-[3]" />}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-white font-mono">{agent.name}</div>
-                            <div className="text-[11px] text-zinc-400 font-sans">{agent.role}</div>
+                            <div className="text-xs font-bold text-[var(--sigma-text)] font-mono">{agent.name}</div>
+                            <div className="text-[11px] text-[var(--sigma-text-muted)] font-sans">{agent.role}</div>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-white/5 text-zinc-400 border border-white/10">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]">
                           {agent.category}
                         </span>
                       </div>
@@ -1890,15 +1890,15 @@ export default function DataSources() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-white/10 flex items-center justify-between bg-surface/95 backdrop-blur">
-                <span className="text-[11px] font-mono text-zinc-400">
+              <div className="p-6 border-t border-[var(--sigma-border)] flex items-center justify-between bg-[var(--sigma-surface)]">
+                <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">
                   {selectedAgentNames.length} of {AVAILABLE_AGENTS.length} agents authorized
                 </span>
                 <div className="flex gap-2.5">
                   <button
                     type="button"
                     onClick={() => setIsAgentModalOpen(false)}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-muted hover:text-white rounded-xl text-xs font-mono font-bold transition-all"
+                    className="px-4 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold transition-all border border-[var(--sigma-border)]"
                   >
                     Cancel
                   </button>

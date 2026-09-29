@@ -66,3 +66,4 @@ temp/
 video-clip/*.mp4
 first-frames/*.png
 output/*.mp4
+.vexp/

@@ -400,19 +400,19 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
           <GlassCard className="p-6 md:p-8 space-y-6" spotlight>
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
             
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-white/10 pb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-[var(--sigma-border)] pb-6">
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold mb-1 flex items-center gap-2">
                   <Sliders size={14} /> Client Economics Simulation Engine
                 </div>
-                <h3 className="text-2xl font-bold text-white">Agency Margin & Profitability Calculator</h3>
-                <p className="text-zinc-400 text-sm mt-1">
+                <h3 className="text-2xl font-bold text-[var(--sigma-text)]">Agency Margin & Profitability Calculator</h3>
+                <p className="text-[var(--sigma-text-muted)] text-sm mt-1">
                   Simulate monthly agency profit when delivering Sigma Tactix Growth OS to client accounts based on AI model selection and task intensity.
                 </p>
               </div>
 
-              <div className="px-5 py-2.5 bg-black/60 border border-white/10 rounded-xl flex items-center gap-3">
-                <span className="text-xs font-mono text-muted">ROI Multiple:</span>
+              <div className="px-5 py-2.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center gap-3">
+                <span className="text-xs font-mono text-[var(--sigma-text-muted)]">ROI Multiple:</span>
                 <span className="text-base font-mono font-bold text-accent">{simulatedProfitability.roiMultiplier}x</span>
               </div>
             </div>
@@ -423,7 +423,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                 {/* Retainer Slider */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-muted uppercase">Client Monthly Retainer Fee</span>
+                    <span className="text-[var(--sigma-text-muted)] uppercase">Client Monthly Retainer Fee</span>
                     <span className="text-accent font-bold text-sm">${calcRetainer.toLocaleString()} / mo</span>
                   </div>
                   <input
@@ -433,9 +433,9 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                     step="100"
                     value={calcRetainer}
                     onChange={(e) => setCalcRetainer(Number(e.target.value))}
-                    className="w-full accent-accent cursor-pointer h-2 bg-black/50 rounded-lg"
+                    className="w-full accent-accent cursor-pointer h-2 bg-[var(--sigma-surface-subtle)] rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] font-mono text-zinc-500">
+                  <div className="flex justify-between text-[10px] font-mono text-[var(--sigma-text-muted)]">
                     <span>Starter ($499)</span>
                     <span>Growth ($1,499)</span>
                     <span>Enterprise ($3,499)</span>
@@ -446,8 +446,8 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                 {/* Task Volume Slider */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-muted uppercase">Monthly Autonomous Agent Tasks</span>
-                    <span className="text-white font-bold">{calcTasksPerMonth} tasks / mo</span>
+                    <span className="text-[var(--sigma-text-muted)] uppercase">Monthly Autonomous Agent Tasks</span>
+                    <span className="text-[var(--sigma-text)] font-bold">{calcTasksPerMonth} tasks / mo</span>
                   </div>
                   <input
                     type="range"
@@ -456,9 +456,9 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                     step="5"
                     value={calcTasksPerMonth}
                     onChange={(e) => setCalcTasksPerMonth(Number(e.target.value))}
-                    className="w-full accent-accent cursor-pointer h-2 bg-black/50 rounded-lg"
+                    className="w-full accent-accent cursor-pointer h-2 bg-[var(--sigma-surface-subtle)] rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] font-mono text-zinc-500">
+                  <div className="flex justify-between text-[10px] font-mono text-[var(--sigma-text-muted)]">
                     <span>10 tasks</span>
                     <span>50 tasks</span>
                     <span>100 tasks</span>
@@ -468,7 +468,7 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
 
                 {/* Model Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-mono text-muted uppercase">Underlying AI Inference Model</label>
+                  <label className="text-xs font-mono text-[var(--sigma-text-muted)] uppercase">Underlying AI Inference Model</label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[
                       { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', rate: '$0.075/1M', rec: true },
@@ -483,12 +483,12 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
                         className={cn(
                           "p-3 rounded-xl border text-left transition-all",
                           calcModel === m.id
-                            ? "bg-accent/15 border-accent text-white shadow-lg"
-                            : "bg-black/30 border-white/10 text-muted hover:text-white"
+                            ? "bg-accent/15 border-accent text-[var(--sigma-text)] shadow-lg"
+                            : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                         )}
                       >
                         <div className="text-xs font-bold truncate">{m.name}</div>
-                        <div className="text-[10px] font-mono text-zinc-400 mt-0.5">{m.rate}</div>
+                        <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">{m.rate}</div>
                         {m.rec && <span className="text-[9px] font-mono text-accent font-bold mt-1 block">RECOMMENDED</span>}
                       </button>
                     ))}
@@ -496,13 +496,13 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
 
                   {/* Complete Multi-Model Catalog Selector */}
                   <div className="pt-2">
-                    <label className="text-[10px] font-mono text-zinc-400 uppercase mb-1 block">
+                    <label className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase mb-1 block">
                       Or Select from All Available Models ({ALL_AI_MODELS.length} Models across Google, Anthropic, OpenAI, Grok, Qwen, DeepSeek, GLM):
                     </label>
                     <select
                       value={calcModel}
                       onChange={(e) => setCalcModel(e.target.value)}
-                      className="w-full bg-black/70 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                      className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:ring-1 focus:ring-accent font-mono"
                     >
                       {['google', 'anthropic', 'openai', 'xai', 'qwen', 'deepseek', 'glm'].map(prov => (
                         <optgroup key={prov} label={prov.toUpperCase()}>
@@ -519,32 +519,32 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
               </div>
 
               {/* Real-time Profit Ledger */}
-              <div className="lg:col-span-5 bg-black/50 border border-white/10 rounded-2xl p-6 space-y-4 shadow-xl">
-                <div className="text-xs font-mono uppercase tracking-wider text-muted font-bold flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="lg:col-span-5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="text-xs font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] font-bold flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
                   <span>Unit Economics Breakdown</span>
                   <span className="text-[10px] text-accent font-mono">1 Tenant / Month</span>
                 </div>
 
                 <div className="space-y-3 text-xs font-mono">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-300">Client Retainer Revenue</span>
-                    <span className="text-emerald-400 font-bold">+ ${calcRetainer.toFixed(2)}</span>
+                    <span className="text-[var(--sigma-text)]">Client Retainer Revenue</span>
+                    <span className="text-emerald-500 font-bold">+ ${calcRetainer.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Estimated AI Compute ({calcTasksPerMonth} runs)</span>
-                    <span className="text-amber-400 font-bold">- ${simulatedProfitability.aiTokenCostUsd.toFixed(2)}</span>
+                    <span className="text-[var(--sigma-text-muted)]">Estimated AI Compute ({calcTasksPerMonth} runs)</span>
+                    <span className="text-amber-500 font-bold">- ${simulatedProfitability.aiTokenCostUsd.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Sovereign Cloud & Vector DB Allocation</span>
-                    <span className="text-red-400 font-bold">- $35.00</span>
+                    <span className="text-[var(--sigma-text-muted)]">Sovereign Cloud & Vector DB Allocation</span>
+                    <span className="text-rose-500 font-bold">- $35.00</span>
                   </div>
 
-                  <div className="pt-3 border-t border-white/10 flex items-center justify-between text-sm">
-                    <span className="text-white font-bold">Net Agency Profit</span>
-                    <span className="text-emerald-400 font-black text-base">+ ${simulatedProfitability.netProfitUsd.toFixed(2)}</span>
+                  <div className="pt-3 border-t border-[var(--sigma-border)] flex items-center justify-between text-sm">
+                    <span className="text-[var(--sigma-text)] font-bold">Net Agency Profit</span>
+                    <span className="text-emerald-500 font-black text-base">+ ${simulatedProfitability.netProfitUsd.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted">Gross Profit Margin</span>
+                    <span className="text-[var(--sigma-text-muted)]">Gross Profit Margin</span>
                     <span className="text-accent font-bold text-sm">{simulatedProfitability.grossMarginPct}%</span>
                   </div>
                 </div>

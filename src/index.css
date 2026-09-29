@@ -14,6 +14,8 @@
   --color-accent: #ff481b;
   --color-border: var(--sigma-border);
   --color-border-strong: var(--sigma-border-strong);
+  --color-foreground: var(--sigma-text);
+  --color-text: var(--sigma-text);
   --color-muted: var(--sigma-text-muted);
 }
 
@@ -396,65 +398,96 @@
 .amber-text { color: #ff481b; }
 .silver-text { color: var(--sigma-text); }
 
-/* Digital Marketing Suite light-mode remediation.
-   Legacy modules were authored against a dark-only palette. This compatibility
-   layer converts operational UI to semantic surfaces while preserving true
-   black creative canvases, media previews, and modal backdrops. */
-html[data-theme="light"] .sigma-marketing-suite {
+/* Universal Light-Mode Remediation for Sigma Tactix OS.
+   Converts dark-biased operational UI and cards to clean, accessible, high-contrast semantic surfaces
+   while preserving creative canvases, media previews, and modal backdrops. */
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) {
   color: var(--sigma-text);
 }
-html[data-theme="light"] .sigma-marketing-suite :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-200) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(h1, h2, h3, h4):not(
+  button[class*="bg-primary"] *,
+  button[class*="bg-accent"] *,
+  button[class*="bg-gradient"] *,
+  .sigma-button-primary *,
+  .sigma-preserve-dark *
+) {
   color: var(--sigma-text);
 }
-html[data-theme="light"] .sigma-marketing-suite :is(.text-slate-300, .text-slate-400, .text-zinc-300, .text-zinc-400) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-100, .text-zinc-200):not(
+  button[class*="bg-primary"], button[class*="bg-primary"] *,
+  button[class*="bg-accent"], button[class*="bg-accent"] *,
+  button[class*="bg-gradient-to"], button[class*="bg-gradient-to"] *,
+  button[class*="bg-rose"], button[class*="bg-rose"] *,
+  button[class*="bg-red"], button[class*="bg-red"] *,
+  button[class*="bg-emerald"], button[class*="bg-emerald"] *,
+  button[class*="bg-blue"], button[class*="bg-blue"] *,
+  button[class*="bg-[#ff481b]"], button[class*="bg-[#ff481b]"] *,
+  .sigma-button-primary, .sigma-button-primary *,
+  .sigma-segment-active, .sigma-segment-active *,
+  .sigma-tab-active-pill, .sigma-tab-active-pill *,
+  [class*="bg-primary"]:not(input):not(select),
+  [class*="bg-[#ff481b]"]:not(input):not(select),
+  [class*="bg-rose-600"], [class*="bg-rose-500"],
+  [class*="bg-emerald-600"], [class*="bg-emerald-500"],
+  [class*="bg-blue-600"], [class*="bg-blue-500"],
+  .sigma-preserve-dark, .sigma-preserve-dark *
+) {
+  color: var(--sigma-text);
+}
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(.text-slate-300, .text-slate-400, .text-zinc-300, .text-zinc-400):not(
+  .sigma-preserve-dark, .sigma-preserve-dark *
+) {
   color: var(--sigma-text-soft);
 }
-html[data-theme="light"] .sigma-marketing-suite :is(.text-slate-500, .text-zinc-500, .text-zinc-600) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(.text-slate-500, .text-zinc-500, .text-zinc-600):not(
+  .sigma-preserve-dark, .sigma-preserve-dark *
+) {
   color: var(--sigma-text-muted);
 }
-html[data-theme="light"] .sigma-marketing-suite :is(
-  [class~="bg-black/30"], [class~="bg-black/40"], [class~="bg-black/50"], [class~="bg-black/60"], [class~="bg-black/70"],
-  [class~="bg-zinc-700"], [class~="bg-zinc-800"], [class~="bg-zinc-800/20"], [class~="bg-zinc-800/40"], [class~="bg-zinc-800/50"], [class~="bg-zinc-800/80"],
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(
+  [class~="bg-black/20"], [class~="bg-black/30"], [class~="bg-black/40"], [class~="bg-black/50"], [class~="bg-black/60"], [class~="bg-black/70"],
+  [class~="bg-zinc-700"], [class~="bg-zinc-800"], [class~="bg-zinc-800/20"], [class~="bg-zinc-800/30"], [class~="bg-zinc-800/40"], [class~="bg-zinc-800/50"], [class~="bg-zinc-800/60"], [class~="bg-zinc-800/80"],
   [class~="bg-zinc-900"], [class~="bg-zinc-900/30"], [class~="bg-zinc-900/40"], [class~="bg-zinc-900/50"], [class~="bg-zinc-900/60"], [class~="bg-zinc-900/70"], [class~="bg-zinc-900/80"], [class~="bg-zinc-950"],
-  [class~="bg-[#0F0F12]"]
-) {
+  [class~="bg-[#0F0F12]"], [class~="bg-[#09090B]"], [class~="bg-[#18181B]"], [class~="bg-[#202024]"]
+):not(.sigma-preserve-dark, .sigma-preserve-dark *) {
   background: var(--sigma-surface) !important;
 }
-html[data-theme="light"] .sigma-marketing-suite :is(
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(
   [class~="border-white/5"], [class~="border-white/10"], [class~="border-white/15"], [class~="border-white/20"],
   [class~="border-zinc-700"], [class~="border-zinc-700/50"], [class~="border-zinc-700/60"],
   [class~="border-zinc-800"], [class~="border-zinc-800/30"], [class~="border-zinc-800/60"], [class~="border-zinc-800/80"]
-) {
+):not(.sigma-preserve-dark, .sigma-preserve-dark *) {
   border-color: var(--sigma-border-strong) !important;
 }
-html[data-theme="light"] .sigma-marketing-suite :is(input, textarea, select)[class*="bg-black/"] {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(input, textarea, select):is([class*="bg-black"], [class*="bg-zinc-"]):not(.sigma-preserve-dark *) {
   background: var(--sigma-input) !important;
   color: var(--sigma-text) !important;
+  border-color: var(--sigma-border-strong) !important;
 }
-html[data-theme="light"] .sigma-marketing-suite :is(input, textarea)::placeholder {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is(input, textarea)::placeholder {
   color: var(--sigma-text-muted);
 }
-html[data-theme="light"] .sigma-marketing-suite .recharts-cartesian-axis-tick-value,
-html[data-theme="light"] .sigma-marketing-suite .recharts-text,
-html[data-theme="light"] .sigma-marketing-suite svg text {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .recharts-cartesian-axis-tick-value,
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .recharts-text,
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) svg text {
   fill: var(--sigma-text-muted) !important;
 }
-html[data-theme="light"] .sigma-marketing-suite .recharts-cartesian-grid line {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .recharts-cartesian-grid line {
   stroke: var(--sigma-border-strong) !important;
 }
-html[data-theme="light"] .sigma-marketing-suite :is([class~="bg-black"], [class~="bg-black/80"], [class~="bg-black/85"], [class~="bg-black/90"]) :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-200) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is([class~="bg-black"], [class~="bg-black/80"], [class~="bg-black/85"], [class~="bg-black/90"]) :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-200) {
   color: #ffffff !important;
 }
-html[data-theme="light"] .sigma-marketing-suite :is([class~="bg-black"], [class~="bg-black/80"], [class~="bg-black/85"], [class~="bg-black/90"]) :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) :is([class~="bg-black"], [class~="bg-black/80"], [class~="bg-black/85"], [class~="bg-black/90"]) :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600) {
   color: #a1a1aa !important;
 }
-html[data-theme="light"] .sigma-marketing-suite .sigma-preserve-dark :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-200) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .sigma-preserve-dark :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-200) {
   color: #ffffff !important;
 }
-html[data-theme="light"] .sigma-marketing-suite .sigma-preserve-dark :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .sigma-preserve-dark :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600) {
   color: #a1a1aa !important;
 }
-html[data-theme="light"] .sigma-marketing-suite .sigma-preserve-dark :is([class~="border-white/5"], [class~="border-white/10"], [class~="border-white/15"], [class~="border-white/20"]) {
+html[data-theme="light"] :is(.sigma-app, .sigma-marketing-suite, .sigma-app-view) .sigma-preserve-dark :is([class~="border-white/5"], [class~="border-white/10"], [class~="border-white/15"], [class~="border-white/20"]) {
   border-color: rgb(255 255 255 / 0.12) !important;
 }
 

@@ -12,7 +12,9 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run",
-    "setup:google-ads-mcp": "pipx install google-ads-mcp==0.0.4"
+    "setup:google-ads-mcp": "pipx install google-ads-mcp==0.0.4",
+    "setup:laya": "pip install \"laya[serve]\"",
+    "laya:serve": "LAYA_PRELOAD=0 laya-serve --port 8000"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
