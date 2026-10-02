@@ -372,6 +372,21 @@ async function searchV2EXIntelligence(query: string): Promise<AgentReachFetchRes
       `${index + 1}. **[${topic.title}](${topic.url})**\n   * Node: \`${topic.node?.title || 'general'}\` • Replies: **${topic.replies || 0}** • Author: **${topic.member?.username || 'user'}**`
     ).join('\n\n');
 
+    // A keyword scan that found nothing must NOT report success. Returning
+    // success:true with resultCount 0 is how an empty scan gets presented as
+    // "captured mentions"; the honest state is "no matches".
+    if (matches.length === 0) {
+      return {
+        success: false,
+        channel: 'v2ex',
+        target: query,
+        content: '',
+        byteCount: 0,
+        metadata: { resultCount: 0, query, engine: 'V2EX public feeds' },
+        error: `No V2EX discussion matched "${query}". The public feed returned no thread containing that keyword — this is an absence of results, not a negative finding about the brand.`,
+      };
+    }
+
     return {
       success: true,
       channel: 'v2ex',
@@ -576,6 +591,21 @@ async function searchHackerNewsIntelligence(query: string): Promise<AgentReachFe
     if (!res.ok) throw new Error(`Hacker News Search HTTP ${res.status}`);
     const data: any = await res.json();
     const hits: any[] = Array.isArray(data?.hits) ? data.hits : [];
+
+    // Same rule as the V2EX scan: zero results is an absence of evidence, not
+    // a successful capture of nothing.
+    if (hits.length === 0) {
+      return {
+        success: false,
+        channel: 'hackernews',
+        target: query,
+        content: '',
+        byteCount: 0,
+        metadata: { resultCount: 0, query, engine: 'HN Algolia Search API' },
+        error: `No Hacker News discussion matched "${query}". No results is not evidence of a negative view.`,
+      };
+    }
+
     const markdown = hits.map((hit, index) => {
       const discussionUrl = `https://news.ycombinator.com/item?id=${hit.objectID}`;
       return `${index + 1}. **[${hit.title || 'Untitled discussion'}](${hit.url || discussionUrl})**\n   * **${hit.points || 0}** points by **${hit.author || 'unknown'}** • [${hit.num_comments || 0} comments](${discussionUrl})`;

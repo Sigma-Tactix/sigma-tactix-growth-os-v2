@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import {
   Mail,
@@ -35,7 +36,7 @@ interface DripSequence {
   status: 'ACTIVE' | 'DRAFT';
 }
 
-const SAMPLE_SEQUENCES: DripSequence[] = [
+const DEMO_SAMPLE_SEQUENCES: DripSequence[] = [
   {
     id: 'seq-01',
     name: 'Enterprise Demo Request Instant Nurture',
@@ -399,3 +400,13 @@ The Sigma Tactix Revenue Architecture Team`);
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const SAMPLE_SEQUENCES = isDemoSeedEnabled() ? DEMO_SAMPLE_SEQUENCES : [];

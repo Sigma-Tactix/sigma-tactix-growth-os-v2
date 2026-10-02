@@ -101,14 +101,22 @@ export default function SocialListeningPage() {
     try {
       const res = await syncAgentReachSocial({ keyword: kw, channel: ch });
       if (res.success && res.mention) {
-        const sentimentVal: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' =
-          res.mention.sentiment === 'Positive' ? 'POSITIVE' : res.mention.sentiment === 'Negative' ? 'NEGATIVE' : 'NEUTRAL';
+        // Phase 0: an unclassified mention is NOT "Neutral". The server now
+        // leaves sentiment null when classification did not run, and this maps
+        // that to a real value instead of inventing one.
+        const sentimentVal: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | null =
+          res.mention.sentiment === 'Positive' ? 'POSITIVE' :
+          res.mention.sentiment === 'Negative' ? 'NEGATIVE' :
+          res.mention.sentiment === 'Neutral' ? 'NEUTRAL' :
+          null;
         const newMention: SocialMention = {
           id: res.mention.id || `reach-${Date.now()}`,
           platform: res.mention.platform || ch.toUpperCase(),
           channel: res.mention.platform || ch.toUpperCase(),
-          author: res.mention.author || 'AgentReach Swarm',
-          authorHandle: res.mention.author || 'agent_reach',
+          // The author is whoever posted. If none was captured it stays
+          // unknown rather than being attributed to the capture tool.
+          author: res.mention.author || 'Unknown author',
+          authorHandle: res.mention.author || 'unknown',
           // Phase 0: no invented audience numbers. follower count, reach and
           // engagement are left absent unless the capture channel actually
           // reported them — a real mention must not be padded with plausible
@@ -122,12 +130,17 @@ export default function SocialListeningPage() {
           engagement: res.mention.engagement ?? undefined,
           suggestedAction: sentimentVal === 'POSITIVE' ? 'AMPLIFY' : sentimentVal === 'NEGATIVE' ? 'RESOLVE' : 'ENGAGE',
           requiresAttention: res.mention.requiresAttention || sentimentVal === 'NEGATIVE',
-          aiResponseDraft: res.mention.aiResponseDraft || 'Thank you for discussing this. SigmaTactix Growth OS provides automated sovereign architecture.',
+          aiResponseDraft: res.mention.aiResponseDraft || '',
+          sourceUrl: res.mention.source_url || undefined,
         };
         setMentions(prev => [newMention, ...prev]);
         setSelectedMention(newMention);
         setResponseDraft(newMention.aiResponseDraft || '');
-        notifySuccess('Agent Reach Live Capture', `Captured mention via ${res.mention.platform} tagged as ${res.mention.sentiment}.`);
+        notifySuccess(
+          'Agent Reach Capture',
+          `Captured ${res.resultCount ?? 1} matching discussion(s) on ${res.mention.platform}` +
+          (sentimentVal ? ` tagged ${sentimentVal.toLowerCase()}.` : ' — sentiment not classified.')
+        );
         setIsScanModalOpen(false);
 
         const newRun: AgentRunRecord = {

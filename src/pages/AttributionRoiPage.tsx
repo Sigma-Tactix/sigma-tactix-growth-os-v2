@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import { 
   BarChart3, 
@@ -31,7 +32,7 @@ interface ChannelAttribution {
   attributionShare: number;
 }
 
-const CHANNEL_DATA: ChannelAttribution[] = [
+const DEMO_CHANNEL_DATA: ChannelAttribution[] = [
   {
     channel: 'LinkedIn Paid Media',
     adSpend: 18500,
@@ -276,3 +277,13 @@ export default function AttributionRoiPage() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const CHANNEL_DATA = isDemoSeedEnabled() ? DEMO_CHANNEL_DATA : [];

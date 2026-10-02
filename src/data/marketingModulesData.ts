@@ -149,7 +149,10 @@ export interface SocialMention {
   // real mention is exactly the unsupported claim the plan bans.
   followersCount?: string;
   content: string;
-  sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'HIGH_ALERT';
+  /** `null` means sentiment was not classified — which is not the same as Neutral. */
+  sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'HIGH_ALERT' | null;
+  /** The real permalink to the captured discussion, when the channel gave one. */
+  sourceUrl?: string;
   timestamp: string;
   reach?: number;
   engagement?: number;

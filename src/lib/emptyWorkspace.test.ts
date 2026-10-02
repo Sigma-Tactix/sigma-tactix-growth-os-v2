@@ -34,7 +34,10 @@ describe('emptyWorkspaceData — the template a real new workspace is created fr
 
   it('R1: reports no audit as having been run', () => {
     expect(emptyWorkspaceData.growthAudit.status).toBe('pending');
-    expect(emptyWorkspaceData.growthAudit.score).toBe(0);
+    // No audit has run, so there is no score. `null` is the honest value;
+    // 0 would render as "0/100" and tell the client the site failed every
+    // published check when nothing was measured.
+    expect(emptyWorkspaceData.growthAudit.score).toBeNull();
     expect(emptyWorkspaceData.growthAudit.findings).toHaveLength(0);
     expect(emptyWorkspaceData.growthAudit.recommendations).toHaveLength(0);
     expect(emptyWorkspaceData.growthAudit.roadmap90Day).toHaveLength(0);

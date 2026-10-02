@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import {
   Share2,
@@ -38,7 +39,7 @@ import {
 import { repurposeCarouselWithAgentReach } from '@/src/lib/api';
 import { RepurposedCarouselAndThread } from '@/src/types';
 
-const INITIAL_LINKEDIN_SLIDES: CarouselSlide[] = [
+const DEMO_INITIAL_LINKEDIN_SLIDES: CarouselSlide[] = [
   {
     slideNumber: 1,
     badge: 'EXECUTIVE AUDIT',
@@ -132,7 +133,7 @@ const INITIAL_LINKEDIN_SLIDES: CarouselSlide[] = [
   }
 ];
 
-const INITIAL_THREAD_TWEETS: TweetItem[] = [
+const DEMO_INITIAL_THREAD_TWEETS: TweetItem[] = [
   {
     tweetNumber: 1,
     text: 'Most B2B tech founders think their CAC is rising because "ad costs are up."\n\nFalse.\n\nYour pipeline is leaking across 5 invisible digital cracks.\n\nHere is the 5-point autopsy (and how top operators fix it): 🧵👇',
@@ -743,3 +744,14 @@ Which slide hit closest to home? Drop a comment below 👇
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
+const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];

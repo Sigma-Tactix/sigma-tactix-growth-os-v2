@@ -320,9 +320,17 @@ export default function GrowthDiagnostics() {
                   </>
                 )}
               </div>
-              {audit.score !== null && audit.score !== undefined && (
+              {/* Only claim the rubric when it actually produced the score. An
+                  audit stored before the rubric existed has a bare number with no
+                  checks behind it, and must not be described as rubric-scored. */}
+              {audit.score !== null && audit.score !== undefined && audit.scoringChecks && (
                 <div className="mt-2 text-[11px] opacity-70">
                   Scored on published checks — not a model opinion.
+                </div>
+              )}
+              {audit.score !== null && audit.score !== undefined && !audit.scoringChecks && (
+                <div className="mt-2 text-[11px] text-amber-300/90">
+                  Legacy score — stored before the published rubric existed. Not verified; recompute the audit.
                 </div>
               )}
               <div className="mt-5 border-t border-current/15 pt-4 text-xs leading-relaxed opacity-75">

@@ -86,17 +86,52 @@ acceptance run, or acceptance record has been produced for this remediation.
      version (`2026-10-02.v1`) and timestamp (`recordTermsAcceptance`,
      `POST /api/workspace/terms/accept`). Every exported plan now carries the
      AI disclosure line.
-   - **DAG wiring (first real consumer):** `POST /api/workspace/run-pipeline`
-     now executes through `BoundedWorkflowGraph` with three declared nodes
-     (`diagnose -> copy -> qa`), each carrying versioned input/output schemas,
-     permitted tools, timeout and retry bounds. If Stage 1 fails, Stages 2–3
-     never run — the previous inline chain fed an empty summary into the next
-     stage's prompt and wrote `status:"Success"` regardless. A partial pipeline
-     is now `Failed`, returns HTTP 502 naming the stage, and records that stage
-     in the ledger. Pipeline task IDs are `crypto.randomUUID()`-based.
-   - **Still open in Phase 2:** the growth-audit specialist fan-out (8 parallel
-     category agents -> synthesis) is still an inline `Promise.all`, so the
-     Cockpit's visual DAG for THAT surface still implies drawn nodes ran;
+   - **DAG wiring — both multi-step flows now execute through
+     `BoundedWorkflowGraph`:**
+     - `POST /api/workspace/run-pipeline`: three declared nodes
+       (`diagnose -> copy -> qa`). If Stage 1 fails, Stages 2–3 never run — the
+       previous inline chain fed an empty summary into the next prompt. A
+       partial pipeline is `Failed` (HTTP 502 naming the stage), not `Success`.
+     - Growth audit: two nodes — `specialists` (the 8 category agents kept
+       parallel inside one logical fan-out stage, so the audit is not 8x
+       slower) then `synthesis`, which depends on it. If ANY specialist fails,
+       synthesis is BLOCKED rather than synthesised from partial findings;
+       previously `Promise.all` rejected the whole request opaquely. The route
+       now returns the failing category keys.
+   - **Cross-claim consistency (`auditConsistency.ts`), wired into the audit
+     route:** contradicting evidence is surfaced with BOTH references and is
+     never resolved by a majority vote (`resolvedByMajorityVote` is always
+     false; a test pins that 2-vs-1 still surfaces all three positions).
+     Independent review is enforced MONOTONIC — `applyReviewVerdict` lets a
+     reviewer downgrade a claim (measured_fact -> estimate) but REFUSES and
+     records any attempted upgrade, because a model's confidence is advisory.
+   - **Social discussion evidence (`socialEvidence.ts`):** builds evidence
+     records from captured mentions with real permalinks. Critically, it
+     REFUSES the shape actually found in production data — captures with
+     `source_url: "hot"` and author "Agent Reach Swarm" are generic trending
+     feeds, not discussion about the client, so they classify as `unavailable`.
+     A mention proves a thread exists; it never supports market size, sentiment
+     accuracy, reach or engagement.
+   - **Brand-scoped social capture FIXED (root cause found).** The capture route
+     existed and already used keyword search, but wrote the search KEYWORD into
+     `source_url` (as if it were a link) and fell back to author
+     "Agent Reach Swarm" — so stored mentions cited the tool, not the
+     discussion. Now: permalink extracted from the thread, real author or null,
+     `sentiment` stays NULL when unclassified (the client no longer maps null ->
+     "Neutral"), and zero matches returns 404 "no results" with NOTHING
+     persisted instead of `success: true, mention: null`. The search helpers
+     themselves now return `success: false` at resultCount 0 rather than
+     reporting a successful empty scan.
+   - **Independent review is now LIVE in the audit** (`buildReviewerPacket` +
+     `applyReviewVerdict`): a separate model pass receives claim + evidence
+     provenance + acceptance rules and NOT the worker's reasoning; its verdict
+     can only LOWER a classification. Refused upgrades are persisted on the
+     audit as `refusedUpgrades` so a reviewer cannot quietly rewrite a claim. A
+     failed review leaves claims unchanged (never an implicit "all passed").
+   - **Remaining, blocked on YOU (inputs, not code):** provider/ad/analytics/
+     billing credentials, and an authenticated Agent Reach backend for
+     Reddit/LinkedIn/X (those channels correctly return "unavailable" with a
+     reason until configured). Phase 3 remains deliberately unstarted.
      `detectEvidenceDiscrepancy`/contradiction surfacing and independent review
      are unwired; social/Reddit/Quora discussion evidence (Agent Reach
      permalinks) not yet captured; provider evidence still absent so most

@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import {
   Clock,
@@ -39,7 +40,7 @@ export interface CronJob {
   nextRun: string;
 }
 
-const DEFAULT_CRON_JOBS: CronJob[] = [
+const DEMO_DEFAULT_CRON_JOBS: CronJob[] = [
   {
     id: 'cron-growth-diag',
     name: 'Daily Autonomous Growth Diagnostic',
@@ -177,7 +178,7 @@ const DEFAULT_CRON_JOBS: CronJob[] = [
 
 export default function CronJobsManagerTab() {
   const [jobs, setJobs] = useState<CronJob[]>(DEFAULT_CRON_JOBS);
-  const [selectedJob, setSelectedJob] = useState<CronJob | null>(DEFAULT_CRON_JOBS[0]);
+  const [selectedJob, setSelectedJob] = useState<CronJob | null>(DEFAULT_CRON_JOBS[0] ?? null);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
   const [runLog, setRunLog] = useState<Array<{ time: string; text: string; type: 'info' | 'success' | 'warn' }>>([]);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
@@ -723,3 +724,13 @@ export default function CronJobsManagerTab() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const DEFAULT_CRON_JOBS = isDemoSeedEnabled() ? DEMO_DEFAULT_CRON_JOBS : [];

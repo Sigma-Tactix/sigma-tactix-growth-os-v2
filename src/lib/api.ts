@@ -285,7 +285,7 @@ export async function fetchAgentReachContent(payload: {
 export async function syncAgentReachSocial(payload: {
   keyword: string;
   channel?: string;
-}): Promise<{ success: boolean; mention: any; rawResult: any }> {
+}): Promise<{ success: boolean; mention: any; rawResult: any; resultCount?: number }> {
   const res = await apiFetch('/api/workspace/agent-reach/sync-social', {
     method: 'POST',
     body: JSON.stringify(payload),

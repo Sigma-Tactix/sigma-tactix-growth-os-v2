@@ -8,6 +8,7 @@ import {
   repurposeToArticle,
   repurposeToCarouselAndThread,
 } from '../agentReachService.js';
+import { extractPermalinks } from '../../lib/socialEvidence.js';
 
 export interface AgentReachRouterDeps {
   expensiveLimiter: any;
@@ -60,12 +61,35 @@ export function createAgentReachRouter(deps: AgentReachRouterDeps): Router {
         return;
       }
       if (!fetchRes.content.trim() || fetchRes.metadata?.resultCount === 0) {
-        res.json({ success: true, mention: null, rawResult: fetchRes });
+        // Zero matches is an ABSENCE of discussion, not a successful capture of
+        // nothing. `success: true` here let an empty scan read as a completed
+        // one. Nothing is persisted on this path.
+        res.status(404).json({
+          success: false,
+          resultCount: 0,
+          error:
+            fetchRes.error ||
+            `No discussion matched "${keyword.trim()}" on ${channel || 'v2ex'}. Nothing was recorded. This is an absence of results, not evidence that the brand was discussed either way.`,
+          rawResult: fetchRes,
+        });
         return;
       }
 
-      let sentiment: 'Positive' | 'Neutral' | 'Negative' = 'Neutral';
-      let category: 'Brand Mention' | 'Competitor Complaint' | 'Feature Request' | 'Sales Inbound' = 'Brand Mention';
+      // Phase 0/2: a stored mention must CITE the discussion, not the tool.
+      // `fetchRes.target` is the search KEYWORD for a keyword scan, so it was
+      // being written into source_url as if it were a link.
+      const permalinks = extractPermalinks(fetchRes.content || '');
+      const sourceUrl = permalinks[0] || null;
+      const authorMatch = /\* Author: \*\*([^*]+)\*\*/.exec(fetchRes.content || '');
+      const realAuthor =
+        authorMatch ? authorMatch[1].trim() : (fetchRes.metadata?.author || fetchRes.metadata?.uploader || null);
+
+      // Sentiment is model-classified and advisory. It starts UNKNOWN and stays
+      // unknown when classification fails — defaulting to 'Neutral' presented a
+      // guess as an analysed result.
+      let sentiment: 'Positive' | 'Neutral' | 'Negative' | null = null;
+      let sentimentClassified = false;
+      let category: 'Brand Mention' | 'Competitor Complaint' | 'Feature Request' | 'Sales Inbound' | null = null;
       let aiResponseDraft = 'Thank you for discussing this. SigmaTactix Growth OS provides automated sovereign growth infrastructure.';
       let requiresAttention = false;
 
@@ -101,10 +125,13 @@ Classify:
           });
           const parsed = JSON.parse(response.text || '{}');
           if (['Positive', 'Neutral', 'Negative'].includes(parsed.sentiment)) sentiment = parsed.sentiment;
+          sentimentClassified = !!sentiment;
           if (['Brand Mention', 'Competitor Complaint', 'Feature Request', 'Sales Inbound'].includes(parsed.category)) category = parsed.category;
           if (typeof parsed.requiresAttention === 'boolean') requiresAttention = parsed.requiresAttention;
           if (parsed.aiResponseDraft) aiResponseDraft = parsed.aiResponseDraft;
         } catch (err) {
+          // Left null on purpose: an unclassified mention shows "not analysed"
+          // rather than a default 'Neutral' that reads as a real result.
           console.error('Sentiment classification failed in agent-reach sync:', err);
         }
       }
@@ -119,8 +146,8 @@ Classify:
             workspace_id: res.locals.wsId,
             platform: platformName,
             mention_text: fetchRes.content.slice(0, 500),
-            source_url: fetchRes.target,
-            author: fetchRes.metadata?.author || fetchRes.metadata?.uploader || 'Agent Reach Swarm',
+            source_url: sourceUrl,
+            author: realAuthor,
             sentiment,
           })
           .select().single();
@@ -135,16 +162,17 @@ Classify:
         id: data?.id || `reach-${Date.now()}`,
         platform: platformName,
         mention_text: fetchRes.content.slice(0, 500),
-        source_url: fetchRes.target,
-        author: fetchRes.metadata?.author || fetchRes.metadata?.uploader || 'Agent Reach Swarm',
+        source_url: sourceUrl,
+        author: realAuthor,
         sentiment,
+        sentimentClassified,
         category,
         requiresAttention,
         aiResponseDraft,
         created_at: new Date().toISOString(),
       };
 
-      res.json({ success: true, mention: mentionPayload, rawResult: fetchRes });
+      res.json({ success: true, resultCount: fetchRes.metadata?.resultCount ?? 0, mention: mentionPayload, rawResult: fetchRes });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

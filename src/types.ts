@@ -217,6 +217,23 @@ export interface GrowthAudit {
     id: string; label: string; category: string; points: number; passed: boolean; evidence: string;
   }>;
   notAssessedCategories?: string[];
+  /**
+   * Claims whose supporting evidence disagrees. Surfaced with BOTH references;
+   * never resolved by a majority vote. Empty means "none detected", NOT
+   * "nothing found" — single-observation claims are not cross-examined.
+   */
+  discrepancies?: Array<{
+    claimId: string;
+    claimText: string;
+    references: Array<{ evidenceId: string; locator: string; value: unknown }>;
+    resolvedByMajorityVote: false;
+  }>;
+  /**
+   * Upgrades an independent reviewer attempted that the system REFUSED, because
+   * a model's confidence may only lower a claim's strength, never raise it.
+   * Recorded so a reviewer cannot quietly rewrite an evidence-backed claim.
+   */
+  refusedUpgrades?: Array<{ claimId: string; from: string; to: string; rationale?: string }>;
   domain?: string;
   lastAuditedAt?: string;
   findings: GrowthFinding[];

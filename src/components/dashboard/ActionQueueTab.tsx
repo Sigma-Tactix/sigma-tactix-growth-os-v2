@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -65,7 +66,7 @@ export interface ActionQueueItem {
   };
 }
 
-const INITIAL_QUEUE_ITEMS: ActionQueueItem[] = [
+const DEMO_INITIAL_QUEUE_ITEMS: ActionQueueItem[] = [
   {
     id: 'act-001',
     moduleName: 'Agent Reach Router',
@@ -1215,3 +1216,13 @@ export default function ActionQueueTab() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const INITIAL_QUEUE_ITEMS = isDemoSeedEnabled() ? DEMO_INITIAL_QUEUE_ITEMS : [];

@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState, useEffect } from 'react';
 import { 
   Video, 
@@ -26,7 +27,7 @@ import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResult
 import { GlassCard, Button, Badge } from '@/src/components/ui';
 import { ShortsScene } from '@/src/data/marketingModulesData';
 
-const DEFAULT_SCENES: ShortsScene[] = [
+const DEMO_DEFAULT_SCENES: ShortsScene[] = [
   {
     timeCode: '0:00 - 0:03',
     visualDirection: 'Rapid push-in on an open desk with 45 browser tabs and $25k in agency invoices.',
@@ -407,3 +408,13 @@ export default function VideoStudioPage() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const DEFAULT_SCENES = isDemoSeedEnabled() ? DEMO_DEFAULT_SCENES : [];

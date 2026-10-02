@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Target, 
@@ -107,7 +108,7 @@ export interface CampaignPerformanceMetric {
   mer: number;
 }
 
-const INITIAL_MEDIA_PLANS: MediaPlan[] = [
+const DEMO_INITIAL_MEDIA_PLANS: MediaPlan[] = [
   {
     id: 'mp-1',
     name: 'Q4 Enterprise Growth & Demand Capture',
@@ -132,7 +133,7 @@ const INITIAL_MEDIA_PLANS: MediaPlan[] = [
   }
 ];
 
-const INITIAL_AUDIENCES: IntentAudience[] = [
+const DEMO_INITIAL_AUDIENCES: IntentAudience[] = [
   {
     id: 'aud-1',
     name: 'High-Growth Tech Founders & CEOs',
@@ -198,7 +199,7 @@ const INITIAL_AUDIENCES: IntentAudience[] = [
   }
 ];
 
-const CAMPAIGN_METRICS_DATA: CampaignPerformanceMetric[] = [
+const DEMO_CAMPAIGN_METRICS_DATA: CampaignPerformanceMetric[] = [
   {
     id: 'cm-1',
     campaignName: 'US_Search_HighIntent_Brand_Q4',
@@ -367,7 +368,7 @@ export default function PaidAdsPage() {
 
   // Media Plan State
   const [mediaPlans, setMediaPlans] = useState<MediaPlan[]>(INITIAL_MEDIA_PLANS);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>(INITIAL_MEDIA_PLANS[0].id);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(INITIAL_MEDIA_PLANS[0]?.id ?? "");
   const activePlan = useMemo(() => mediaPlans.find(p => p.id === selectedPlanId) || mediaPlans[0], [mediaPlans, selectedPlanId]);
   
   // Media Plan Creator Form
@@ -422,7 +423,7 @@ export default function PaidAdsPage() {
 
   // Audience State
   const [audiences, setAudiences] = useState<IntentAudience[]>(INITIAL_AUDIENCES);
-  const [selectedAudienceId, setSelectedAudienceId] = useState<string>(INITIAL_AUDIENCES[0].id);
+  const [selectedAudienceId, setSelectedAudienceId] = useState<string>(INITIAL_AUDIENCES[0]?.id ?? "");
   const activeAudience = useMemo(() => audiences.find(a => a.id === selectedAudienceId) || audiences[0], [audiences, selectedAudienceId]);
 
   // Channel Budget Allocator State (linked directly to audience channels)
@@ -2366,3 +2367,15 @@ export default function PaidAdsPage() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const INITIAL_MEDIA_PLANS = isDemoSeedEnabled() ? DEMO_INITIAL_MEDIA_PLANS : [];
+const INITIAL_AUDIENCES = isDemoSeedEnabled() ? DEMO_INITIAL_AUDIENCES : [];
+const CAMPAIGN_METRICS_DATA = isDemoSeedEnabled() ? DEMO_CAMPAIGN_METRICS_DATA : [];

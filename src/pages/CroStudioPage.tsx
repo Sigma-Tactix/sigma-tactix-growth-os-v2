@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import { 
   Target, 
@@ -33,7 +34,7 @@ interface AbVariant {
   confidenceScore: string;
 }
 
-const INITIAL_VARIANTS: AbVariant[] = [
+const DEMO_INITIAL_VARIANTS: AbVariant[] = [
   {
     id: 'var-a',
     badge: 'Control (Direct Value)',
@@ -343,3 +344,13 @@ export default function CroStudioPage() {
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const INITIAL_VARIANTS = isDemoSeedEnabled() ? DEMO_INITIAL_VARIANTS : [];

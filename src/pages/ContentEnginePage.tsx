@@ -1,3 +1,4 @@
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState } from 'react';
 import { 
   FileText, 
@@ -47,7 +48,7 @@ import CarouselCardViewer from '@/src/components/CarouselCardViewer';
 import { generateCreativeImage, generateSocialCampaign } from '@/src/lib/creativeApi';
 import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
 
-const DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
+const DEMO_DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
   {
     slideNumber: 1,
     badge: 'EXECUTIVE AUDIT',
@@ -141,7 +142,7 @@ const DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
   }
 ];
 
-const DEFAULT_THREAD_TWEETS: TweetItem[] = [
+const DEMO_DEFAULT_THREAD_TWEETS: TweetItem[] = [
   {
     tweetNumber: 1,
     text: 'Most B2B tech founders think their CAC is rising because "ad costs are up."\n\nFalse.\n\nYour pipeline is leaking across 5 invisible digital cracks.\n\nHere is the 5-point autopsy (and how top operators fix it): 🧵👇',
@@ -179,7 +180,7 @@ const DEFAULT_THREAD_TWEETS: TweetItem[] = [
   }
 ];
 
-const DEFAULT_SHORTS_SCENES: ShortsScene[] = [
+const DEMO_DEFAULT_SHORTS_SCENES: ShortsScene[] = [
   {
     timeCode: '0:00 - 0:03',
     visualDirection: 'Rapid push-in on an open desk with 45 browser tabs and $25k in agency invoices.',
@@ -1294,3 +1295,15 @@ The future belongs to founders who own their intelligence engine rather than ren
     </div>
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// Phase 0: fabricated client data is DEMO-ONLY.
+// These fixtures describe ad spend, ROAS, pipeline, audiences and
+// campaign results that this workspace has never had. A fresh tenant
+// must render none of them; they stay reachable behind
+// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
+// ---------------------------------------------------------------------------
+const DEFAULT_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_DEFAULT_LINKEDIN_SLIDES : [];
+const DEFAULT_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_DEFAULT_THREAD_TWEETS : [];
+const DEFAULT_SHORTS_SCENES = isDemoSeedEnabled() ? DEMO_DEFAULT_SHORTS_SCENES : [];

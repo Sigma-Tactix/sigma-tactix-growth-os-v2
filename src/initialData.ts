@@ -148,7 +148,17 @@ export const emptyWorkspaceData: WorkspaceData = {
   // as the un-run state. Widening the union to add 'not_started' would ripple
   // through every status branch in App.tsx for no behavioural gain, so it was
   // not done unilaterally — open decision, tracked in ../.gsd/ROADMAP.md M1.
-  growthAudit: { status: 'pending', score: 0, findings: [], recommendations: [], roadmap90Day: [], completedMilestones: [] },
+  growthAudit: {
+    status: 'pending',
+    // `null`, not 0. No audit has been run, so there is no score — and a zero
+    // would render as "0/100", telling the client the site failed every check
+    // when in fact nothing was ever measured.
+    score: null,
+    findings: [],
+    recommendations: [],
+    roadmap90Day: [],
+    completedMilestones: [],
+  },
   uiuxAudit: null,
   analyticsAudit: null,
   contentAssets: [],

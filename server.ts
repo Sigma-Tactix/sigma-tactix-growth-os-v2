@@ -51,6 +51,8 @@ import { AUDIT_CATEGORIES, runCategoryAgent, runSynthesisAgent } from "./src/lib
 import { computeAuditScore } from "./src/lib/auditScoring.js";
 import { BoundedWorkflowGraph } from "./src/lib/boundedWorkflowGraph.js";
 import { computeArtifactSha256 } from "./src/lib/evidenceContract.js";
+import type { ClaimClassification } from "./src/lib/evidenceContract.js";
+import { detectClaimDiscrepancies, buildReviewerPacket, parseReviewerVerdict, applyReviewVerdict, type ClaimUnderReview } from "./src/lib/auditConsistency.js";
 import { AGENCY_AGENT_PERSONAS } from "./src/data/agencyAgentPersonas.js";
 import { DISCOVERED_AGENCY_AGENTS } from "./src/data/agencyAgentsRegistry.js";
 import { parseSkillFile } from "./src/lib/agentSkillFiles.js";
@@ -3582,18 +3584,220 @@ app.post("/api/workspace/run-diagnostic", expensiveLimiter, requireModule("growt
         console.error("RAG lookup failed, continuing without it:", err);
       }
 
-      const generatedFindings = await Promise.all(
-        AUDIT_CATEGORIES.map(category => runCategoryAgent(
-          client, model, category, snapshot, brain, ragContext,
-          { workspaceId: res.locals.wsId }
-        ))
-      );
-      const findings = usedSyntheticSnapshot
-        ? generatedFindings.map(finding => ({ ...finding, dataSource: 'placeholder' as const }))
-        : generatedFindings;
-      const synthesis = await runSynthesisAgent(client, model, findings, snapshot.finalUrl);
+      // Phase 2 §6: the audit runs as a real DAG.
+//
+// Two nodes, not eight sequential ones: the 8 specialists are ONE logical
+// fan-out stage that stays parallel (making them sequential would make the
+// audit 8x slower for no benefit), and `synthesis` declares a dependency on it.
+//
+// The behaviour that changes: if any specialist fails, `synthesis` is BLOCKED
+// rather than being handed partial findings. Previously `Promise.all` rejected
+// the whole request; now the block is explicit, recorded, and the route can say
+// which categories are missing rather than dying on an opaque rejection.
+const auditRunId = `audit-${crypto.randomUUID()}`;
+const auditSb = res.locals.sb;
+const auditWsId = res.locals.wsId;
 
-      // Phase 2: the headline score is computed from the published rubric over
+const auditWorkflow = new BoundedWorkflowGraph({
+  workspaceId: auditWsId,
+  nodes: [
+    {
+      id: "specialists",
+      title: "Run specialist category agents",
+      inputSchema: "v1:site-snapshot",
+      outputSchema: "v1:category-findings",
+      permittedTools: ["gemini_generate", "second_brain_rag"],
+      timeoutMs: 180000,
+      maxRetries: 1,
+      dependencies: [],
+      execute: async () => {
+        const attemptId = await startNodeAttempt(auditSb, auditWsId, auditRunId, {
+          nodeId: "audit:specialists",
+          executorVersion: `gemini:${model}`,
+        }).catch(() => null);
+
+        try {
+          const settled = await Promise.allSettled(
+            AUDIT_CATEGORIES.map((category) =>
+              runCategoryAgent(client, model, category, snapshot, brain, ragContext, {
+                workspaceId: auditWsId,
+              })
+            )
+          );
+
+          const failed = settled
+            .map((r, i) => ({ r, category: AUDIT_CATEGORIES[i] }))
+            .filter(({ r }) => r.status === "rejected")
+            .map(({ r, category }) => `${category.key}: ${(r as PromiseRejectedResult).reason?.message || "failed"}`);
+
+          if (failed.length > 0) {
+            // Partial specialist results must not be synthesised as if they
+            // were the whole picture.
+            await finishNodeAttempt(auditSb, auditWsId, attemptId || "", { error: failed.join("; ") }).catch(() => {});
+            return { status: "failed" as const, error: failed.join("; "), findings: [] } as any;
+          }
+
+          const generated = (settled as PromiseFulfilledResult<any>[]).map((r) => r.value);
+          const findings = usedSyntheticSnapshot
+            ? generated.map((f) => ({ ...f, dataSource: "placeholder" as const }))
+            : generated;
+
+          await finishNodeAttempt(auditSb, auditWsId, attemptId || "", {}).catch(() => {});
+          return {
+            status: "succeeded" as const,
+            outputArtifactId: `${auditRunId}:specialists`,
+            outputArtifactHash: computeArtifactSha256(JSON.stringify(findings)),
+            findings,
+            findingsSummary: findings,
+          } as any;
+        } catch (err: any) {
+          const message = classifyGeminiError(err);
+          await finishNodeAttempt(auditSb, auditWsId, attemptId || "", { error: message }).catch(() => {});
+          return { status: "failed" as const, error: message, findings: [] } as any;
+        }
+      },
+    },
+    {
+      id: "synthesis",
+      title: "Synthesize findings into recommendations",
+      inputSchema: "v1:category-findings",
+      outputSchema: "v1:synthesis-result",
+      permittedTools: ["gemini_generate"],
+      timeoutMs: 120000,
+      maxRetries: 1,
+      dependencies: ["specialists"],
+      execute: async (_ctx, upstream) => {
+        const attemptId = await startNodeAttempt(auditSb, auditWsId, auditRunId, {
+          nodeId: "audit:synthesis",
+          executorVersion: `gemini:${model}`,
+        }).catch(() => null);
+        try {
+          // Upstream findings come from the dependency that actually ran, not
+          // from a variable populated alongside it.
+          const upstreamFindings = (upstream.specialists as any)?.findingsSummary || [];
+          const synthesis = await runSynthesisAgent(client, model, upstreamFindings, snapshot.finalUrl);
+          await finishNodeAttempt(auditSb, auditWsId, attemptId || "", {}).catch(() => {});
+          return {
+            status: "succeeded" as const,
+            outputArtifactId: `${auditRunId}:synthesis`,
+            outputArtifactHash: computeArtifactSha256(JSON.stringify(synthesis)),
+            synthesis,
+          } as any;
+        } catch (err: any) {
+          const message = classifyGeminiError(err);
+          await finishNodeAttempt(auditSb, auditWsId, attemptId || "", { error: message }).catch(() => {});
+          return { status: "failed" as const, error: message, findings: [] } as any;
+        }
+      },
+    },
+  ],
+});
+
+const auditExecution = await auditWorkflow.run();
+
+const specialistsResult = auditExecution.nodeResults.specialists as any;
+const synthesisResult = auditExecution.nodeResults.synthesis as any;
+const findings: any[] = specialistsResult?.findingsSummary || [];
+const synthesis = synthesisResult?.synthesis;
+
+if (auditExecution.status !== "succeeded" || !synthesis) {
+  res.status(502).json({
+    success: false,
+    error:
+      auditExecution.error ||
+      "Audit did not complete. Specialists or synthesis did not run to completion.",
+    auditRunId,
+    workflowStatus: auditExecution.status,
+    nodeResults: auditExecution.nodeResults,
+  });
+  return;
+}
+
+      // Phase 2 §6: cross-claim consistency. Contradicting evidence is reported
+      // with both references and is NEVER resolved by counting votes. Claims
+      // with a single observation are reported as unchecked, not as confirmed.
+      const claimsUnderReview: ClaimUnderReview[] = findings.map((f: any) => ({
+        claimId: f.id,
+        claimText: f.text,
+        classification: (f.claimClassification || "estimate") as ClaimClassification,
+        evidence: [
+          {
+            id: `${f.id}-site_snapshot`,
+            workspaceId: res.locals.wsId,
+            claimId: f.id,
+            claimClassification: "measured_fact",
+            claimText: f.text,
+            dataSource: f.dataSource === "live" ? "connector" : "manual_audit",
+            sourceLocator: snapshot.url,
+            coveredPeriod: { start: auditRunId, end: auditRunId },
+            observationTime: snapshot.fetchedAt || new Date().toISOString(),
+            retrievalResult: snapshot.synthetic ? "simulated" : "success",
+            scope: "page_content_snapshot",
+            confidence: 0.5,
+            numericValue: f.impactPct,
+          },
+        ],
+        findingIds: [f.id],
+      }));
+
+      const discrepancies = detectClaimDiscrepancies(claimsUnderReview);
+
+      // Phase 2 §6 independent review: a separate model pass that sees the claim,
+// its evidence and the acceptance rules — but NOT the specialist's reasoning —
+// and whose verdict may only LOWER a claim's classification. Refused upgrades
+// are recorded on the audit, so it stays visible that a reviewer tried and was
+// overruled rather than being silently ignored.
+const reviewedFindings: any[] = findings.map((f: any) => ({ ...f }));
+const refusedUpgrades: Array<{ claimId: string; from: string; to: string; rationale?: string }> = [];
+
+for (const underReview of claimsUnderReview) {
+  const packet = buildReviewerPacket(underReview);
+  const target = reviewedFindings.find((f: any) => f.id === packet.claimId);
+  try {
+    const reviewClient = getGeminiClient(await resolveEffectiveGeminiKey(res));
+    const reviewModel = await resolveEffectiveGeminiModel(res);
+    const response = await reviewClient.models.generateContent({
+      model: reviewModel,
+      contents:
+        `You are an independent reviewer. You are given a claim, its evidence provenance, and the ` +
+        `rules. Judge whether the claim is supported. Respond with JSON ` +
+        `{"classification": one of the allowed values, "rationale": string}.\n\n` +
+        `PACKET:\n${JSON.stringify(packet, null, 2)}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            classification: {
+              type: Type.STRING,
+              enum: ["measured_fact", "calculation", "estimate", "hypothesis", "unavailable"],
+            },
+            rationale: { type: Type.STRING },
+          },
+          required: ["classification", "rationale"],
+        },
+      },
+    });
+
+    const verdict = parseReviewerVerdict(packet.claimId, response.text || "");
+    const outcome = applyReviewVerdict(underReview, verdict);
+    if (outcome.refusedUpgrade) {
+      refusedUpgrades.push({
+        claimId: packet.claimId,
+        from: outcome.refusedUpgrade.from,
+        to: outcome.refusedUpgrade.to,
+        rationale: verdict.rationale,
+      });
+    }
+    if (target) target.claimClassification = outcome.classification;
+  } catch (err) {
+    // A failed review leaves each claim exactly as the deterministic rules
+    // classified it. It must never become an implicit "all claims passed".
+    console.error(`Independent review failed for ${packet.claimId}; claim unchanged:`, err);
+  }
+}
+
+// Phase 2 §6: the headline score is computed from the published rubric over
       // observable signals. The model's own score is kept off the headline —
       // `synthesis.score || 68` used to invent a 68 whenever the model returned
       // nothing, which is precisely the fabricated claim this phase removes.
@@ -3611,9 +3815,12 @@ app.post("/api/workspace/run-diagnostic", expensiveLimiter, requireModule("growt
         scoringBasis: rubric.basis,
         scoringChecks: rubric.checks,
         notAssessedCategories: rubric.notAssessed,
+        discrepancies,
+        refusedUpgrades,
         domain: snapshot.finalUrl || targetDomain,
         lastAuditedAt: new Date().toISOString().split("T")[0],
-        findings,
+        // The REVIEWED classifications, not the specialists' originals.
+        findings: reviewedFindings,
         recommendations: synthesis.recommendations || [],
         roadmap90Day: synthesis.roadmap90Day || [],
       };
