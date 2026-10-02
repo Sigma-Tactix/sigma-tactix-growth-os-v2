@@ -8,7 +8,7 @@
 
 The plan status remains **proposed implementation plan, not a completed fix or a
 release certification** (see `docs/growth-os-remediation-plan-2026-10-01.md:3`).
-Local `npm run lint` (tsc --noEmit) and `npm run test` pass (313 tests, 52
+Local `npm run lint` (tsc --noEmit) and `npm run test` pass (375 tests, 59
 files); no clean-checkout `npm run check`, production build evidence, browser
 acceptance run, or acceptance record has been produced for this remediation.
 
@@ -143,6 +143,7 @@ acceptance run, or acceptance record has been produced for this remediation.
 ### Strategic Direction & Launch Spine — 2026-09-28 (APPROVED)
 
 A cross-functional leadership alignment (Commander, FOREMAN, PRAXIS, ATLAS, CIPHER, ECHO, STAGE) determined:
+
 - **Core Decision**: Do **not** launch Growth OS as a broad self-serve platform next month. Launch as a **Managed Growth Intelligence Loop** for a narrow cohort of paid lighthouse customers ($50,000 MRR target across 6 accounts: 2 Strategic @ $12k/mo + 4 Managed @ $6.5k/mo).
 - **Accountability Chain**: Commander (Founder / Commercial) → FOREMAN (Operating & Delivery Cadence) → PRAXIS (Product Scope) / ATLAS (Architecture) / CIPHER (Engineering Delivery) / ECHO (Sales & Pipeline) / STAGE (Content Production).
 - **Launch Spine (In Scope)**: Guided workspace setup, Second Brain context, 3–5 reliable connectors, scored growth signals, weekly executive brief with citations, 1 content recommendation + 1 SDR battlecard, human approval with decision traces, server-enforced entitlements & usage tracking.
@@ -171,7 +172,7 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 ## 1. Project Identity
 
 | Field | Value |
-|---|---|
+| --- | --- |
 | **Product Name** | SigmaTactix Growth OS |
 | **Tagline** | AI-Native Growth Infrastructure & Secure Second Brain |
 | **Type** | Multi-tenant SaaS — Autonomous Marketing Operating System |
@@ -184,7 +185,7 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 ## 2. Technology Stack
 
 | Layer | Technology | Version / Spec |
-|---|---|---|
+| --- | --- | --- |
 | **Runtime** | Node.js (V8) + Bun compatible | ≥20.x |
 | **Language** | TypeScript (Strict mode) | ~5.8.2 |
 | **Frontend Framework** | React 19 (Concurrent Mode + React 19 Compiler ready) | 19.x |
@@ -251,15 +252,17 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 ## 4. Module Map (28+ Active Routes)
 
 ### Growth OS Overview
+
 | Module | Route | Component | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Executive Dashboard | `/` | `Dashboard.tsx` | Dynamic industry KPIs, color profiles, revenue velocity, real-time activity feed |
 | Growth Diagnostics | `/diagnostics` | `GrowthDiagnostics.tsx` | 8-category AI growth diagnostic with empirical scoring and 90-day roadmap |
 | Second Brain (Vaults) | `/vaults` | `SecondBrain.tsx` | 10 specialized knowledge vaults, 22-extension auto-routing, RAG embeddings |
 
 ### Digital Marketing Suite
+
 | Module | Route | Component | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | SEO & AEO Engine | `/seo-aeo` | `SeoAeoPage.tsx` | Keyword clusters, topical authority graphs, ChatGPT/Perplexity citation readiness |
 | Paid Ads Manager | `/paid-ads` | `PaidAdsPage.tsx` | Cross-network ad spend optimizer, ROAS analyzer, creative performance matrix |
 | Editorial Content | `/content` | `EditorialContentPage.tsx` | Trend-to-Article engine, long-form executive briefs, grounded citation banners |
@@ -275,8 +278,9 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 | Competitor Research | `/competitors` | `CompetitorResearchPage.tsx` | Automated competitor scraping, counter-positioning, SDR 30-sec battlecards |
 
 ### Autonomous Swarm Execution & Intelligence
+
 | Module | Route | Component | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Agent Cockpit | `/agents` | `AgentCockpit.tsx` | 8-agent swarm manager, DAG visualizer, live telemetry heatmap |
 | Agent Reach Router | `/agent-reach` | `AgentReachPage.tsx` | 15-platform live intelligence extraction, CLI doctor diagnostics, social bridge |
 | Living System (VANTA) | `/living-system` | `LivingSystemPage.tsx` | VANTA 3D neural core, 12-phase voice/multimodal state machine, audio amplitude |
@@ -285,17 +289,18 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 | Reports | `/reports` | `Reports.tsx` | Executive report export engine (PDF, PowerPoint PPTX, Excel XLSX) |
 
 ### Platform & Infrastructure
+
 | Module | Route | Component | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | System Architecture | `/architecture` | `ArchitectureViewer.tsx` | Interactive system topology, component dependency inspector |
 | Harness SDD View | `/harness` | `Tenants.tsx` (`HARNESS_VIEW`) | 5-layer exploded harness view, 6 core feature lifecycles, subagent links |
 | Tenants & Admin | `/tenants` | `Tenants.tsx` | Multi-tenant workspace switcher, tenant provisioning, system settings |
 | AI Config Hub | `/models` | `Tenants.tsx` (`AI_CONFIG`) | Multi-model API keys (Gemini, OpenAI, Anthropic, Qwen, DeepSeek, xAI) |
-| System Prompts | `/prompts` | `Tenants.tsx` (`SYSTEM_PROMPTS`)| Core agent persona prompts, system guardrails, customization |
-| Skills & MCP Catalog| `/skills` | `Tenants.tsx` (`SKILLS_MCP`) | Production skills registry (`agent-reach`, MCP servers, tool definitions) |
+| System Prompts | `/prompts` | `Tenants.tsx` (`SYSTEM_PROMPTS`) | Core agent persona prompts, system guardrails, customization |
+| Skills & MCP Catalog | `/skills` | `Tenants.tsx` (`SKILLS_MCP`) | Production skills registry (`agent-reach`, MCP servers, tool definitions) |
 | Cron Operations | `/cron` | `Tenants.tsx` (`CRON_JOBS`) | Background execution schedules, heartbeat monitors |
 | Data Connectors | `/connectors` | `DataSources.tsx` | 35+ platform connectors with AES-256-GCM credential encryption |
-| Marketing Learnings | `/learnings` | `MarketingTeamLearningsPage.tsx`| Team insights repository, retrospective log |
+| Marketing Learnings | `/learnings` | `MarketingTeamLearningsPage.tsx` | Team insights repository, retrospective log |
 | AI Model Explorer | `/explorer` | `AIExplorer.tsx` | Interactive prompt testbed, token usage inspector |
 
 ---
@@ -307,7 +312,7 @@ The Second Brain partitions client intelligence into 10 isolated vaults. Each va
 ### Vault → TypeScript → Supabase Mapping
 
 | # | Vault | TypeScript Property | Vault Key | Purpose | Access Rule |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | I | Executive Vault | `SecondBrain.executiveVault` | `executive` | C-level strategy, IP, financials, cap table | **STRICT BLOCK** (Owner only) |
 | II | Credentials Vault | `SecondBrain.credentialsVault` | `credentials` | API keys, OAuth tokens (AES-256-GCM) | **STRICT BLOCK** (System only) |
 | III | Brand Vault | `SecondBrain.brandVault` | `brand` | Voice, tone, logos, positioning, messaging | Read/Write (Creative/Marketing) |
@@ -320,6 +325,7 @@ The Second Brain partitions client intelligence into 10 isolated vaults. Each va
 | X | Audit Vault | `SecondBrain.auditVault` | `audit` | Diagnostic scores, audit logs, roadmaps | Read/Write (Audit/Executive) |
 
 ### Supabase Migrations & Verification
+
 - `backend/database/migrations/`: Sequential migration files (0001 through `0015_vanta_conversations.sql`).
 - `verify.sql`: Comprehensive verification suite testing RLS enablement, secret vault revocation, moddatetime triggers, and `is_member()` helper execution rights.
 
@@ -348,7 +354,7 @@ code-architect  quality-engineer agent-trainer  delivery-lead
 ## 7. Security Posture
 
 | Control | Implementation | File |
-|---|---|---|
+| --- | --- | --- |
 | **App-Level Auth Gate** | Prevents unauthenticated access; requires browser session | `src/components/AuthGate.tsx` |
 | **SSRF Protection** | `assertPublicHost` blocks loopback, link-local, and RFC1918 IPs | `src/server/agentReachService.ts` |
 | **Security Headers** | Helmet with HSTS, X-Content-Type-Options, Referrer-Policy | `server.ts` |
@@ -365,7 +371,7 @@ code-architect  quality-engineer agent-trainer  delivery-lead
 Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 
 | Category | Platforms | Engine / Backend |
-|---|---|---|
+| --- | --- | --- |
 | **Social** | Twitter/X, Reddit, Threads, Bluesky | OpenCLI / Native API / Scraper |
 | **Developer** | GitHub, V2EX, HackerNews | GitHub REST API, V2EX API, Algolia HN |
 | **Video & Media** | YouTube, Bilibili | YouTube oEmbed + Transcript, Bilibili Web |
@@ -378,7 +384,7 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 ## 9. Comprehensive Development Session History
 
 | Date | Session ID | Key Work & Deliverables |
-|---|---|---|
+| --- | --- | --- |
 | Apr 18 | `7524fa3b` | Sigma Tactix Web2Agent WordPress audit, CSS icon sizing fix, 10 E-E-A-T marketing authority blog posts. |
 | May 12 | `ab75a1bc` | Smart Analytics Phase 2 audit, React.lazy code splitting (84% bundle reduction), ErrorBoundary, Supabase wiring. |
 | Jul 14 | `7bf5842a` | Initial project analysis, production readiness planning. |
@@ -447,7 +453,7 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 ## 11. Scripts
 
 | Command | Purpose |
-|---|---|
+| --- | --- |
 | `npm run dev` | Start development server (Node.js + Vite HMR on port 3000) |
 | `npm run dev:client` | Start Vite client only |
 | `npm run build` | Full production build (Vite client bundle + esbuild server) |
