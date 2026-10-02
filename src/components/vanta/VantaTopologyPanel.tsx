@@ -1,11 +1,34 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronRight, Search, UnfoldVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BotAvatar } from 'bot-avatars';
 import { filterVantaTopology } from '@/src/lib/vanta';
 import { useVanta } from '@/src/contexts/VantaContext';
 
+/**
+ * Map topology node kinds to unique BotAvatar body shapes.
+ * Each module category gets its own visual identity.
+ */
+const KIND_AVATAR: Record<string, 'clover' | 'flower' | 'triangle' | 'star' | 'blob' | 'ghost' | 'circle' | 'drop' | 'hexagon' | 'droid'> = {
+  vault: 'ghost',
+  agent: 'star',
+  connector: 'triangle',
+  pipeline: 'blob',
+  module: 'flower',
+  provider: 'hexagon',
+  workspace: 'circle',
+  decision: 'droid',
+};
+
+/** Map node status to bot avatar state */
+function toBotState(status: string, phase: string): 'default' | 'working' | 'sleeping' {
+  if (status === 'unavailable' || phase === 'offline') return 'sleeping';
+  if (status === 'active' || status === 'verified' || ['thinking', 'inspecting'].includes(phase)) return 'working';
+  return 'default';
+}
+
 export default function VantaTopologyPanel() {
-  const { fullTopology, selectedNodeId, setSelectedNodeId, topologyExpanded, setTopologyExpanded } = useVanta();
+  const { state, fullTopology, selectedNodeId, setSelectedNodeId, topologyExpanded, setTopologyExpanded } = useVanta();
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const visible = useMemo(() => filterVantaTopology(fullTopology, query, topologyExpanded), [fullTopology, query, topologyExpanded]);
@@ -24,17 +47,33 @@ export default function VantaTopologyPanel() {
         <p className="mt-2 text-[10px] font-mono uppercase tracking-wider text-zinc-600">{visible.nodes.length} real workspace entit{visible.nodes.length === 1 ? 'y' : 'ies'}</p>
       </div>
       <div className="flex-1 space-y-1.5 overflow-y-auto p-3">
-        {visible.nodes.map(node => (
-          <button key={node.id} type="button" onClick={() => setSelectedNodeId(node.id)} onDoubleClick={() => node.route && navigate(node.route)} className={`w-full rounded-xl border p-3 text-left transition ${selectedNodeId === node.id ? 'border-orange-400/45 bg-orange-400/10' : 'border-white/5 bg-white/[0.025] hover:border-white/15'}`}>
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${node.status === 'verified' || node.status === 'active' ? 'bg-emerald-400' : node.status === 'approval_required' ? 'bg-amber-400' : node.status === 'unavailable' ? 'bg-red-400' : 'bg-zinc-500'}`} />
-              <span className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-200">{node.label}</span>
-              <ChevronRight size={13} className="text-zinc-600" />
-            </div>
-            <div className="mt-1.5 flex gap-2 pl-4 text-[9px] font-mono uppercase tracking-wider text-zinc-500"><span>{node.kind}</span><span>·</span><span>{node.status.replace('_', ' ')}</span></div>
-            {selectedNodeId === node.id && node.detail && <p className="mt-2 pl-4 text-[11px] leading-4 text-zinc-400">{node.detail}</p>}
-          </button>
-        ))}
+        {visible.nodes.map(node => {
+          const avatarType = KIND_AVATAR[node.kind] ?? 'clover';
+          const botState = toBotState(node.status, state.phase);
+          return (
+            <button key={node.id} type="button" onClick={() => setSelectedNodeId(node.id)} onDoubleClick={() => node.route && navigate(node.route)} className={`w-full rounded-xl border p-3 text-left transition ${selectedNodeId === node.id ? 'border-orange-400/45 bg-orange-400/10' : 'border-white/5 bg-white/[0.025] hover:border-white/15'}`}>
+              <div className="flex items-center gap-2.5">
+                <div className="flex-shrink-0">
+                  <BotAvatar
+                    type={avatarType}
+                    state={botState}
+                    size={28}
+                    face="eyes"
+                    shading="plastic"
+                    theme="dark"
+                    speed={botState === 'working' ? 1.2 : 0.8}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-bold text-zinc-200">{node.label}</span>
+                  <div className="mt-0.5 flex gap-2 text-[9px] font-mono uppercase tracking-wider text-zinc-500"><span>{node.kind}</span><span>·</span><span>{node.status.replace('_', ' ')}</span></div>
+                </div>
+                <ChevronRight size={13} className="text-zinc-600" />
+              </div>
+              {selectedNodeId === node.id && node.detail && <p className="mt-2 pl-9 text-[11px] leading-4 text-zinc-400">{node.detail}</p>}
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

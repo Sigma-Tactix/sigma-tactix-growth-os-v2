@@ -46,7 +46,6 @@ export default function SocialListeningPage() {
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'POSITIVE' | 'NEUTRAL' | 'CRISIS'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [responseDraft, setResponseDraft] = useState(SEED_SOCIAL_MENTIONS[0].aiResponseDraft || '');
-  const [isDeployingSentinel, setIsDeployingSentinel] = useState(false);
   const [isScanningReach, setIsScanningReach] = useState(false);
 
   // Multi-Channel Agent Reach Scan State
@@ -62,26 +61,10 @@ export default function SocialListeningPage() {
   const [activeBattlecard, setActiveBattlecard] = useState<CompetitorBattlecard | null>(null);
   const [copiedBattlecard, setCopiedBattlecard] = useState(false);
 
-  // Agent Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-social-01',
-      agentName: 'Sentinel-08 Radar Swarm',
-      agentRole: 'Dark Social & Brand Sentiment Monitor',
-      timestamp: 'Today at 04:40 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Social Listening & Radar',
-      inputSummary: 'Scanned LinkedIn, X, and Reddit for "Sigma Tactix" & "B2B Growth OS"',
-      outputSummary: 'Detected 4 public mentions. 75% positive sentiment. Drafted brand-aligned response.',
-      fullOutput: 'Sentiment distribution: 3 Positive, 1 Neutral, 0 Crisis. Zero brand emergencies detected.',
-      metrics: [
-        { label: 'Sources Scanned', value: '14' },
-        { label: 'Mentions Detected', value: '4' },
-        { label: 'Sentiment Index', value: '88% Positive' },
-        { label: 'Response Queue', value: '1 Ready' }
-      ]
-    }
-  ]);
+  // Agent Run History — starts empty. Entries are appended only after a
+  // real provider fetch, live scan response, or HITL queue acknowledgement.
+  // No seeded "successful scan" is shown on first load.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
   const filteredMentions = mentions.filter(m => {
     if (activeFilter === 'ALL') return true;
@@ -89,20 +72,26 @@ export default function SocialListeningPage() {
     return m.sentiment === activeFilter;
   });
 
-  const handleRefreshMentions = () => {
+  const handleRefreshMentions = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    try {
+      const res = await syncAgentReachSocial({ keyword: scanKeyword || 'Sigma Tactix', channel: scanChannel || 'web' });
+      if (res.success && res.mention) {
+        notifySuccess('Social Feeds Synchronized', `Scanned channel ${res.mention.platform || 'web'}. Found 1 mention.`);
+      } else {
+        notifyInfo('Feeds Synchronized', 'No new critical mentions found across active configured channels.');
+      }
+    } catch (err: any) {
+      notifyInfo('Feed Synchronization Notice', err.message || 'Agent Reach provider unavailable. Connect channel credentials in Connector Hub to enable live stream synchronization.');
+    } finally {
       setIsRefreshing(false);
-      notifySuccess('Mentions Synchronized', 'Scanned 14 social sources and developer forums. Found 0 active PR emergencies.');
-    }, 1500);
+    }
   };
 
   const handleDeploySentinel = () => {
-    setIsDeployingSentinel(true);
-    setTimeout(() => {
-      setIsDeployingSentinel(false);
-      notifySuccess('Sentinel-08 Agent Deployed', 'Monitoring real-time keyword streams across Reddit, LinkedIn, X, and YouTube.');
-    }, 1400);
+    // Phase 0 truthful state: no deployment occurs here and no run is
+    // recorded. Authenticated connectors are the only activation path.
+    notifyInfo('Sentinel Deployment Notice', 'Sentinel streaming is not deployed from this panel. Background keyword streaming requires authenticated provider connectors (Reddit, LinkedIn, X). Configure API credentials in Connector Hub to activate automated triggers.');
   };
 
   const handleAgentReachScan = async (targetKeyword?: string, targetChannel?: string) => {
@@ -120,13 +109,17 @@ export default function SocialListeningPage() {
           channel: res.mention.platform || ch.toUpperCase(),
           author: res.mention.author || 'AgentReach Swarm',
           authorHandle: res.mention.author || 'agent_reach',
-          followersCount: '12.4K',
+          // Phase 0: no invented audience numbers. follower count, reach and
+          // engagement are left absent unless the capture channel actually
+          // reported them — a real mention must not be padded with plausible
+          // figures that later read as measured performance.
+          followersCount: res.mention.followers_count ?? undefined,
           content: res.mention.mention_text,
           contentSnippet: res.mention.mention_text,
           timestamp: 'Just now',
           sentiment: sentimentVal,
-          reach: 8200,
-          engagement: 94,
+          reach: res.mention.reach ?? undefined,
+          engagement: res.mention.engagement ?? undefined,
           suggestedAction: sentimentVal === 'POSITIVE' ? 'AMPLIFY' : sentimentVal === 'NEGATIVE' ? 'RESOLVE' : 'ENGAGE',
           requiresAttention: res.mention.requiresAttention || sentimentVal === 'NEGATIVE',
           aiResponseDraft: res.mention.aiResponseDraft || 'Thank you for discussing this. SigmaTactix Growth OS provides automated sovereign architecture.',
@@ -193,24 +186,26 @@ export default function SocialListeningPage() {
   };
 
   const handleSendResponse = () => {
+    // Phase 0 truthful state: staging a local response draft is queued work,
+    // never a completed dispatch. No post is published from this panel.
     const newRun: AgentRunRecord = {
       id: `run-social-${Date.now()}`,
       agentName: 'Nexus-03 Communication Swarm',
       agentRole: 'Social Engagement & Brand Protector',
       timestamp: 'Just now',
-      status: 'SUCCESS',
+      status: 'PARTIAL',
       moduleOrigin: 'Social Listening & Radar',
-      inputSummary: `Response to @${selectedMention.authorHandle} on ${selectedMention.channel}`,
-      outputSummary: 'Approved and staged in HITL dispatch buffer.',
+      inputSummary: `Response draft for @${selectedMention.authorHandle} on ${selectedMention.channel}`,
+      outputSummary: 'Draft staged locally. Not dispatched. HITL publication requires an approved distribution run.',
       fullOutput: responseDraft,
       metrics: [
         { label: 'Channel', value: selectedMention.channel },
         { label: 'Author', value: selectedMention.authorHandle },
-        { label: 'Voice Match', value: '99.1%' }
+        { label: 'Dispatch', value: 'Not sent (local draft)' }
       ]
     };
     setRunHistory(prev => [newRun, ...prev]);
-    notifySuccess('Response Dispatched to HITL Queue', 'Human operator approved draft; queued for publication.');
+    notifySuccess('Response Draft Staged', 'Saved as a local draft. No post was published.');
   };
 
   return (
@@ -255,32 +250,29 @@ export default function SocialListeningPage() {
 
             <Button
               onClick={handleDeploySentinel}
-              disabled={isDeployingSentinel}
               variant="primary"
               size="md"
               icon={<Bot className="w-3.5 h-3.5" />}
             >
-              {isDeployingSentinel ? 'Deploying...' : 'Deploy Sentinel-08'}
+              Deploy Sentinel-08
             </Button>
           </div>
         </div>
       </GlassCard>
 
-      {/* Metric Highlights */}
+      {/* Metric Highlights — operational state, not provider outcomes */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricWidget
-          label="Brand Sentiment Ratio"
-          value="92.4%"
-          delta={{ value: '+3.2%', trend: 'up' }}
-          subtext="Based on 340 monthly mentions"
+          label="Tracked Mentions (local sample)"
+          value={mentions.length.toString()}
+          subtext="Seeded sample. Verified counts require connected providers."
           icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
         />
 
         <MetricWidget
-          label="Average Response Latency"
-          value="3.4 min"
-          delta={{ value: '-1.8m', trend: 'down' }}
-          subtext="Via AI Response Drafter"
+          label="Response Draft State"
+          value="Local only"
+          subtext="Drafts stage locally. No post dispatched from this panel."
           icon={<Zap className="w-4 h-4 text-[var(--sigma-vermilion)]" />}
         />
 
@@ -291,9 +283,9 @@ export default function SocialListeningPage() {
               <Badge variant="brand" size="xs">Agent Reach</Badge>
             </div>
             <div className="text-2xl font-bold font-mono text-[var(--sigma-vermilion)]">
-              18 Opps
+              No verified opps
             </div>
-            <div className="text-[11px] text-[var(--sigma-muted)] mt-1">Intercepted from competitor forums</div>
+            <div className="text-[11px] text-[var(--sigma-muted)] mt-1">Run a scan to populate verified competitor intelligence</div>
           </div>
           <Button
             onClick={() => setIsBattlecardModalOpen(true)}
@@ -308,8 +300,8 @@ export default function SocialListeningPage() {
 
         <MetricWidget
           label="PR Crisis Sentinel"
-          value="Normal"
-          subtext="No hostile campaigns detected"
+          value="Not monitoring"
+          subtext="Provider streaming not deployed from this panel"
           icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
         />
       </div>

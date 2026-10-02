@@ -190,11 +190,33 @@ export interface GrowthFinding {
   impactPct: number;
   quickSteps: string[];
   dataSource: 'live' | 'placeholder';
+  /**
+   * Phase 2: what KIND of claim this is. An impact percentage produced by a
+   * model over a fetched page is an `estimate`, never a `measured_fact`, and
+   * the UI must label it as such rather than showing a bare percentage that
+   * reads like a measurement.
+   */
+  claimClassification?: 'measured_fact' | 'calculation' | 'estimate' | 'hypothesis' | 'unavailable';
+  /** Evidence records backing this finding, by ID. */
+  evidenceIds?: string[];
 }
 
 export interface GrowthAudit {
   status: 'pending' | 'completed';
-  score: number;
+  evidenceMode?: 'live' | 'mixed' | 'heuristic';
+  /**
+   * Phase 2: computed from the published, deterministic rubric (auditScoring.ts)
+   * over observable signals — not the model's opinion. `null` means "no score
+   * could be produced" (e.g. the page could not be fetched), which is NOT the
+   * same as zero and must never be displayed as 0/100.
+   */
+  score: number | null;
+  /** What the score is based on, and what could not be assessed. */
+  scoringBasis?: string;
+  scoringChecks?: Array<{
+    id: string; label: string; category: string; points: number; passed: boolean; evidence: string;
+  }>;
+  notAssessedCategories?: string[];
   domain?: string;
   lastAuditedAt?: string;
   findings: GrowthFinding[];
@@ -212,7 +234,45 @@ export interface GrowthAudit {
     title: string;
     tasks: string[];
   }>;
+  strategies?: GrowthStrategy[];
   completedMilestones?: string[];
+}
+
+export interface GrowthCapabilitySnapshot {
+  id: string;
+  state: string;
+  verified: boolean;
+  automationEligible: boolean;
+  evidence: string[];
+}
+
+export interface GrowthStrategyTask {
+  id: string;
+  title: string;
+  agentName: SystemAgentName;
+  objective: string;
+  status: 'recommended' | 'queuing' | 'pending-approval' | 'running' | 'completed' | 'failed';
+  requiresHitl: true;
+  taskId?: string;
+}
+
+export interface GrowthStrategy {
+  id: string;
+  rank: number;
+  title: string;
+  objective: string;
+  rationale: string;
+  impact: 'High' | 'Medium' | 'Low';
+  successMetric: string;
+  evidenceIds: string[];
+  tasks: GrowthStrategyTask[];
+  providers: Array<{
+    provider: 'tinyfish' | 'mirofish';
+    label: string;
+    purpose: string;
+    state: 'ready' | 'assisted' | 'setup-required' | 'unknown';
+    guidance: string;
+  }>;
 }
 
 export interface UIUXAudit {

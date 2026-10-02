@@ -21,7 +21,11 @@ describe('agentReachService', () => {
     expect(doctor.channels.web).toBeDefined();
     expect(doctor.channels.youtube).toBeDefined();
     expect(doctor.channels.github).toBeDefined();
-    expect(doctor.readyCount).toBeGreaterThan(0);
+    if (doctor.cliAvailable) {
+      expect(doctor.readyCount).toBeGreaterThan(0);
+    } else {
+      expect(doctor.readyCount).toBe(0);
+    }
   }, 25000);
 
   it('does not mark fallback channels ready when the CLI health check fails', async () => {

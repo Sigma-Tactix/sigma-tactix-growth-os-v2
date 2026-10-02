@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Loader2, Settings2, X, Sparkles, Mic } from 'lucide-react';
+import { BorderBeam } from 'border-beam';
 import { useVanta } from '@/src/contexts/VantaContext';
 import { useToast } from '@/src/contexts/ToastContext';
 import { getVantaVoiceSettings, saveVantaVoiceSettings, verifyVantaTextProvider, verifyVantaVoiceProvider, type VantaVoiceSettings } from '@/src/lib/vantaApi';
@@ -10,7 +11,12 @@ export default function VantaProviderPanel() {
   const { notifyError, notifySuccess } = useToast();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [voice, setVoice] = useState<VantaVoiceSettings>({ provider: 'gemini' });
+  const [voice, setVoice] = useState<VantaVoiceSettings>({
+    provider: 'gemini',
+    sttModel: 'gemini-2.5-flash',
+    ttsModel: 'gemini-2.5-flash-preview-tts',
+    voice: 'Kore',
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +49,9 @@ export default function VantaProviderPanel() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(400px,calc(100vw-2rem))] rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-bg)] p-5 shadow-2xl glass-panel animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 top-12 z-50 w-[min(400px,calc(100vw-2rem))]">
+          <BorderBeam size="md" colorVariant="mono" strength={0.35} active theme="dark">
+            <div className="w-full rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-bg)] p-5 shadow-2xl glass-panel animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-start justify-between pb-3 border-b border-[var(--sigma-border)]">
             <div>
               <div className="flex items-center gap-2">
@@ -122,33 +130,50 @@ export default function VantaProviderPanel() {
               ))}
             </div>
 
-            {voice.provider === 'local' && (
-              <div className="space-y-2 pt-1">
+            <div className="space-y-2 pt-1">
+              {voice.provider === 'local' && (
                 <input 
                   value={voice.baseUrl || ''} 
                   onChange={event => setVoice(previous => ({ ...previous, baseUrl: event.target.value }))} 
                   placeholder="http://127.0.0.1:1234" 
                   className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)] transition-colors" 
                 />
-                <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    value={voice.sttModel || ''} 
-                    onChange={event => setVoice(previous => ({ ...previous, sttModel: event.target.value }))} 
-                    placeholder="STT model" 
-                    className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)]" 
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <label className="space-y-1 text-[10px] text-[var(--sigma-text-muted)]">
+                  <span>Transcription model</span>
+                  <input
+                    value={voice.sttModel || ''}
+                    onChange={event => setVoice(previous => ({ ...previous, sttModel: event.target.value }))}
+                    placeholder={voice.provider === 'local' ? 'whisper-1' : 'gemini-2.5-flash'}
+                    className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)]"
                   />
-                  <input 
-                    value={voice.ttsModel || ''} 
-                    onChange={event => setVoice(previous => ({ ...previous, ttsModel: event.target.value }))} 
-                    placeholder="TTS model" 
-                    className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)]" 
+                </label>
+                <label className="space-y-1 text-[10px] text-[var(--sigma-text-muted)]">
+                  <span>Speech model</span>
+                  <input
+                    value={voice.ttsModel || ''}
+                    onChange={event => setVoice(previous => ({ ...previous, ttsModel: event.target.value }))}
+                    placeholder={voice.provider === 'local' ? 'tts-1' : 'gemini-2.5-flash-preview-tts'}
+                    className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)]"
                   />
-                </div>
+                </label>
+              </div>
+              <label className="space-y-1 text-[10px] text-[var(--sigma-text-muted)]">
+                <span>Voice</span>
+                <input
+                  value={voice.voice || ''}
+                  onChange={event => setVoice(previous => ({ ...previous, voice: event.target.value }))}
+                  placeholder={voice.provider === 'local' ? 'alloy' : 'Kore'}
+                  className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-bg)] px-3 py-1.5 text-xs font-mono text-[var(--sigma-text)] outline-none focus:border-[var(--sigma-primary)]"
+                />
+              </label>
+              {voice.provider === 'local' && (
                 <p className="text-[10px] text-[var(--sigma-text-muted)] leading-relaxed">
                   Only loopback endpoints accepted. On hosted servers, localhost refers to that server.
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="flex gap-2 pt-1">
               <Button 
@@ -167,7 +192,10 @@ export default function VantaProviderPanel() {
                 size="xs"
                 disabled={busy !== null} 
                 isLoading={busy === 'voice'}
-                onClick={() => void run('voice', verifyVantaVoiceProvider, 'VANTA voice provider verified')} 
+                onClick={() => void run('voice', async () => {
+                  await saveVantaVoiceSettings(voice);
+                  await verifyVantaVoiceProvider();
+                }, 'VANTA voice settings saved and provider verified')}
                 className="flex-1"
               >
                 Verify Voice
@@ -175,7 +203,9 @@ export default function VantaProviderPanel() {
             </div>
           </div>
         </div>
-      )}
+      </BorderBeam>
     </div>
+  )}
+</div>
   );
 }

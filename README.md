@@ -150,7 +150,7 @@ Structured multi-tenant data partitioning powered by Supabase + pgvector:
 │           Supabase Cloud  (PostgreSQL 15 + pgvector + Auth)                 │
 │                                                                             │
 │   App Tables: workspaces, documents, intake_tokens, signals, etc.           │
-│   Migrations: 0001–0016 + init.sql + verify.sql                            │
+│   Migrations: 0001–0017 + init.sql + verify.sql                            │
 │   Security: 100% RLS Enforcement (Audited via verify.sql)                   │
 │   Secret Vaults: executive_vault, credentials_vault (Strict Deny)           │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -486,7 +486,7 @@ npm run check
    ```
 3. Apply incremental migrations in order:
    ```bash
-   # Migrations 0002 through 0016
+   # Migrations 0002 through 0017
    for f in backend/database/migrations/0*.sql; do
      psql $DATABASE_URL < "$f"
    done
@@ -516,6 +516,7 @@ npm run check
 | `0014` | Token metering |
 | `0015` | VANTA conversation history |
 | `0016` | Decision traces |
+| `0017` | Transactional execution ledger (runs, events, approvals, node attempts, artifacts, delivery attempts) |
 | `verify.sql` | RLS audit, secret vault verification, trigger checks |
 
 ---

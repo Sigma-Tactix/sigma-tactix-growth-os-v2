@@ -1,8 +1,124 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-09-27  
-> **Version**: v0.2.0-rc (Governed Integration Hardening Completed)  
-> **Status**: Pre-release (Governed Integration Hardening Completed); local implementation verified with 39 passing test suites (231 tests) and successful production build; external production certification requires user-supplied provider credentials (Google Ads developer token, service account key) and deployment rollout.
+> **Last updated**: 2026-10-01  
+> **Version**: v0.2.1-dev (Managed Loop Launch Spine & Vanta Lab Hardening)  
+> **Status**: Pre-release (Governed Integration & Managed Loop Transition); local implementation verified with passing test suites and production build; commercial launch strategy pivoted from broad self-serve to a **Managed Growth Intelligence Loop** targeting $50,000 MRR across 6 lighthouse clients; 6 P0 launch blockers actively tracked.
+
+### User-Journey Remediation Plan — 2026-10-01 (PARTIAL PROGRESS — NOT RELEASE READY)
+
+The plan status remains **proposed implementation plan, not a completed fix or a
+release certification** (see `docs/growth-os-remediation-plan-2026-10-01.md:3`).
+Local `npm run lint` (tsc --noEmit) and `npm run test` pass (313 tests, 52
+files); no clean-checkout `npm run check`, production build evidence, browser
+acceptance run, or acceptance record has been produced for this remediation.
+
+1. **Phase 0: Truthful States (CODE COMPLETE FOR THE INVENTED-SUCCESS CLASS; NOT AUDITED END-TO-END):**
+   - Agent heatmap isolates `simulated: true` events from verified
+     load/success/latency (`agentTelemetry.ts`, `agentTelemetry.test.ts`), labels
+     benchmark batches in the UI, and reports `N/A` rather than a fabricated
+     success rate or `0ms` latency when nothing was measured.
+   - Sentinel deploy, social response, carousel generation, scheduler run-now,
+     and the Cockpit "Trigger Run" rehearsal no longer fabricate successes. The
+     Cockpit rehearsal's `traceLog` previously asserted "PostgreSQL transaction
+     committed" and wrote a **verified** telemetry event from a `setTimeout`
+     chain; both are now explicitly rehearsal-labelled (`[SIM]`) and the event
+     is `simulated: true`.
+   - Remaining per plan §4: audit-download correction and full report
+     data-assembly/evidence wiring are still queued. No timer may convert a
+     queued item into a verified success.
+   - **Fresh-tenant guarantee:** client fixtures are gated by
+     `VITE_SEED_DEMO_WORKSPACE` (`src/lib/demoSeed.ts`, tested). Scheduler
+     schedules + its three `completed` history rows, and real Agent Reach
+     captures padded with invented `followersCount/reach/engagement`, are now
+     demo-only or absent. A fresh tenant renders no fabricated rows.
+2. **Phase 1: Transactional Ledger (WRITE PATH + CUTOVER READY; MIGRATION STILL NOT APPLIED):**
+   - `0017_execution_ledger.sql` defines runs/events/approvals/node-attempts/
+     artifacts/delivery-attempts with RLS via `is_member()`, monotonic sequence
+     trigger, anon revoked, service_role retained.
+   - `executionLedgerStore.ts`: one run per task keyed by
+     `idempotency_key = agent-task:<taskId>`, one event per legal state hop,
+     re-sync is a no-op, plus `listLedgerTasks` (authoritative read) and
+     `backfillAgentTasks` (reconciliation counts, never a bare "done").
+     18 tests. `server.ts` writes on run-agent create/approve/complete/failure/
+     reject, run-swarm, run-pipeline; serves `GET /api/workspace/execution-ledger`;
+     owner/admin-only `POST /api/workspace/execution-ledger/backfill`.
+   - **APPLIED TO PRODUCTION on 2026-10-02.** Dry-run inside a transaction
+     (then ROLLBACK) proved the SQL valid against the live schema before
+     committing. Verified on the live DB: RLS enabled on all 6 tables, 2–3
+     policies each, `anon` denied at the privilege layer (`42501` on both read
+     and insert), `status` CHECK constraint present, and the monotonic-sequence
+     trigger correctly rejecting a duplicate event sequence (`P0001`). Ledger
+     tables were empty at apply time; 12 legacy agent tasks remain in
+     `workspace_state` across 2 workspaces.
+   - **Cutover is behind `EXECUTION_LEDGER_AUTHORITATIVE` (default false).**
+     When on, the ledger decides task identity+status and `workspace_state`
+     supplies only the artifact body (steps/output), which the ledger does not
+     yet store. A failed or empty ledger read falls back loudly; it never
+     silently empties the task list.
+   - Backfill must run through the app as an owner/admin
+     (`POST /api/workspace/execution-ledger/backfill`) — it needs a user JWT,
+     because `created_by` defaults to `auth.uid()` and a direct DB write as
+     superuser would violate NOT NULL. **Decision 2026-10-02: deliberately NOT
+     run.** The 12 legacy tasks are throwaway tests and must not enter the
+     authoritative record; the ledger starts clean from this date forward.
+   - **Boot guard:** with `EXECUTION_LEDGER_AUTHORITATIVE=true`, the server
+     probes the ledger (ledger_runs + ledger_events readable, `agent_name`
+     column present) and refuses to start with an actionable message if the
+     migration is missing or half-applied. This catches the half-applied case a
+     "does the table exist" check would miss. Inert while the flag is false.
+     Limitation: the probe runs as service_role, which bypasses RLS, so it
+     proves tables/columns/grants exist but NOT that policies are intact —
+     `verify.sql` checks 19-22 remain the authority for that.
+3. **Phases 2–6: Phase 2 SUBSTANTIALLY BUILT; 3–6 NOT STARTED in runtime:**
+   - **Phase 2 wired into real request paths.** `auditScoring.ts` replaces the
+     model's invented headline score (which defaulted to 68 when Gemini returned
+     nothing) with a published 11-check point rubric over observable snapshot
+     signals; a failed crawl now yields `null`/"Not scored", never 0. Each audit
+     finding carries an `EvidenceRecord` + classification via
+     `auditClaimEvidence.ts` (always `estimate` for impact %, never
+     `measured_fact`), presented through `claimLabels.ts`. Synthetic snapshots
+     are marked `retrievalResult: 'simulated'`.
+   - `ledger_node_attempts` is now actually written: `executeAgentTask` is a
+     wrapper that opens/closes a real attempt (executor version, start/end,
+     error on failure), which is what replaced the heatmap's
+     "N/A (not measured)" latency with measured milliseconds.
+   - Client T&C acceptance is recorded to the ledger event stream with an exact
+     version (`2026-10-02.v1`) and timestamp (`recordTermsAcceptance`,
+     `POST /api/workspace/terms/accept`). Every exported plan now carries the
+     AI disclosure line.
+   - **DAG wiring (first real consumer):** `POST /api/workspace/run-pipeline`
+     now executes through `BoundedWorkflowGraph` with three declared nodes
+     (`diagnose -> copy -> qa`), each carrying versioned input/output schemas,
+     permitted tools, timeout and retry bounds. If Stage 1 fails, Stages 2–3
+     never run — the previous inline chain fed an empty summary into the next
+     stage's prompt and wrote `status:"Success"` regardless. A partial pipeline
+     is now `Failed`, returns HTTP 502 naming the stage, and records that stage
+     in the ledger. Pipeline task IDs are `crypto.randomUUID()`-based.
+   - **Still open in Phase 2:** the growth-audit specialist fan-out (8 parallel
+     category agents -> synthesis) is still an inline `Promise.all`, so the
+     Cockpit's visual DAG for THAT surface still implies drawn nodes ran;
+     `detectEvidenceDiscrepancy`/contradiction surfacing and independent review
+     are unwired; social/Reddit/Quora discussion evidence (Agent Reach
+     permalinks) not yet captured; provider evidence still absent so most
+     categories stay `not assessed`.
+   - Phase 3 (report contract, pdfcn renderer, delivery records) is deliberately
+     NOT started — held until Phase 2 closes. `reportSnapshot.ts` and
+     `pdfReportRenderer.ts` remain test-only modules with no runtime wiring.
+
+### Strategic Direction & Launch Spine — 2026-09-28 (APPROVED)
+
+A cross-functional leadership alignment (Commander, FOREMAN, PRAXIS, ATLAS, CIPHER, ECHO, STAGE) determined:
+- **Core Decision**: Do **not** launch Growth OS as a broad self-serve platform next month. Launch as a **Managed Growth Intelligence Loop** for a narrow cohort of paid lighthouse customers ($50,000 MRR target across 6 accounts: 2 Strategic @ $12k/mo + 4 Managed @ $6.5k/mo).
+- **Accountability Chain**: Commander (Founder / Commercial) → FOREMAN (Operating & Delivery Cadence) → PRAXIS (Product Scope) / ATLAS (Architecture) / CIPHER (Engineering Delivery) / ECHO (Sales & Pipeline) / STAGE (Content Production).
+- **Launch Spine (In Scope)**: Guided workspace setup, Second Brain context, 3–5 reliable connectors, scored growth signals, weekly executive brief with citations, 1 content recommendation + 1 SDR battlecard, human approval with decision traces, server-enforced entitlements & usage tracking.
+- **P0 Launch Blockers**: (1) Clean-checkout `npm run check` passing evidence, (2) Two-workspace adversarial tenant-isolation tests, (3) Server-side auth, membership, and ownership inventory, (4) Stripe webhook duplicate/replay/signature threat tests, (5) Comprehensive secret scan of dist/git history, (6) Ajman Nuventure license activity verification for commercial SaaS.
+
+### Commercial Architecture & SaaS Economics — 2026-09-30 (RESEARCH & RECONCILIATION)
+
+- **Pricing Reconciliation**: Confirmed database migration `0009_subscription_tiers.sql` baseline ($499 Starter, $1,499 Growth, $3,499 Enterprise). Formally deprecated legacy `$49/$199/$499` drafts.
+- **Post-Validation Commercial Model**: Replaced unlimited agency seats with metered/workspace expansion: Intelligence OS ($1,250/mo + $3k-$5k setup), Growth OS ($3,500/mo + $7.5k-$12.5k setup), Portfolio OS ($7,500/mo for 5 workspaces + $15k-$25k setup), Sovereign Enterprise OS ($12,500/mo+).
+- **Founding 10 Offer**: $750/mo on 6-month commitment + $1,500 setup contribution.
+- **Market Sizing**: $583.9M SAM (UAE + Saudi Arabia), $17.43B selected global TAM, bottom-up account model.
 
 ### Integration Work Order — 2026-09-27 (COMPLETED)
 
@@ -129,6 +245,7 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 | Agent Cockpit | `/agents` | `AgentCockpit.tsx` | 8-agent swarm manager, DAG visualizer, live telemetry heatmap |
 | Agent Reach Router | `/agent-reach` | `AgentReachPage.tsx` | 15-platform live intelligence extraction, CLI doctor diagnostics, social bridge |
 | Living System (VANTA) | `/living-system` | `LivingSystemPage.tsx` | VANTA 3D neural core, 12-phase voice/multimodal state machine, audio amplitude |
+| VANTA Preview Lab | `/vanta-lab` | `VantaPreviewLab.tsx` | High-fidelity preview laboratory for 3D synaptic brain orb, 12-phase state machine & vault sectors |
 | Scheduler | `/scheduler` | `Scheduler.tsx` | Autonomous cron jobs, report delivery scheduling |
 | Reports | `/reports` | `Reports.tsx` | Executive report export engine (PDF, PowerPoint PPTX, Excel XLSX) |
 
@@ -272,16 +389,23 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | Sep 17–18 | `534c702c` | Agent Reach 15-platform integration, `/agent-reach`, competitor battlecards, content repurposing pipelines. |
 | Sep 18 | `833dbe5d` | Light/Dark Theme tokens, `AuthGate.tsx` session gate, master context compilation, `/learn` proposal, grilling round. |
 | Sep 27 | `790ab5b` | Governed Integration Hardening: Areas 1-4 completed (MCP capability honesty, hardened Agent Reach, read-only Google Ads MCP connector, governed agent-trace inspector in Cockpit). |
+| Sep 28 | Execution Meeting | Strategic Alignment: Commander, FOREMAN, PRAXIS, ATLAS, CIPHER, ECHO, STAGE. Pivot to Managed Growth Intelligence Loop ($50k MRR target across 6 clients), 8-item launch spine, 6 P0 launch blockers identified. |
+| Sep 29 | `083ad17` / `4b7b02e` | Tooling & Admin Hardening: Upgraded vexp to v3.3.0, untracked .vexp cache, updated ProductionSkillsMCPTab with honest CATALOGUED status, refreshed index.css tokens, committed meeting documentation. |
+| Sep 30 | SaaS Economics | Bottom-Up Market Sizing & Economics: $583.9M UAE+Saudi SAM, $17.43B TAM; deprecated conflicting $49/$199/$499 pricing; verified migration 0009 baseline ($499/$1,499/$3,499); established post-validation tiered model & Founding 10 partner offer. |
+| Sep 30 – Oct 1 | VANTA Lab & Context Sentinel | Neural & Context Hardening: Built VantaPreviewLab (/vanta-lab) & VantaSynapticBrainOrb (3D WebGL Three.js synaptic state engine & 10 vault topologies); modularized growthStrategy.ts; synchronized MASTER_CONTEXT.md; implemented universal master-context-sync skill & startup trigger. |
+| Oct 1 | User-journey audit and remediation planning | Corrected PDF download finding using supplied artifact; inspected report rendering and disconnected runtime paths; proposed shared ledger, bounded evidence graph, branded pdfcn exports, MRR/fee proposals and social delivery loop. Planning artifacts only; application fixes and runtime certification remain pending. |
 
 ---
 
 ## 10. Known Issues & Operational Guidelines
 
-1. **Monolithic Server**: `server.ts` handles multiple responsibilities; route decomposition planned for v0.3.0.
-2. **CSP Disabled in Dev**: Content Security Policy disabled in development for Vite HMR compatibility.
-3. **Scraper Anti-Bot Guard**: Headless scrapers can be challenged by YouTube BotGuard or Cloudflare; always use oEmbed or Jina Reader fallback.
-4. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
-5. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
+1. **Managed Loop Launch Priority**: Non-spine feature expansion is frozen until the 6 P0 launch blockers (clean `npm run check`, 2-workspace tenant isolation, auth inventory, Stripe threat tests, secret scan, licensing verification) are cleared.
+2. **Context Drift Sentinel**: `MASTER_CONTEXT.md` must be updated on every multi-session or milestone boundary using the `master-context-sync` skill.
+3. **Monolithic Server**: `server.ts` handles multiple responsibilities; route decomposition planned for v0.3.0.
+4. **CSP Disabled in Dev**: Content Security Policy disabled in development for Vite HMR compatibility.
+5. **Scraper Anti-Bot Guard**: Headless scrapers can be challenged by YouTube BotGuard or Cloudflare; always use oEmbed or Jina Reader fallback.
+6. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
+7. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
 
 ---
 

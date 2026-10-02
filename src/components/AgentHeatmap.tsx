@@ -39,8 +39,10 @@ import {
   saveTelemetryEvents,
   clearTelemetryEvents,
   buildHeatmapMatrix,
-  calculateHeatmapStats
+  calculateHeatmapStats,
+  buildVerifiedTelemetryFromLedger
 } from '@/src/lib/agentTelemetry';
+import { apiFetch } from '@/src/lib/api';
 
 export type { HeatmapMetric, TimeWindow, HeatmapCellData, AgentTelemetryEvent };
 
@@ -86,6 +88,20 @@ export default function AgentHeatmap({
     };
   }, []);
 
+  // Phase 1: verified runs come from the transactional execution ledger, not
+  // from localStorage. localStorage holds the simulated benchmark batch (and
+  // nothing that is allowed to count as verified work), so the two feeds are
+  // kept apart: ledgerRuns -> verified events, telemetryEvents -> simulation.
+  const [ledgerRuns, setLedgerRuns] = useState<Array<{
+    id: string;
+    objective: string;
+    agentName: string | null;
+    status: string;
+    updatedAt: number;
+    durationMs?: number | null;
+  }>>([]);
+  const [ledgerUnavailable, setLedgerUnavailable] = useState(false);
+
   // Get active intervals
   const currentIntervals = useMemo(() => {
     if (timeWindow === 'peak') return INTERVALS_PEAK;
@@ -93,18 +109,59 @@ export default function AgentHeatmap({
     return INTERVALS_24H;
   }, [timeWindow]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadLedger = async () => {
+      try {
+        const res = await apiFetch('/api/workspace/execution-ledger');
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const payload = await res.json();
+        if (cancelled) return;
+        setLedgerRuns(
+          (payload.runs || []).map((run: any) => ({
+            id: run.id,
+            objective: run.objective,
+            agentName: run.agentName ?? null,
+            status: run.status,
+            updatedAt: new Date(run.updatedAt).getTime(),
+            durationMs: run.durationMs ?? null,
+          }))
+        );
+        setLedgerUnavailable(false);
+      } catch {
+        // A ledger that cannot be read is an unavailable state, not an empty
+        // one — surface it rather than quietly rendering a quiet fleet.
+        if (!cancelled) setLedgerUnavailable(true);
+      }
+    };
+    void loadLedger();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Verified events derived from the ledger; simulated local events are merged
+  // in as well, but buildHeatmapMatrix() keeps them out of verified stats.
+  const verifiedLedgerEvents = useMemo(
+    () => buildVerifiedTelemetryFromLedger(ledgerRuns),
+    [ledgerRuns]
+  );
+
   // Generate dynamic heatmap data calculated STRICTLY from produced telemetry events
   const heatmapData = useMemo(() => {
-    return buildHeatmapMatrix(SCOPED_AGENTS, currentIntervals, telemetryEvents);
-  }, [currentIntervals, telemetryEvents]);
+    return buildHeatmapMatrix(
+      SCOPED_AGENTS,
+      currentIntervals,
+      [...verifiedLedgerEvents, ...telemetryEvents]
+    );
+  }, [currentIntervals, verifiedLedgerEvents, telemetryEvents]);
 
-  // Dispatch a live real agent task event to test dynamic heatmap colors
+  // Dispatch a simulated benchmark batch for color-scale calibration only.
+  // Phase 0: simulated events are written with simulated: true, which
+  // buildHeatmapMatrix() isolates from verified load stats. No timer may
+  // convert these into verified successes.
   const handleDispatchTestTelemetry = () => {
     setIsDispatching(true);
-    setTimeout(() => {
-      setIsDispatching(false);
-
-      // Generate real telemetry batch for agents across mid-day window
+    try {
+      // Generate simulated benchmark batch for agents across mid-day window
       const sampleIntervals = currentIntervals.slice(8, 14);
       const newEvents: AgentTelemetryEvent[] = [];
 
@@ -121,7 +178,8 @@ export default function AgentHeatmap({
             status: isFailed ? 'failed' : 'completed',
             latencyMs: Math.floor(Math.random() * 40) + 35, // 35 - 75ms
             hitlRequired: Math.random() < 0.15,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            simulated: true,
           });
         }
       });
@@ -129,11 +187,13 @@ export default function AgentHeatmap({
       const updated = [...telemetryEvents, ...newEvents];
       setTelemetryEvents(updated);
       saveTelemetryEvents(updated);
-      notifySuccess(
-        'Agent Telemetry Ingested',
-        `Dispatched ${newEvents.length} verifiable execution runs across ${SCOPED_AGENTS.length} agents. Heatmap dynamically updated.`
+      notifyInfo(
+        'Benchmark Telemetry Generated',
+        `Generated ${newEvents.length} SIMULATED benchmark events across ${SCOPED_AGENTS.length} agents. Excluded from verified ledger metrics.`
       );
-    }, 600);
+    } finally {
+      setIsDispatching(false);
+    }
   };
 
   const handleClearTelemetry = () => {
@@ -379,28 +439,40 @@ export default function AgentHeatmap({
             <h3 className="text-xl font-bold silver-text tracking-tight">
               Agent Execution & Load Heatmap
             </h3>
-            <span className="px-2 py-0.5 rounded bg-accent/15 text-accent text-[10px] font-mono font-bold border border-accent/30">
-              Live Dynamic Scale
+            <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px] font-mono font-bold border border-zinc-700">
+              Dynamic Scale
             </span>
           </div>
-          <p className="text-xs text-zinc-400">
-            Real-time matrix dynamically colored by verified agent telemetry. No pseudo-random or mock data.
-          </p>
+          {ledgerUnavailable ? (
+            <p className="text-xs text-amber-300">
+              Execution ledger unavailable — verified load and success cannot be shown.
+              Apply migration 0017 and reload. Simulated benchmarks below are not verified work.
+            </p>
+          ) : (
+            <p className="text-xs text-zinc-400">
+              Verified execution matrix. Only verified ledger runs count toward load and success; simulated benchmarks are labeled separately and never feed verified stats.
+            </p>
+          )}
         </div>
 
         {/* View Toggle Controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Action Buttons: Dispatch Test Telemetry & Reset */}
+          {/* Action Buttons: Dispatch Simulated Benchmark & Reset */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleDispatchTestTelemetry}
               disabled={isDispatching}
               className="px-3 py-1.5 rounded-xl bg-accent text-background font-black text-xs uppercase tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-all amber-glow disabled:opacity-50"
-              title="Dispatches authentic test runs to visualize dynamic color scaling"
+              title="Generates SIMULATED benchmark runs (isolated from verified stats) to calibrate dynamic color scaling"
             >
               <Play size={12} className={cn(isDispatching && "animate-spin")} />
-              <span>{isDispatching ? 'Ingesting...' : 'Dispatch Telemetry'}</span>
+              <span>{isDispatching ? 'Simulating...' : 'Simulate Benchmark'}</span>
             </button>
+            {stats.simulatedRuns > 0 && (
+              <span className="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono">
+                {stats.simulatedRuns} simulated benchmark · excluded from verified stats
+              </span>
+            )}
 
             {telemetryEvents.length > 0 && (
               <button
@@ -483,19 +555,19 @@ export default function AgentHeatmap({
       {/* Telemetry Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-black/40 border border-white/5 text-xs font-mono">
         <div>
-          <span className="text-[10px] text-muted uppercase">Total Real Telemetry Runs:</span>
+          <span className="text-[10px] text-muted uppercase">Verified Runs:</span>
           <div className="text-base font-bold text-white mt-0.5">{stats.activeRuns} Tasks</div>
         </div>
         <div>
-          <span className="text-[10px] text-muted uppercase">Execution Success:</span>
+          <span className="text-[10px] text-muted uppercase">Verified Success:</span>
           <div className="text-base font-bold text-emerald-400 mt-0.5">{stats.avgSuccess}</div>
         </div>
         <div>
-          <span className="text-[10px] text-muted uppercase">Peak Agent:</span>
+          <span className="text-[10px] text-muted uppercase">Peak Agent (verified):</span>
           <div className="text-base font-bold text-amber-400 mt-0.5">{stats.peakAgent}</div>
         </div>
         <div>
-          <span className="text-[10px] text-muted uppercase">Mean Latency:</span>
+          <span className="text-[10px] text-muted uppercase">Verified Latency:</span>
           <div className="text-base font-bold text-zinc-300 mt-0.5">{stats.avgLatency}</div>
         </div>
       </div>
@@ -523,11 +595,11 @@ export default function AgentHeatmap({
             {hoveredCell.hasData ? (
               <div className="space-y-1 text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-muted">Recorded Runs:</span>
+                  <span className="text-muted">Verified Runs:</span>
                   <span className="text-white font-bold">{hoveredCell.activeLoad} tasks</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Success Rate:</span>
+                  <span className="text-muted">Verified Success:</span>
                   <span className="text-emerald-400 font-bold">{hoveredCell.successRate}%</span>
                 </div>
                 <div className="flex justify-between">
@@ -535,13 +607,21 @@ export default function AgentHeatmap({
                   <span className="text-zinc-300">{hoveredCell.completedTasks} / {hoveredCell.failedTasks}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Inference Latency:</span>
+                  <span className="text-muted">Verified Latency:</span>
                   <span className="text-amber-400">{hoveredCell.avgLatencyMs}ms</span>
                 </div>
+                {hoveredCell.simulatedCount > 0 && (
+                  <div className="flex justify-between border-t border-white/10 pt-1">
+                    <span className="text-muted">Simulated (excluded):</span>
+                    <span className="text-amber-300">{hoveredCell.simulatedCount} benchmark</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-[11px] text-zinc-500 py-1">
-                No telemetry recorded for this interval. Clean Slate state.
+                {hoveredCell.simulatedCount > 0
+                  ? `No verified runs for this interval. ${hoveredCell.simulatedCount} simulated benchmark event(s) excluded from verified stats.`
+                  : 'No verified runs for this interval. Clean Slate state.'}
               </div>
             )}
           </div>
@@ -608,15 +688,18 @@ export default function AgentHeatmap({
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
             <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
-              <span className="text-[10px] text-muted uppercase block">Queue Intensity</span>
+              <span className="text-[10px] text-muted uppercase block">Verified Queue</span>
               <span className="text-base font-bold text-white mt-0.5 block">
-                {selectedCell.activeLoad} tasks executed
+                {selectedCell.activeLoad} verified tasks
               </span>
               <span className="text-[10px] text-accent">{selectedCell.capacityPct}% capacity</span>
+              {selectedCell.simulatedCount > 0 && (
+                <span className="text-[10px] text-amber-300 block">{selectedCell.simulatedCount} simulated benchmark excluded</span>
+              )}
             </div>
 
             <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
-              <span className="text-[10px] text-muted uppercase block">Execution Accuracy</span>
+              <span className="text-[10px] text-muted uppercase block">Verified Accuracy</span>
               <span className="text-base font-bold text-emerald-400 mt-0.5 block">
                 {selectedCell.hasData ? `${selectedCell.successRate}%` : 'N/A (Idle)'}
               </span>
@@ -626,7 +709,7 @@ export default function AgentHeatmap({
             </div>
 
             <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
-              <span className="text-[10px] text-muted uppercase block">Total Output</span>
+              <span className="text-[10px] text-muted uppercase block">Verified Output</span>
               <span className="text-base font-bold text-white mt-0.5 block">
                 {selectedCell.completedTasks} completed
               </span>

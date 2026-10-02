@@ -8,6 +8,7 @@ export interface AgentTelemetryEvent {
   latencyMs: number;
   hitlRequired: boolean;
   timestamp: number;
+  simulated?: boolean;
 }
 
 export interface HeatmapCellData {
@@ -17,7 +18,7 @@ export interface HeatmapCellData {
   agentRole: string;
   interval: string;
   timestamp: number;
-  activeLoad: number; // real task count
+  activeLoad: number; // verified task count (simulated events excluded)
   capacityPct: number; // 0-100%
   successRate: number; // 0-100%
   completedTasks: number;
@@ -26,6 +27,8 @@ export interface HeatmapCellData {
   avgLatencyMs: number;
   status: 'OPTIMAL' | 'ELEVATED' | 'PEAK' | 'QUIET';
   hasData: boolean;
+  verifiedCount: number; // verified (non-simulated) events in this cell
+  simulatedCount: number; // simulated benchmark events in this cell
 }
 
 export type HeatmapMetric = 'load' | 'success' | 'composite';
@@ -109,8 +112,10 @@ export function clearTelemetryEvents(): void {
 }
 
 /**
- * Builds the dynamic heatmap matrix strictly from recorded telemetry events.
- * Clean slate intervals have hasData: false, activeLoad: 0, status: 'QUIET'.
+ * Builds the dynamic heatmap matrix strictly from VERIFIED telemetry events.
+ * Simulated benchmark events (simulated: true) are counted separately and
+ * NEVER contribute to load, success, latency, or cell status. A cell with
+ * only simulated events reports hasData: false (clean slate).
  */
 export function buildHeatmapMatrix(
   agents: Pick<ScopedAgent, 'id' | 'codename' | 'name' | 'role'>[],
@@ -119,21 +124,48 @@ export function buildHeatmapMatrix(
 ): HeatmapCellData[] {
   const data: HeatmapCellData[] = [];
   const baseTime = Date.now();
+  const quietCell = (
+    agent: Pick<ScopedAgent, 'id' | 'codename' | 'name' | 'role'>,
+    interval: string,
+    intIdx: number,
+    simulatedCount: number
+  ): HeatmapCellData => ({
+    agentId: agent.id,
+    agentCode: agent.codename,
+    agentName: agent.name,
+    agentRole: agent.role,
+    interval,
+    timestamp: baseTime + intIdx * 3600000,
+    activeLoad: 0,
+    capacityPct: 0,
+    successRate: 100,
+    completedTasks: 0,
+    failedTasks: 0,
+    hitlPauses: 0,
+    avgLatencyMs: 0,
+    status: 'QUIET',
+    hasData: false,
+    verifiedCount: 0,
+    simulatedCount,
+  });
 
   agents.forEach((agent) => {
     intervals.forEach((interval, intIdx) => {
       const matchingEvents = events.filter(
         e => e.agentId === agent.id && e.interval === interval
       );
+      // Simulated benchmark events never count as verified work.
+      const verifiedEvents = matchingEvents.filter(e => e.simulated !== true);
+      const simulatedCount = matchingEvents.length - verifiedEvents.length;
 
-      if (matchingEvents.length > 0) {
-        const completedTasks = matchingEvents.filter(e => e.status === 'completed').length;
-        const failedTasks = matchingEvents.filter(e => e.status === 'failed').length;
-        const hitlPauses = matchingEvents.filter(e => e.hitlRequired).length;
-        const activeLoad = matchingEvents.length;
+      if (verifiedEvents.length > 0) {
+        const completedTasks = verifiedEvents.filter(e => e.status === 'completed').length;
+        const failedTasks = verifiedEvents.filter(e => e.status === 'failed').length;
+        const hitlPauses = verifiedEvents.filter(e => e.hitlRequired).length;
+        const activeLoad = verifiedEvents.length;
         const capacityPct = Math.min(100, Math.round((activeLoad / 20) * 100));
         const successRate = activeLoad > 0 ? parseFloat(((completedTasks / activeLoad) * 100).toFixed(1)) : 100;
-        const totalLatency = matchingEvents.reduce((acc, e) => acc + e.latencyMs, 0);
+        const totalLatency = verifiedEvents.reduce((acc, e) => acc + e.latencyMs, 0);
         const avgLatencyMs = Math.round(totalLatency / activeLoad);
 
         const status: HeatmapCellData['status'] =
@@ -155,26 +187,12 @@ export function buildHeatmapMatrix(
           hitlPauses,
           avgLatencyMs,
           status,
-          hasData: true
+          hasData: true,
+          verifiedCount: verifiedEvents.length,
+          simulatedCount,
         });
       } else {
-        data.push({
-          agentId: agent.id,
-          agentCode: agent.codename,
-          agentName: agent.name,
-          agentRole: agent.role,
-          interval,
-          timestamp: baseTime + intIdx * 3600000,
-          activeLoad: 0,
-          capacityPct: 0,
-          successRate: 100,
-          completedTasks: 0,
-          failedTasks: 0,
-          hitlPauses: 0,
-          avgLatencyMs: 0,
-          status: 'QUIET',
-          hasData: false
-        });
+        data.push(quietCell(agent, interval, intIdx, simulatedCount));
       }
     });
   });
@@ -184,21 +202,33 @@ export function buildHeatmapMatrix(
 
 /**
  * Calculates aggregate fleet statistics across the active cells.
+ * Only VERIFIED (non-simulated) runs are counted. Simulated benchmark
+ * events are reported separately and never feed success/latency/peak.
  */
 export function calculateHeatmapStats(cells: HeatmapCellData[]) {
+  const simulatedRuns = cells.reduce((acc, c) => acc + (c.simulatedCount || 0), 0);
   const activeCells = cells.filter(c => c.hasData);
   if (activeCells.length === 0) {
     return {
       activeRuns: 0,
-      avgSuccess: '0%',
+      verifiedRuns: 0,
+      simulatedRuns,
+      avgSuccess: 'N/A (no verified runs)',
       peakAgent: 'None',
-      avgLatency: '0ms'
+      avgLatency: 'N/A'
     };
   }
 
   const totalRuns = activeCells.reduce((acc, c) => acc + c.activeLoad, 0);
   const avgSuccess = (activeCells.reduce((acc, c) => acc + c.successRate, 0) / activeCells.length).toFixed(1) + '%';
-  const avgLatency = Math.round(activeCells.reduce((acc, c) => acc + c.avgLatencyMs, 0) / activeCells.length) + 'ms';
+  // Latency is only known for cells that actually measured it. Ledger-derived
+  // runs record lifecycle, not per-node duration, so they contribute 0 — and a
+  // fleet average that treats "not measured" as 0ms would report a fake, and
+  // impossibly fast, execution time.
+  const measuredCells = activeCells.filter(c => c.avgLatencyMs > 0);
+  const avgLatency = measuredCells.length > 0
+    ? Math.round(measuredCells.reduce((acc, c) => acc + c.avgLatencyMs, 0) / measuredCells.length) + 'ms'
+    : 'N/A (not measured)';
 
   const agentTotals: Record<string, number> = {};
   activeCells.forEach(c => {
@@ -214,7 +244,74 @@ export function calculateHeatmapStats(cells: HeatmapCellData[]) {
     }
   });
 
-  return { activeRuns: totalRuns, avgSuccess, peakAgent, avgLatency };
+  return { activeRuns: totalRuns, verifiedRuns: totalRuns, simulatedRuns, avgSuccess, peakAgent, avgLatency };
+}
+
+/**
+ * System agent name -> Cockpit agent id.
+ *
+ * The ledger records the dispatch target as an AgentTask["agentName"] system
+ * agent, while the heatmap renders the Cockpit's SCOPED_AGENTS rows, so the two
+ * vocabularies have to be joined explicitly. A run whose agent is not in this
+ * map is NOT attributed to some default agent — it is dropped from the heatmap
+ * rather than counted against an agent that did not run it.
+ *
+ * Anchors: `agent-outreach` holds the SDR mailbox (sdr@sigmatactix.com) and
+ * `agent-authority` / `agent-performance` their own (agentMailboxConfigs.ts);
+ * the remainder follow MODULE_TO_SYSTEM_AGENT's module dispatch.
+ */
+export const SYSTEM_AGENT_TO_SCOPED_AGENT: Record<string, string> = {
+  "Marketing Agent": "agent-performance",
+  "Creative Director Agent": "agent-content",
+  "SEO & Authority Agent": "agent-authority",
+  "Audit Diagnostic Agent": "agent-diagnostic",
+  "Operations Agent": "agent-ops",
+  "AI SDR (Sales Agent)": "agent-outreach",
+  "Customer Success Agent": "agent-outreach",
+};
+
+/**
+ * Derives verified heatmap telemetry events from the transactional execution
+ * ledger (Phase 1). Every emitted event is non-simulated, so simulated
+ * benchmark batches can never leak into verified ledger counts.
+ *
+ * Two rules keep the derived numbers honest:
+ *  - Each run is placed in its OWN interval, from that run's own completion
+ *    time. Collapsing a day of runs into one interval would fabricate a load
+ *    spike at whatever hour happened to be last.
+ *  - Runs that cannot be attributed to a Cockpit agent are skipped rather than
+ *    guessed at.
+ */
+export function buildVerifiedTelemetryFromLedger(runs: Array<{
+  id: string;
+  objective: string;
+  agentName?: string | null;
+  status: string;
+  updatedAt: number;
+  durationMs?: number | null;
+}>): AgentTelemetryEvent[] {
+  if (!Array.isArray(runs) || runs.length === 0) return [];
+  const succeeded = runs.filter(r => r.status === 'succeeded');
+  const failed = runs.filter(r => r.status === 'failed');
+  const completedPool = [...succeeded, ...failed];
+  if (completedPool.length === 0) return [];
+
+  return completedPool
+    .filter(run => !!SYSTEM_AGENT_TO_SCOPED_AGENT[run.agentName ?? ''])
+    .map(run => ({
+      id: `ledger-${run.id}`,
+      agentId: SYSTEM_AGENT_TO_SCOPED_AGENT[run.agentName ?? ''],
+      interval: `${String(new Date(run.updatedAt).getHours()).padStart(2, '0')}:00`,
+      status: run.status === 'succeeded' ? ('completed' as const) : ('failed' as const),
+      // Phase 2: real measured execution time from the ledger's node attempts.
+      // A run with no attempt recorded has genuinely unknown latency, so it
+      // stays 0 and calculateHeatmapStats() reports "N/A (not measured)"
+      // rather than inventing a number.
+      latencyMs: run.durationMs && run.durationMs > 0 ? run.durationMs : 0,
+      hitlRequired: false,
+      timestamp: run.updatedAt,
+      simulated: false,
+    }));
 }
 
 /**

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
-  buildHeatmapMatrix, 
+import {
+  buildHeatmapMatrix,
+  buildVerifiedTelemetryFromLedger,
   calculateHeatmapStats, 
   getCellColor, 
   getStoredTelemetryEvents, 
@@ -77,9 +78,10 @@ describe('Agent Telemetry & Dynamic Heatmap Engine', () => {
       const stats = calculateHeatmapStats(matrix);
 
       expect(stats.activeRuns).toBe(0);
-      expect(stats.avgSuccess).toBe('0%');
+      expect(stats.simulatedRuns).toBe(0);
+      expect(stats.avgSuccess).toBe('N/A (no verified runs)');
       expect(stats.peakAgent).toBe('None');
-      expect(stats.avgLatency).toBe('0ms');
+      expect(stats.avgLatency).toBe('N/A');
     });
   });
 
@@ -183,7 +185,9 @@ describe('Agent Telemetry & Dynamic Heatmap Engine', () => {
       hitlPauses: 0,
       avgLatencyMs: 45,
       status: 'OPTIMAL',
-      hasData: true
+      hasData: true,
+      verifiedCount: 1,
+      simulatedCount: 0
     };
 
     it('scales load metric from quiet to emerald, cyan, amber, orange, and crimson', () => {
@@ -235,6 +239,90 @@ describe('Agent Telemetry & Dynamic Heatmap Engine', () => {
       clearTelemetryEvents();
       expect(getStoredTelemetryEvents()).toEqual([]);
       expect(localStorage.getItem(TELEMETRY_STORAGE_KEY)).toBeNull();
+    });
+  });
+
+  describe('Phase 0: simulated benchmark isolation (remediation plan)', () => {
+    it('never counts simulated benchmark events as verified load', () => {
+      const events: AgentTelemetryEvent[] = [
+        { id: 'sim-1', agentId: 'agent-oracle', interval: '12:00', status: 'completed', latencyMs: 50, hitlRequired: false, timestamp: Date.now(), simulated: true },
+        { id: 'sim-2', agentId: 'agent-oracle', interval: '12:00', status: 'completed', latencyMs: 60, hitlRequired: false, timestamp: Date.now(), simulated: true },
+      ];
+      const cells = buildHeatmapMatrix(MOCK_AGENTS, ['12:00'], events);
+      const oracleCells = cells.filter(c => c.agentId === 'agent-oracle');
+      expect(oracleCells).toHaveLength(1);
+      expect(oracleCells[0].hasData).toBe(false);
+      expect(oracleCells[0].activeLoad).toBe(0);
+      expect(oracleCells[0].simulatedCount).toBe(2);
+
+      const stats = calculateHeatmapStats(cells);
+      expect(stats.activeRuns).toBe(0);
+      expect(stats.simulatedRuns).toBe(2);
+      expect(stats.avgSuccess).toBe('N/A (no verified runs)');
+    });
+
+    it('derives verified events from the transactional ledger as non-simulated', () => {
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'run-1', objective: 'demo', status: 'succeeded', updatedAt: Date.now(), agentName: 'Marketing Agent' },
+        { id: 'run-2', objective: 'demo', status: 'failed', updatedAt: Date.now(), agentName: 'Marketing Agent' },
+      ]);
+      expect(verified).toHaveLength(2);
+      expect(verified.every(e => e.simulated === false)).toBe(true);
+      const ledgerAgents = [
+        { id: 'agent-performance', codename: 'PERF', name: 'Performance', role: 'Perf' },
+      ];
+      const matrix = buildHeatmapMatrix(ledgerAgents, [verified[0].interval], verified);
+      expect(matrix[0].hasData).toBe(true);
+      expect(matrix[0].verifiedCount).toBe(2);
+      expect(calculateHeatmapStats(matrix).activeRuns).toBe(2);
+    });
+
+    it('attributes each ledger run to the agent that actually ran it', () => {
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'r1', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'Audit Diagnostic Agent' },
+        { id: 'r2', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'SEO & Authority Agent' },
+      ]);
+      expect(verified.map(e => e.agentId)).toEqual(['agent-diagnostic', 'agent-authority']);
+    });
+
+    it('drops runs it cannot attribute rather than charging them to a default agent', () => {
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'r1', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: null },
+        { id: 'r2', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'Unmapped Persona Agent' },
+      ]);
+      expect(verified).toHaveLength(0);
+    });
+
+    it('places each run in the interval it completed, not one shared bucket', () => {
+      const morning = new Date('2026-10-02T09:15:00').getTime();
+      const evening = new Date('2026-10-02T21:40:00').getTime();
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'r1', objective: 'd', status: 'succeeded', updatedAt: morning, agentName: 'Marketing Agent' },
+        { id: 'r2', objective: 'd', status: 'succeeded', updatedAt: evening, agentName: 'Marketing Agent' },
+      ]);
+      expect(verified.map(e => e.interval)).toEqual(['09:00', '21:00']);
+    });
+
+    it('reports latency as unmeasured when the ledger never recorded it', () => {
+      const agent = [{ id: 'agent-performance', codename: 'PERF', name: 'Performance', role: 'Perf' }];
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'r1', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'Marketing Agent' },
+      ]);
+      const matrix = buildHeatmapMatrix(agent, [verified[0].interval], verified);
+      const stats = calculateHeatmapStats(matrix);
+      expect(stats.activeRuns).toBe(1);
+      expect(stats.avgLatency).toBe('N/A (not measured)');
+    });
+
+    it('reports real measured latency from recorded node attempts', () => {
+      const agent = [{ id: 'agent-performance', codename: 'PERF', name: 'Performance', role: 'Perf' }];
+      const verified = buildVerifiedTelemetryFromLedger([
+        { id: 'r1', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'Marketing Agent', durationMs: 4200 },
+        { id: 'r2', objective: 'd', status: 'succeeded', updatedAt: Date.now(), agentName: 'Marketing Agent', durationMs: 6300 },
+      ]);
+      expect(verified.map(e => e.latencyMs)).toEqual([4200, 6300]);
+      const matrix = buildHeatmapMatrix(agent, [verified[0].interval], verified);
+      expect(calculateHeatmapStats(matrix).avgLatency).toBe('5250ms');
     });
   });
 });

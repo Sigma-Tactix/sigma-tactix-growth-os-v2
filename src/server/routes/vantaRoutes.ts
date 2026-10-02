@@ -22,6 +22,12 @@ export interface VantaRouterDeps {
   classifyVantaVerification: (configured: boolean, verifiedAt?: string | null, now?: number) => any;
   buildVantaPromptContext: (workspace: any, decisionRuntime?: any) => string;
   parseVantaModelOutput: (text: string) => any;
+  resolveVantaGeminiVoiceConfig: (config?: { sttModel?: string; ttsModel?: string; voice?: string }) => {
+    sttModel: string;
+    ttsModel: string;
+    voice: string;
+  };
+  verifyVantaGeminiVoiceRoundTrip: (client: any, config?: any) => Promise<any>;
   vantaMessageRequest: any;
   vantaConversationRequest: any;
   vantaShareRequest: any;
@@ -52,6 +58,8 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
     classifyVantaVerification,
     buildVantaPromptContext,
     parseVantaModelOutput,
+    resolveVantaGeminiVoiceConfig,
+    verifyVantaGeminiVoiceRoundTrip,
     vantaMessageRequest,
     vantaConversationRequest,
     vantaShareRequest,
@@ -82,14 +90,19 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
   // GET /settings
   router.get('/settings', async (_req: Request, res: Response) => {
     const settings = await getVantaSettings(res);
+    const geminiVoice = resolveVantaGeminiVoiceConfig(settings?.voice_config);
+    const voiceConfigured = settings?.voice_provider === 'local'
+      ? Boolean(settings?.voice_config?.baseUrl)
+      : Boolean((await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY);
+    const voiceVerification = classifyVantaVerification(voiceConfigured, settings?.voice_verified_at);
     res.json({
       voice: {
         provider: settings?.voice_provider || 'gemini',
         baseUrl: settings?.voice_config?.baseUrl || '',
-        sttModel: settings?.voice_config?.sttModel || '',
-        ttsModel: settings?.voice_config?.ttsModel || '',
-        voice: settings?.voice_config?.voice || '',
-        verified: Boolean(settings?.voice_verified_at),
+        sttModel: settings?.voice_provider === 'local' ? settings?.voice_config?.sttModel || 'whisper-1' : geminiVoice.sttModel,
+        ttsModel: settings?.voice_provider === 'local' ? settings?.voice_config?.ttsModel || 'tts-1' : geminiVoice.ttsModel,
+        voice: settings?.voice_provider === 'local' ? settings?.voice_config?.voice || 'alloy' : geminiVoice.voice,
+        verified: voiceVerification.verified,
         verifiedAt: settings?.voice_verified_at || null,
       },
     });
@@ -106,12 +119,14 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
       res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid voice settings.' });
       return;
     }
-    const config = parsed.data.provider === 'local' ? {
-      baseUrl: normalizeVantaLocalBaseUrl(parsed.data.baseUrl!),
-      sttModel: parsed.data.sttModel || 'whisper-1',
-      ttsModel: parsed.data.ttsModel || 'tts-1',
-      voice: parsed.data.voice || 'alloy',
-    } : {};
+    const config = parsed.data.provider === 'local'
+      ? {
+          baseUrl: normalizeVantaLocalBaseUrl(parsed.data.baseUrl!),
+          sttModel: parsed.data.sttModel || 'whisper-1',
+          ttsModel: parsed.data.ttsModel || 'tts-1',
+          voice: parsed.data.voice || 'alloy',
+        }
+      : resolveVantaGeminiVoiceConfig(parsed.data);
     const { error } = await res.locals.sb.from('vanta_settings').upsert({
       workspace_id: res.locals.wsId,
       voice_provider: parsed.data.provider,
@@ -138,17 +153,35 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
       if (provider === 'local') {
         const baseUrl = settings?.voice_config?.baseUrl;
         if (!baseUrl) throw new Error('Local endpoint is not configured');
-        const response = await fetch(`${normalizeVantaLocalBaseUrl(baseUrl)}/v1/models`, { signal: AbortSignal.timeout(5000) });
-        if (!response.ok) throw new Error(`Local endpoint returned ${response.status}`);
+        const normalizedBaseUrl = normalizeVantaLocalBaseUrl(baseUrl);
+        const config = settings?.voice_config || {};
+        const speech = await fetch(`${normalizedBaseUrl}/v1/audio/speech`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: config.ttsModel || 'tts-1', voice: config.voice || 'alloy', input: 'VANTA voice verified.' }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!speech.ok) throw new Error(`Local speech endpoint returned ${speech.status}`);
+        const audio = await speech.arrayBuffer();
+        if (!audio.byteLength) throw new Error('Local speech endpoint returned no audio');
+        const form = new FormData();
+        form.append('model', config.sttModel || 'whisper-1');
+        form.append('file', new Blob([audio], { type: speech.headers.get('content-type') || 'audio/mpeg' }), 'vanta-verify.mp3');
+        const transcription = await fetch(`${normalizedBaseUrl}/v1/audio/transcriptions`, {
+          method: 'POST', body: form, signal: AbortSignal.timeout(15000),
+        });
+        if (!transcription.ok) throw new Error(`Local transcription endpoint returned ${transcription.status}`);
+        const payload = await transcription.json() as { text?: string };
+        if (!/vanta voice verified/i.test(payload.text || '')) throw new Error('Local voice transcription verification failed');
       } else {
         const key = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
         if (!key) throw new Error('Gemini is not configured');
-        const response = await getGeminiClient(key).models.generateContent({
-          model: process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts',
-          contents: [{ parts: [{ text: 'Say: VANTA voice verified.' }] }],
-          config: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } } } as any,
+        const config = resolveVantaGeminiVoiceConfig(settings?.voice_config);
+        await verifyVantaGeminiVoiceRoundTrip(getGeminiClient(key), {
+          ...config,
+          sttModel: process.env.GEMINI_STT_MODEL || config.sttModel,
+          ttsModel: process.env.GEMINI_TTS_MODEL || config.ttsModel,
         });
-        if (!(response as any).candidates?.[0]?.content?.parts?.some((part: any) => part.inlineData?.data)) throw new Error('No audio returned');
       }
       const verifiedAt = new Date().toISOString();
       const { error } = await res.locals.sb.from('vanta_settings').upsert({ workspace_id: res.locals.wsId, voice_verified_at: verifiedAt, updated_at: verifiedAt }, { onConflict: 'workspace_id' });
@@ -526,8 +559,9 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
       }
       const key = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
       if (!key) throw new Error('Gemini voice is not configured');
+      const config = resolveVantaGeminiVoiceConfig(settings?.voice_config);
       const response = await getGeminiClient(key).models.generateContent({
-        model: await resolveEffectiveGeminiModel(res),
+        model: process.env.GEMINI_STT_MODEL || config.sttModel,
         contents: [{ role: 'user', parts: [
           { inlineData: { mimeType: audio.mimetype || 'audio/webm', data: audio.buffer.toString('base64') } },
           { text: 'Transcribe this audio exactly. Return only the transcript.' },
@@ -570,12 +604,13 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
       }
       const key = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
       if (!key) throw new Error('Gemini voice is not configured');
+      const config = resolveVantaGeminiVoiceConfig(settings?.voice_config);
       const response = await getGeminiClient(key).models.generateContent({
-        model: process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts',
+        model: process.env.GEMINI_TTS_MODEL || config.ttsModel,
         contents: [{ parts: [{ text: `Speak calmly, concisely, and authoritatively as VANTA: ${text}` }] }],
         config: {
           responseModalities: ['AUDIO'],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: config.voice } } },
         } as any,
       });
       const audioData = (response as any).candidates?.[0]?.content?.parts?.find((part: any) => part.inlineData)?.inlineData;

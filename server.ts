@@ -16,6 +16,8 @@ import {
   classifyVantaVerification,
   describeVantaProviderError,
   parseVantaModelOutput,
+  resolveVantaGeminiVoiceConfig,
+  verifyVantaGeminiVoiceRoundTrip,
   vantaConversationRequest,
   vantaMemoryRequest,
   vantaMessageRequest,
@@ -36,14 +38,19 @@ import { emptyWorkspaceData } from "./src/initialData.js";
 import { WorkspaceData, GrowthAudit, GrowthFinding, UIUXAudit, ContentAsset, AgentTask, KeywordCluster, AnalyticsAudit, Connector, ConnectorPlatform, TokenUsageRecord, TokenTelemetrySummary, ActivePipeline } from "./src/types.js";
 import { calculateTokenCost, estimateTokens, computeProfitability, aggregateTelemetry, TIER_RETAINERS, ALL_AI_MODELS, MODEL_PRICING } from "./src/lib/tokenCostEngine.js";
 import { encryptCredentials, decryptCredentials } from "./src/lib/credentialCrypto.js";
-import { supabaseForToken } from "./src/lib/supabaseAdmin.js";
+import { supabaseForToken, verifySupabaseToken } from "./src/lib/supabaseAdmin.js";
 import { resolveWorkspaceId, loadWorkspace, saveWorkspace, WorkspaceConflictError } from "./src/lib/workspaceStore.js";
+import { syncTaskToLedger, listLedgerRuns, listLedgerTasks, backfillAgentTasks, startNodeAttempt, finishNodeAttempt, recordTermsAcceptance } from "./src/lib/executionLedgerStore.js";
+import { probeLedgerUsability, formatLedgerGuardFailure } from "./src/lib/executionLedgerHealth.js";
 import { evaluateAgentRequest, getAgentPolicy, buildScopedBrainContext, documentVaultIdsForScope, type VaultName } from "./src/lib/agentPolicies.js";
 import { fetchSiteContent, summarizeSnapshotForPrompt, createSyntheticSnapshot } from "./src/lib/siteFetch.js";
 import { captureAndStoreAuditScreenshots, ScreenshotCapacityError, type AuditScreenshots } from "./src/lib/screenshot.js";
 import { saveDocument, searchDocuments, indexPerformanceHook } from "./src/lib/rag.js";
 import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall } from "./src/lib/agentTools.js";
 import { AUDIT_CATEGORIES, runCategoryAgent, runSynthesisAgent } from "./src/lib/growthAuditAgents.js";
+import { computeAuditScore } from "./src/lib/auditScoring.js";
+import { BoundedWorkflowGraph } from "./src/lib/boundedWorkflowGraph.js";
+import { computeArtifactSha256 } from "./src/lib/evidenceContract.js";
 import { AGENCY_AGENT_PERSONAS } from "./src/data/agencyAgentPersonas.js";
 import { DISCOVERED_AGENCY_AGENTS } from "./src/data/agencyAgentsRegistry.js";
 import { parseSkillFile } from "./src/lib/agentSkillFiles.js";
@@ -71,6 +78,9 @@ import { buildCapabilityRegistry } from "./src/lib/capabilityRegistry.js";
 import { buildDecisionTrace, decisionTraceToVantaContext } from "./src/lib/decisionTrace.js";
 import { TinyFishWebIntelligenceAdapter } from "./src/server/providers/webIntelligence/tinyFishAdapter.js";
 import { MiroFishMarketSimulationAdapter } from "./src/server/providers/marketSimulation/miroFishAdapter.js";
+import { buildGrowthStrategies } from "./src/lib/growthStrategy.js";
+import { validateReportSnapshot } from "./src/lib/reportSnapshot.js";
+import { renderExecutiveReportPDF } from "./src/lib/pdfReportRenderer.js";
 
 // Load environment variables
 dotenv.config();
@@ -81,6 +91,29 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const tinyFishWebIntelligence = new TinyFishWebIntelligenceAdapter();
 const miroFishMarketSimulation = new MiroFishMarketSimulationAdapter();
+
+async function getGrowthProviderSnapshots() {
+  const [tinyfish, mirofish] = await Promise.all([
+    tinyFishWebIntelligence.capabilities(),
+    miroFishMarketSimulation.capabilities(),
+  ]);
+  return [
+    {
+      id: 'provider-tinyfish',
+      state: tinyfish.verified ? 'verified' : tinyfish.configured ? 'configured' : 'declared',
+      verified: tinyfish.verified,
+      automationEligible: false,
+      evidence: [tinyfish.detail],
+    },
+    {
+      id: 'provider-mirofish',
+      state: mirofish.verified ? 'verified' : mirofish.configured ? 'configured' : 'declared',
+      verified: mirofish.verified,
+      automationEligible: mirofish.executionEligible,
+      evidence: [mirofish.detail],
+    },
+  ];
+}
 
 // Behind a reverse proxy (Caddy/nginx terminating TLS), req.ip is the proxy's
 // address unless Express is told how many hops to trust — which would make
@@ -401,6 +434,33 @@ async function recordTokenUsage(
   }
 }
 
+// Phase 1: mirror a workspace task into the transactional ledger.
+//
+// Deliberately non-fatal and never silent. The ledger is the durable audit
+// record the UI and later provider views will read; `workspace_state` still
+// serves the current pages until the cutover. So a ledger write that fails is
+// logged loudly (it is a real durability gap, not a nuisance) and the task flow
+// continues — it is never swallowed and never faked as recorded.
+//
+// Every call runs through `res.locals.sb`, the request-scoped client carrying
+// the end user's JWT, so the ledger tables' RLS policies are the only thing
+// deciding which workspace's rows this request can touch.
+async function recordLedgerTask(
+  res: Response,
+  task: AgentTask,
+  actor: string,
+  details?: string
+): Promise<void> {
+  try {
+    await syncTaskToLedger(res.locals.sb, res.locals.wsId, task, actor, details);
+  } catch (err: any) {
+    console.error(
+      `Execution ledger write FAILED for task ${task.id} (status: ${task.status}):`,
+      err?.message || err
+    );
+  }
+}
+
 // API Routes
 
 // Every /api/workspace/* route requires a valid Supabase session token. Webhooks
@@ -420,15 +480,11 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   let userId: string;
   let userEmail: string | undefined;
   try {
-    const { data, error } = await sb.auth.getUser(token);
-    if (error || !data.user) {
-      res.status(401).json({ error: "Invalid or expired session" });
-      return;
-    }
-    userId = data.user.id;
-    userEmail = data.user.email;
-  } catch (err) {
-    console.error("Session verification failed:", err);
+    const user = await verifySupabaseToken(token);
+    userId = user.id;
+    userEmail = user.email;
+  } catch (err: any) {
+    console.error("Session verification failed:", err?.message || err);
     res.status(401).json({ error: "Invalid or expired session" });
     return;
   }
@@ -1422,6 +1478,8 @@ app.use(
     classifyVantaVerification,
     buildVantaPromptContext,
     parseVantaModelOutput,
+  resolveVantaGeminiVoiceConfig,
+  verifyVantaGeminiVoiceRoundTrip,
     vantaMessageRequest,
     vantaConversationRequest,
     vantaShareRequest,
@@ -3482,10 +3540,11 @@ function generateDomainCalibratedAudit(targetDomain: string): GrowthAudit {
 
   return {
     status: "completed",
+    evidenceMode: "heuristic",
     score,
     domain: clean,
     lastAuditedAt: new Date().toISOString().split("T")[0],
-    findings,
+    findings: findings.map(finding => ({ ...finding, dataSource: "placeholder" as const })),
     recommendations,
     roadmap90Day
   };
@@ -3501,11 +3560,13 @@ app.post("/api/workspace/run-diagnostic", expensiveLimiter, requireModule("growt
 
   if (geminiKey) {
     let snapshot;
+    let usedSyntheticSnapshot = false;
     try {
       snapshot = await fetchSiteContent(targetDomain);
     } catch (err: any) {
       console.warn(`Direct site fetch for ${targetDomain} had issue (${err.message}). Using synthetic heuristic snapshot.`);
       snapshot = createSyntheticSnapshot(targetDomain);
+      usedSyntheticSnapshot = true;
     }
 
     try {
@@ -3521,20 +3582,42 @@ app.post("/api/workspace/run-diagnostic", expensiveLimiter, requireModule("growt
         console.error("RAG lookup failed, continuing without it:", err);
       }
 
-      const findings = await Promise.all(
-        AUDIT_CATEGORIES.map(category => runCategoryAgent(client, model, category, snapshot, brain, ragContext))
+      const generatedFindings = await Promise.all(
+        AUDIT_CATEGORIES.map(category => runCategoryAgent(
+          client, model, category, snapshot, brain, ragContext,
+          { workspaceId: res.locals.wsId }
+        ))
       );
+      const findings = usedSyntheticSnapshot
+        ? generatedFindings.map(finding => ({ ...finding, dataSource: 'placeholder' as const }))
+        : generatedFindings;
       const synthesis = await runSynthesisAgent(client, model, findings, snapshot.finalUrl);
+
+      // Phase 2: the headline score is computed from the published rubric over
+      // observable signals. The model's own score is kept off the headline —
+      // `synthesis.score || 68` used to invent a 68 whenever the model returned
+      // nothing, which is precisely the fabricated claim this phase removes.
+      const rubric = computeAuditScore({
+        snapshot,
+        notAssessedCategories: findings
+          .filter(f => f.dataSource === 'placeholder')
+          .map(f => f.category),
+      });
 
       const completeAudit: GrowthAudit = {
         status: "completed",
-        score: Math.max(0, Math.min(100, synthesis.score || 68)),
+        evidenceMode: usedSyntheticSnapshot ? "heuristic" : findings.some(finding => finding.dataSource === 'placeholder') ? "mixed" : "live",
+        score: rubric.score,
+        scoringBasis: rubric.basis,
+        scoringChecks: rubric.checks,
+        notAssessedCategories: rubric.notAssessed,
         domain: snapshot.finalUrl || targetDomain,
         lastAuditedAt: new Date().toISOString().split("T")[0],
         findings,
         recommendations: synthesis.recommendations || [],
         roadmap90Day: synthesis.roadmap90Day || [],
       };
+      completeAudit.strategies = buildGrowthStrategies(completeAudit, await getGrowthProviderSnapshots());
 
       db.growthAudit = completeAudit;
       await saveDB(res, db);
@@ -3574,6 +3657,7 @@ app.post("/api/workspace/run-diagnostic", expensiveLimiter, requireModule("growt
 
   // Fallback: Domain-calibrated heuristic audit (deterministic, professional, zero mock labels)
   const fallbackAudit = generateDomainCalibratedAudit(targetDomain);
+  fallbackAudit.strategies = buildGrowthStrategies(fallbackAudit, await getGrowthProviderSnapshots());
   db.growthAudit = fallbackAudit;
   await saveDB(res, db);
   res.json({ success: true, growthAudit: fallbackAudit });
@@ -3819,7 +3903,63 @@ app.post("/api/workspace/generate-content", expensiveLimiter, requireModule("con
 // where creation-time RBAC checks never actually constrained what execution
 // sent to Gemini (the full secondBrain went into every prompt regardless of
 // agent policy).
+/**
+ * Wrapper around the real agent execution that opens and closes a Phase 2 node
+ * attempt on the ledger run.
+ *
+ * The attempt records real start/end and executor version, which is where the
+ * heatmap's honest latency comes from — before this, duration was genuinely
+ * unknown and shown as "N/A (not measured)".
+ *
+ * Measurement is strictly best-effort and must never change the outcome: a
+ * ledger write that fails logs a warning, and a run that succeeded still
+ * returns. Equally, a FAILED run is recorded with its error rather than left
+ * dangling with no end time, so "still running" always means still running.
+ */
 async function executeAgentTask(
+  agentName: AgentTask["agentName"],
+  goal: string,
+  brain: WorkspaceData["secondBrain"],
+  allowedScope: string[],
+  geminiKey?: string,
+  geminiModel: string = DEFAULT_GEMINI_MODEL,
+  sbContext?: { sb: any; workspaceId: string; taskId?: string },
+): Promise<{ steps: string[]; output: string }> {
+  let attemptId: string | null = null;
+
+  if (sbContext?.sb && sbContext.workspaceId && sbContext.taskId) {
+    try {
+      attemptId = await startNodeAttempt(sbContext.sb, sbContext.workspaceId, sbContext.taskId, {
+        nodeId: `agent:${agentName}`,
+        executorVersion: `gemini:${geminiModel}`,
+      });
+    } catch (err: any) {
+      console.warn("Could not open ledger node attempt:", err?.message || err);
+    }
+  }
+
+  const closeAttempt = async (error?: string) => {
+    if (!attemptId || !sbContext?.sb || !sbContext.workspaceId) return;
+    try {
+      await finishNodeAttempt(sbContext.sb, sbContext.workspaceId, attemptId, { error });
+    } catch (err: any) {
+      console.warn("Could not close ledger node attempt:", err?.message || err);
+    }
+  };
+
+  try {
+    const result = await executeAgentTaskInner(
+      agentName, goal, brain, allowedScope, geminiKey, geminiModel, sbContext
+    );
+    await closeAttempt();
+    return result;
+  } catch (err: any) {
+    await closeAttempt(classifyGeminiError(err));
+    throw err;
+  }
+}
+
+async function executeAgentTaskInner(
   agentName: AgentTask["agentName"],
   goal: string,
   brain: WorkspaceData["secondBrain"],
@@ -4079,7 +4219,8 @@ app.post("/api/workspace/run-agent", async (req: Request, res: Response) => {
   const db = await getDB(res);
   if (typeof monthlyCap === "number" && monthlyCap > 0) {
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-    const runsThisMonth = (db.agentTasks || []).filter(t => new Date(t.timestamp.replace(" ", "T")) >= monthStart).length;
+    const quotaTasks = await loadAgentTasks(res, db);
+    const runsThisMonth = quotaTasks.filter(t => new Date(t.timestamp.replace(" ", "T")) >= monthStart).length;
     if (runsThisMonth >= monthlyCap) {
       res.status(403).json({ error: `Monthly agent run limit reached (${monthlyCap}/month on your plan). Upgrade for more.`, runsThisMonth, monthlyCap });
       return;
@@ -4100,7 +4241,9 @@ app.post("/api/workspace/run-agent", async (req: Request, res: Response) => {
   }
 
   const newTask: AgentTask = {
-    id: "task-" + Date.now(),
+    // Collision-resistant: the execution ledger keys its idempotency off this
+    // id, so two runs submitted in the same millisecond must not share one.
+    id: "task-" + crypto.randomUUID(),
     agentName,
     goal,
     timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
@@ -4113,6 +4256,7 @@ app.post("/api/workspace/run-agent", async (req: Request, res: Response) => {
   };
   db.agentTasks.unshift(newTask);
   await saveDB(res, db);
+  await recordLedgerTask(res, newTask, res.locals.userId, "Task queued for HITL review");
   res.json({ success: true, task: newTask });
 });
 
@@ -4129,7 +4273,10 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
   }
   const { id } = req.params;
   const db = await getDB(res);
-  const task = db.agentTasks.find(t => t.id === id);
+  // Authoritative record decides whether this task exists and what state it is
+  // in; workspace_state still carries the artifact body until ledger_artifacts
+  // stores it. See loadAgentTasks().
+  const task = (await loadAgentTasks(res, db)).find(t => t.id === id);
   if (!task) {
     res.status(404).json({ error: "Task not found" });
     return;
@@ -4151,6 +4298,9 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
   task.reviewedBy = res.locals.userId;
   task.reviewedAt = new Date().toISOString();
   await saveDB(res, db);
+  // The approval is recorded BEFORE Gemini runs, so a crash mid-execution still
+  // leaves an approved-but-not-terminal run on the record rather than nothing.
+  await recordLedgerTask(res, task, res.locals.userId, "Approved by reviewer; execution starting");
 
   try {
     // Fallback for tasks created before allowedScope existed on the type —
@@ -4182,12 +4332,14 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
     task.steps = steps;
     task.output = output;
     await saveDB(res, db);
+    await recordLedgerTask(res, task, res.locals.userId, "Execution completed");
     res.json({ success: true, task });
   } catch (err: any) {
     console.error("Gemini Agent run failed:", err);
     task.status = "Failed";
     task.output = classifyGeminiError(err);
     await saveDB(res, db);
+    await recordLedgerTask(res, task, res.locals.userId, "Execution failed");
     res.status(500).json({ error: classifyGeminiError(err), task });
   }
 });
@@ -4202,7 +4354,7 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
 app.post("/api/workspace/run-agent/:id/reject", async (req: Request, res: Response) => {
   const { id } = req.params;
   const db = await getDB(res);
-  const task = db.agentTasks.find(t => t.id === id);
+  const task = (await loadAgentTasks(res, db)).find(t => t.id === id);
   if (!task) {
     res.status(404).json({ error: "Task not found" });
     return;
@@ -4220,6 +4372,7 @@ app.post("/api/workspace/run-agent/:id/reject", async (req: Request, res: Respon
   task.reviewedBy = res.locals.userId;
   task.reviewedAt = new Date().toISOString();
   await saveDB(res, db);
+  await recordLedgerTask(res, task, res.locals.userId, "Rejected at HITL gate");
   res.json({ success: true, task });
 });
 
@@ -4272,7 +4425,8 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
     }
     if (typeof monthlyCap === "number" && monthlyCap > 0) {
       const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-      const runsThisMonth = (db.agentTasks || []).filter(t => new Date(t.timestamp.replace(" ", "T")) >= monthStart).length;
+      const quotaTasks = await loadAgentTasks(res, db);
+      const runsThisMonth = quotaTasks.filter(t => new Date(t.timestamp.replace(" ", "T")) >= monthStart).length;
       if (runsThisMonth >= monthlyCap) {
         res.status(403).json({ error: `Monthly agent run limit reached (${monthlyCap}/month on your plan). Upgrade for more.`, runsThisMonth, monthlyCap });
         return;
@@ -4285,41 +4439,155 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
     const geminiModel = await resolveEffectiveGeminiModel(res);
 
     // Stage 1: Analytics / Diagnostic Agent
-    const stage1Goal = `Analyze performance metrics and campaign data for target goal: "${goal}". Output JSON summary of failing vs winning angles.`;
-    const stage1Result = await executeAgentTask("Audit Diagnostic Agent", stage1Goal, db.secondBrain, getAgentPolicy("Audit Diagnostic Agent").allowed, geminiKey, geminiModel, { sb, workspaceId });
+    // Phase 2 §6: the pipeline runs as a real DAG, not an inline sequence.
+    //
+    // Stages declare explicit dependencies, so the engine decides what runs. The
+    // behavioural difference that matters: if Stage 1 fails, Stages 2 and 3 are
+    // reported BLOCKED rather than being handed an empty summary and asked to
+    // "draft based on" it. Missing dependencies must block a node, never
+    // prompt the model to invent replacement evidence.
+    const STAGES = [
+      {
+        id: "diagnose",
+        agent: "Audit Diagnostic Agent",
+        title: "Diagnose performance and campaign data",
+        dependencies: [] as string[],
+        goal: () =>
+          `Analyze performance metrics and campaign data for target goal: "${goal}". Output JSON summary of failing vs winning angles.`,
+      },
+      {
+        id: "copy",
+        agent: "Marketing Agent",
+        title: "Draft ad copy variants",
+        dependencies: ["diagnose"],
+        goal: (up: Record<string, any>) =>
+          `Draft 3 high-converting ad copy variants based on Data Analyst findings: "${String(up.diagnose?.output || '').substring(0, 500)}"`,
+      },
+      {
+        id: "qa",
+        agent: "Creative Director Agent",
+        title: "Brand compliance and QA review",
+        dependencies: ["copy"],
+        goal: (up: Record<string, any>) =>
+          `Audit and refine ad copy variants for brand compliance, tone, and performance readiness: "${String(up.copy?.output || '').substring(0, 500)}"`,
+      },
+    ];
 
-    // Stage 2: Marketing Copywriter Agent (receives Stage 1 summary + RAG vector hooks)
-    const stage2Goal = `Draft 3 high-converting ad copy variants based on Data Analyst findings: "${stage1Result.output.substring(0, 500)}"`;
-    const stage2Result = await executeAgentTask("Marketing Agent", stage2Goal, db.secondBrain, getAgentPolicy("Marketing Agent").allowed, geminiKey, geminiModel, { sb, workspaceId });
+    const pipelineRunId = "pipeline-" + crypto.randomUUID();
 
-    // Stage 3: Creative Director Agent (QA & Compliance Gatekeeper)
-    const stage3Goal = `Audit and refine ad copy variants for brand compliance, tone, and performance readiness: "${stage2Result.output.substring(0, 500)}"`;
-    const stage3Result = await executeAgentTask("Creative Director Agent", stage3Goal, db.secondBrain, getAgentPolicy("Creative Director Agent").allowed, geminiKey, geminiModel, { sb, workspaceId });
+    const pipelineNodes = STAGES.map((stage) => ({
+      id: stage.id,
+      title: stage.title,
+      // Versioned schemas: the shape this node consumes and produces.
+      inputSchema: "v1:text-summary",
+      outputSchema: "v1:agent-execution-result",
+      permittedTools: ["second_brain_rag", "gemini_generate"],
+      timeoutMs: 120000,
+      maxRetries: 2,
+      dependencies: stage.dependencies,
+      execute: async (_ctx: any, upstream: Record<string, any>) => {
+        const attemptId = await startNodeAttempt(sb, workspaceId, pipelineRunId, {
+          nodeId: `pipeline:${stage.id}`,
+          executorVersion: `gemini:${geminiModel}`,
+        }).catch(() => null);
+
+        try {
+          const result = await executeAgentTask(
+            stage.agent as AgentTask["agentName"],
+            stage.goal(upstream),
+            db.secondBrain,
+            getAgentPolicy(stage.agent).allowed,
+            geminiKey,
+            geminiModel,
+            // No sbContext: the DAG node owns node accounting for this pipeline,
+            // so we do not double-count an attempt per stage.
+            undefined
+          );
+          await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
+          return {
+            status: "succeeded" as const,
+            // The real artifact identity, so downstream nodes reference an
+            // actual output rather than an implied one.
+            outputArtifactId: `${pipelineRunId}:${stage.id}`,
+            outputArtifactHash: computeArtifactSha256(result.output),
+            finalOutput: result.output,
+            steps: result.steps,
+            findings: [],
+          } as any;
+        } catch (err: any) {
+          const message = classifyGeminiError(err);
+          await finishNodeAttempt(sb, workspaceId, attemptId || "", { error: message }).catch(() => {});
+          return { status: "failed" as const, error: message, findings: [] } as any;
+        }
+      },
+    }));
+
+    const execution = await new BoundedWorkflowGraph({ workspaceId, nodes: pipelineNodes }).run();
+
+    const stageResults = STAGES.map((stage) => ({
+      id: stage.id,
+      agent: stage.agent,
+      status: execution.nodeResults[stage.id]?.status || "skipped",
+      error: execution.nodeResults[stage.id]?.error,
+      outputArtifactHash: execution.nodeResults[stage.id]?.outputArtifactHash,
+      steps: (execution.nodeResults[stage.id] as any)?.steps || [],
+    }));
+    const failedOrBlocked = stageResults.find((s) => s.status !== "succeeded");
+
+    const finalOutput = failedOrBlocked
+      ? ""
+      : String((execution.nodeResults.qa as any)?.finalOutput || "");
 
     // Record tasks in agent ledger
     const nowStr = new Date().toISOString().replace("T", " ").substring(0, 16);
     const pipelineTask: AgentTask = {
-      id: "pipeline-" + Date.now(),
+      id: pipelineRunId,
       agentName: "Creative Director Agent",
       goal: `3-Stage Pipeline: ${goal}`,
       timestamp: nowStr,
-      status: "Success",
-      steps: [...stage1Result.steps, ...stage2Result.steps, ...stage3Result.steps],
-      output: stage3Result.output,
+      // A partially-executed pipeline is NOT a success. Unconditionally writing
+      // status:"Success" here is how a blocked pipeline previously read to the
+      // client as delivered work.
+      status: failedOrBlocked ? "Failed" : "Success",
+      steps: stageResults.flatMap((s) => s.steps),
+      output: finalOutput,
+      requestedBy: res.locals.userId,
+      reviewedBy: res.locals.userId,
+      reviewedAt: new Date().toISOString(),
     };
     db.agentTasks.unshift(pipelineTask);
     await saveDB(res, db);
+    // A pipeline lands already-executed, so its ledger run records the terminal
+    // state directly (requested -> ... -> succeeded) rather than pretending it
+    // waited on a HITL gate it never passed through.
+    await recordLedgerTask(
+      res,
+      pipelineTask,
+      res.locals.userId,
+      failedOrBlocked
+        ? `Pipeline stopped at stage "${failedOrBlocked.id}": ${failedOrBlocked.error}`
+        : "3-stage pipeline executed"
+    );
+
+    if (failedOrBlocked) {
+      res.status(502).json({
+        success: false,
+        error:
+          `Pipeline did not complete. Stage "${failedOrBlocked.id}" was ` +
+          `${failedOrBlocked.status}: ${failedOrBlocked.error || "no detail"}`,
+        pipeline: { goal, stages: stageResults, task: pipelineTask },
+      });
+      return;
+    }
 
     res.json({
       success: true,
       pipeline: {
         goal,
-        stages: [
-          { agent: "Audit Diagnostic Agent", result: stage1Result },
-          { agent: "Marketing Agent", result: stage2Result },
-          { agent: "Creative Director Agent (QA)", result: stage3Result },
-        ],
-        finalArtifact: stage3Result.output,
+        stages: stageResults,
+        workflowStatus: execution.status,
+        completedNodeIds: execution.completedNodeIds,
+        finalArtifact: finalOutput,
         task: pipelineTask,
       },
     });
@@ -4941,6 +5209,122 @@ app.get("/api/workspace/agents", requireModule("agents"), async (req: Request, r
 
 // Saved custom reports — the Reporting & Analytics Custom Report Builder's
 // persistence (previously purely client-state, lost on refresh).
+/**
+ * Authoritative task read (Phase 1 cutover).
+ *
+ * With EXECUTION_LEDGER_AUTHORITATIVE=true the ledger is the record of truth for
+ * task identity and status, and `workspace_state.agentTasks` is only consulted
+ * for the generated artifact body (steps/output), which the ledger does not
+ * store yet. It defaults OFF on purpose: flipping it before migration 0017 is
+ * applied would take task history down with it. If the ledger read fails we fall
+ * back to workspace_state and say so out loud — a degraded read is recoverable,
+ * a silent empty task list is not.
+ */
+function ledgerIsAuthoritative(): boolean {
+  return process.env.EXECUTION_LEDGER_AUTHORITATIVE === "true";
+}
+
+async function loadAgentTasks(res: Response, db: WorkspaceData): Promise<AgentTask[]> {
+  const legacyTasks = db.agentTasks || [];
+  if (!ledgerIsAuthoritative()) return legacyTasks;
+
+  try {
+    const ledgerTasks = await listLedgerTasks(res.locals.sb, res.locals.wsId);
+    if (ledgerTasks.length === 0 && legacyTasks.length > 0) {
+      console.warn(
+        "EXECUTION_LEDGER_AUTHORITATIVE=true but the ledger returned no runs for this " +
+        "workspace while workspace_state still has tasks — did you run the backfill? " +
+        "Falling back to workspace_state for this request."
+      );
+      return legacyTasks;
+    }
+    // Merge on the task id: the ledger decides status, workspace_state supplies
+    // the artifact body the ledger does not carry.
+    const bodyById = new Map(legacyTasks.map((t) => [t.id, t]));
+    return ledgerTasks.map((lt) => {
+      const legacy = bodyById.get(lt.id);
+      return {
+        ...(legacy || {}),
+        id: lt.id,
+        agentName: lt.agentName,
+        goal: lt.goal,
+        status: lt.status,
+        timestamp: legacy?.timestamp || lt.createdAt,
+        steps: legacy?.steps || [],
+        output: legacy?.output || "",
+        requestedBy: legacy?.requestedBy,
+      } as AgentTask;
+    });
+  } catch (err: any) {
+    console.error("Ledger-authoritative task read failed; using workspace_state:", err?.message || err);
+    return legacyTasks;
+  }
+}
+
+// Records the client accepting the published measurement scale (§4/§6 terms).
+// The acceptance is a legal fact with a version and a timestamp, so it is
+// written to the ledger event stream and the response reports whether that
+// write actually happened — never a bare "done".
+app.post("/api/workspace/terms/accept", requireModule("agents"), async (req: Request, res: Response) => {
+  try {
+    const taskId = String(req.body?.taskId || "");
+    if (!taskId) {
+      res.status(400).json({ error: "taskId is required so the acceptance is attached to a specific piece of work." });
+      return;
+    }
+    const result = await recordTermsAcceptance(res.locals.sb, {
+      workspaceId: res.locals.wsId,
+      userId: res.locals.userId,
+      taskId,
+      ipAddress: req.ip,
+    });
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    console.error("Terms acceptance record failed:", err);
+    res.status(500).json({ error: err.message || "Failed to record terms acceptance" });
+  }
+});
+
+// One-time (re-runnable) migration of legacy workspace_state tasks into the
+// ledger, with reconciliation counts rather than a bare "done". Owner/admin only:
+// it writes the authoritative record for the whole workspace, so it must not be
+// something any member can trigger.
+app.post("/api/workspace/execution-ledger/backfill", requireModule("agents"), async (req: Request, res: Response) => {
+  if (!(await callerIsOwnerOrAdmin(res))) {
+    res.status(403).json({ error: "You must be an owner or admin to run the ledger backfill." });
+    return;
+  }
+  try {
+    const db = await getDB(res);
+    const counts = await backfillAgentTasks(res.locals.sb, res.locals.wsId, db.agentTasks || []);
+    const ledgerCount = (await listLedgerTasks(res.locals.sb, res.locals.wsId)).length;
+    res.json({
+      reconciliation: counts,
+      ledgerRunCount: ledgerCount,
+      // The number that actually matters: legacy tasks with no ledger run. It
+      // must reach 0 before EXECUTION_LEDGER_AUTHORITATIVE is switched on.
+      unmatched: Math.max(0, counts.total - counts.created),
+    });
+  } catch (err: any) {
+    console.error("Ledger backfill failed:", err);
+    res.status(500).json({ error: err.message || "Backfill failed" });
+  }
+});
+
+// Read side of the transactional ledger (Phase 1) — the same records the write
+// path above produces, so a provider view, counter or heatmap never has to
+// reconcile two sources. Declared after app.use("/api/workspace", requireAuth)
+// so it inherits the session check and the per-request RLS-scoped client.
+app.get("/api/workspace/execution-ledger", requireModule("agents"), async (req: Request, res: Response) => {
+  try {
+    const runs = await listLedgerRuns(res.locals.sb, res.locals.wsId);
+    res.json({ runs });
+  } catch (err: any) {
+    console.error("Execution ledger read failed:", err);
+    res.status(500).json({ error: err.message || "Failed to read execution ledger" });
+  }
+});
+
 app.get("/api/workspace/reports", requireModule("reporting"), async (req: Request, res: Response) => {
   const { data, error } = await res.locals.sb.from("saved_reports").select("*").order("created_at", { ascending: false });
   if (error) {
@@ -4975,6 +5359,65 @@ app.delete("/api/workspace/reports/:id", requireModule("reporting"), async (req:
     return;
   }
   res.json({ success: true });
+});
+
+const reportArtifactCache = new Map<string, { buffer: Buffer; mime: string; filename: string }>();
+
+app.post("/api/workspace/reports/snapshot", requireModule("reporting"), async (req: Request, res: Response) => {
+  try {
+    const validated = validateReportSnapshot(req.body);
+    const { data } = await res.locals.sb
+      .from("saved_reports")
+      .insert({
+        workspace_id: res.locals.wsId,
+        name: validated.title,
+        blocks: [validated],
+        date_range: `${validated.reportingPeriod.start} - ${validated.reportingPeriod.end}`,
+      })
+      .select()
+      .single();
+
+    res.json({ success: true, report: validated, savedRecord: data || null });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.post("/api/workspace/reports/snapshot/render", requireModule("reporting"), async (req: Request, res: Response) => {
+  try {
+    const { snapshot, brand } = req.body;
+    const validated = validateReportSnapshot(snapshot);
+    const result = await renderExecutiveReportPDF(validated, brand);
+
+    const buf = Buffer.from(result.pdfBuffer);
+    reportArtifactCache.set(result.artifactHash, {
+      buffer: buf,
+      mime: "application/pdf",
+      filename: `sigmatactix-${validated.id}-executive-summary.pdf`,
+    });
+
+    res.json({
+      success: true,
+      artifactHash: result.artifactHash,
+      byteSize: result.byteSize,
+      pageCount: result.pageCount,
+      downloadUrl: `/api/workspace/reports/artifact/${result.artifactHash}/download`,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.get("/api/workspace/reports/artifact/:hash/download", async (req: Request, res: Response) => {
+  const artifact = reportArtifactCache.get(req.params.hash);
+  if (!artifact) {
+    res.status(404).json({ error: "Report artifact not found or expired" });
+    return;
+  }
+  res.setHeader("Content-Type", artifact.mime);
+  res.setHeader("Content-Disposition", `attachment; filename="${artifact.filename}"`);
+  res.setHeader("Content-Length", artifact.buffer.length);
+  res.send(artifact.buffer);
 });
 
 app.post("/api/workspace/agents", requireModule("agents"), async (req: Request, res: Response) => {
@@ -5137,7 +5580,7 @@ app.post("/api/workspace/run-swarm", expensiveLimiter, requireModule("agents"), 
   const createdTasks: AgentTask[] = (agentRows || []).map((agentRow: any) => {
     const systemAgentType = MODULE_TO_SYSTEM_AGENT[agentRow.target_module] || "Marketing Agent";
     return {
-      id: "task-" + Date.now() + "-" + String(agentRow.id).slice(0, 6),
+      id: "task-" + crypto.randomUUID() + "-" + String(agentRow.id).slice(0, 6),
       agentName: systemAgentType,
       goal: `[Persona: ${agentRow.name} — ${agentRow.role}] ${agentRow.instructions ? agentRow.instructions + " " : ""}${goal || agentRow.goal || "Execute assigned task."}`,
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
@@ -5151,6 +5594,11 @@ app.post("/api/workspace/run-swarm", expensiveLimiter, requireModule("agents"), 
 
   db.agentTasks = [...createdTasks, ...db.agentTasks];
   await saveDB(res, db);
+  // Each swarmed persona is its own ledger run — one row per task, keyed by the
+  // task id, so approving one of them cannot move the others.
+  for (const task of createdTasks) {
+    await recordLedgerTask(res, task, res.locals.userId, "Swarm bundle queued for HITL review");
+  }
   res.json({ success: true, tasks: createdTasks });
 });
 
@@ -7037,6 +7485,42 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
   res.status(500).json({ error: "An unexpected server error occurred. The team has been notified." });
 });
+
+// Cutover diagnostic: only runs when the app is configured to TRUST the ledger.
+//
+// Product decision: this NEVER blocks startup. An earlier version called
+// process.exit(1) here, which was wrong for a paid product — a transient
+// Supabase outage at boot would have taken the whole API down, converting a
+// "ledger might be stale" warning into a total outage for paying customers.
+// Availability wins; visibility is handled instead.
+//
+// It also does not sit silent on the failure path: loadAgentTasks() already
+// falls back to workspace_state with a logged warning, and an admin sees the
+// banner on the heatmap. So this check exists to make the misconfiguration
+// obvious in the logs at boot, not to enforce anything.
+async function reportLedgerTrustProblems(): Promise<void> {
+  if (process.env.EXECUTION_LEDGER_AUTHORITATIVE !== "true") return;
+  try {
+    const usage = await probeLedgerUsability(getServiceRoleClient());
+    if (usage.ok) {
+      console.log("Execution ledger verified — the ledger is authoritative for task identity and status.");
+      return;
+    }
+    console.warn(formatLedgerGuardFailure(usage.problems).replace("REFUSING TO START", "LEDGER TRUST PROBLEM"));
+    console.warn(
+      "Continuing to start. Task reads fall back to workspace_state until this is fixed, " +
+      "so the app stays available — but new runs will not be recorded authoritatively."
+    );
+  } catch (err: any) {
+    console.warn(
+      formatLedgerGuardFailure([`ledger probe failed: ${err?.message || err}`])
+        .replace("REFUSING TO START", "LEDGER TRUST PROBLEM")
+    );
+    console.warn("Continuing to start with workspace_state fallback.");
+  }
+}
+
+await reportLedgerTrustProblems();
 
 const server = app.listen(PORT, "0.0.0.0", () => { console.log(`Sigma Tactix Growth OS Backend running on http://localhost:${PORT}`); });
 

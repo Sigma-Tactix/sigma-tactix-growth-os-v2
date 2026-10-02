@@ -42,6 +42,7 @@ const EmailMarketingPage = lazy(() => import('@/src/pages/EmailMarketingPage'));
 const CroStudioPage = lazy(() => import('@/src/pages/CroStudioPage'));
 const AttributionRoiPage = lazy(() => import('@/src/pages/AttributionRoiPage'));
 const AgentReachPage = lazy(() => import('@/src/pages/AgentReachPage'));
+const VantaPreviewLab = lazy(() => import('@/src/pages/VantaPreviewLab'));
 
 function RouteFallback() {
   return <div className="min-h-[40vh] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" aria-label="Loading page" />;
@@ -107,6 +108,9 @@ export default function App() {
                   <Route path="/learnings" element={<MarketingTeamLearningsPage />} />
                   <Route path="/explorer" element={<AIExplorer />} />
                   <Route path="/living-system" element={<VantaRoute />} />
+
+                  {/* Isolated preview lab for Vanta polish — does NOT touch production */}
+                  <Route path="/vanta-lab" element={<VantaPreviewLab />} />
 
                   {/* Autonomous Swarm Execution */}
                   <Route path="/agents" element={<AgentCockpit />} />

@@ -185,8 +185,8 @@ export default function AgentReachPage() {
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="vermilion">AGENT CAPABILITY</Badge>
               <span className="text-zinc-600 text-xs">•</span>
-              <Badge variant={summary.cliAvailable ? 'success' : 'warning'}>
-                {summary.cliAvailable ? `RUNTIME ${summary.cliVersion || 'DETECTED'}` : 'RUNTIME UNAVAILABLE'}
+              <Badge variant={isLoadingDoctor ? 'neutral' : (summary.cliAvailable ? 'success' : 'warning')}>
+                {isLoadingDoctor ? 'CHECKING RUNTIME...' : (summary.cliAvailable ? `RUNTIME ${summary.cliVersion || 'DETECTED'}` : 'RUNTIME UNAVAILABLE')}
               </Badge>
               <span className="text-xs text-zinc-500 font-mono ml-1">
                 /Users/mac/.local/bin/agent-reach
@@ -209,7 +209,7 @@ export default function AgentReachPage() {
               disabled={isLoadingDoctor}
               leftIcon={<RefreshCw size={14} className={cn(isLoadingDoctor && 'animate-spin text-[var(--sigma-vermilion)]')} />}
             >
-              Run Doctor
+              {isLoadingDoctor ? 'Checking...' : 'Run Doctor'}
             </Button>
             <Button
               variant="outline"
@@ -226,22 +226,22 @@ export default function AgentReachPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricWidget
           label="Total Platforms"
-          value={summary.totalChannels}
+          value={isLoadingDoctor ? 'Scanning...' : summary.totalChannels}
           subtext="Channels returned by the latest doctor run"
           icon={<Globe size={16} className="text-zinc-400" />}
         />
 
         <MetricWidget
           label="Instant Zero-Config"
-          value={`${summary.readyCount} Ready`}
-          delta={{ value: summary.cliAvailable ? 'Checked' : 'Unavailable', trend: summary.cliAvailable ? 'up' : 'neutral' }}
+          value={isLoadingDoctor ? 'Checking...' : `${summary.readyCount} Ready`}
+          delta={{ value: isLoadingDoctor ? 'Pending' : (summary.cliAvailable ? 'Checked' : 'Unavailable'), trend: summary.cliAvailable ? 'up' : 'neutral' }}
           subtext="Backends confirmed by runtime health check"
           icon={<CheckCircle2 size={16} className="text-emerald-400" />}
         />
 
         <MetricWidget
           label="Login / Cookie Channels"
-          value={`${summary.warningCount} Warning`}
+          value={isLoadingDoctor ? 'Checking...' : `${summary.warningCount} Warning`}
           delta={{ value: "Config Req", trend: "neutral" }}
           subtext="Authentication or dependency action required"
           icon={<AlertTriangle size={16} className="text-amber-400" />}
@@ -249,9 +249,9 @@ export default function AgentReachPage() {
 
         <MetricWidget
           label="Runtime Engine"
-          value={summary.cliAvailable ? (summary.cliVersion || 'Detected') : 'Unavailable'}
-          delta={{ value: summary.cliAvailable ? 'CLI' : 'Failed', trend: summary.cliAvailable ? 'up' : 'neutral' }}
-          subtext={summary.cliAvailable ? 'Doctor command completed' : 'No runtime readiness claims'}
+          value={isLoadingDoctor ? 'Checking...' : (summary.cliAvailable ? (summary.cliVersion || 'Detected') : 'Unavailable')}
+          delta={{ value: isLoadingDoctor ? 'Running' : (summary.cliAvailable ? 'CLI' : 'Failed'), trend: summary.cliAvailable ? 'up' : 'neutral' }}
+          subtext={isLoadingDoctor ? 'Doctor diagnostic in progress' : (summary.cliAvailable ? 'Doctor command completed' : 'No runtime readiness claims')}
           icon={<Cpu size={16} className="text-sky-400" />}
         />
       </div>

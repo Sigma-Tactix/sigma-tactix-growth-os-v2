@@ -37,6 +37,12 @@ export interface SiteSnapshot {
   imagesMissingAlt: number;
   analyticsSignals: string[]; // real detected tracking scripts (GTM, GA4, Meta Pixel, etc.)
   bodyTextSample: string; // truncated visible text, for feeding an LLM
+  // When this content was actually retrieved. Phase 2 evidence records need an
+  // honest observation time for freshness/period checks — without it, freshness
+  // would have to be guessed at report time.
+  fetchedAt: string;
+  /** True when this content was GENERATED, not fetched (crawl failed). */
+  synthetic?: boolean;
 }
 
 const ANALYTICS_SIGNATURES: Array<{ pattern: RegExp; label: string }> = [
@@ -245,6 +251,7 @@ export async function fetchSiteContent(rawUrl: string, timeoutMs = 12000): Promi
     imagesMissingAlt,
     analyticsSignals,
     bodyTextSample: bodyText.slice(0, 6000),
+    fetchedAt: new Date().toISOString(),
   };
 }
 
@@ -300,7 +307,12 @@ export function createSyntheticSnapshot(domain: string): SiteSnapshot {
     imageCount: 18,
     imagesMissingAlt: 5,
     analyticsSignals: ["Google Tag Manager", "Google Analytics (gtag.js)"],
-    bodyTextSample: `${brandName} provides comprehensive digital intelligence, marketing attribution, and automated growth capabilities for high-performance organizations. Discover unified workflows, multi-channel customer acquisition, and enterprise data governance.`
+    bodyTextSample: `${brandName} provides comprehensive digital intelligence, marketing attribution, and automated growth capabilities for high-performance organizations. Discover unified workflows, multi-channel customer acquisition, and enterprise data governance.`,
+    // Marked synthetic: this content was NOT fetched. Evidence records must be
+    // able to tell a synthetic snapshot from a real observation, or a failed
+    // crawl would silently become "evidence".
+    fetchedAt: new Date().toISOString(),
+    synthetic: true,
   };
 }
 

@@ -151,19 +151,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="sigma-app flex min-h-[100dvh] bg-background overflow-hidden selection:bg-accent/20 selection:text-zinc-950">
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={toggleSidebar}
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-[2px] md:hidden"
+        />
+      )}
+
       {/* Sidebar */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="sigma-shell relative z-20 flex flex-col border-r"
+      <aside
+        className={cn(
+          "sigma-shell fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r transition-[transform,width] duration-200 md:relative md:inset-auto md:z-20",
+          isSidebarOpen ? "translate-x-0 md:w-[280px]" : "-translate-x-full md:w-20 md:translate-x-0"
+        )}
       >
         <div className="p-4 flex flex-col gap-4">
-          <div className="flex items-center px-1">
+          <div className="flex items-center justify-between px-1">
             <SigmaTactixLogo
               variant={isSidebarOpen ? 'full' : 'mark'}
               size={isSidebarOpen ? 'md' : 30}
               onClick={() => navigate('/')}
             />
+            <button
+              type="button"
+              aria-label="Close navigation"
+              onClick={toggleSidebar}
+              className="rounded-lg p-2 text-[var(--sigma-text-muted)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)] md:hidden"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Living System: 1 separate element on left hand side bar far above everything */}
@@ -206,13 +224,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <span>Ecosystem Status</span>
                       <span className={cn(
                         "text-[9px] px-1.5 py-0.2 rounded font-medium",
-                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-emerald-500/15 text-emerald-400"
-                      )}>VERIFIED</span>
+                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
+                      )}>MONITORED</span>
                     </div>
                     <div className={cn(
                       "text-[10px] truncate",
                       isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white/80" : "text-[var(--sigma-text-muted)]"
-                    )}>Verified telemetry evidence</div>
+                    )}>Health & pipeline monitors</div>
                   </div>
                 </div>
                 <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
@@ -310,7 +328,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {isSidebarOpen && <span className="font-bold text-[10px] uppercase tracking-widest text-zinc-400 group-hover:text-white">Collapse Sidebar</span>}
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Persistent Left-Side Ecosystem Status Bar (Docked or Slide-over) */}
       <EcosystemStatusBar 
@@ -323,9 +341,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative bg-background">
         {/* Navbar */}
-        <header className="sigma-topbar h-16 border-b flex items-center justify-between px-4 lg:px-8 backdrop-blur-md z-30 sticky top-0">
+        <header className="sigma-topbar h-16 border-b flex items-center justify-between gap-2 px-3 md:px-4 lg:px-8 backdrop-blur-md z-30 sticky top-0">
+          <button
+            type="button"
+            aria-label="Open navigation"
+            onClick={toggleSidebar}
+            className="shrink-0 rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-2 text-[var(--sigma-text)] md:hidden"
+          >
+            <Menu size={18} />
+          </button>
+
           {/* Quick Search */}
-          <div className="flex items-center gap-4 flex-1 max-w-md relative">
+          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md relative">
              <div className="w-full relative group">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[#ff481b] transition-colors" size={15} />
                 <input 
@@ -365,7 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Active Workspace / Client Enclave Switcher */}
-          <div className="relative" data-tutorial-id="tut-workspace-switcher">
+          <div className="relative hidden sm:block" data-tutorial-id="tut-workspace-switcher">
              <button
                onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
                className="sigma-control flex items-center gap-2 px-3 py-1.5 text-xs group cursor-pointer"
@@ -441,7 +468,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
            </div>
 
           {/* Right Header Navigation & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3">
             {/* Guided 4-Phase Autonomous Growth Loop Quick Bar */}
             <div data-tutorial-id="tut-playbook-bar" className="hidden xl:flex items-center gap-1 p-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-[11px] font-sans">
               <span className="px-2 text-[var(--sigma-text-muted)] font-semibold uppercase tracking-wider text-[9px] font-mono">PLAYBOOK:</span>
@@ -489,12 +516,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               variant="primary"
               size="sm"
               leftIcon={<Sparkles size={13} />}
+              className="hidden sm:inline-flex"
             >
               Onboard Client
             </Button>
 
             {/* VANTA Neural Core Header Status & Drawer Summoner */}
-            <VantaHeaderIndicator />
+            <div className="hidden lg:block">
+              <VantaHeaderIndicator />
+            </div>
 
             {/* Ecosystem Status Header Pill */}
             <button 
@@ -513,15 +543,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="hidden md:inline">Ecosystem:</span>
               <span className={cn(
                 "px-1.5 py-0.2 rounded text-[10px] font-bold font-mono",
-                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-emerald-500/15 text-emerald-400"
-              )}>VERIFIED</span>
+                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
+              )}>MONITORED</span>
             </button>
 
-            <ThemeToggle />
-            <div className="h-5 w-px sigma-divider border-l mx-0.5" />
+            <div className="hidden sm:block"><ThemeToggle /></div>
+            <div className="hidden h-5 w-px sigma-divider border-l mx-0.5 sm:block" />
             
             {/* Role Switcher */}
-            <div className="relative group/role">
+            <div className="relative hidden group/role md:block">
                <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-xs font-medium text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer">
                   <ShieldCheck size={14} className="text-[#ff481b]" />
                   <span>{role}</span>

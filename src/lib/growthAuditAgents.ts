@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { GrowthFinding, GrowthFindingCategory, SecondBrain } from "../types.js";
 import type { SiteSnapshot } from "./siteFetch.js";
 import { summarizeSnapshotForPrompt } from "./siteFetch.js";
+import { buildAuditClaimEvidence } from "./auditClaimEvidence.js";
 
 // Growth Audit Engine — one specialized agent persona per finding category,
 // each run as its own real Gemini call (not one call role-playing 8
@@ -109,6 +110,7 @@ export async function runCategoryAgent(
   snapshot: SiteSnapshot,
   brain: SecondBrain,
   ragContext: string,
+  context: { workspaceId: string },
 ): Promise<GrowthFinding> {
   const placeholderNote =
     category.dataSource === "placeholder"
@@ -136,15 +138,36 @@ Produce your finding as JSON.
   });
 
   const parsed = JSON.parse(response.text || "{}");
+  const impactPct = Math.max(1, Math.min(100, Number(parsed.impactPct) || 10));
+  const text = parsed.text || "No finding generated.";
+
+  // Phase 2: every audit claim carries the evidence behind it, and a label for
+  // what kind of claim it is. "impact 40%" is a model ESTIMATE over a fetched
+  // page — it must never reach a client screen looking like a measurement.
+  const claim = buildAuditClaimEvidence({
+    claimId: `finding-${category.key}`,
+    workspaceId: context.workspaceId,
+    statement: text,
+    claimedPercentage: impactPct,
+    snapshotUrl: snapshot.url,
+    // A synthetic snapshot is generated content standing in for a crawl that
+    // failed — it supports nothing as evidence.
+    isSyntheticSnapshot: snapshot.synthetic === true,
+    hasLiveDataSource: category.dataSource !== "placeholder" && snapshot.synthetic !== true,
+    observedAt: snapshot.fetchedAt || new Date().toISOString(),
+  });
+
   return {
     id: `finding-${category.key}`,
     category: category.key,
     title: category.title,
-    text: parsed.text || "No finding generated.",
+    text,
     insight: parsed.insight || "",
-    impactPct: Math.max(1, Math.min(100, Number(parsed.impactPct) || 10)),
+    impactPct,
     quickSteps: Array.isArray(parsed.quickSteps) ? parsed.quickSteps.slice(0, 5) : [],
     dataSource: category.dataSource,
+    claimClassification: claim.classification,
+    evidenceIds: claim.evidence.map(e => e.id),
   };
 }
 

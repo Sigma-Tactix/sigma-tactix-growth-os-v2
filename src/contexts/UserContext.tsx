@@ -13,7 +13,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>('ADMIN'); // Default to ADMIN for development
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 768px)').matches;
+  });
 
   const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
 

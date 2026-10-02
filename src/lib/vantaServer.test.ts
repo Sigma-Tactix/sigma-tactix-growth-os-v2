@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildVantaPromptContext, classifyVantaVerification, describeVantaProviderError, parseVantaModelOutput, vantaMessageRequest } from './vantaServer';
+import { buildVantaPromptContext, classifyVantaVerification, describeVantaProviderError, parseVantaModelOutput, resolveVantaGeminiVoiceConfig, vantaMessageRequest, vantaVoiceSettingsRequest, verifyVantaGeminiVoiceRoundTrip } from './vantaServer';
 import type { WorkspaceData } from '../types';
 
 describe('VANTA server contract', () => {
@@ -86,5 +86,52 @@ describe('VANTA server contract', () => {
     expect(describeVantaProviderError(new Error('upstream payload with internal details'))).toBe(
       'VANTA could not complete this request because the configured AI provider failed. No assistant response was stored.',
     );
+  });
+
+  it('keeps Gemini transcription and speech synthesis on explicit audio models', () => {
+    expect(resolveVantaGeminiVoiceConfig({})).toEqual({
+      sttModel: 'gemini-2.5-flash',
+      ttsModel: 'gemini-2.5-flash-preview-tts',
+      voice: 'Kore',
+    });
+    expect(resolveVantaGeminiVoiceConfig({
+      sttModel: 'custom-transcribe',
+      ttsModel: 'custom-tts',
+      voice: 'Aoede',
+    })).toEqual({
+      sttModel: 'custom-transcribe',
+      ttsModel: 'custom-tts',
+      voice: 'Aoede',
+    });
+  });
+
+  it('ignores an empty local URL when Gemini voice is selected', () => {
+    const parsed = vantaVoiceSettingsRequest.safeParse({
+      provider: 'gemini',
+      baseUrl: '',
+      sttModel: 'gemini-2.5-flash',
+      ttsModel: 'gemini-2.5-flash-preview-tts',
+      voice: 'Kore',
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.baseUrl).toBeUndefined();
+  });
+
+  it('verifies both Gemini speech synthesis and transcription before enabling voice', async () => {
+    const calls: any[] = [];
+    const client = { models: { generateContent: async (request: any) => {
+      calls.push(request);
+      return calls.length === 1
+        ? { candidates: [{ content: { parts: [{ inlineData: { data: 'audio-data', mimeType: 'audio/wav' } }] } }] }
+        : { text: 'VANTA voice verified.' };
+    } } };
+
+    await expect(verifyVantaGeminiVoiceRoundTrip(client, {})).resolves.toMatchObject({
+      transcript: 'VANTA voice verified.',
+    });
+    expect(calls.map(call => call.model)).toEqual([
+      'gemini-2.5-flash-preview-tts',
+      'gemini-2.5-flash',
+    ]);
   });
 });

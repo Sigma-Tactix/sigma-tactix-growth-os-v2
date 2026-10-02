@@ -22,10 +22,22 @@ export const vantaMemoryRequest = z.object({
 
 export const vantaVoiceSettingsRequest = z.object({
   provider: z.enum(['gemini', 'local']),
-  baseUrl: z.string().trim().url().max(300).optional(),
-  sttModel: z.string().trim().min(1).max(120).optional(),
-  ttsModel: z.string().trim().min(1).max(120).optional(),
-  voice: z.string().trim().min(1).max(80).optional(),
+  baseUrl: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().url().max(300).optional(),
+  ),
+  sttModel: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(120).optional(),
+  ),
+  ttsModel: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(120).optional(),
+  ),
+  voice: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(80).optional(),
+  ),
 }).superRefine((value, context) => {
   if (value.provider !== 'local') return;
   if (!value.baseUrl) {
@@ -37,6 +49,46 @@ export const vantaVoiceSettingsRequest = z.object({
     context.addIssue({ code: 'custom', path: ['baseUrl'], message: 'Only loopback local voice endpoints are allowed.' });
   }
 });
+
+export function resolveVantaGeminiVoiceConfig(config?: {
+  sttModel?: string;
+  ttsModel?: string;
+  voice?: string;
+}) {
+  return {
+    sttModel: config?.sttModel?.trim() || 'gemini-2.5-flash',
+    ttsModel: config?.ttsModel?.trim() || 'gemini-2.5-flash-preview-tts',
+    voice: config?.voice?.trim() || 'Kore',
+  };
+}
+
+export async function verifyVantaGeminiVoiceRoundTrip(
+  client: { models: { generateContent: (request: any) => Promise<any> } },
+  config?: { sttModel?: string; ttsModel?: string; voice?: string },
+) {
+  const resolved = resolveVantaGeminiVoiceConfig(config);
+  const speech = await client.models.generateContent({
+    model: resolved.ttsModel,
+    contents: [{ parts: [{ text: 'Say: VANTA voice verified.' }] }],
+    config: {
+      responseModalities: ['AUDIO'],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: resolved.voice } } },
+    },
+  });
+  const audio = speech?.candidates?.[0]?.content?.parts?.find((part: any) => part.inlineData?.data)?.inlineData;
+  if (!audio?.data) throw new Error('No audio returned');
+
+  const transcription = await client.models.generateContent({
+    model: resolved.sttModel,
+    contents: [{ role: 'user', parts: [
+      { inlineData: { mimeType: audio.mimeType || 'audio/wav', data: audio.data } },
+      { text: 'Transcribe this audio exactly. Return only the transcript.' },
+    ] }],
+  });
+  const transcript = String(transcription?.text || '').trim();
+  if (!/vanta voice verified/i.test(transcript)) throw new Error('Voice transcription verification failed');
+  return { transcript, ...resolved };
+}
 
 const evidenceSchema = z.object({
   id: z.string().min(1).max(100),

@@ -199,26 +199,10 @@ Which slide hit closest to home? Drop a comment below 👇
 
 #GrowthOS #B2BMarketing #AIAgents #SigmaTactix #SaaSGrowth`);
 
-  // Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-carousel-01',
-      agentName: 'Social Growth Swarm',
-      agentRole: 'Viral Hook & Carousel Architect',
-      timestamp: 'Today at 04:30 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Social & Carousel Studio',
-      inputSummary: 'Topic: 5 Hidden Digital Revenue Leaks (LinkedIn Carousel)',
-      outputSummary: 'Generated 7-slide high-density carousel and viral hook caption.',
-      fullOutput: JSON.stringify({ slides: INITIAL_LINKEDIN_SLIDES, caption }, null, 2),
-      metrics: [
-        { label: 'Slides', value: '7' },
-        { label: 'Format', value: 'LinkedIn 4:5' },
-        { label: 'Hook Score', value: '94/100' },
-        { label: 'Est. Impressions', value: '18k - 35k' }
-      ]
-    }
-  ]);
+  // Run History — starts empty. Verified runs appear only after local render
+  // completion or a provider receipt; the seeded verbose copy lives only in
+  // INITIAL_LINKEDIN_SLIDES as an editable local draft, not as a run.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
   const handleRepurposeCarousel = async () => {
     if (!repurposeUrl.trim()) {
@@ -256,21 +240,21 @@ Which slide hit closest to home? Drop a comment below 👇
         agentName: 'Agent Reach Social & Carousel Swarm',
         agentRole: 'Cross-Platform Social Architect',
         timestamp: 'Just now',
-        status: 'SUCCESS',
+        status: 'PARTIAL',
         moduleOrigin: 'Agent Reach Studio',
         inputSummary: `Source: ${result.sourceTitle || result.sourceUrl}`,
-        outputSummary: `Synthesized ${result.slides?.length || 0}-slide deck & ${result.tweetThread?.length || 0}-tweet viral thread.`,
+        outputSummary: `Synthesized ${result.slides?.length || 0}-slide local draft & ${result.tweetThread?.length || 0}-tweet thread draft. Not published. Distribution requires an approved distribution run and provider credentials.`,
         fullOutput: JSON.stringify(result, null, 2),
         metrics: [
           { label: 'Source', value: result.sourceUrl.includes('youtube') ? 'YouTube' : 'Web' },
           { label: 'Slides', value: `${result.slides?.length || 0}` },
           { label: 'Tweets', value: `${result.tweetThread?.length || 0}` },
-          { label: 'Visual Cards', value: 'Rendered' }
+          { label: 'Publication', value: 'Not published (local draft)' }
         ]
       };
 
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('Repurposing Complete', `Synthesized ${result.slides?.length || 0} carousel slides and ${result.tweetThread?.length || 0} tweets.`);
+      notifySuccess('Local Draft Synthesized', `Assembled ${result.slides?.length || 0} carousel slides and ${result.tweetThread?.length || 0} tweets locally. Nothing was published.`);
       setIsRepurposeModalOpen(false);
     } catch (err: any) {
       console.error('Repurpose carousel error:', err);
@@ -286,87 +270,86 @@ Which slide hit closest to home? Drop a comment below 👇
       return;
     }
 
+    // Phase 0 truthful state: local draft assembly only. No timer, no
+    // fabricated success — the run is recorded as a staged local draft.
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
+    const newSlides: CarouselSlide[] = [
+      {
+        slideNumber: 1,
+        badge: 'DRAFT OUTLINE',
+        title: topic,
+        subtitle: `Local draft outline for ${audience}`,
+        contentPoints: [
+          'Traditional playbooks are producing diminishing returns.',
+          'First-principles analysis reveals the true leverage points.',
+          'Swipe through the operational framework.'
+        ],
+        takeaway: 'Systematic infrastructure compounds over time.',
+        visualCue: 'Deep obsidian backdrop with glowing gold accents'
+      },
+      {
+        slideNumber: 2,
+        badge: 'PILLAR 01',
+        title: 'Establish Sovereign Data Vaults',
+        subtitle: 'Own your intelligence instead of leasing it',
+        contentPoints: [
+          'Consolidate customer touchpoints into a unified Second Brain.',
+          'Ensure zero context loss across marketing and sales.',
+          'Eliminate dependency on third-party agencies.'
+        ],
+        takeaway: 'Data sovereignty is the ultimate competitive moat.',
+        visualCue: 'Neural knowledge graph with connected gold nodes'
+      },
+      {
+        slideNumber: 3,
+        badge: 'PILLAR 02',
+        title: 'Deploy Autonomous Execution',
+        subtitle: 'Continuous optimization under human supervision',
+        contentPoints: [
+          'AI swarms operate 24/7 on creative hooks and ad copy.',
+          'Deterministic guardrails protect brand reputation.',
+          'Scale output by 10x with zero headcount increase.'
+        ],
+        takeaway: 'Autonomous agents eliminate operational bottlenecks.',
+        visualCue: 'High-speed data streams routing into execution nodes'
+      },
+      {
+        slideNumber: 4,
+        badge: 'EXECUTION',
+        title: 'The Next Steps',
+        subtitle: 'Audit your current architecture today',
+        contentPoints: [
+          'Identify the 3 largest leaks in your current funnel.',
+          'Replace manual spreadsheets with live telemetry.',
+          'Visit sigmatactix.com to run your Growth OS diagnostic.'
+        ],
+        takeaway: 'Action beats analysis. Deploy your Growth OS.',
+        visualCue: 'Golden Sigma Tactix badge with action vector'
+      }
+    ];
 
-      const newSlides: CarouselSlide[] = [
-        {
-          slideNumber: 1,
-          badge: 'GROWTH BLUEPRINT',
-          title: topic,
-          subtitle: `Essential empirical breakdown for ${audience}`,
-          contentPoints: [
-            'Traditional playbooks are producing diminishing returns.',
-            'First-principles analysis reveals the true leverage points.',
-            'Swipe through the operational framework.'
-          ],
-          takeaway: 'Systematic infrastructure compounds over time.',
-          visualCue: 'Deep obsidian backdrop with glowing gold accents'
-        },
-        {
-          slideNumber: 2,
-          badge: 'PILLAR 01',
-          title: 'Establish Sovereign Data Vaults',
-          subtitle: 'Own your intelligence instead of leasing it',
-          contentPoints: [
-            'Consolidate customer touchpoints into a unified Second Brain.',
-            'Ensure zero context loss across marketing and sales.',
-            'Eliminate dependency on third-party agencies.'
-          ],
-          takeaway: 'Data sovereignty is the ultimate competitive moat.',
-          visualCue: 'Neural knowledge graph with connected gold nodes'
-        },
-        {
-          slideNumber: 3,
-          badge: 'PILLAR 02',
-          title: 'Deploy Autonomous Execution',
-          subtitle: 'Continuous optimization under human supervision',
-          contentPoints: [
-            'AI swarms operate 24/7 on creative hooks and ad copy.',
-            'Deterministic guardrails protect brand reputation.',
-            'Scale output by 10x with zero headcount increase.'
-          ],
-          takeaway: 'Autonomous agents eliminate operational bottlenecks.',
-          visualCue: 'High-speed data streams routing into execution nodes'
-        },
-        {
-          slideNumber: 4,
-          badge: 'EXECUTION',
-          title: 'The Next Steps',
-          subtitle: 'Audit your current architecture today',
-          contentPoints: [
-            'Identify the 3 largest leaks in your current funnel.',
-            'Replace manual spreadsheets with live telemetry.',
-            'Visit sigmatactix.com to run your Growth OS diagnostic.'
-          ],
-          takeaway: 'Action beats analysis. Deploy your Growth OS.',
-          visualCue: 'Golden Sigma Tactix badge with action vector'
-        }
-      ];
+    setSlides(newSlides);
 
-      setSlides(newSlides);
+    const newRun: AgentRunRecord = {
+      id: `run-carousel-${Date.now()}`,
+      agentName: 'Social Growth Swarm',
+      agentRole: 'Viral Hook & Carousel Architect',
+      timestamp: 'Just now',
+      status: 'PARTIAL',
+      moduleOrigin: 'Social & Carousel Studio',
+      inputSummary: `${channel}: ${topic}`,
+      outputSummary: `Assembled ${newSlides.length}-slide local draft. Not published. Distribution requires an approved distribution run and provider credentials.`,
+      fullOutput: JSON.stringify(newSlides, null, 2),
+      metrics: [
+        { label: 'Channel', value: channel },
+        { label: 'Slides', value: `${newSlides.length}` },
+        { label: 'Publication', value: 'Not published (local draft)' }
+      ]
+    };
 
-      const newRun: AgentRunRecord = {
-        id: `run-carousel-${Date.now()}`,
-        agentName: 'Social Growth Swarm',
-        agentRole: 'Viral Hook & Carousel Architect',
-        timestamp: 'Just now',
-        status: 'SUCCESS',
-        moduleOrigin: 'Social & Carousel Studio',
-        inputSummary: `${channel}: ${topic}`,
-        outputSummary: `Generated ${newSlides.length}-slide carousel campaign with high-retention hook.`,
-        fullOutput: JSON.stringify(newSlides, null, 2),
-        metrics: [
-          { label: 'Channel', value: channel },
-          { label: 'Slides', value: `${newSlides.length}` },
-          { label: 'Targeting', value: 'Enterprise' }
-        ]
-      };
-
-      setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('Social Campaign Synthesized', 'Generated multi-slide carousel and post copy.');
-    }, 1300);
+    setRunHistory(prev => [newRun, ...prev]);
+    setIsGenerating(false);
+    notifySuccess('Local Draft Assembled', 'Generated multi-slide carousel draft locally. Nothing was published.');
   };
 
   const handleCopyText = (text: string, idx: number) => {

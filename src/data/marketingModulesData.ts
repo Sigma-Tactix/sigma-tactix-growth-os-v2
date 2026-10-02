@@ -143,12 +143,16 @@ export interface SocialMention {
   platform: 'X / Twitter' | 'LinkedIn' | 'Reddit' | 'YouTube' | 'HackerNews' | 'News / PR' | string;
   author: string;
   authorHandle: string;
-  followersCount: string;
+  // Phase 0: these are provider metrics. A capture channel frequently cannot
+  // supply them, and an unmeasured metric must stay absent rather than be
+  // filled with a plausible number — a fabricated reach figure attached to a
+  // real mention is exactly the unsupported claim the plan bans.
+  followersCount?: string;
   content: string;
   sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'HIGH_ALERT';
   timestamp: string;
-  reach: number;
-  engagement: number;
+  reach?: number;
+  engagement?: number;
   suggestedAction: 'AMPLIFY' | 'ENGAGE' | 'RESOLVE' | 'IGNORE';
   aiDraftReply?: string;
   aiResponseDraft?: string;

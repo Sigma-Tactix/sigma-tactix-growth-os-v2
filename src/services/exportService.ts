@@ -2,6 +2,8 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import pptxgen from 'pptxgenjs';
 import * as XLSX from 'xlsx';
+import { renderExecutiveReportPDF } from '../lib/pdfReportRenderer';
+import type { ReportSnapshot } from '../lib/reportSnapshot';
 
 export interface ReportKPI {
   label: string;
@@ -462,362 +464,105 @@ export const exportService = {
   /**
    * Export high-fidelity, branded Executive PDF Document matching on-screen design
    */
-  toExecutiveSummaryPDF(data: ExecutiveReportData, filename: string = 'sigmatactix-executive-summary.pdf') {
+  async toExecutiveSummaryPDF(data: ExecutiveReportData, filename: string = "sigmatactix-executive-summary.pdf"): Promise<boolean> {
     try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+      const now = new Date().toISOString();
+      const snapshot: ReportSnapshot = {
+        id: `rep-${Date.now()}`,
+        version: 1,
+        workspaceId: "current-workspace",
+        title: data.title || "Executive Growth & Attribution Report",
+        objective: "Executive growth evaluation, attribution diagnostics, and intervention roadmap.",
+        reportingPeriod: {
+          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          end: now,
+        },
+        generatedAt: data.generatedAt || now,
+        tenant: {
+          id: "tenant-sigmatactix",
+          name: data.tenantName || "Sigma Tactix Growth Core",
+          brandColor: "#FF481B",
+        },
+        brief: {
+          recipient: data.targetAudience || "Executive Leadership",
+          audience: data.targetAudience || "Board & Growth Team",
+          language: "en",
+          currency: "USD",
+          pageSize: "a4",
+          deliveryMethod: "download",
+          sections: ["decision_summary", "performance_cards", "delivery_summary", "next_actions", "evidence_appendix"],
+        },
+        decisionSummary: {
+          headline: data.badge ? `${data.badge} - Omnichannel Growth Review` : "Omnichannel Growth & Attribution Review",
+          verdict: "Attribution & Optimization Intervention Required",
+          keyTakeaway: (data.explanations && data.explanations[0]) || "Attribution modeling indicates uncredited conversions in dark social and high-intent organic search.",
+          actionRequired: (data.nextSteps && data.nextSteps[0]?.title) || "Deploy conversion telemetry and progressive intake flow.",
+        },
+        kpis: (data.metrics || []).map((m, i) => ({
+          id: `kpi-${i + 1}`,
+          name: m.label,
+          value: m.value,
+          delta: m.change,
+          baselineValue: m.subtext,
+          classification: "estimate",
+          dataSource: "diagnostics_telemetry",
+        })),
+        narrativeCards: (data.explanations || []).map((exp, i) => ({
+          title: `Attribution Insight ${i + 1}`,
+          finding: exp,
+          interpretation: "Empirical cross-channel telemetry observation.",
+          evidenceRef: `ev-diag-${i + 1}`,
+          classification: "estimate",
+        })),
+        workCompleted: (data.channels || []).map((ch, i) => ({
+          taskId: `task-ch-${i + 1}`,
+          title: `${ch.channel}: Spend ${ch.spend}, ROAS ${ch.roas}, Conversions ${ch.conversions || "N/A"}`,
+          status: ch.status?.toLowerCase() || "completed",
+          completedAt: now,
+        })),
+        nextActions: (data.nextSteps || []).map((ns, i) => ({
+          id: `action-${i + 1}`,
+          title: `[${ns.priority}] ${ns.title}`,
+          owner: ns.owner,
+          duration: ns.timeline,
+          expectedImpactRange: ns.impact,
+          feeComponent: "Standard SOW Scoped",
+          approvalRequired: true,
+        })),
+        evidenceAppendix: [
+          {
+            evidenceId: "ev-diag-1",
+            claimId: "claim-audit-1",
+            sourceLocator: "workspace://diagnostics/telemetry",
+            observationTime: now,
+            classification: "estimate",
+            scope: "executive_summary_report",
+          },
+        ],
+      };
+
+      const result = await renderExecutiveReportPDF(snapshot, {
+        brandName: data.tenantName || "Sigma Tactix",
+        primaryColor: "#FF481B",
+        textColor: "#1A1A1A",
+        fontFamily: "helvetica",
+        themeMode: "light",
       });
 
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const margin = 14;
-      const contentWidth = pageWidth - margin * 2;
+      const blob = new Blob([result.pdfBuffer as unknown as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      // ==============================================================
-      // PAGE 1: COVER, KPIS, ATTRIBUTION, AND ROOT CAUSE DIAGNOSTICS
-      // ==============================================================
-
-      // 1. Dark Obsidian Background
-      doc.setFillColor(9, 9, 11); // #09090B
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-      // 2. Top Header Bar
-      doc.setFillColor(18, 18, 23); // #121217
-      doc.rect(margin, margin, contentWidth, 26, 'F');
-      doc.setDrawColor(245, 158, 11); // Amber border
-      doc.setLineWidth(0.6);
-      doc.rect(margin, margin, contentWidth, 26, 'S');
-
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(245, 158, 11);
-      doc.text('SIGMA TACTIX  //  GROWTH OS', margin + 5, margin + 8);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(255, 255, 255);
-      doc.text(data.title || 'Executive Growth & Attribution Report', margin + 5, margin + 17);
-
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(161, 161, 170);
-      doc.text(`Tenant: ${data.tenantName || 'Sigma Tactix Sovereign Core'}   |   Generated: ${data.generatedAt || new Date().toLocaleDateString()}`, margin + 5, margin + 22);
-
-      const rightX = pageWidth - margin - 5;
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(245, 158, 11);
-      doc.text(data.badge?.toUpperCase() || 'BOARD STANDARD', rightX, margin + 8, { align: 'right' });
-
-      doc.setTextColor(16, 185, 129);
-      doc.text('VERIFIED SOVEREIGN', rightX, margin + 16, { align: 'right' });
-
-      let currentY = 46;
-
-      // 3. SECTION 1: TOPLINE KPI SCORECARD
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('01 // TOPLINE KPI SCORECARD & BLENDED VELOCITY', margin, currentY);
-      currentY += 4.5;
-
-      const kpis = data.metrics.slice(0, 4);
-      const cardWidth = (contentWidth - (kpis.length - 1) * 3) / kpis.length;
-      const cardHeight = 26;
-
-      kpis.forEach((kpi, idx) => {
-        const xPos = margin + idx * (cardWidth + 3);
-
-        doc.setFillColor(18, 18, 23);
-        doc.roundedRect(xPos, currentY, cardWidth, cardHeight, 1.5, 1.5, 'F');
-        doc.setDrawColor(39, 39, 42);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(xPos, currentY, cardWidth, cardHeight, 1.5, 1.5, 'S');
-
-        // Gold top accent
-        doc.setFillColor(245, 158, 11);
-        doc.rect(xPos + 3, currentY + 1.5, cardWidth - 6, 0.8, 'F');
-
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(7);
-        doc.setTextColor(161, 161, 170);
-        doc.text(kpi.label.toUpperCase(), xPos + 3, currentY + 7);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.setTextColor(255, 255, 255);
-        doc.text(kpi.value, xPos + 3, currentY + 15);
-
-        if (kpi.change) {
-          doc.setFont('courier', 'bold');
-          doc.setFontSize(7);
-          doc.setTextColor(16, 185, 129);
-          doc.text(kpi.change, xPos + 3, currentY + 21);
-        }
-      });
-
-      currentY += cardHeight + 8;
-
-      // 4. SECTION 2: CHANNEL ATTRIBUTION BREAKDOWN TABLE
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('02 // MULTI-CHANNEL ATTRIBUTION & AD SPEND EFFICIENCY', margin, currentY);
-      currentY += 4.5;
-
-      // Table Header
-      doc.setFillColor(24, 24, 30);
-      doc.rect(margin, currentY, contentWidth, 7, 'F');
-      doc.setDrawColor(39, 39, 42);
-      doc.rect(margin, currentY, contentWidth, 7, 'S');
-
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(245, 158, 11);
-      doc.text('CHANNEL & CAMPAIGN CLUSTER', margin + 3, currentY + 4.8);
-      doc.text('MANAGED SPEND', margin + 70, currentY + 4.8);
-      doc.text('CONVERSIONS', margin + 105, currentY + 4.8);
-      doc.text('ROAS (x)', margin + 138, currentY + 4.8);
-      doc.text('CONV. RATE', margin + 162, currentY + 4.8);
-      currentY += 7;
-
-      (data.channels || []).forEach((ch, idx) => {
-        doc.setFillColor(idx % 2 === 0 ? 14 : 19, idx % 2 === 0 ? 14 : 19, idx % 2 === 0 ? 18 : 24);
-        doc.rect(margin, currentY, contentWidth, 6.5, 'F');
-        doc.setDrawColor(28, 28, 33);
-        doc.rect(margin, currentY, contentWidth, 6.5, 'S');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(255, 255, 255);
-        doc.text(ch.channel, margin + 3, currentY + 4.5);
-
-        doc.setFont('courier', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(212, 212, 216);
-        doc.text(ch.spend, margin + 70, currentY + 4.5);
-        doc.text(ch.conversions || '380+', margin + 105, currentY + 4.5);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(16, 185, 129);
-        doc.text(ch.roas, margin + 138, currentY + 4.5);
-
-        doc.setFont('courier', 'normal');
-        doc.setTextColor(212, 212, 216);
-        doc.text(ch.convRate, margin + 162, currentY + 4.5);
-
-        currentY += 6.5;
-      });
-
-      currentY += 7;
-
-      // 5. SECTION 3: SYSTEMIC DIAGNOSTICS & ROOT CAUSES
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('03 // SYSTEMIC DIAGNOSTICS & ROOT CAUSE EXPLANATIONS', margin, currentY);
-      currentY += 4.5;
-
-      const explanations = data.explanations && data.explanations.length > 0
-        ? data.explanations
-        : [
-            'Attribution Blindness: 82% of buyer journeys originate in dark social, podcasts, and AI engines before touching branded search.',
-            'Creative Decay Frequency: Meta & LinkedIn frequency exceeded 3.8x, triggering algorithmic CTR drop of 24% prior to automated hook refresh.',
-            'AEO Discovery Advantage: Authoritative category teardowns generated 3.4x more citations on ChatGPT and Perplexity than competitors.'
-          ];
-
-      explanations.forEach((exp, idx) => {
-        doc.setFillColor(18, 18, 23);
-        doc.roundedRect(margin, currentY, contentWidth, 12.5, 1, 1, 'F');
-        doc.setDrawColor(39, 39, 42);
-        doc.roundedRect(margin, currentY, contentWidth, 12.5, 1, 1, 'S');
-
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(7);
-        doc.setTextColor(245, 158, 11);
-        doc.text(`FINDING #${idx + 1}`, margin + 3, currentY + 4.5);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(228, 228, 231);
-        const splitText = doc.splitTextToSize(exp, contentWidth - 8);
-        doc.text(splitText, margin + 3, currentY + 8.5);
-
-        currentY += 14;
-      });
-
-      // Page 1 Footer
-      doc.setDrawColor(39, 39, 42);
-      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(113, 113, 122);
-      doc.text('CONFIDENTIAL • Sigma Tactix Growth OS • Client-Owned Intelligence Infrastructure', margin, pageHeight - 7);
-      doc.text('Page 1 of 2', rightX, pageHeight - 7, { align: 'right' });
-
-      // ==============================================================
-      // PAGE 2: STRATEGIC ACTION PLAN, NEXT STEPS & SECOND BRAIN GOVERNANCE
-      // ==============================================================
-      doc.addPage();
-
-      doc.setFillColor(9, 9, 11);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-      // Page 2 Header
-      doc.setFillColor(18, 18, 23);
-      doc.rect(margin, margin, contentWidth, 16, 'F');
-      doc.setDrawColor(245, 158, 11);
-      doc.setLineWidth(0.5);
-      doc.rect(margin, margin, contentWidth, 16, 'S');
-
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('SIGMA TACTIX  //  STRATEGIC REMEDIATION & ACTION PLAN', margin + 5, margin + 7);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(161, 161, 170);
-      doc.text('Prioritized engineering action items with expected ROI, deadlines, and ownership vectors.', margin + 5, margin + 12);
-
-      let p2Y = 36;
-
-      // 6. SECTION 4: PRIORITIZED STRATEGIC ACTION PLAN & NEXT STEPS
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('04 // PRIORITIZED STRATEGIC ACTION PLAN & IMMEDIATE NEXT STEPS', margin, p2Y);
-      p2Y += 5;
-
-      const nextSteps: ReportNextStep[] = data.nextSteps && data.nextSteps.length > 0
-        ? data.nextSteps
-        : [
-            {
-              priority: 'P0',
-              title: 'Seal Dark Social Attribution Leaks & GA4 Protocol Injection',
-              timeline: '0-7 Days',
-              impact: '+18% Budget Reallocation Gain',
-              owner: 'Growth Engineer / Nexus Swarm',
-              description: 'Deploy server-side Google Analytics 4 Measurement Protocol and unified second brain attribution telemetry to capture 82% of uncredited buyer touchpoints.'
-            },
-            {
-              priority: 'P1',
-              title: 'Deploy Automated Creative Hook Resets (72h Velocity)',
-              timeline: '7-21 Days',
-              impact: '+24% Meta & LinkedIn CTR Lift',
-              owner: 'Creative Director AI / Content Engine',
-              description: 'Synthesize 10 fresh carousel card angle tests and long-hook variations under Human-in-the-Loop review to prevent audience ad fatigue.'
-            },
-            {
-              priority: 'P2',
-              title: 'Publish Enterprise AEO Topical Graph & Entity Schemas',
-              timeline: '21-45 Days',
-              impact: '3.2x Generative Engine Citations',
-              owner: 'Authority Agent / Second Brain',
-              description: 'Inject categorical entity schemas, technical teardowns, and knowledge base nodes into CMS indexing for ChatGPT and Perplexity dominance.'
-            }
-          ];
-
-      nextSteps.forEach((step) => {
-        doc.setFillColor(18, 18, 23);
-        doc.roundedRect(margin, p2Y, contentWidth, 24, 1.5, 1.5, 'F');
-        doc.setDrawColor(step.priority === 'P0' ? 245 : 39, step.priority === 'P0' ? 158 : 39, step.priority === 'P0' ? 11 : 42);
-        doc.setLineWidth(step.priority === 'P0' ? 0.8 : 0.3);
-        doc.roundedRect(margin, p2Y, contentWidth, 24, 1.5, 1.5, 'S');
-
-        // Priority Badge
-        doc.setFillColor(step.priority === 'P0' ? 245 : 39, step.priority === 'P0' ? 158 : 39, step.priority === 'P0' ? 11 : 42);
-        doc.rect(margin + 4, p2Y + 3.5, 10, 4.5, 'F');
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(step.priority === 'P0' ? 0 : 255, step.priority === 'P0' ? 0 : 255, step.priority === 'P0' ? 0 : 255);
-        doc.text(step.priority, margin + 6.5, p2Y + 7);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(255, 255, 255);
-        doc.text(step.title, margin + 17, p2Y + 7);
-
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(16, 185, 129);
-        doc.text(`Expected Impact: ${step.impact}`, rightX, p2Y + 7, { align: 'right' });
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(212, 212, 216);
-        const descLines = doc.splitTextToSize(step.description, contentWidth - 10);
-        doc.text(descLines, margin + 4, p2Y + 13);
-
-        doc.setFont('courier', 'normal');
-        doc.setFontSize(6.5);
-        doc.setTextColor(161, 161, 170);
-        doc.text(`Timeline: ${step.timeline}   •   Assigned Owner: ${step.owner}`, margin + 4, p2Y + 21);
-
-        p2Y += 27;
-      });
-
-      p2Y += 4;
-
-      // 7. SECTION 5: SECOND BRAIN SECURITY & DATA INTEGRITY
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(245, 158, 11);
-      doc.text('05 // SECOND BRAIN SECURITY & VAULT INGESTION STATUS', margin, p2Y);
-      p2Y += 4.5;
-
-      // Table Header
-      doc.setFillColor(24, 24, 30);
-      doc.rect(margin, p2Y, contentWidth, 7, 'F');
-      doc.setDrawColor(39, 39, 42);
-      doc.rect(margin, p2Y, contentWidth, 7, 'S');
-
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(245, 158, 11);
-      doc.text('PERMISSIONED SECURITY VAULT', margin + 3, p2Y + 4.8);
-      doc.text('INDEXED VECTORS (pgvector)', margin + 85, p2Y + 4.8);
-      doc.text('SECURITY & COMPLIANCE', margin + 140, p2Y + 4.8);
-      p2Y += 7;
-
-      (data.vaults || []).forEach((v, idx) => {
-        doc.setFillColor(idx % 2 === 0 ? 14 : 19, idx % 2 === 0 ? 14 : 19, idx % 2 === 0 ? 18 : 24);
-        doc.rect(margin, p2Y, contentWidth, 6.5, 'F');
-        doc.setDrawColor(28, 28, 33);
-        doc.rect(margin, p2Y, contentWidth, 6.5, 'S');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(255, 255, 255);
-        doc.text(v.name, margin + 3, p2Y + 4.5);
-
-        doc.setFont('courier', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(212, 212, 216);
-        doc.text(`${v.records.toLocaleString()} Records`, margin + 85, p2Y + 4.5);
-
-        doc.setFont('courier', 'bold');
-        doc.setTextColor(16, 185, 129);
-        doc.text(v.status || 'AES-256-GCM / 100% Encrypted', margin + 140, p2Y + 4.5);
-
-        p2Y += 6.5;
-      });
-
-      // Page 2 Footer
-      doc.setDrawColor(39, 39, 42);
-      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(113, 113, 122);
-      doc.text('CONFIDENTIAL • Sigma Tactix Growth OS • Client-Owned Intelligence Infrastructure', margin, pageHeight - 7);
-      doc.text('Page 2 of 2', rightX, pageHeight - 7, { align: 'right' });
-
-      doc.save(filename);
       return true;
     } catch (error) {
-      console.error('Executive PDF Export Error:', error);
+      console.error("Executive PDF Export Error:", error);
       return false;
     }
   },

@@ -230,3 +230,44 @@ SELECT 'purge_expired_vanta_conversations' AS function,
            THEN 'FAIL — service role cannot execute purge'
          ELSE 'OK'
        END AS status;
+
+\echo '== 19. Execution ledger: RLS enabled on every ledger table =='
+SELECT c.relname AS table_name,
+       CASE WHEN c.relrowsecurity THEN 'OK' ELSE 'FAIL - RLS disabled' END AS status
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN ('ledger_runs','ledger_events','ledger_approvals','ledger_node_attempts','ledger_artifacts','ledger_delivery_attempts')
+ORDER BY c.relname;
+
+\echo '== 20. Execution ledger: every ledger table has a policy =='
+SELECT expected.table_name,
+       CASE WHEN COUNT(p.policyname) > 0 THEN 'OK' ELSE 'FAIL - no policy' END AS status
+FROM (VALUES
+  ('ledger_runs'), ('ledger_events'), ('ledger_approvals'),
+  ('ledger_node_attempts'), ('ledger_artifacts'), ('ledger_delivery_attempts')
+) AS expected(table_name)
+LEFT JOIN pg_policies p ON p.schemaname = 'public' AND p.tablename = expected.table_name
+GROUP BY expected.table_name
+ORDER BY expected.table_name;
+
+\echo '== 21. Execution ledger: anon holds no privileges (tenant data is not public) =='
+SELECT table_name,
+       CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FAIL - anon has grants' END AS status
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name LIKE 'ledger_%'
+  AND grantee = 'anon'
+GROUP BY table_name
+ORDER BY table_name;
+
+\echo '== 22. Execution ledger: run lifecycle states are constrained =='
+SELECT CASE
+         WHEN to_regclass('public.ledger_runs') IS NULL THEN 'FAIL - ledger_runs missing (apply 0017)'
+         WHEN EXISTS (
+           SELECT 1 FROM pg_constraint
+           WHERE conrelid = 'public.ledger_runs'::regclass AND contype = 'c'
+             AND pg_get_constraintdef(oid) LIKE '%status%'
+         ) THEN 'OK'
+         ELSE 'FAIL - ledger_runs.status is unconstrained'
+       END AS status;

@@ -25,6 +25,9 @@ import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { GlassCard, Button, Badge, MetricWidget, Input } from '@/src/components/ui';
 
+import { useToast } from '@/src/contexts/ToastContext';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
+
 interface ScheduleItem {
   id: string;
   name: string;
@@ -35,31 +38,46 @@ interface ScheduleItem {
   lastRun: string;
 }
 
-const initialStats = [
-  { label: 'ACTIVE SCHEDULES', value: '12', delta: { value: '+2', trend: 'up' as const }, icon: Activity },
-  { label: 'DELIVERIES (24H)', value: '158', delta: { value: '-4%', trend: 'down' as const }, icon: Mail },
-  { label: 'SUCCESS RATE', value: '99.4%', delta: { value: 'Stable', trend: 'neutral' as const }, icon: CheckCircle2 },
-  { label: 'NEXT RUN', value: '14:00', subtext: 'Scheduled for Today', icon: Clock },
-];
-
-const initialSchedules: ScheduleItem[] = [
+// DEMO SEED — fixtures only. A fresh tenant renders none of these: the rows
+// below describe delivery history and last-run times that workspace never had.
+// Gated by VITE_SEED_DEMO_WORKSPACE (src/lib/demoSeed.ts), the client-side twin
+// of the server's SEED_DEMO_WORKSPACE.
+const demoSchedules: ScheduleItem[] = [
   { id: '1', name: 'Q3 Executive Performance', category: 'Global Marketing Overview', format: 'PDF', frequency: 'Weekly (Mon)', recipients: ['JD', 'AL', '+4'], lastRun: 'Oct 12, 08:00' },
   { id: '2', name: 'Daily Lead Gen Deep Dive', category: 'Sales Enablement Hub', format: 'PPTX', frequency: 'Daily (07:00)', recipients: ['TK'], lastRun: 'Today, 07:01' },
   { id: '3', name: 'Monthly ROI Reconciliation', category: 'Finance Department', format: 'PDF', frequency: 'Monthly (1st)', recipients: ['CN', 'RB'], lastRun: 'Oct 01, 00:05' },
 ];
 
-const initialHistory = [
-  { id: 'h1', title: 'Daily Lead Gen Deep Dive - Successful', desc: 'Sent to 1 recipient via Email & Slack', time: '2h ago', status: 'success' },
-  { id: 'h2', title: 'Social Media Audit - Dispatched', desc: 'Auto-synchronized with Brand & Marketing Vaults', time: '4h ago', status: 'success' },
-  { id: 'h3', title: 'Weekly Ad Spend Report - Successful', desc: 'Sent to 8 recipients via Google Drive', time: 'Yesterday', status: 'success' },
+type SchedulerHistoryStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+const demoHistory: Array<{ id: string; title: string; desc: string; time: string; status: SchedulerHistoryStatus }> = [
+  { id: 'h1', title: 'Daily Lead Gen Deep Dive - Local Export', desc: 'Rendered PPTX locally. External dispatch requires SMTP/Slack credentials.', time: '2h ago', status: 'completed' },
+  { id: 'h2', title: 'Social Media Audit - Local Sync', desc: 'Copied to local Brand & Marketing Vaults only. No remote sync occurred.', time: '4h ago', status: 'completed' },
+  { id: 'h3', title: 'Weekly Ad Spend Report - Local Export', desc: 'Rendered PDF locally. Cloud sync requires connected storage connector.', time: 'Yesterday', status: 'completed' },
 ];
 
 export default function Scheduler() {
-  const [schedules, setSchedules] = useState<ScheduleItem[]>(initialSchedules);
-  const [history, setHistory] = useState(initialHistory);
+  const { notifySuccess, notifyInfo } = useToast();
+  const isDemo = isDemoSeedEnabled();
+  const [schedules, setSchedules] = useState<ScheduleItem[]>(isDemo ? demoSchedules : []);
+  const [history, setHistory] = useState<typeof demoHistory>(isDemo ? demoHistory : []);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [runningScheduleId, setRunningScheduleId] = useState<string | null>(null);
+
+  const stats = React.useMemo(() => {
+    const activeCount = schedules.length;
+    const completedCount = history.filter(h => h.status === 'completed').length;
+    const successRate = history.length > 0
+      ? `${Math.round((completedCount / history.length) * 100)}%`
+      : 'N/A (no recorded runs)';
+    return [
+      { label: 'ACTIVE SCHEDULES', value: activeCount.toString(), delta: { value: 'Configured', trend: 'neutral' as const }, icon: Activity },
+      { label: 'RECORDED DELIVERIES', value: completedCount.toString(), delta: { value: 'In-app log', trend: 'neutral' as const }, icon: Mail },
+      { label: 'SUCCESS RATE', value: successRate, delta: { value: 'Logged runs', trend: 'neutral' as const }, icon: CheckCircle2 },
+      { label: 'TRIGGER CADENCE', value: activeCount > 0 ? 'Managed' : 'None', subtext: 'Based on active schedules', icon: Clock },
+    ];
+  }, [schedules, history]);
 
   // New schedule form
   const [newName, setNewName] = useState('');
@@ -79,21 +97,24 @@ export default function Scheduler() {
   };
 
   const handleRunNow = (schedule: ScheduleItem) => {
+    if (runningScheduleId) return; // one in-flight local render only
     setRunningScheduleId(schedule.id);
-    setTimeout(() => {
-      setRunningScheduleId(null);
-      setSchedules(prev => prev.map(s => s.id === schedule.id ? { ...s, lastRun: 'Just now' } : s));
-      setHistory(prev => [
-        {
-          id: `h-${Date.now()}`,
-          title: `${schedule.name} - Dispatched Manually`,
-          desc: `Exported ${schedule.format} and sent to ${schedule.recipients.join(', ')}`,
-          time: 'Just now',
-          status: 'success'
-        },
-        ...prev
-      ]);
-    }, 1200);
+    // Phase 0 truthful state: local render only. The entry is QUEUED and stays
+    // queued until a verified local export completes — no setTimeout fabricates
+    // success. Remote distribution stays pending until provider credentials exist.
+    setHistory(prev => [
+      {
+        id: `h-${Date.now()}`,
+        title: `${schedule.name} - Manual Trigger`,
+        desc: `Queued local ${schedule.format} render. Awaiting verified local export; remote distribution pending provider credentials.`,
+        time: 'Just now',
+        status: 'queued' as SchedulerHistoryStatus
+      },
+      ...prev
+    ]);
+    setSchedules(prev => prev.map(s => s.id === schedule.id ? { ...s, lastRun: 'Queued (awaiting verified export)' } : s));
+    notifyInfo('Manual Run Queued', `Queued local ${schedule.format} render for "${schedule.name}". Complete the verified export to record delivery.`);
+    setRunningScheduleId(current => (current === schedule.id ? null : current));
   };
 
   const handleCreateSchedule = (e: React.FormEvent) => {
@@ -149,7 +170,7 @@ export default function Scheduler() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {initialStats.map((stat, i) => {
+        {stats.map((stat, i) => {
           const Icon = stat.icon;
           return (
             <MetricWidget
@@ -281,30 +302,34 @@ export default function Scheduler() {
 
             <div className="space-y-3.5 text-xs font-mono">
               <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Scheduler Engine:</span>
+                <span className="text-zinc-200">In-app queue (no worker daemon)</span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Worker Node:</span>
-                <span className="text-zinc-200">BullMQ Scheduler (Active)</span>
+                <span className="text-amber-400">Not provisioned</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Redis Connection:</span>
-                <span className="text-emerald-400">Connected (0.4ms)</span>
+                <span className="text-zinc-500">Queue Backend:</span>
+                <span className="text-amber-400">Local state only</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">PDF Generator:</span>
-                <span className="text-cyan-400">Chromium Headless v122</span>
+                <span className="text-zinc-500">Remote Dispatch:</span>
+                <span className="text-amber-400">Requires SMTP/Slack credentials</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Next Scheduled Run:</span>
-                <span className="text-[var(--sigma-vermilion)]">14:00 (Today)</span>
+                <span className="text-zinc-400">Pending scheduler activation</span>
               </div>
             </div>
 
             <div className="pt-4 border-t border-[var(--sigma-border)]">
               <div className="flex justify-between items-end mb-2 text-[10px] font-mono text-zinc-500 uppercase">
-                <span>Task Throughput</span>
-                <span className="text-zinc-300">42% Load</span>
+                <span>Recorded Queue Depth</span>
+                <span className="text-zinc-300">{history.filter(h => h.status === 'queued').length} Queued</span>
               </div>
               <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-[var(--sigma-vermilion)] w-[42%]" />
+                <div className="h-full bg-[var(--sigma-vermilion)]" style={{ width: history.length > 0 ? `${Math.round((history.filter(h => h.status === 'completed').length / history.length) * 100)}%` : '0%' }} />
               </div>
             </div>
           </GlassCard>

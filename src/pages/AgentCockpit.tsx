@@ -70,13 +70,40 @@ import AgentFilesManager from '@/src/components/AgentFilesManager';
 import AgentTraceInspector from '@/src/components/AgentTraceInspector';
 import { downloadAgentMarkdown, downloadMultiAgentBundleMarkdown } from '@/src/services/agentMarkdownService';
 import { useToast } from '@/src/contexts/ToastContext';
+import { useWorkspace } from '@/src/contexts/WorkspaceContext';
+import { useTaskStore } from '@/src/lib/taskStore';
 
 export default function AgentCockpit() {
   const { notifySuccess, notifyWarning, notifyInfo } = useToast();
+  const { currentWorkspaceId } = useWorkspace();
+  const {
+    tasks: sharedTasks,
+    logs: sharedLogs,
+    pendingCount: sharedPendingCount,
+    approveTask: approveSharedTask,
+    rejectTask: rejectSharedTask,
+    refresh: refreshSharedTasks,
+  } = useTaskStore(currentWorkspaceId || 'ws-primary');
+
   const [agents, setAgents] = useState<ScopedAgent[]>(SCOPED_AGENTS);
-  const [hitlTasks, setHitlTasks] = useState<HITLTask[]>(INITIAL_HITL_TASKS);
+  const [localTasks, setLocalTasks] = useState<HITLTask[]>(INITIAL_HITL_TASKS);
+  const [localLogs, setLocalLogs] = useState<CockpitLogItem[]>(INITIAL_AGENT_LOGS);
+
+  // Shared durable HITL tasks
+  const hitlTasks = React.useMemo(() => {
+    return sharedTasks.length > 0 ? sharedTasks : localTasks;
+  }, [sharedTasks, localTasks]);
+
+  const setHitlTasks = setLocalTasks;
+  const setAgentLogs = setLocalLogs;
+
   const [agentRuns, setAgentRuns] = useState<AgentRunLog[]>(INITIAL_AGENT_RUNS);
-  const [agentLogs, setAgentLogs] = useState<CockpitLogItem[]>(INITIAL_AGENT_LOGS);
+
+  // Derive execution logs from durable task actions and baseline events
+  const agentLogs = React.useMemo(() => {
+    return [...sharedLogs, ...localLogs];
+  }, [sharedLogs, localLogs]);
+
   const [selectedAgent, setSelectedAgent] = useState<ScopedAgent>(SCOPED_AGENTS[0]);
   const [activeTaskModal, setActiveTaskModal] = useState<HITLTask | null>(null);
   const [isTriggeringRun, setIsTriggeringRun] = useState(false);
@@ -193,64 +220,38 @@ export default function AgentCockpit() {
     );
   };
 
-  const handleApproveHITL = (taskId: string) => {
+  const handleApproveHITL = async (taskId: string) => {
     const task = hitlTasks.find(t => t.id === taskId);
-    setHitlTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        return { ...t, status: 'APPROVED' };
-      }
-      return t;
-    }));
     setActiveTaskModal(null);
+    setHitlTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'APPROVED' } : t));
 
-    // Record in logs
-    const newLog: CockpitLogItem = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      agentId: task?.agentId || 'system',
-      agentCodename: task?.agentName.split(' ')[0] || 'ADMIN',
-      level: 'INFO',
-      category: 'HITL',
-      message: `Admin signed off on HITL task "${task?.title}". Action dispatched to ${task?.vaultAffected}.`,
-      durationMs: 38
-    };
-    setAgentLogs(prev => [newLog, ...prev]);
-
-    notifySuccess(
-      'HITL Action Approved & Executed',
-      `Signed off by Admin. Dispatched payload to ${task?.vaultAffected || 'target vault'}.`,
-      { category: 'SECURITY' }
-    );
+    const result = await approveSharedTask(taskId);
+    if (result.success) {
+      notifySuccess(
+        'HITL Action Approved & Executed',
+        `Signed off by Admin. Server approved and executed task "${task?.title || taskId}".`,
+        { category: 'SECURITY' }
+      );
+    } else {
+      notifyWarning('Approval Notice', result.error || 'Server approval failed.');
+    }
   };
 
-  const handleRejectHITL = (taskId: string) => {
+  const handleRejectHITL = async (taskId: string) => {
     const task = hitlTasks.find(t => t.id === taskId);
-    setHitlTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        return { ...t, status: 'REJECTED' };
-      }
-      return t;
-    }));
     setActiveTaskModal(null);
+    setHitlTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'REJECTED' } : t));
 
-    // Record in logs
-    const newLog: CockpitLogItem = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      agentId: task?.agentId || 'system',
-      agentCodename: task?.agentName.split(' ')[0] || 'ADMIN',
-      level: 'WARN',
-      category: 'HITL',
-      message: `Admin rejected HITL task "${task?.title}". Transaction aborted and rolled back.`,
-      durationMs: 25
-    };
-    setAgentLogs(prev => [newLog, ...prev]);
-
-    notifyWarning(
-      'HITL Action Rejected',
-      `Action proposal blocked for ${task?.agentName || 'agent'}. Rollback state maintained.`,
-      { category: 'SECURITY' }
-    );
+    const result = await rejectSharedTask(taskId);
+    if (result.success) {
+      notifyWarning(
+        'HITL Action Rejected',
+        `Signed off by Admin. Task "${task?.title || taskId}" marked rejected.`,
+        { category: 'SECURITY' }
+      );
+    } else {
+      notifyWarning('Rejection Notice', result.error || 'Server rejection failed.');
+    }
   };
 
   const handleTriggerAgentRun = (agent: ScopedAgent, title?: string) => {
@@ -411,15 +412,19 @@ export default function AgentCockpit() {
           { phase: '02 Planning', description: 'Decomposed goal into verified tool graph via Gemini 3 Flash', timestamp: '00:00:04', status: 'completed' },
           { phase: '03 Executing', description: `Queried Second Brain ${agent.readVaults[0]} & executed MCP tool`, timestamp: '00:00:09', status: 'completed', toolCall: agent.skills[0]?.toolSignature || 'search_second_brain()' },
           { phase: '04 Reviewing', description: 'Verified output against Brand Vault voice vectors & constraints', timestamp: '00:00:15', status: 'completed' },
-          { phase: '05 Completed', description: 'State committed to Second Brain & emitted telemetry trace', timestamp: '00:00:18', status: 'completed' }
+          // Phase 0: this timeline is a local rehearsal of the agent loop, not a
+          // server execution. Nothing was committed anywhere, so it must not
+          // claim a Postgres commit or a state commit. The run is labelled a
+          // simulation in the UI and its telemetry is marked simulated.
+          { phase: '05 Rehearsal complete', description: 'Local rehearsal finished — no server run, no persisted state', timestamp: '00:00:18', status: 'completed' }
         ],
         traceLog: [
-          `[00:00:01] [QUEUE] Enqueued task for agent ${agent.codename}`,
-          `[00:00:02] [RBAC] Verified allowed read vaults: ${agent.readVaults.join(', ')}`,
-          `[00:00:04] [MODEL] Context window: 16k tokens. Planning next actions`,
-          `[00:00:09] [TOOL] search_second_brain returned 4 similarity records`,
-          `[00:00:15] [GATE] Voice vector alignment score: 99.4% precision`,
-          `[00:00:18] [STORE] PostgreSQL transaction committed. Completed.`
+          `[00:00:01] [SIM] Rehearsal step: task "agent.codename" staged locally`,
+          `[00:00:02] [SIM] Rehearsal step: allowed read vaults shown as ${agent.readVaults.join(', ')}`,
+          `[00:00:04] [SIM] Rehearsal step: planning phase described, not executed`,
+          `[00:00:09] [SIM] Rehearsal step: illustrative tool call only`,
+          `[00:00:15] [SIM] Rehearsal step: illustrative review gate only`,
+          `[00:00:18] [SIM] Rehearsal finished — no agent was dispatched and nothing was persisted`
         ]
       };
 
@@ -427,8 +432,10 @@ export default function AgentCockpit() {
       setAgentRuns(current => [completedRun, ...current]);
       setIsTriggeringRun(false);
 
-      // Record authentic execution telemetry event
       const currentHour = `${String(new Date().getHours()).padStart(2, '0')}:00`;
+      // Phase 0: this is a local rehearsal, so its telemetry is marked simulated and
+      // buildHeatmapMatrix() keeps it out of verified load/success/latency. It must
+      // never be written as a verified event — no agent ran, nothing persisted.
       appendTelemetryEvent({
         id: `evt-${Date.now()}-${agent.id}`,
         agentId: agent.id,
@@ -436,7 +443,8 @@ export default function AgentCockpit() {
         status: 'completed',
         latencyMs: 180,
         hitlRequired: (agent.requiresHITLFor && agent.requiresHITLFor.length > 0) || false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        simulated: true,
       });
 
       // Increment completed tasks for agent
