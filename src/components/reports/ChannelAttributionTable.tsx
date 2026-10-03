@@ -12,12 +12,19 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
+  AlertTriangle,
   Sparkles
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { exportService } from '@/src/services/exportService';
 import { ChannelCampaignRow, CHANNEL_CAMPAIGN_DATA } from '@/src/data/executiveReportsData';
-import { tagRowsForDelivery } from '@/src/lib/exportProvenance';
+import { tagRowsForDelivery, provenanceNote, type RowProvenance } from '@/src/lib/exportProvenance';
+
+/**
+ * Where this table's rows come from. `sample` until an ad provider is wired in;
+ * flip to `measured` only when the rows are actually pulled from a connection.
+ */
+const TABLE_PROVENANCE: RowProvenance = 'sample';
 
 interface ChannelAttributionTableProps {
   onRowClick?: (row: ChannelCampaignRow) => void;
@@ -121,7 +128,7 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
 
     // Same hardcoded fixture as the reports table: label it rather than imply it
     // is this workspace's measured performance.
-    const exportData = tagRowsForDelivery(rows, { provenance: 'sample' });
+    const exportData = tagRowsForDelivery(rows, { provenance: TABLE_PROVENANCE });
 
     exportService.toCSV(exportData, `sigmatactix-channel-campaigns-${new Date().getTime()}.csv`);
     setTimeout(() => setIsExporting(false), 800);
@@ -129,6 +136,24 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
 
   return (
     <div className={cn("bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl space-y-4", className)}>
+      {/*
+        This table renders a hardcoded fixture. The banner exists so the screen
+        carries the same provenance statement as the exported file - previously
+        the CSV admitted the data was sample while this header called it "live".
+      */}
+      <div
+        role="status"
+        className="flex items-start gap-2.5 px-4 py-3 border-b border-warning/25 bg-warning/10 text-xs"
+      >
+        <AlertTriangle size={15} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="font-semibold text-warning">{provenanceNote(TABLE_PROVENANCE)}</p>
+          <p className="text-muted">
+            No ad platform is connected to this workspace. Connect a provider to replace these rows with
+            measured results.
+          </p>
+        </div>
+      </div>
       {/* Table Header & Controls */}
       <div className="p-6 border-b border-white/5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -143,7 +168,7 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
               </span>
             </div>
             <p className="text-xs text-zinc-400">
-              Live attribution reporting mapped across ad networks, organic search, and nurture workflows directly from Second Brain vaults.
+              Channel, source, medium and campaign attribution. Rows are labelled with where they came from.
             </p>
           </div>
 

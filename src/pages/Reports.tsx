@@ -24,7 +24,8 @@ import {
   Calendar,
   Eye,
   Settings2,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { exportService } from '@/src/services/exportService';
@@ -43,7 +44,7 @@ import AlignedExecutiveCharts from '@/src/components/reports/AlignedExecutiveCha
 import ChannelAttributionTable from '@/src/components/reports/ChannelAttributionTable';
 import AudienceSegmentationView from '@/src/components/reports/AudienceSegmentationView';
 import { Button, GlassCard, Badge } from '@/src/components/ui';
-import { tagRowsForDelivery } from '@/src/lib/exportProvenance';
+import { tagRowsForDelivery, provenanceNote } from '@/src/lib/exportProvenance';
 
 const widgetLibrary = [
   { 
@@ -365,7 +366,28 @@ export default function Reports() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-120px)] gap-4 -m-8 overflow-hidden bg-[var(--sigma-bg)] text-[var(--sigma-text)]">
+    <div className="relative flex h-[calc(100vh-120px)] gap-4 -m-8 overflow-hidden bg-[var(--sigma-bg)] text-[var(--sigma-text)]">
+
+      {/*
+        Page-level provenance declaration. Every panel below (attribution,
+        demographics, psychographics, revenue timeline, channel share) is
+        rendered from a hardcoded fixture in executiveReportsData.ts. One
+        declaration covers all five components, so none of them can be mistaken
+        for measured workspace results.
+      */}
+      <div
+        role="status"
+        className="absolute z-30 m-4 flex items-start gap-2.5 rounded-xl border border-[var(--sigma-primary)]/40 bg-[var(--sigma-surface)]/95 px-4 py-3 text-xs shadow-[var(--sigma-shadow-lg)] backdrop-blur-md max-w-md"
+      >
+        <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--sigma-primary)]" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="font-semibold text-[var(--sigma-text)]">{provenanceNote('sample')}</p>
+          <p className="text-[var(--sigma-muted)]">
+            No analytics provider is connected, so every figure on this page is an illustrative
+            placeholder. Connect a source to replace them with measured results.
+          </p>
+        </div>
+      </div>
       
       {/* ==================================================================== */}
       {/* LEFT SIDEBAR: WIDGETS & TEMPLATE SHORTCUTS */}
