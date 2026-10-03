@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { AI_DISCLOSURE_LINE } from './claimLabels.js';
 
 export type ClaimClassification =
   | 'measured_fact'
@@ -115,6 +116,15 @@ export const ReportSnapshotSchema = z.object({
   ).default([]),
   artifactHash: z.string().optional(),
   byteSize: z.number().optional(),
+  /**
+   * Required, not optional. A report that ships without saying it is
+   * AI-generated is the exact failure this remediation exists to prevent, so the
+   * schema makes it impossible to construct a silent client artifact.
+   */
+  disclosure: z.object({
+    aiGenerated: z.string().min(1),
+    caveats: z.array(z.string()).default([]),
+  }),
 });
 
 export type ReportSnapshot = z.infer<typeof ReportSnapshotSchema>;
@@ -173,9 +183,17 @@ export function createDefaultReportSnapshot(params: {
     },
     decisionSummary: {
       headline: 'Conversion Funnel & Attribution Reconfiguration',
-      verdict: 'High-Impact Recovery Required',
-      keyTakeaway: 'Current website form exhibits friction with 5 mandatory fields and uninstrumented GA4 / Meta CAPI.',
-      actionRequired: 'Deploy progressive intake flow and configure server-side conversion telemetry.',
+      verdict: 'Baseline established - no historical measurements available',
+      keyTakeaway:
+        'No prior reporting period is connected, so this report is a baseline and proposal rather than a performance summary.',
+      actionRequired: 'Connect a measurement source before any performance claim is made.',
+    },
+    disclosure: {
+      aiGenerated: AI_DISCLOSURE_LINE,
+      caveats: [
+        'This report contains no historical measurements. It records what was observed at generation time.',
+        'Values marked as estimates are model judgements, not measured results.',
+      ],
     },
     kpis: [
       {

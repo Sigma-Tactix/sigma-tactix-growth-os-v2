@@ -43,6 +43,7 @@ import AlignedExecutiveCharts from '@/src/components/reports/AlignedExecutiveCha
 import ChannelAttributionTable from '@/src/components/reports/ChannelAttributionTable';
 import AudienceSegmentationView from '@/src/components/reports/AudienceSegmentationView';
 import { Button, GlassCard, Badge } from '@/src/components/ui';
+import { tagRowsForDelivery } from '@/src/lib/exportProvenance';
 
 const widgetLibrary = [
   { 
@@ -164,7 +165,7 @@ export default function Reports() {
     setIsExporting(true);
     setShowExportOptions(false);
 
-    const exportRows = CHANNEL_CAMPAIGN_DATA.map(r => ({
+    const rawRows = CHANNEL_CAMPAIGN_DATA.map(r => ({
       'Report Template': currentTemplate.name,
       'Channel': r.channel,
       'Source': r.source,
@@ -182,12 +183,19 @@ export default function Reports() {
       'Timestamp': new Date().toISOString()
     }));
 
+    // This dataset is a hardcoded fixture, not this workspace's ad account, so it
+    // ships labelled as sample data rather than as measured attribution.
+    const exportRows = tagRowsForDelivery(rawRows, { provenance: 'sample' });
+
     const success = exportService.toCSV(exportRows, `sigmatactix-${currentTemplate.id}-summary.csv`);
     setIsExporting(false);
     if (success) {
-      setExportFeedback('Full Executive Attribution CSV downloaded successfully.');
-      notifySuccess('CSV Export Completed', 'Campaign attribution dataset exported to standard CSV.');
-      setTimeout(() => setExportFeedback(null), 4000);
+      setExportFeedback('Sample attribution dataset downloaded. Every row is labelled as sample data.');
+      notifySuccess(
+        'CSV Export Completed',
+        'Illustrative campaign dataset exported. Rows are stamped as sample data, not measured results.'
+      );
+      setTimeout(() => setExportFeedback(null), 6000);
     }
   };
 

@@ -4,6 +4,7 @@ import pptxgen from 'pptxgenjs';
 import * as XLSX from 'xlsx';
 import { renderExecutiveReportPDF } from '../lib/pdfReportRenderer';
 import type { ReportSnapshot } from '../lib/reportSnapshot';
+import { AI_DISCLOSURE_LINE } from '../lib/claimLabels';
 
 export interface ReportKPI {
   label: string;
@@ -494,9 +495,18 @@ export const exportService = {
         },
         decisionSummary: {
           headline: data.badge ? `${data.badge} - Omnichannel Growth Review` : "Omnichannel Growth & Attribution Review",
-          verdict: "Attribution & Optimization Intervention Required",
-          keyTakeaway: (data.explanations && data.explanations[0]) || "Attribution modeling indicates uncredited conversions in dark social and high-intent organic search.",
-          actionRequired: (data.nextSteps && data.nextSteps[0]?.title) || "Deploy conversion telemetry and progressive intake flow.",
+          // No evidence is threaded through this legacy builder, so the verdict
+          // states the scope instead of asserting a cause the data cannot carry.
+          verdict: "Snapshot recorded - findings require evidence review before they are acted on",
+          keyTakeaway: (data.explanations && data.explanations[0]) || "This summary is generated from the current workspace snapshot. No historical measurement period is connected, so it is a baseline and proposal, not a performance report.",
+          actionRequired: (data.nextSteps && data.nextSteps[0]?.title) || "Connect a measurement source and review the evidence appendix before acting.",
+        },
+        disclosure: {
+          aiGenerated: AI_DISCLOSURE_LINE,
+          caveats: [
+            "No historical reporting period is connected. Treat this as a baseline, not a performance summary.",
+            "Attribution figures shown are illustrative until a measurement source is connected.",
+          ],
         },
         kpis: (data.metrics || []).map((m, i) => ({
           id: `kpi-${i + 1}`,

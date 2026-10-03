@@ -17,6 +17,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { exportService } from '@/src/services/exportService';
 import { ChannelCampaignRow, CHANNEL_CAMPAIGN_DATA } from '@/src/data/executiveReportsData';
+import { tagRowsForDelivery } from '@/src/lib/exportProvenance';
 
 interface ChannelAttributionTableProps {
   onRowClick?: (row: ChannelCampaignRow) => void;
@@ -101,7 +102,7 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
 
   const handleExportCSV = () => {
     setIsExporting(true);
-    const exportData = filteredRows.map(r => ({
+    const rows = filteredRows.map(r => ({
       'Channel': r.channel,
       'Source': r.source,
       'Medium': r.medium,
@@ -117,6 +118,10 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
       'Status': r.status,
       'Trend': r.trend
     }));
+
+    // Same hardcoded fixture as the reports table: label it rather than imply it
+    // is this workspace's measured performance.
+    const exportData = tagRowsForDelivery(rows, { provenance: 'sample' });
 
     exportService.toCSV(exportData, `sigmatactix-channel-campaigns-${new Date().getTime()}.csv`);
     setTimeout(() => setIsExporting(false), 800);
