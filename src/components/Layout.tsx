@@ -131,6 +131,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isEcosystemStatusDocked, setIsEcosystemStatusDocked] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
+  const [isPlaybookDropdownOpen, setIsPlaybookDropdownOpen] = useState(false);
 
   const handleQuickSearchSelect = (href: string) => {
     navigate(href);
@@ -225,12 +226,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <span className={cn(
                         "text-[9px] px-1.5 py-0.2 rounded font-medium",
                         isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
-                      )}>MONITORED</span>
+                      )}>STATUS</span>
                     </div>
                     <div className={cn(
                       "text-[10px] truncate",
                       isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white/80" : "text-[var(--sigma-text-muted)]"
-                    )}>Health & pipeline monitors</div>
+                    )}>Runtime evidence and checks</div>
                   </div>
                 </div>
                 <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
@@ -352,7 +353,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
 
           {/* Quick Search */}
-          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md relative">
+          <div className="hidden md:flex items-center gap-4 flex-1 max-w-xs 2xl:max-w-md relative">
              <div className="w-full relative group">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[#ff481b] transition-colors" size={15} />
                 <input 
@@ -469,39 +470,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Right Header Navigation & Actions */}
           <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3">
-            {/* Guided 4-Phase Autonomous Growth Loop Quick Bar */}
-            <div data-tutorial-id="tut-playbook-bar" className="hidden xl:flex items-center gap-1 p-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-[11px] font-sans">
-              <span className="px-2 text-[var(--sigma-text-muted)] font-semibold uppercase tracking-wider text-[9px] font-mono">PLAYBOOK:</span>
-              {[
-                { label: 'DIAGNOSE', step: '1', href: '/diagnostics', match: (p: string) => p === '/diagnostics' },
-                { label: 'CAPTURE & CRM', step: '2', href: '/outreach', match: (p: string) => p === '/outreach' },
-                { label: 'DEMAND SWARMS', step: '3', href: '/content-engine', match: (p: string) => p === '/content-engine' || p === '/paid-ads' || p === '/seo-aeo' },
-                { label: 'REVENUE CORE', step: '4', href: '/living-system', match: (p: string) => p === '/living-system' || p === '/reports' },
-              ].map((item) => {
-                const isSelected = item.match(location.pathname);
-                return (
-                  <button
-                    key={item.step}
-                    onClick={() => navigate(item.href)}
-                    className={cn(
-                      "px-2.5 py-1 font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer outline-none",
-                      isSelected
-                        ? "bg-[var(--sigma-surface)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border-strong)] shadow-xs"
-                        : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface)]/50"
-                    )}
-                  >
-                    <span className={cn("text-[10px] font-mono", isSelected ? "text-[#ff481b] font-bold" : "opacity-60")}>{item.step}.</span>
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
+            {/* Compact guided workflow */}
+            <div data-tutorial-id="tut-playbook-bar" className="relative hidden lg:block">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isPlaybookDropdownOpen}
+                onClick={() => setIsPlaybookDropdownOpen((open) => !open)}
+                className="sigma-control flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
+              >
+                Playbook <ChevronDown size={13} className={cn('transition-transform', isPlaybookDropdownOpen && 'rotate-180')} />
+              </button>
+              {isPlaybookDropdownOpen && (
+                <div role="menu" className="sigma-menu absolute right-0 top-full z-50 mt-2 w-64 p-2 shadow-xl">
+                  {[
+                    { label: 'Diagnose', description: 'Assess the current state', step: '1', href: '/diagnostics' },
+                    { label: 'Capture & CRM', description: 'Build and qualify demand', step: '2', href: '/outreach' },
+                    { label: 'Demand execution', description: 'Create content and campaigns', step: '3', href: '/content-engine' },
+                    { label: 'Revenue review', description: 'Review delivery and outcomes', step: '4', href: '/reports' },
+                  ].map((item) => (
+                    <button key={item.step} role="menuitem" onClick={() => { navigate(item.href); setIsPlaybookDropdownOpen(false); }} className="sigma-menu-item flex w-full items-start gap-3 p-3 text-left">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sigma-primary-subtle)] text-xs font-bold text-[var(--sigma-primary)]">{item.step}</span>
+                      <span><span className="block text-sm font-semibold text-[var(--sigma-text)]">{item.label}</span><span className="mt-0.5 block text-xs text-[var(--sigma-text-muted)]">{item.description}</span></span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Start / Resume / Replay Tutorial CTA */}
             {!isActive && (
               <button
                 onClick={startTutorial}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 text-[11px] font-medium transition-all cursor-pointer"
+                className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 text-[11px] font-medium transition-all cursor-pointer"
                 title={hasEverStarted ? (isCompleted ? "Replay Guided Tutorial" : "Resume Guided Tutorial") : "Start Guided Tutorial"}
               >
                 <GraduationCap size={14} />
@@ -518,11 +519,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               leftIcon={<Sparkles size={13} />}
               className="hidden sm:inline-flex"
             >
-              Onboard Client
+              New client
             </Button>
 
             {/* VANTA Neural Core Header Status & Drawer Summoner */}
-            <div className="hidden lg:block">
+            <div className="hidden 2xl:block">
               <VantaHeaderIndicator />
             </div>
 
@@ -533,25 +534,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 setIsEcosystemStatusDocked(true);
               }}
               className={cn(
-                "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer",
+                "hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer",
                 isEcosystemStatusOpen && isEcosystemStatusDocked
                   ? "bg-[#ff481b] text-white border-[#ff481b] font-semibold shadow-xs"
                   : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)]"
               )}
             >
               <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[#ff481b]"} />
-              <span className="hidden md:inline">Ecosystem:</span>
+              <span className="hidden 2xl:inline">Ecosystem</span>
               <span className={cn(
                 "px-1.5 py-0.2 rounded text-[10px] font-bold font-mono",
                 isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
-              )}>MONITORED</span>
+              )}>STATUS</span>
             </button>
 
-            <div className="hidden sm:block"><ThemeToggle /></div>
+            <div className="hidden xl:block"><ThemeToggle /></div>
             <div className="hidden h-5 w-px sigma-divider border-l mx-0.5 sm:block" />
             
             {/* Role Switcher */}
-            <div className="relative hidden group/role md:block">
+            <div className="relative hidden group/role 2xl:block">
                <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-xs font-medium text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer">
                   <ShieldCheck size={14} className="text-[#ff481b]" />
                   <span>{role}</span>

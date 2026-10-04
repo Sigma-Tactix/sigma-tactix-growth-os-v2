@@ -1,8 +1,33 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-10-01  
-> **Version**: v0.2.1-dev (Managed Loop Launch Spine & Vanta Lab Hardening)  
+> **Last updated**: 2026-10-04
+> **Version**: v0.2.4-dev (Mission Execution Control Plane First Slice)
 > **Status**: Pre-release (Governed Integration & Managed Loop Transition); local implementation verified with passing test suites and production build; commercial launch strategy pivoted from broad self-serve to a **Managed Growth Intelligence Loop** targeting $50,000 MRR across 6 lighthouse clients; 6 P0 launch blockers actively tracked.
+
+### Mission Execution Control Plane — 2026-10-04 (LOCAL CONTROL PLANE SLICE — TARGET DATABASE VERIFIED)
+
+- `src/lib/missionExecution.ts` is the deep mission execution module. It creates
+  a `DispatchPlan` from a registered system agent, records mission/plan/entry
+  sub-agent identity, and materializes registry-owned nodes through
+  `BoundedWorkflowGraph`.
+- `/api/workspace/run-agent` now persists mission metadata and executes through
+  the bounded graph seam after the existing owner/admin HITL approval. VANTA
+  now emits a server-derived `dispatchPlan` alongside a proposal, but remains
+  read-only; this slice does not let VANTA authorize or execute.
+- `/api/workspace/run-pipeline` now creates one parent mission task and three
+  parent-linked child tasks. Node attempts can resolve the parent ledger run
+  instead of silently measuring against a run that did not yet exist.
+- `0018_mission_execution_hierarchy.sql` adds `mission_id`, `plan_id`,
+  `sub_agent`, `parent_run_id`, and `requires_approval` to `ledger_runs`.
+-  The configured database now has all five columns and the three mission
+-  lineage indexes. Other deployed environments still require verification.
+- `/api/workspace/missions/dispatch` is the explicit VANTA-to-task handoff. It
+-  creates a Pending Approval task and never executes work itself.
+- Explicitly dispatched plans can materialize up to three registry-owned nodes;
+-  direct `/run-agent` tasks retain focused entry-node execution.
+- Current local verification: `npm run lint` passes; `npm test` passes with 62
+  files and 421 tests. This does not prove deployed migration state, provider
+  authentication, browser acceptance, OpenClaw, or n8n runtime readiness.
 
 ### User-Journey Remediation Plan — 2026-10-01 (PARTIAL PROGRESS — NOT RELEASE READY)
 
@@ -131,14 +156,52 @@ acceptance run, or acceptance record has been produced for this remediation.
    - **Remaining, blocked on YOU (inputs, not code):** provider/ad/analytics/
      billing credentials, and an authenticated Agent Reach backend for
      Reddit/LinkedIn/X (those channels correctly return "unavailable" with a
-     reason until configured). Phase 3 remains deliberately unstarted.
-     `detectEvidenceDiscrepancy`/contradiction surfacing and independent review
-     are unwired; social/Reddit/Quora discussion evidence (Agent Reach
-     permalinks) not yet captured; provider evidence still absent so most
-     categories stay `not assessed`.
+     reason until configured). Quora is not in the channel registry. Provider
+     evidence is still absent, so affected categories remain `not assessed`.
    - Phase 3 (report contract, pdfcn renderer, delivery records) is deliberately
      NOT started — held until Phase 2 closes. `reportSnapshot.ts` and
      `pdfReportRenderer.ts` remain test-only modules with no runtime wiring.
+
+### Production UI/UX and Enterprise Polish Plan — 2026-10-03 (FIRST SLICE IMPLEMENTED; NOT RELEASE READY)
+
+Live browser and source inspection confirmed that the remaining UI problem is
+not only visual density. The onboarding wizard preloads Sigma-specific answers,
+swallows failed API calls, and provisions a browser-local workspace while
+claiming isolated tenant setup. The shared header overflows at medium widths,
+the Ecosystem drawer hard-codes a black body in light appearance, and Reports
+has severe narrow-layout overflow. Shell, dashboard, Ecosystem, and report
+surfaces still mix provider data with seeded statuses, timings, activity copy,
+and benchmark figures without one display-level evidence contract.
+
+The implementation plan is in
+`docs/plans/production-ui-ux-enterprise-polish-plan-2026-10-02.md` and its DOCX
+counterpart. The first implementation slice now:
+
+- replaces Sigma-prefilled onboarding with a blank four-step manual-or-file
+  flow; file analysis creates provisional field suggestions that must be
+  confirmed or cleared before completion (`clientOnboarding.ts`, 5 tests),
+- removes onboarding's swallowed API failures, invented diagnostic completion,
+  client-side API-key capture, and isolated-infrastructure success claims,
+- records connector choices as setup requests only and labels the resulting
+  workspace as a browser-local draft (`PROVISIONING`, infrastructure not
+  verified),
+- converts the top-bar Playbook strip to one dropdown, self-hosts IBM Plex
+  Sans/Mono through bundled font packages, and makes the Ecosystem surface
+  theme-aware and overlay-based so it no longer squeezes the main view,
+- gates the Ecosystem fixtures behind the explicit demo flag; a normal
+  workspace now shows `Not checked` and no latency, health percentage, or fake
+  remediation, and
+- removes the Dashboard's fabricated system-health figures and activity feed;
+  static industry template values are now described as illustrative references,
+  not client performance.
+
+This is not the durable multi-tenant onboarding completion. `WorkspaceContext`
+still stores client drafts in localStorage because the current authenticated
+backend resolves only one workspace per request and has no safe multi-workspace
+creation/switching contract. File-assisted onboarding analyzes the upload but
+does not yet retain the source file as an onboarding record. Reports narrow-
+layout remediation, the global display-claim contract, route-by-route copy
+inventory, WCAG acceptance, and authenticated provider/browser flows remain.
 
 ### Strategic Direction & Launch Spine — 2026-09-28 (APPROVED)
 
@@ -435,6 +498,9 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | Sep 30 | SaaS Economics | Bottom-Up Market Sizing & Economics: $583.9M UAE+Saudi SAM, $17.43B TAM; deprecated conflicting $49/$199/$499 pricing; verified migration 0009 baseline ($499/$1,499/$3,499); established post-validation tiered model & Founding 10 partner offer. |
 | Sep 30 – Oct 1 | VANTA Lab & Context Sentinel | Neural & Context Hardening: Built VantaPreviewLab (/vanta-lab) & VantaSynapticBrainOrb (3D WebGL Three.js synaptic state engine & 10 vault topologies); modularized growthStrategy.ts; synchronized MASTER_CONTEXT.md; implemented universal master-context-sync skill & startup trigger. |
 | Oct 1 | User-journey audit and remediation planning | Corrected PDF download finding using supplied artifact; inspected report rendering and disconnected runtime paths; proposed shared ledger, bounded evidence graph, branded pdfcn exports, MRR/fee proposals and social delivery loop. Planning artifacts only; application fixes and runtime certification remain pending. |
+| Oct 2 | `1790884878029_6b0ou` follow-up UI/UX audit | Reproduced onboarding, top-bar, light-theme Ecosystem, responsive Reports, typography, and unsupported-claim defects in the live local browser; created an implementation-ready Markdown and DOCX plan. No product remediation or release certification completed. |
+| Oct 3 | UI/UX production-polish first slice | Implemented blank manual-or-file onboarding with review-gated file suggestions, truthful browser-local workspace status, compact Playbook dropdown, bundled IBM Plex fonts, light-theme Ecosystem empty state, overlay behavior, and removal of fabricated Dashboard health/activity claims. Targeted tests and production build passed; durable server-side multi-workspace onboarding and full route acceptance remain open. |
+| Oct 4 | Mission execution control plane first slice | Added `DispatchPlan`, mission/plan/sub-agent task identity, bounded multi-node execution for explicitly dispatched VANTA plans, parent/child pipeline ledger lineage, migration `0018_mission_execution_hierarchy.sql`, VANTA proposal plans, the explicit VANTA-to-task dispatch route, and the transcript confirmation affordance. Local lint and 62-file/421-test suite pass; the configured database migration is verified, while other environments and browser acceptance remain open. |
 
 ---
 
@@ -443,10 +509,12 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 1. **Managed Loop Launch Priority**: Non-spine feature expansion is frozen until the 6 P0 launch blockers (clean `npm run check`, 2-workspace tenant isolation, auth inventory, Stripe threat tests, secret scan, licensing verification) are cleared.
 2. **Context Drift Sentinel**: `MASTER_CONTEXT.md` must be updated on every multi-session or milestone boundary using the `master-context-sync` skill.
 3. **Monolithic Server**: `server.ts` handles multiple responsibilities; route decomposition planned for v0.3.0.
-4. **CSP Disabled in Dev**: Content Security Policy disabled in development for Vite HMR compatibility.
-5. **Scraper Anti-Bot Guard**: Headless scrapers can be challenged by YouTube BotGuard or Cloudflare; always use oEmbed or Jina Reader fallback.
-6. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
-7. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
+4. **Mission hierarchy migration**: Verify `0018_mission_execution_hierarchy.sql` in every deployed environment. VANTA remains read-only; only explicit dispatch creates a Pending Approval task.
+5. **CSP Disabled in Dev**: Content Security Policy disabled in development for Vite HMR compatibility.
+6. **Scraper Anti-Bot Guard**: Headless scrapers can be challenged by YouTube BotGuard or Cloudflare; always use oEmbed or Jina Reader fallback.
+7. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
+8. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
+9. **UI Claim Contract**: User-visible metrics and states must identify measured, provider-reported, user-confirmed, estimate, benchmark, simulation, stale, unavailable, or failed status. Words such as live, verified, operational, secure, isolated, and production-ready require evidence.
 
 ---
 

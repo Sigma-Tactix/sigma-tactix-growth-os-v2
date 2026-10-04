@@ -15,7 +15,6 @@ import {
   ExternalLink,
   MoreVertical,
   Plus,
-  Sparkles,
   Download,
   FileText,
   FileJson,
@@ -596,7 +595,7 @@ export default function Dashboard() {
                     ? `${reportingMetrics.providers?.length || connectedMarketingPipelines.length} marketing connectors supplied current metrics for this report.`
                     : hasVerifiedConnectors
                     ? `${connectedMarketingPipelines.length} marketing connectors have verified access. Metrics normalization in progress.`
-                    : `Presenting verified industry benchmarks for ${selectedIndustry.name} (${selectedIndustry.targetIcp}). Connect ad networks in Connectors to stream figures.`
+                    : `Illustrative reference values from the ${selectedIndustry.name} template. These are not client performance data. Connect verified sources to replace them.`
                   }
                 </p>
               </div>
@@ -642,12 +641,12 @@ export default function Dashboard() {
             <div className="space-y-1">
               <div className="text-xs font-mono text-[var(--sigma-text-muted)]">{selectedIndustry.metrics.primaryKpiName}</div>
               <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.primaryKpiValue}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Primary indicator</div>
+              <div className="text-[11px] text-[var(--sigma-text-muted)]">Template reference</div>
             </div>
             <div className="space-y-1">
               <div className="text-xs font-mono text-[var(--sigma-text-muted)]">{selectedIndustry.metrics.secondaryKpiName}</div>
               <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.secondaryKpiValue}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Secondary health</div>
+              <div className="text-[11px] text-[var(--sigma-text-muted)]">Template reference</div>
             </div>
             <div className="space-y-1">
               <div className="text-xs font-mono text-[var(--sigma-text-muted)]">CAC Benchmark</div>
@@ -715,24 +714,10 @@ export default function Dashboard() {
                   <motion.div key="widget-admin" layout initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 15 }}>
                     <GlassCard className="p-5" spotlight>
                        <div className="flex items-center justify-between mb-3">
-                         <span className="text-xs font-semibold text-[var(--sigma-text)]">System Health</span>
-                         <Badge variant="success" size="sm" dot>Operational</Badge>
+                         <span className="text-xs font-semibold text-[var(--sigma-text)]">Runtime Status</span>
+                         <Badge variant="default" size="sm">Not measured</Badge>
                        </div>
-                       <div className="space-y-3">
-                          <div>
-                            <div className="flex justify-between items-center text-xs text-[var(--sigma-text-muted)] mb-1">
-                               <span>Kernel Load</span>
-                               <span className="font-mono text-[var(--sigma-text)] font-semibold">12%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden">
-                               <div className="w-[12%] h-full bg-[var(--sigma-primary)] rounded-full" />
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center pt-2 border-t border-[var(--sigma-border)] text-xs">
-                             <span className="text-[var(--sigma-text-muted)]">Autonomous Swarm</span>
-                             <span className="font-mono text-emerald-400 font-semibold">12 Active Agents</span>
-                          </div>
-                       </div>
+                       <p className="text-xs leading-5 text-[var(--sigma-text-muted)]">No server health or active-agent telemetry is connected to this card.</p>
                     </GlassCard>
                   </motion.div>
                 )}
@@ -818,8 +803,8 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-3 gap-6 mt-6 pt-6 border-t border-[var(--sigma-border)] relative z-10">
                    <div>
-                      <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Peak Performance</div>
-                      <div className="text-base font-bold font-mono tabular-nums text-[var(--sigma-text)]">{format(subDays(now, 2), 'MMM dd, yyyy')}</div>
+                      <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Reference period</div>
+                      <div className="text-base font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedPresetLabel}</div>
                    </div>
                    <div>
                       <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Average CVR</div>
@@ -946,32 +931,10 @@ export default function Dashboard() {
                     <MoreVertical size={16} className="text-[var(--sigma-text-muted)]" />
                  </div>
 
-                 <div className="space-y-5">
-                    {[
-                      { time: 'Just now', event: 'Knowledge Base Sync', desk: '10 vaults synchronized and encrypted. All documents indexed and searchable.', icon: Sparkles, color: 'bg-emerald-400' },
-                      { time: '8m ago', event: 'Lead Capture Active', desk: 'Website intake form is live and receiving new inbound submissions.', icon: Rocket, color: 'bg-[var(--sigma-primary)]' },
-                      { time: '35m ago', event: 'Site Health Check', desk: `Full SEO and performance audit completed for ${currentWorkspace.domain || 'sigmatactix.com'}.`, icon: Target, color: 'bg-sky-400' },
-                      { time: '2h ago', event: 'Agent Activity Log', desk: 'All active agents running on schedule. Zero errors in the last 24 hours.', icon: TrendingUp, color: 'bg-emerald-400' },
-                    ].map((sig) => (
-                      <div key={sig.event} className="flex gap-3.5 group/sig cursor-pointer">
-                         <div className="shrink-0 mt-1">
-                            <div className={cn("w-2 h-2 rounded-full", sig.color)} />
-                            <div className="w-[1px] h-full bg-[var(--sigma-border)] mx-auto mt-2" />
-                         </div>
-                         <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                               <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">{sig.time}</span>
-                               <span className="text-xs font-semibold text-[var(--sigma-text)]">{sig.event}</span>
-                            </div>
-                            <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed group-hover/sig:text-[var(--sigma-text)] transition-colors">{sig.desk}</p>
-                         </div>
-                      </div>
-                    ))}
+                 <div className="rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] p-5 text-center">
+                    <p className="text-sm font-semibold text-[var(--sigma-text)]">No recorded activity</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--sigma-text-muted)]">Verified runs, approvals, and deliveries will appear here when ledger events exist.</p>
                  </div>
-
-                 <Button variant="outline" size="sm" className="mt-6 w-full">
-                    View Full Activity Log
-                 </Button>
               </GlassCard>
             )}
           </div>

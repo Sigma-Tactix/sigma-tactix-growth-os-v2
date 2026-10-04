@@ -35,6 +35,18 @@ export interface VantaActionProposal {
   expectedEffect: string;
   risk: 'low' | 'medium' | 'high';
   evidenceIds: string[];
+  dispatchPlan?: VantaDispatchPlanSummary | null;
+}
+
+export interface VantaDispatchPlanSummary {
+  planId: string;
+  missionId: string;
+  category: string;
+  ownerAgent: string;
+  entrySubAgent: string;
+  requiresApproval: boolean;
+  evidenceRefs: string[];
+  executionSubAgentIds?: string[];
 }
 
 export interface VantaMessage {

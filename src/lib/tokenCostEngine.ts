@@ -15,10 +15,10 @@ export type ModelProvider =
   | 'glm' 
   | 'lmstudio' 
   | 'ollama' 
+  | 'laya'
   | 'omniroute' 
   | 'opencode' 
-  | 'openrouter'
-  | 'typesafe';
+  | 'openrouter';
 
 export interface ModelInfo {
   id: string;
@@ -41,21 +41,25 @@ export interface ModelInfo {
 // Complete multi-provider AI model catalog with verified token unit pricing per 1M tokens (USD) as of September 2026
 export const ALL_AI_MODELS: ModelInfo[] = [
   // ==========================================
-  // 0. TypeSafe AI — System One Models
+  // 0. Laya — local System 1 decision engine
   // ==========================================
+  // Laya runs locally as a sidecar (laya-serve), not as a metered API. There is
+  // no per-token price; the real cost is compute, so the token fields are 0 and
+  // latencyGrade reflects measured local behaviour only.
   {
-    id: 'jev-latest',
-    provider: 'typesafe',
-    providerName: 'TypeSafe AI',
-    name: 'Jev (System One Decision Engine)',
-    contextWindow: '128K tokens',
-    promptPer1M: 0.042,
+    id: 'laya-local',
+    provider: 'laya',
+    providerName: 'Laya (local runtime)',
+    name: 'Laya System 1 Decision Engine (local)',
+    contextWindow: '8,192 tokens (multilingual checkpoint)',
+    promptPer1M: 0.00,
     candidatePer1M: 0.00,
-    description: 'Sub-100ms parallel probabilistic decision routing. Optimized for structured outputs, Action Queue triage, and fuzzy if-statements with 0% hallucination.',
-    recommendedRole: 'Fast Action Queue Triage & Sub-60s Inbound Lead Routing',
-    status: 'PREVIEW',
-    latencyGrade: 'INSTANT',
-    useCases: ['Action Queue Priority Scoring', 'Inbound Lead Qualification', 'Agent Swarm Safety Gates'],
+    description: 'Local, open-weights, non-autoregressive decision model. Returns typed choice / score / noul answers with a probability distribution in a single forward pass. Informs routing, triage and safety gates; never authorizes.',
+    recommendedRole: 'Fast Action Queue Triage, Module Routing & Sub-agent Safety Gates',
+    status: 'GA',
+    latencyGrade: 'BALANCED',
+    isLocal: true,
+    useCases: ['Action Queue Priority Scoring', 'Module Routing', 'Agent Swarm Safety Gates', 'Sub-agent Authorisation Prompts'],
     oneClickAgentTarget: 'agent-orchestrator'
   },
   // ==========================================

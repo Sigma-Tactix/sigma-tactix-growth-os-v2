@@ -2,7 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   callLayaSystemOne,
   classifyActionRisk,
+  classifyCategory,
+  authorizeSubAgentExecution,
   getDecisionRuntimeStatus,
+  validateQuestionSet,
+  CATEGORY_OWNERS,
+  LAYA_LIMITS,
+  MIN_AUTOMATION_CONFIDENCE,
+  type LayaQuestion,
 } from './decisionEngine';
 
 afterEach(() => {
@@ -87,5 +94,143 @@ describe('provider-neutral decision runtime', () => {
     expect(result.risk).toBe('HIGH');
     expect(result.requiresHITL).toBe(true);
     expect(result.shadowDecision).toMatchObject({ engine: 'laya', risk: 'LOW', requiresHITL: false });
+  });
+});
+
+// ── Agent / sub-agent decision points + guard rails ─────────────────────────
+
+describe('Laya request guard rails', () => {
+  it('rejects an empty question set', () => {
+    expect(validateQuestionSet({})).toMatch(/must not be empty/);
+  });
+
+  it('rejects a score level with no description (upstream would 422)', () => {
+    expect(
+      validateQuestionSet({ urgency: { type: 'score', instructions: 'How urgent?', criteria: ['low', ''] } }),
+    ).toMatch(/empty score level/);
+  });
+
+  it('rejects more than 512 options across all questions', () => {
+    const questions: Record<string, LayaQuestion> = {};
+    for (let q = 0; q < 6; q += 1) {
+      const criteria: Record<string, string> = {};
+      for (let i = 0; i < LAYA_LIMITS.maxChoiceOptions; i += 1) criteria[`opt_${i}`] = 'x';
+      questions[`q_${q}`] = { type: 'choice', instructions: 'pick', criteria };
+    }
+    expect(validateQuestionSet(questions)).toMatch(/options across all questions/);
+  });
+
+  it('accepts a well-formed question set', () => {
+    expect(
+      validateQuestionSet({
+        risk: { type: 'choice', instructions: 'risk?', criteria: { LOW: 'safe', HIGH: 'risky' } },
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('classifyCategory', () => {
+  it('derives the owning agent from CATEGORY_OWNERS', async () => {
+    const result = await classifyCategory('our ROAS dropped, check campaign bid strategy');
+    expect(result.category).toBe('performance');
+    expect(result.ownerAgent).toBe(CATEGORY_OWNERS.performance);
+    expect(result.engine).toBe('deterministic_policy');
+  });
+
+  it('routes lead work to the AI SDR owner', async () => {
+    const result = await classifyCategory('qualify this inbound lead and start a sequence');
+    expect(result.category).toBe('crm');
+    expect(result.ownerAgent).toBe('AI SDR (Sales Agent)');
+  });
+
+  it('never honours an unknown category proposed by the model', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ answers: { category: { choice: 'not_a_category', answer_confidence: 0.99 } } }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const result = await classifyCategory('audit the funnel', {
+      baseUrl: 'http://127.0.0.1:8000', mode: 'active', calibrated: true,
+    });
+    expect(result.engine).toBe('deterministic_policy');
+    expect(result.ownerAgent).toBe(CATEGORY_OWNERS.growth);
+  });
+
+  it('makes no network call when unconfigured', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    await classifyCategory('audit the funnel');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('authorizeSubAgentExecution — Laya never authorizes a write', () => {
+  it('structurally blocks a write-plane sub-agent WITHOUT calling the model', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const result = await authorizeSubAgentExecution({
+      subAgent: 'sequence-drafter', plane: 'write', proposedAction: 'Send an outreach sequence',
+    }, { baseUrl: 'http://127.0.0.1:8000', mode: 'active', calibrated: true });
+
+    expect(result.requiresHITL).toBe(true);
+    expect(result.permitted).toBe(false);
+    expect(result.engine).toBe('deterministic_policy');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('structurally blocks HIGH-risk read actions too', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const result = await authorizeSubAgentExecution({
+      subAgent: 'budget-allocator', plane: 'read', proposedAction: 'reallocate ad spend',
+    }, { baseUrl: 'http://127.0.0.1:8000', mode: 'active', calibrated: true });
+
+    expect(result.requiresHITL).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('permits a plain read-plane action without a model call', async () => {
+    const result = await authorizeSubAgentExecution({
+      subAgent: 'web-vitals-scorer', plane: 'read', proposedAction: 'score core web vitals',
+    });
+    expect(result.permitted).toBe(true);
+    expect(result.requiresHITL).toBe(false);
+  });
+
+  it('keeps policy when the model is under the confidence threshold', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ answers: { is_safe: { choice: 'NO', answer_confidence: 0.4 } } }),
+    }) as unknown as typeof fetch;
+
+    const result = await authorizeSubAgentExecution(
+      { subAgent: 'kpi-tracker', plane: 'read', proposedAction: 'compare target vs actual' },
+      { baseUrl: 'http://127.0.0.1:8000', mode: 'active', calibrated: true },
+    );
+    expect(result.engine).toBe('deterministic_policy');
+    expect(result.permitted).toBe(true);
+    expect(MIN_AUTOMATION_CONFIDENCE).toBeGreaterThan(0.4);
+  });
+});
+
+describe('runtime status honesty', () => {
+  it('reports unconfigured with no probe when LAYA_BASE_URL is unset', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const status = await getDecisionRuntimeStatus({ env: {} });
+    expect(status.state).toBe('unconfigured');
+    expect(status.executionEligible).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses automation eligibility when no checkpoint is loaded', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ status: 'ok', loaded: [] }),
+    }) as unknown as typeof fetch;
+
+    const status = await getDecisionRuntimeStatus({
+      env: { LAYA_BASE_URL: 'http://127.0.0.1:8000', LAYA_MODE: 'active', LAYA_CALIBRATED: 'true' },
+    });
+    expect(status.state).toBe('ready_unvalidated');
+    expect(status.executionEligible).toBe(false);
   });
 });

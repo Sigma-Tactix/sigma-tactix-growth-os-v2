@@ -169,7 +169,7 @@ describe("Phase 1 execution ledger store", () => {
     );
   });
 describe("syncTaskToLedger", () => {
-    it("creates the run and its creation event before any transition", async () => {
+  it("creates the run and its creation event before any transition", async () => {
       const sb = makeSb();
       const run = await syncTaskToLedger(sb, "ws-1", TASK, "user-1");
 
@@ -184,8 +184,24 @@ describe("syncTaskToLedger", () => {
         c => c.table === "ledger_events" && c.op === "insert" && c.payload.sequence === 0
       );
       expect(creationEvent.payload.workspace_id).toBe("ws-1");
-      expect(creationEvent.payload.actor).toBe("user-1");
+    expect(creationEvent.payload.actor).toBe("user-1");
+  });
+
+  it("persists mission lineage and resolves a parent task into parent_run_id", async () => {
+    const sb = makeSb({
+      trackRuns: true,
+      runs: [{ id: "parent-run", idempotency_key: "agent-task:parent-task", status: "running" }],
     });
+    const child = { ...TASK, id: "child-task", parentTaskId: "parent-task", missionId: "mission-1", planId: "plan-1", subAgentId: "evidence-collector", requiresApproval: true };
+    await syncTaskToLedger(sb, "ws-1", child, "user-1", "child queued");
+
+    const insertedRun = sb.calls.find(c => c.table === "ledger_runs" && c.op === "insert");
+    expect(insertedRun.payload.parent_run_id).toBe("parent-run");
+    expect(insertedRun.payload.mission_id).toBe("mission-1");
+    expect(insertedRun.payload.plan_id).toBe("plan-1");
+    expect(insertedRun.payload.sub_agent).toBe("evidence-collector");
+    expect(insertedRun.payload.requires_approval).toBe(true);
+  });
 
     it("records one event per hop with strictly monotonic sequence across the real lifecycle", async () => {
       const sb = makeSb({ trackRuns: true });

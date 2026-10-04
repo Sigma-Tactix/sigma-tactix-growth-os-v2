@@ -168,6 +168,11 @@ export async function listRunDurations(
 export interface LedgerRunRow {
   id: string;
   status: RunStatus;
+  parentRunId?: string | null;
+  missionId?: string | null;
+  planId?: string | null;
+  subAgent?: string | null;
+  requiresApproval?: boolean;
 }
 
 /** Reads the run that tracks `taskId`, or null if it was never recorded. */
@@ -178,7 +183,7 @@ export async function findLedgerRun(
 ): Promise<LedgerRunRow | null> {
   const { data, error } = await sb
     .from("ledger_runs")
-    .select("id, status")
+    .select("id, status, parent_run_id, mission_id, plan_id, sub_agent, requires_approval")
     .eq("workspace_id", workspaceId)
     .eq("idempotency_key", taskIdempotencyKey(taskId))
     .maybeSingle();
@@ -210,11 +215,23 @@ export async function syncTaskToLedger(
   workspaceId: string,
   task: AgentTask,
   actor: LedgerActor,
-  details?: string
+  details?: string,
+  metadata?: {
+    missionId?: string;
+    planId?: string;
+    subAgent?: string;
+    parentRunId?: string;
+    requiresApproval?: boolean;
+  }
 ): Promise<LedgerRunRow> {
   let run = await findLedgerRun(sb, workspaceId, task.id);
 
   if (!run) {
+    const parentRunId = metadata?.parentRunId ?? (
+      task.parentTaskId
+        ? (await findLedgerRun(sb, workspaceId, task.parentTaskId))?.id
+        : undefined
+    );
     const { data, error } = await sb
       .from("ledger_runs")
       .insert({
@@ -224,8 +241,13 @@ export async function syncTaskToLedger(
         correlation_id: task.id,
         idempotency_key: taskIdempotencyKey(task.id),
         status: "requested",
+        mission_id: metadata?.missionId ?? task.missionId ?? null,
+        plan_id: metadata?.planId ?? task.planId ?? null,
+        sub_agent: metadata?.subAgent ?? task.subAgentId ?? null,
+        parent_run_id: parentRunId ?? null,
+        requires_approval: metadata?.requiresApproval ?? task.requiresApproval ?? false,
       })
-      .select("id, status")
+      .select("id, status, parent_run_id, mission_id, plan_id, sub_agent, requires_approval")
       .single();
 
     if (error) throw new Error(`ledger run insert failed: ${error.message}`);
@@ -319,6 +341,11 @@ export async function listLedgerTasks(
   requestedBy?: string;
   createdAt: string;
   updatedAt: string;
+  missionId?: string | null;
+  planId?: string | null;
+  subAgentId?: string | null;
+  parentTaskId?: string | null;
+  requiresApproval?: boolean;
 }>> {
   const runs = await listLedgerRuns(sb, workspaceId, 200);
   return runs.map((run) => ({
@@ -330,6 +357,10 @@ export async function listLedgerTasks(
     status: RUN_STATUS_TO_TASK_STATUS[run.status],
     createdAt: run.createdAt,
     updatedAt: run.updatedAt,
+    missionId: run.missionId,
+    planId: run.planId,
+    subAgentId: run.subAgent,
+    requiresApproval: run.requiresApproval,
   }));
 }
 
@@ -466,10 +497,15 @@ export async function listLedgerRuns(
   updatedAt: string;
   /** Measured execution time in ms, or null when nothing was measured yet. */
   durationMs: number | null;
+  parentRunId: string | null;
+  missionId: string | null;
+  planId: string | null;
+  subAgent: string | null;
+  requiresApproval: boolean;
 }>> {
   const { data, error } = await sb
     .from("ledger_runs")
-    .select("id, correlation_id, objective, agent_name, status, created_at, updated_at")
+    .select("id, correlation_id, objective, agent_name, status, created_at, updated_at, parent_run_id, mission_id, plan_id, sub_agent, requires_approval")
     .eq("workspace_id", workspaceId)
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -494,5 +530,10 @@ export async function listLedgerRuns(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     durationMs: durations[row.id] ?? null,
+    parentRunId: row.parent_run_id ?? null,
+    missionId: row.mission_id ?? null,
+    planId: row.plan_id ?? null,
+    subAgent: row.sub_agent ?? null,
+    requiresApproval: Boolean(row.requires_approval),
   }));
 }

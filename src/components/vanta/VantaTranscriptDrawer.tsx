@@ -6,9 +6,10 @@ import { useVanta } from '@/src/contexts/VantaContext';
 const SOURCE_LABELS = { workspace: 'Workspace', vault: 'Vault', document: 'Document', web: 'Web', local: 'Local session' } as const;
 
 export default function VantaTranscriptDrawer({ embedded = false }: { embedded?: boolean }) {
-  const { messages, conversations, conversationId, transcriptOpen, setTranscriptOpen, playMessage, approveMemory, newConversation, loadConversation, setConversationShared, deleteCurrentConversation } = useVanta();
+  const { messages, conversations, conversationId, transcriptOpen, setTranscriptOpen, playMessage, approveMemory, dispatchProposal, newConversation, loadConversation, setConversationShared, deleteCurrentConversation } = useVanta();
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [dispatchedProposalIds, setDispatchedProposalIds] = React.useState<Set<string>>(new Set());
   const current = conversations.find(conversation => conversation.id === conversationId);
   if (!embedded && !transcriptOpen) return null;
 
@@ -59,6 +60,18 @@ export default function VantaTranscriptDrawer({ embedded = false }: { embedded?:
                 <button type="button" onClick={() => navigate(message.proposal!.targetRoute)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-black hover:bg-amber-300">
                   Review in {message.proposal.targetModule} <ExternalLink size={12} />
                 </button>
+                {message.proposal.dispatchPlan ? (
+                  <button
+                    type="button"
+                    disabled={dispatchedProposalIds.has(message.id)}
+                    onClick={() => {
+                      void dispatchProposal(message.proposal!).then(() => setDispatchedProposalIds(previous => new Set(previous).add(message.id)));
+                    }}
+                    className="mt-2 inline-flex items-center gap-2 rounded-xl border border-orange-300/40 px-3 py-2 text-xs font-bold text-orange-100 hover:bg-orange-400/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {dispatchedProposalIds.has(message.id) ? 'Queued · awaiting approval' : 'Queue governed mission'}
+                  </button>
+                ) : null}
                 <p className="mt-2 flex items-center gap-1 text-[10px] text-zinc-500"><ShieldCheck size={11} /> No action was executed here.</p>
               </div>
             )}

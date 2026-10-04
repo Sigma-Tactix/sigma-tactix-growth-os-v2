@@ -56,7 +56,7 @@ export interface ActionQueueItem {
   duration?: string;
   runPayload?: Record<string, any>;
   suggestedAction?: string;
-  jevTriage?: {
+  layaTriage?: {
     risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     confidence: number;
     requires_hitl: boolean;
@@ -231,7 +231,7 @@ export default function ActionQueueTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Provider-neutral System 1 state (Laya is the configured local provider).
-  const [jevStatus, setJevStatus] = useState<{
+  const [layaStatus, setLayaStatus] = useState<{
     success: boolean;
     configured: boolean;
     reachable: boolean;
@@ -265,7 +265,7 @@ export default function ActionQueueTab() {
       .then(res => res.json())
       .then(data => {
         if (data && data.success) {
-          setJevStatus(data);
+          setLayaStatus(data);
         }
       })
       .catch(() => undefined);
@@ -388,7 +388,7 @@ export default function ActionQueueTab() {
           return {
             ...i,
             risk,
-            jevTriage: {
+            layaTriage: {
               risk_level: risk,
               confidence,
               requires_hitl: requiresHitl,
@@ -467,7 +467,7 @@ export default function ActionQueueTab() {
           return {
             ...item,
             risk,
-            jevTriage: {
+            layaTriage: {
               risk_level: risk,
               confidence,
               requires_hitl: requiresHitl,
@@ -482,7 +482,7 @@ export default function ActionQueueTab() {
       setLastTriageStats({
         count,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        engine: jevStatus?.executionEligible ? 'Laya (calibrated)' : jevStatus?.state === 'shadow' ? 'Laya shadow + deterministic policy' : 'Deterministic policy',
+        engine: layaStatus?.executionEligible ? 'Laya (calibrated)' : layaStatus?.state === 'shadow' ? 'Laya shadow + deterministic policy' : 'Deterministic policy',
       });
       notifySuccess(
         'Queue triage complete',
@@ -618,7 +618,7 @@ export default function ActionQueueTab() {
       enclaveId: currentWorkspace.id,
       timestamp: 'Just now',
       suggestedAction: routingResult.recommended_action,
-      jevTriage: {
+      layaTriage: {
         risk_level: routingResult.priority === 'URGENT' ? 'CRITICAL' : 'HIGH',
         confidence: routingResult.confidence,
         requires_hitl: true,
@@ -654,17 +654,17 @@ export default function ActionQueueTab() {
               <div
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border',
-                  jevStatus?.reachable
+                  layaStatus?.reachable
                     ? 'bg-violet-500/15 text-violet-300 border-violet-500/40 shadow-sm'
                     : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                 )}
                 title={
-                  jevStatus?.detail || 'Decision runtime status unavailable'
+                  layaStatus?.detail || 'Decision runtime status unavailable'
                 }
               >
-                <Sparkles size={11} className={jevStatus?.reachable ? 'text-violet-400' : 'text-amber-400'} />
+                <Sparkles size={11} className={layaStatus?.reachable ? 'text-violet-400' : 'text-amber-400'} />
                 <span>
-                  System 1: {jevStatus ? `Laya ${jevStatus.state.replace('_', ' ')}` : 'status unavailable'}
+                  System 1: {layaStatus ? `Laya ${layaStatus.state.replace('_', ' ')}` : 'status unavailable'}
                 </span>
               </div>
             </div>
@@ -952,13 +952,13 @@ export default function ActionQueueTab() {
                         </span>
 
                         {/* Decision-engine result pill */}
-                        {item.jevTriage && (
+                        {item.layaTriage && (
                           <span
                             className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/35 px-2 py-0.5 text-[9px] font-mono font-bold text-violet-300"
-                            title={`Engine: ${item.jevTriage.engine} | Requires HITL: ${item.jevTriage.requires_hitl}`}
+                            title={`Engine: ${item.layaTriage.engine} | Requires HITL: ${item.layaTriage.requires_hitl}`}
                           >
                             <Sparkles size={9} className="text-violet-400" />
-                            <span>{item.jevTriage.engine.replace('_', ' ')} · {Math.round(item.jevTriage.confidence * 100)}%</span>
+                            <span>{item.layaTriage.engine.replace('_', ' ')} · {Math.round(item.layaTriage.confidence * 100)}%</span>
                           </span>
                         )}
 
@@ -1009,11 +1009,11 @@ export default function ActionQueueTab() {
                       )}
 
                       {/* Decision rationale if triaged */}
-                      {item.jevTriage?.reasoning && (
+                      {item.layaTriage?.reasoning && (
                         <div className="mt-2 flex items-start gap-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/20 p-2 text-[11px] font-mono text-violet-300">
                           <Bot size={13} className="shrink-0 mt-0.5 text-violet-400" />
                           <span>
-                            <strong>Decision rationale:</strong> {item.jevTriage.reasoning}
+                            <strong>Decision rationale:</strong> {item.layaTriage.reasoning}
                           </span>
                         </div>
                       )}
@@ -1031,7 +1031,7 @@ export default function ActionQueueTab() {
                       title="Run governed System 1 risk classification"
                     >
                       <Sparkles size={11} className={triagingItemId === item.id ? 'animate-spin text-violet-400' : 'text-violet-400'} />
-                      <span>{item.jevTriage ? 'Re-Score' : 'System 1 Score'}</span>
+                      <span>{item.layaTriage ? 'Re-Score' : 'System 1 Score'}</span>
                     </button>
 
                     {isPending ? (

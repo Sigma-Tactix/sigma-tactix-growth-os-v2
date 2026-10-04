@@ -14,6 +14,7 @@ import {
   streamVantaMessage,
   synthesizeVantaSpeech,
   transcribeVantaAudio,
+  dispatchVantaProposal,
 } from '@/src/lib/vantaApi';
 import type { VantaConversationSummary } from '@/src/lib/vantaApi';
 import {
@@ -49,6 +50,7 @@ interface VantaContextValue {
   stopListening: () => void;
   playMessage: (message: VantaMessage) => Promise<void>;
   approveMemory: (content: string, sourceMessageId?: string) => Promise<void>;
+  dispatchProposal: (proposal: NonNullable<VantaMessage['proposal']>) => Promise<void>;
   toggleInspect: () => void;
   stop: () => void;
   refreshStatus: () => Promise<void>;
@@ -330,6 +332,19 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [notifyError, notifySuccess]);
 
+  const dispatchProposal = useCallback(async (proposal: NonNullable<VantaMessage['proposal']>) => {
+    try {
+      dispatch({ type: 'AWAITING_CONFIRMATION' });
+      const result = await dispatchVantaProposal(proposal);
+      dispatch({ type: 'ACTION_OPENED' });
+      notifySuccess('Mission queued for approval', `${result.task.agentName} · ${result.dispatchPlan['executionSubAgentIds'] ? 'bounded plan' : 'focused plan'}. An owner or admin must approve it before execution.`);
+    } catch (error) {
+      dispatch({ type: 'WARNING', message: 'Mission was not queued.' });
+      notifyError('Mission was not queued', error instanceof Error ? error.message : 'Dispatch failed.');
+      throw error;
+    }
+  }, [notifyError, notifySuccess]);
+
   const loadConversation = useCallback(async (id: string) => {
     try {
       setMessages(await getVantaMessages(id));
@@ -386,6 +401,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     stopListening,
     playMessage: message => playText(message.content),
     approveMemory,
+    dispatchProposal,
     refreshStatus,
     newConversation: () => { setConversationId(null); setMessages([]); setFocusedEntityIds([]); },
     loadConversation,

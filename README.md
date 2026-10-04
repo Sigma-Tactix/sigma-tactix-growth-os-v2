@@ -150,7 +150,7 @@ Structured multi-tenant data partitioning powered by Supabase + pgvector:
 │           Supabase Cloud  (PostgreSQL 15 + pgvector + Auth)                 │
 │                                                                             │
 │   App Tables: workspaces, documents, intake_tokens, signals, etc.           │
-│   Migrations: 0001–0017 + init.sql + verify.sql                            │
+│   Migrations: 0001–0018 + init.sql + verify.sql                            │
 │   Security: 100% RLS Enforcement (Audited via verify.sql)                   │
 │   Secret Vaults: executive_vault, credentials_vault (Strict Deny)           │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -398,7 +398,7 @@ npm run check
 | Domain | Test Files | What's Covered |
 |---|---|---|
 | Agent System | 5 suites | RBAC policies, resolution, telemetry, pipelines, mailbox |
-| Decision Engine | 4 suites | Decision logic, calibration, traces, JEV engine |
+| Decision Engine | 4 suites | Decision logic, calibration, traces, Laya engine |
 | VANTA Neural Core | 4 suites | State machine, API, server logic, feature flags |
 | Hologram Engine | 3 suites | Graph rendering, planets, telemetry |
 | Workspace | 3 suites | Store, context, empty workspace handling |

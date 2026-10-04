@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest';
+import {
+  buildClientWorkspaceDraft,
+  createEmptyOnboardingDraft,
+  mergeDocumentSuggestion,
+  normalizeDomain,
+  validateOnboardingDraft,
+} from './clientOnboarding';
+
+describe('client onboarding contract', () => {
+  it('starts blank and does not invent a client profile', () => {
+    expect(createEmptyOnboardingDraft()).toMatchObject({
+      companyName: '',
+      domain: '',
+      industry: '',
+      icp: '',
+      geography: '',
+      brandVault: {
+        corePositioning: '',
+        offersAndPricing: '',
+        voiceAndTone: '',
+      },
+      connectors: [],
+    });
+  });
+
+  it('normalizes a website URL into a tenant domain', () => {
+    expect(normalizeDomain(' https://www.Example.com/path/ ')).toBe('example.com');
+  });
+
+  it('keeps document extraction provisional and never overwrites confirmed fields', () => {
+    const draft = createEmptyOnboardingDraft();
+    draft.companyName = 'Confirmed Company';
+    draft.sources.companyName = { kind: 'manual', status: 'confirmed' };
+
+    const merged = mergeDocumentSuggestion(draft, {
+      fileName: 'brief.pdf',
+      title: 'Suggested Company',
+      summary: 'A source-grounded positioning summary.',
+      category: 'Brief',
+    });
+
+    expect(merged.companyName).toBe('Confirmed Company');
+    expect(merged.brandVault.corePositioning).toBe('A source-grounded positioning summary.');
+    expect(merged.sources.corePositioning).toEqual({
+      kind: 'file',
+      status: 'suggested',
+      fileName: 'brief.pdf',
+    });
+  });
+
+  it('requires client identity and explicit review of file suggestions', () => {
+    const draft = mergeDocumentSuggestion(createEmptyOnboardingDraft(), {
+      fileName: 'brief.pdf',
+      summary: 'Draft positioning',
+    });
+    draft.companyName = 'Acme';
+    draft.domain = 'acme.test';
+
+    expect(validateOnboardingDraft(draft)).toContain(
+      'Review or clear every file-derived suggestion before creating the workspace.',
+    );
+  });
+
+  it('builds an honest local workspace payload without infrastructure claims', () => {
+    const draft = createEmptyOnboardingDraft();
+    draft.companyName = 'Acme';
+    draft.domain = 'https://acme.test';
+    draft.industry = 'Logistics';
+    draft.sources.companyName = { kind: 'manual', status: 'confirmed' };
+    draft.sources.domain = { kind: 'manual', status: 'confirmed' };
+
+    expect(buildClientWorkspaceDraft(draft)).toEqual({
+      name: 'Acme',
+      domain: 'acme.test',
+      industry: 'Logistics',
+      icp: '',
+      geography: '',
+      brandVault: {
+        corePositioning: '',
+        offersAndPricing: '',
+        voiceAndTone: '',
+      },
+      connectors: [],
+    });
+  });
+});

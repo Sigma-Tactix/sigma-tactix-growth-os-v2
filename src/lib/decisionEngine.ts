@@ -22,6 +22,55 @@ export type DecisionRuntimeState =
 export type DecisionRuntimeMode = 'shadow' | 'active';
 export type DecisionEngine = 'laya' | 'deterministic_policy';
 
+/**
+ * Minimum `answer_confidence` before Laya may steer anything, even in active
+ * mode. Deliberately conservative and deliberately a named constant: it must be
+ * fitted and validated against held-out client data before it is trusted. Until
+ * then no number here has been measured for this workload.
+ *
+ * Two confidence numbers exist and are NOT interchangeable:
+ *   - `confidence`        = 1 - normalised entropy (how peaked the distribution)
+ *   - `answer_confidence` = probability of the reported answer  <- we gate on this
+ */
+export const MIN_AUTOMATION_CONFIDENCE = 0.9;
+
+/** Upstream laya-serve amplification guards, mirrored so we fail locally. */
+export const LAYA_LIMITS = {
+  maxQuestions: 64,
+  maxChoiceOptions: 100,
+  maxLevels: 100,
+  maxOptionsTotal: 512,
+} as const;
+
+/**
+ * The 17 category keys mapped to their owning Tier 1 agent. Laya may *suggest* a
+ * category, but the result is always validated against this map — the model can
+ * never invent an owner or widen its own vault scope.
+ *
+ * Mirrors `AGENT_ARCHITECTURE.md` §6 and `agentRegistry.ts`.
+ */
+export const CATEGORY_OWNERS = {
+  growth: 'Audit Diagnostic Agent',
+  uiux: 'Audit Diagnostic Agent',
+  reporting: 'Audit Diagnostic Agent',
+  simulation: 'Audit Diagnostic Agent',
+  performance: 'Marketing Agent',
+  competitors: 'Marketing Agent',
+  authority: 'SEO & Authority Agent',
+  content: 'Creative Director Agent',
+  social: 'Creative Director Agent',
+  crm: 'AI SDR (Sales Agent)',
+  customer_success: 'Customer Success Agent',
+  cockpit: 'Operations Agent',
+  brain: 'Operations Agent',
+  second_brain: 'Operations Agent',
+  operations: 'Operations Agent',
+  security: 'Operations Agent',
+  engineering: 'Operations Agent',
+} as const;
+
+export type CategoryKey = keyof typeof CATEGORY_OWNERS;
+
 export interface DecisionRuntimeStatus {
   provider: 'laya';
   configured: boolean;
@@ -111,6 +160,43 @@ function normalizeAnswer(answer: any): NormalizedDecisionAnswer {
   return { value, confidence: answerConfidence(answer, probabilities), probabilities };
 }
 
+/**
+ * Guards laya-serve's amplification limits. Exceeding them yields a 413/422 at
+ * the boundary; failing here keeps the fault local and keeps shadow/fallback
+ * alive instead of turning a guardrail into an outage.
+ */
+export function validateQuestionSet(questions: Record<string, LayaQuestion>): string | null {
+  const names = Object.keys(questions);
+  if (names.length === 0) return 'questions must not be empty';
+  if (names.length > LAYA_LIMITS.maxQuestions) {
+    return `at most ${LAYA_LIMITS.maxQuestions} questions per request`;
+  }
+  let optionTotal = 0;
+  for (const [name, question] of Object.entries(questions)) {
+    if (question.type === 'choice') {
+      const count = Object.keys(question.criteria || {}).length;
+      if (count > LAYA_LIMITS.maxChoiceOptions) {
+        return `question "${name}" exceeds ${LAYA_LIMITS.maxChoiceOptions} choice options`;
+      }
+      optionTotal += count;
+    } else if (question.type === 'score') {
+      const levels = Array.isArray(question.criteria) ? question.criteria : [];
+      if (levels.length > LAYA_LIMITS.maxLevels) {
+        return `question "${name}" exceeds ${LAYA_LIMITS.maxLevels} score levels`;
+      }
+      // Upstream rejects an empty/null level rather than scoring it.
+      if (levels.some(level => !String(level ?? '').trim())) {
+        return `question "${name}" has an empty score level`;
+      }
+      optionTotal += levels.length;
+    }
+  }
+  if (optionTotal > LAYA_LIMITS.maxOptionsTotal) {
+    return `at most ${LAYA_LIMITS.maxOptionsTotal} options across all questions`;
+  }
+  return null;
+}
+
 export async function callLayaSystemOne(
   state: unknown,
   questions: Record<string, LayaQuestion>,
@@ -118,6 +204,8 @@ export async function callLayaSystemOne(
 ): Promise<LayaSystemOneResult> {
   const config = runtimeOptions(options);
   if (!config.baseUrl) throw new Error('LAYA_BASE_URL is not configured');
+  const limitError = validateQuestionSet(questions);
+  if (limitError) throw new Error(`Laya request rejected: ${limitError}`);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
   const startedAt = Date.now();
@@ -333,5 +421,144 @@ export async function evaluateAgentSwarmSafety(
     return config.mode === 'active' && config.calibrated ? layaDecision : { ...fallback, shadowDecision: layaDecision };
   } catch {
     return fallback;
+  }
+}
+
+// ── Agent / sub-agent decision points ──────────────────────────────────────
+// Laya is a decision service the tiers call, not a tier itself.
+//   T0 VANTA   -> classifyCategory()
+//   T1 Agent   -> classifyActionRisk()
+//   T2 Sub-agent-> authorizeSubAgentExecution()
+
+/**
+ * True only when Laya is explicitly permitted to steer AND was confident enough
+ * to be believed. Anything else keeps deterministic policy in charge.
+ */
+function layaMaySteer(config: Required<DecisionRuntimeOptions>, confidence: number): boolean {
+  return config.mode === 'active' && config.calibrated && confidence >= MIN_AUTOMATION_CONFIDENCE;
+}
+
+/**
+ * Tier 0 decision: which category, and therefore which owning agent, handles
+ * this intent. Deterministic keyword policy is authoritative in shadow mode.
+ *
+ * The returned owner always comes from `CATEGORY_OWNERS`, so a model can never
+ * route work to an agent holding wider vault scope than the map allows.
+ */
+export async function classifyCategory(
+  intent: string,
+  options: DecisionRuntimeOptions = {},
+) {
+  const startedAt = Date.now();
+  const q = intent.toLowerCase();
+  let category: CategoryKey = 'growth';
+  if (/\b(lead|outreach|prospect|sequence|sdr|crm|deal)\b/i.test(q)) category = 'crm';
+  else if (/\b(roas|ad spend|campaign|bid|cpc|creative fatigue)\b/i.test(q)) category = 'performance';
+  else if (/\b(seo|keyword|backlink|aeo|citation|schema)\b/i.test(q)) category = 'authority';
+  else if (/\b(copy|carousel|video|creative|visual|brand)\b/i.test(q)) category = 'content';
+  else if (/\b(churn|renewal|health score|qbr|retention)\b/i.test(q)) category = 'customer_success';
+  else if (/\b(sop|workflow|schedule|cron|connector|pipeline)\b/i.test(q)) category = 'operations';
+  else if (/\b(audit|diagnostic|score|funnel|competitor)\b/i.test(q)) category = 'growth';
+
+  const fallback = {
+    category,
+    ownerAgent: CATEGORY_OWNERS[category],
+    confidence: 0.85,
+    probabilities: { [category]: 0.85 },
+    engine: 'deterministic_policy' as DecisionEngine,
+    durationMs: Date.now() - startedAt,
+  };
+  const config = runtimeOptions(options);
+  if (!config.baseUrl) return fallback;
+  try {
+    const criteria = Object.fromEntries(
+      (Object.keys(CATEGORY_OWNERS) as CategoryKey[]).map(key => [key, `work owned by ${CATEGORY_OWNERS[key]}`]),
+    );
+    const result = await callLayaSystemOne(`Operator intent: ${intent}`, {
+      category: { type: 'choice', instructions: 'Which category of work is this?', criteria },
+    }, config);
+    const answer = result.answers.category;
+    const candidate = String(answer?.value ?? category) as CategoryKey;
+    // An unrecognised category is never honoured, even at full confidence. We
+    // return the policy fallback rather than a Laya-labelled decision that
+    // silently substituted a different category — the engine label must always
+    // name the thing that actually chose the value.
+    if (!(candidate in CATEGORY_OWNERS)) return fallback;
+    const layaDecision = {
+      category: candidate,
+      ownerAgent: CATEGORY_OWNERS[candidate],
+      confidence: answer?.confidence ?? 0,
+      probabilities: answer?.probabilities ?? {},
+      engine: 'laya' as DecisionEngine,
+      durationMs: result.durationMs,
+    };
+    return layaMaySteer(config, layaDecision.confidence) ? layaDecision : { ...fallback, shadowDecision: layaDecision };
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Tier 2 decision: may this sub-agent run autonomously right now?
+ *
+ * Laya NEVER authorizes a write. The structural block below is evaluated and
+ * returned BEFORE any network call, so no model is ever asked to rule on a
+ * write-plane or destructive action. The human approval gate is structural,
+ * not probabilistic.
+ */
+export async function authorizeSubAgentExecution(
+  input: {
+    subAgent: string;
+    plane: 'read' | 'write';
+    proposedAction: string;
+    risk?: ActionRiskLevel;
+  },
+  options: DecisionRuntimeOptions = {},
+) {
+  const startedAt = Date.now();
+  const policyRisk = input.risk || deterministicRisk({
+    title: input.subAgent,
+    summary: input.proposedAction,
+  }).risk;
+  const structuralBlock = input.plane === 'write' || policyRisk === 'CRITICAL' || policyRisk === 'HIGH';
+
+  const authoritative = {
+    permitted: !structuralBlock,
+    requiresHITL: structuralBlock,
+    rationale: structuralBlock
+      ? `Write-plane or high-risk action (${policyRisk}) requires a human approval token.`
+      : 'Read-plane action within policy; no approval required.',
+    confidence: 1,
+    engine: 'deterministic_policy' as DecisionEngine,
+    durationMs: Date.now() - startedAt,
+  };
+  if (structuralBlock) return authoritative;
+
+  const config = runtimeOptions(options);
+  if (!config.baseUrl) return authoritative;
+  try {
+    const result = await callLayaSystemOne(
+      `Sub-agent: ${input.subAgent}\nProposed action: ${input.proposedAction}`,
+      {
+        is_safe: {
+          type: 'choice',
+          instructions: 'Is this action safe to run without human review?',
+          criteria: { YES: 'safe and bounded', NO: 'unsafe or outside authority' },
+        },
+      },
+      config,
+    );
+    const answer = result.answers.is_safe;
+    const layaDecision = {
+      permitted: String(answer?.value) === 'YES',
+      requiresHITL: String(answer?.value) !== 'YES',
+      rationale: `Laya System 1 safety decision (confidence ${(answer?.confidence ?? 0).toFixed(2)}).`,
+      confidence: answer?.confidence ?? 0,
+      engine: 'laya' as DecisionEngine,
+      durationMs: result.durationMs,
+    };
+    return layaMaySteer(config, layaDecision.confidence) ? layaDecision : { ...authoritative, shadowDecision: layaDecision };
+  } catch {
+    return authoritative;
   }
 }

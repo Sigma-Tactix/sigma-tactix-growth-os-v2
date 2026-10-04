@@ -1,5 +1,6 @@
 import { apiFetch } from './api';
 import type { VantaMessage, VantaProviderStatus } from './vanta';
+import type { AgentTask } from '../types';
 
 export interface VantaConversationSummary {
   id: string;
@@ -162,5 +163,12 @@ export async function synthesizeVantaSpeech(text: string): Promise<{ audioBase64
 export async function saveVantaMemory(content: string, sourceMessageId?: string): Promise<void> {
   await jsonOrThrow(await apiFetch('/api/workspace/vanta/memories', {
     method: 'POST', body: JSON.stringify({ content, sourceMessageId, shared: false }),
+  }));
+}
+
+export async function dispatchVantaProposal(proposal: NonNullable<VantaMessage['proposal']>): Promise<{ task: AgentTask; dispatchPlan: Record<string, unknown> }> {
+  return jsonOrThrow(await apiFetch('/api/workspace/missions/dispatch', {
+    method: 'POST',
+    body: JSON.stringify({ proposal }),
   }));
 }

@@ -27,6 +27,7 @@ import { cn } from '@/src/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/src/contexts/ToastContext';
 import QuickFixAssistant, { QuickFixData } from '@/src/components/QuickFixAssistant';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 
 export type EcosystemItemStatus = 'OPERATIONAL' | 'WARNING' | 'OFFLINE';
 
@@ -80,9 +81,10 @@ export default function EcosystemStatusBar({
   const [expandedFixId, setExpandedFixId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [remediatedIds, setRemediatedIds] = useState<Record<string, boolean>>({});
+  const demoMode = isDemoSeedEnabled();
 
   // Dynamic status items with realistic ecosystem state & actionable "how-to" fixes
-  const [sections, setSections] = useState<EcosystemSection[]>([
+  const [sections, setSections] = useState<EcosystemSection[]>(demoMode ? [
     {
       id: 'sec-intel',
       name: 'Intelligence & Performance',
@@ -372,7 +374,7 @@ export default function EcosystemStatusBar({
         }
       ]
     }
-  ]);
+  ] : []);
 
   // Handle 1-click Quick Fix
   const handleApplyQuickFix = (elementId: string) => {
@@ -407,6 +409,13 @@ export default function EcosystemStatusBar({
 
   // Run full health refresh
   const handlePingAll = () => {
+    if (!demoMode) {
+      notifyInfo(
+        'Runtime Check Unavailable',
+        'No health-check endpoint is connected to this panel. No operational status was inferred.'
+      );
+      return;
+    }
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
@@ -435,7 +444,7 @@ export default function EcosystemStatusBar({
   const totalCount = allElements.length;
   const operationalCount = allElements.filter(e => e.status === 'OPERATIONAL').length;
   const issueCount = allElements.filter(e => e.status !== 'OPERATIONAL').length;
-  const overallHealthPercent = Math.round((operationalCount / totalCount) * 100);
+  const overallHealthPercent = totalCount > 0 ? Math.round((operationalCount / totalCount) * 100) : null;
 
   // Filter elements based on selection & search
   const filteredSections = sections.map(sec => {
@@ -461,11 +470,11 @@ export default function EcosystemStatusBar({
 
   return (
     <div className={cn(
-      "z-40 flex flex-col bg-[#0b0c10] border-r border-white/10 text-white shadow-2xl transition-all duration-300",
-      isDocked ? "w-80 h-full relative" : "fixed inset-y-0 left-0 w-96 max-w-[90vw] backdrop-blur-xl"
+      "z-40 flex flex-col bg-[var(--sigma-surface)] border-r border-[var(--sigma-border)] text-[var(--sigma-text)] shadow-2xl transition-all duration-300",
+      "fixed inset-y-0 left-0 w-96 max-w-[90vw] backdrop-blur-xl"
     )}>
       {/* Header bar */}
-      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+      <div className="p-4 border-b border-[var(--sigma-border)] flex items-center justify-between bg-[var(--sigma-surface-raised)]">
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <Activity size={18} className={cn("text-accent", isRefreshing && "animate-spin")} />
@@ -474,17 +483,17 @@ export default function EcosystemStatusBar({
             )}
           </div>
           <div>
-            <div className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-              <span>Ecosystem Live Status</span>
+            <div className="text-xs font-bold text-[var(--sigma-text)] flex items-center gap-2">
+              <span>Ecosystem status</span>
               <span className={cn(
                 "text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase",
-                issueCount === 0 ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"
+                overallHealthPercent === null ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]" : issueCount === 0 ? "bg-green-500/20 text-green-700 dark:text-green-300" : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
               )}>
-                {overallHealthPercent}% UP
+                {overallHealthPercent === null ? 'Not checked' : demoMode ? `${overallHealthPercent}% demo` : `${overallHealthPercent}% up`}
               </span>
             </div>
-            <div className="text-[10px] font-mono text-zinc-400">
-              {issueCount === 0 ? 'All elements operational' : `${issueCount} items need attention`}
+            <div className="text-[10px] text-[var(--sigma-text-muted)]">
+              {overallHealthPercent === null ? 'No runtime evidence available' : demoMode ? 'Sample data — not runtime telemetry' : issueCount === 0 ? 'All checked elements operational' : `${issueCount} items need attention`}
             </div>
           </div>
         </div>
@@ -494,7 +503,7 @@ export default function EcosystemStatusBar({
             onClick={handlePingAll}
             disabled={isRefreshing}
             title="Ping all ecosystem elements"
-            className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all disabled:opacity-50"
+            className="p-1.5 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin text-accent")} />
           </button>
@@ -503,7 +512,7 @@ export default function EcosystemStatusBar({
             <button
               onClick={onToggleDock}
               title={isDocked ? "Undock / Float" : "Dock to Left"}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all text-xs font-mono"
+              className="p-1.5 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all text-xs font-mono"
             >
               <Sliders size={14} />
             </button>
@@ -511,7 +520,8 @@ export default function EcosystemStatusBar({
 
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+            aria-label="Close ecosystem status"
+            className="p-1.5 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all"
           >
             <X size={16} />
           </button>
@@ -519,7 +529,7 @@ export default function EcosystemStatusBar({
       </div>
 
       {/* Quick Search & Filter Controls */}
-      <div className="p-3 border-b border-white/5 space-y-2 bg-black/20">
+      <div className="p-3 border-b border-[var(--sigma-border)] space-y-2 bg-[var(--sigma-surface-subtle)]">
         {/* Search */}
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -528,7 +538,7 @@ export default function EcosystemStatusBar({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter elements, agents, vaults..."
-            className="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 pl-8 pr-3 text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-accent"
+            className="w-full bg-[var(--sigma-input)] border border-[var(--sigma-border)] rounded-lg py-1.5 pl-8 pr-3 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -569,8 +579,8 @@ export default function EcosystemStatusBar({
       {/* Accordion Tree of Sections -> Subsections -> Elements */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
         {filteredSections.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500 text-xs font-mono">
-            No matching ecosystem elements found.
+          <div className="p-8 text-center text-[var(--sigma-text-muted)] text-sm">
+            {totalCount === 0 ? 'No runtime health checks have been recorded for this workspace.' : 'No matching ecosystem elements found.'}
           </div>
         ) : (
           filteredSections.map(section => {
@@ -755,18 +765,18 @@ export default function EcosystemStatusBar({
       </div>
 
       {/* Footer bar with quick summary & auto-healing status */}
-      <div className="p-3 border-t border-white/10 bg-black/60 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+      <div className="p-3 border-t border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] flex items-center justify-between text-[10px] text-[var(--sigma-text-muted)]">
         <div className="flex items-center gap-1.5">
           <ShieldCheck size={13} className="text-accent" />
-          <span>Self-Healing Engine:</span>
-          <span className="text-green-400 font-bold">ACTIVE</span>
+          <span>Runtime verification:</span>
+          <span className="font-bold">{demoMode ? 'DEMO DATA' : 'NOT RUN'}</span>
         </div>
         <button
           onClick={handlePingAll}
           className="text-accent hover:underline flex items-center gap-1"
         >
           <RefreshCw size={10} />
-          <span>Ping All</span>
+          <span>{demoMode ? 'Refresh demo' : 'Check availability'}</span>
         </button>
       </div>
     </div>

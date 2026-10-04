@@ -271,3 +271,15 @@ SELECT CASE
          ) THEN 'OK'
          ELSE 'FAIL - ledger_runs.status is unconstrained'
        END AS status;
+
+\echo '== 23. Mission execution: hierarchy columns are present =='
+SELECT expected.column_name,
+       CASE WHEN c.column_name IS NOT NULL THEN 'OK' ELSE 'FAIL - apply 0018_mission_execution_hierarchy' END AS status
+FROM (VALUES
+  ('mission_id'), ('plan_id'), ('sub_agent'), ('parent_run_id'), ('requires_approval')
+) AS expected(column_name)
+LEFT JOIN information_schema.columns c
+  ON c.table_schema = 'public'
+ AND c.table_name = 'ledger_runs'
+ AND c.column_name = expected.column_name
+ORDER BY expected.column_name;

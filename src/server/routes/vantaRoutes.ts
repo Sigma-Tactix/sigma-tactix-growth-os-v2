@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Type } from '@google/genai';
 import path from 'path';
 import crypto from 'crypto';
+import { dispatchPlanFromVantaProposal, expandDispatchPlan } from '../../lib/missionExecution.js';
 
 export interface VantaRouterDeps {
   expensiveLimiter: any;
@@ -430,6 +431,14 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
         }) : null)
         .filter(Boolean);
       const evidence = [...output.evidence, ...webEvidence].slice(0, 12);
+      // VANTA supplies intent and evidence; ownership and sub-agent scope are
+      // derived locally. This emits a plan without authorizing execution.
+      const dispatchPlan = output.proposal
+        ? (() => {
+            const plan = dispatchPlanFromVantaProposal(output.proposal);
+            return plan ? expandDispatchPlan(plan) : null;
+          })()
+        : null;
       const { data: assistantMessage, error: assistantError } = await res.locals.sb.from('vanta_messages').insert({
         workspace_id: res.locals.wsId,
         conversation_id: conversation.id,
@@ -437,7 +446,7 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
         role: 'assistant',
         content: output.text,
         evidence,
-        proposal: output.proposal || null,
+        proposal: output.proposal ? { ...output.proposal, dispatchPlan } : null,
         memory_suggestion: output.memorySuggestion || null,
         provider: 'gemini',
         model,
@@ -453,7 +462,8 @@ export function createVantaRouter(deps: VantaRouterDeps): Router {
         role: 'assistant',
         content: output.text,
         evidence,
-        proposal: output.proposal,
+        proposal: output.proposal ? { ...output.proposal, dispatchPlan } : undefined,
+        dispatchPlan,
         memorySuggestion: output.memorySuggestion,
         topologyEntityIds: output.topologyEntityIds,
         createdAt: assistantMessage.created_at,

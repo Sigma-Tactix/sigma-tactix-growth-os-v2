@@ -386,6 +386,14 @@ export interface AgentTask {
   id: string;
   agentName: SystemAgentName;
 
+  /** Mission-control identity. A task may be resumed without losing its plan. */
+  missionId?: string;
+  planId?: string;
+  subAgentId?: string;
+  executionSubAgentIds?: string[];
+  parentTaskId?: string;
+  requiresApproval?: boolean;
+
   goal: string;
   timestamp: string;
   status: 'Pending Approval' | 'Running' | 'Success' | 'Failed' | 'Rejected';

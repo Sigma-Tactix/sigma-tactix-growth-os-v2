@@ -57,6 +57,7 @@ import { AGENCY_AGENT_PERSONAS } from "./src/data/agencyAgentPersonas.js";
 import { DISCOVERED_AGENCY_AGENTS } from "./src/data/agencyAgentsRegistry.js";
 import { parseSkillFile } from "./src/lib/agentSkillFiles.js";
 import { MODULE_TO_SYSTEM_AGENT, resolveAgentDispatch, personaInstructionsFor } from "./src/lib/agentResolution.js";
+import { createDispatchPlan, dispatchPlanFromVantaProposal, expandDispatchPlan, materializeDispatchGraph, taskMetadata } from "./src/lib/missionExecution.js";
 import { sendEmail } from "./src/lib/email.js";
 import { getPublicClient, getServiceRoleClient } from "./src/lib/supabaseAdmin.js";
 import { isStripeConfigured, isStripeWebhookConfigured, getStripeClient } from "./src/lib/stripe.js";
@@ -451,10 +452,17 @@ async function recordLedgerTask(
   res: Response,
   task: AgentTask,
   actor: string,
-  details?: string
+  details?: string,
+  metadata?: {
+    missionId?: string;
+    planId?: string;
+    subAgent?: string;
+    parentRunId?: string;
+    requiresApproval?: boolean;
+  }
 ): Promise<void> {
   try {
-    await syncTaskToLedger(res.locals.sb, res.locals.wsId, task, actor, details);
+    await syncTaskToLedger(res.locals.sb, res.locals.wsId, task, actor, details, metadata);
   } catch (err: any) {
     console.error(
       `Execution ledger write FAILED for task ${task.id} (status: ${task.status}):`,
@@ -2408,8 +2416,7 @@ const SUPPORTED_AI_PROVIDERS = [
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter",
-  "typesafe"
+  "openrouter"
 ] as const;
 type AIProvider = typeof SUPPORTED_AI_PROVIDERS[number];
 
@@ -2425,8 +2432,7 @@ const UI_PRIMARY_PROVIDERS = [
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter",
-  "typesafe"
+  "openrouter"
 ] as const;
 
 async function resolveEffectiveProviderKey(res: Response, provider: string): Promise<string | undefined> {
@@ -2457,7 +2463,6 @@ async function resolveEffectiveProviderKey(res: Response, provider: string): Pro
     omniroute: process.env.OMNIROUTE_API_KEY,
     opencode: process.env.OPENCODE_API_KEY,
     openrouter: process.env.OPENROUTER_API_KEY,
-    typesafe: process.env.TYPESAFE_API_KEY,
     lmstudio: "local-on-device",
     ollama: "local-on-device"
   };
@@ -4447,12 +4452,25 @@ app.post("/api/workspace/run-agent", async (req: Request, res: Response) => {
     }
   }
 
+  const dispatchPlan = createDispatchPlan({
+    intent: goal,
+    agentName,
+    moduleKey,
+  });
+  const missionMetadata = taskMetadata(dispatchPlan, {});
+
   const newTask: AgentTask = {
     // Collision-resistant: the execution ledger keys its idempotency off this
     // id, so two runs submitted in the same millisecond must not share one.
     id: "task-" + crypto.randomUUID(),
     agentName,
     goal,
+    missionId: missionMetadata.missionId,
+    planId: missionMetadata.planId,
+    subAgentId: missionMetadata.subAgentId,
+    executionSubAgentIds: dispatchPlan.executionSubAgentIds,
+    requiresApproval: missionMetadata.requiresApproval,
+    moduleKey,
     timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
     status: "Pending Approval",
     requestedVaults,
@@ -4463,8 +4481,83 @@ app.post("/api/workspace/run-agent", async (req: Request, res: Response) => {
   };
   db.agentTasks.unshift(newTask);
   await saveDB(res, db);
-  await recordLedgerTask(res, newTask, res.locals.userId, "Task queued for HITL review");
+  await recordLedgerTask(res, newTask, res.locals.userId, "Task queued for HITL review", {
+    ...missionMetadata,
+    subAgent: missionMetadata.subAgentId,
+  });
   res.json({ success: true, task: newTask });
+});
+
+// Explicit VANTA handoff: VANTA may explain and propose, but only this user
+// action turns the server-derived proposal into a queued, approval-gated task.
+// Ownership and node selection are reconstructed from the local registry; the
+// request body cannot widen the plan's authority.
+app.post("/api/workspace/missions/dispatch", async (req: Request, res: Response) => {
+  const proposal = req.body?.proposal;
+  if (!proposal || typeof proposal.objective !== "string" || typeof proposal.targetModule !== "string" || !Array.isArray(proposal.evidenceIds)) {
+    res.status(400).json({ error: "A VANTA proposal with objective, targetModule, and evidenceIds is required." });
+    return;
+  }
+  const basePlan = dispatchPlanFromVantaProposal({
+    id: typeof proposal.id === "string" ? proposal.id : "vanta-proposal",
+    title: typeof proposal.title === "string" ? proposal.title : proposal.objective.slice(0, 120),
+    objective: proposal.objective,
+    targetModule: proposal.targetModule,
+    targetRoute: typeof proposal.targetRoute === "string" ? proposal.targetRoute : "",
+    expectedEffect: typeof proposal.expectedEffect === "string" ? proposal.expectedEffect : "",
+    risk: proposal.risk === "high" || proposal.risk === "medium" ? proposal.risk : "low",
+    evidenceIds: proposal.evidenceIds.filter((id: unknown): id is string => typeof id === "string"),
+  });
+  if (!basePlan) {
+    res.status(400).json({ error: "VANTA proposed an unsupported module; no task was created." });
+    return;
+  }
+  const dispatchPlan = expandDispatchPlan(basePlan);
+  const db = await getDB(res);
+  const existingTask = (await loadAgentTasks(res, db)).find(task => task.planId === dispatchPlan.planId);
+  if (existingTask) {
+    res.status(200).json({ success: true, task: existingTask, dispatchPlan, idempotent: true });
+    return;
+  }
+  const ent = await getEntitlements(res);
+  const monthlyCap = ent?.limits?.max_agent_runs_per_month;
+  if (monthlyCap === 0) {
+    res.status(403).json({ error: "Your current plan does not include AI agent runs. Upgrade to Growth OS or higher." });
+    return;
+  }
+  if (typeof monthlyCap === "number" && monthlyCap > 0) {
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const quotaTasks = await loadAgentTasks(res, db);
+    const runsThisMonth = quotaTasks.filter(t => new Date(t.timestamp.replace(" ", "T")) >= monthStart).length;
+    if (runsThisMonth >= monthlyCap) {
+      res.status(403).json({ error: `Monthly agent run limit reached (${monthlyCap}/month on your plan). Upgrade for more.`, runsThisMonth, monthlyCap });
+      return;
+    }
+  }
+  const task: AgentTask = {
+    id: "task-" + crypto.randomUUID(),
+    agentName: dispatchPlan.ownerAgent,
+    goal: dispatchPlan.intent,
+    missionId: dispatchPlan.missionId,
+    planId: dispatchPlan.planId,
+    subAgentId: dispatchPlan.entrySubAgent,
+    executionSubAgentIds: dispatchPlan.executionSubAgentIds,
+    requiresApproval: dispatchPlan.requiresApproval,
+    moduleKey: dispatchPlan.category,
+    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+    status: "Pending Approval",
+    allowedScope: getAgentPolicy(dispatchPlan.ownerAgent).allowed,
+    requestedBy: res.locals.userId,
+    steps: [],
+    output: "",
+  };
+  db.agentTasks.unshift(task);
+  await saveDB(res, db);
+  await recordLedgerTask(res, task, res.locals.userId, "VANTA plan dispatched; awaiting HITL approval", {
+    ...taskMetadata(dispatchPlan, task),
+    subAgent: dispatchPlan.entrySubAgent,
+  });
+  res.status(202).json({ success: true, task, dispatchPlan });
 });
 
 // Approve a pending task: this is the ONLY path that actually calls Gemini.
@@ -4534,12 +4627,65 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
     const geminiModel = await resolveEffectiveGeminiModel(res);
     const sb = res.locals.sb;
     const workspaceId = res.locals.wsId;
-    const { steps, output } = await executeAgentTask(task.agentName, task.goal, db.secondBrain, scope, geminiKey, geminiModel, { sb, workspaceId, taskId: task.id });
+    const plan = createDispatchPlan({
+      intent: task.goal,
+      agentName: task.agentName,
+      moduleKey: task.moduleKey,
+      planId: task.planId,
+      missionId: task.missionId,
+      executionSubAgentIds: task.executionSubAgentIds,
+    });
+    task.planId = plan.planId;
+    task.missionId = plan.missionId;
+    task.subAgentId = plan.entrySubAgent;
+    task.requiresApproval = plan.requiresApproval;
+
+    const workflow = materializeDispatchGraph(plan, {
+      workspaceId,
+        execute: async (subAgent, _ctx, upstream) => {
+        const attemptId = await startNodeAttempt(sb, workspaceId, task.id, {
+          nodeId: `sub-agent:${subAgent.id}`,
+          executorVersion: `gemini:${geminiModel}`,
+        }).catch(() => null);
+        try {
+          const result = await executeAgentTask(
+            task.agentName,
+            Object.keys(upstream).length > 0 ? `${task.goal}\nPrior node results:\n${JSON.stringify(upstream).slice(0, 6000)}` : task.goal,
+            db.secondBrain,
+            scope,
+            geminiKey,
+            geminiModel,
+            undefined,
+          );
+          await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
+          return result;
+        } catch (error: any) {
+          await finishNodeAttempt(sb, workspaceId, attemptId || "", {
+            error: classifyGeminiError(error),
+          }).catch(() => {});
+          throw error;
+        }
+      },
+    });
+    const execution = await new BoundedWorkflowGraph(workflow).run();
+    const nodeResult = execution.nodeResults[`sub-agent:${plan.executionSubAgentIds[plan.executionSubAgentIds.length - 1]}`] as any;
+    if (execution.status !== "succeeded" || nodeResult?.status !== "succeeded") {
+      throw new Error(nodeResult?.error || execution.error || "Mission execution was blocked");
+    }
+    const completedValues = plan.executionSubAgentIds
+      .map((subAgentId) => execution.nodeResults[`sub-agent:${subAgentId}`] as any)
+      .filter((result) => result?.status === "succeeded" && result.value)
+      .map((result) => result.value as { steps?: string[]; output?: string });
+    const steps = completedValues.flatMap((value) => value.steps || []);
+    const output = completedValues[completedValues.length - 1]?.output || "";
     task.status = "Success";
     task.steps = steps;
     task.output = output;
     await saveDB(res, db);
-    await recordLedgerTask(res, task, res.locals.userId, "Execution completed");
+    await recordLedgerTask(res, task, res.locals.userId, "Execution completed", {
+      ...taskMetadata(plan, task),
+      subAgent: plan.executionSubAgentIds[plan.executionSubAgentIds.length - 1],
+    });
     res.json({ success: true, task });
   } catch (err: any) {
     console.error("Gemini Agent run failed:", err);
@@ -4681,6 +4827,68 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
     ];
 
     const pipelineRunId = "pipeline-" + crypto.randomUUID();
+    const pipelinePlan = createDispatchPlan({
+      intent: goal,
+      agentName: "Creative Director Agent",
+      moduleKey: "content",
+      planId: `plan-${pipelineRunId}`,
+      missionId: `mission-${pipelineRunId}`,
+    });
+    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 16);
+    const pipelineTask: AgentTask = {
+      id: pipelineRunId,
+      agentName: "Creative Director Agent",
+      goal: `3-Stage Pipeline: ${goal}`,
+      timestamp: nowStr,
+      status: "Running",
+      missionId: pipelinePlan.missionId,
+      planId: pipelinePlan.planId,
+      subAgentId: pipelinePlan.entrySubAgent,
+      requiresApproval: pipelinePlan.requiresApproval,
+      moduleKey: "content",
+      steps: [],
+      output: "",
+      requestedBy: res.locals.userId,
+      reviewedBy: res.locals.userId,
+      reviewedAt: new Date().toISOString(),
+    };
+    db.agentTasks.unshift(pipelineTask);
+    await saveDB(res, db);
+    await recordLedgerTask(res, pipelineTask, res.locals.userId, "Mission execution started by owner/admin", {
+      ...taskMetadata(pipelinePlan, pipelineTask),
+      subAgent: pipelinePlan.entrySubAgent,
+    });
+
+    const stageTasks = new Map<string, AgentTask>();
+    for (const stage of STAGES) {
+      const stagePlan = createDispatchPlan({
+        intent: stage.title,
+        agentName: stage.agent as AgentTask["agentName"],
+        moduleKey: stage.agent === "Creative Director Agent" ? "content" : undefined,
+        planId: pipelinePlan.planId,
+        missionId: pipelinePlan.missionId,
+      });
+      const stageTask: AgentTask = {
+        id: `${pipelineRunId}:${stage.id}`,
+        agentName: stage.agent as AgentTask["agentName"],
+        goal: stage.title,
+        timestamp: nowStr,
+        status: "Running",
+        missionId: pipelinePlan.missionId,
+        planId: pipelinePlan.planId,
+        subAgentId: stagePlan.entrySubAgent,
+        parentTaskId: pipelineRunId,
+        requiresApproval: stagePlan.requiresApproval,
+        steps: [],
+        output: "",
+        requestedBy: res.locals.userId,
+      };
+      stageTasks.set(stage.id, stageTask);
+      await recordLedgerTask(res, stageTask, res.locals.userId, `Mission child started: ${stage.id}`, {
+        ...taskMetadata(stagePlan, stageTask),
+        subAgent: stagePlan.entrySubAgent,
+      });
+    }
 
     const pipelineNodes = STAGES.map((stage) => ({
       id: stage.id,
@@ -4745,24 +4953,31 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
       ? ""
       : String((execution.nodeResults.qa as any)?.finalOutput || "");
 
-    // Record tasks in agent ledger
-    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 16);
-    const pipelineTask: AgentTask = {
-      id: pipelineRunId,
-      agentName: "Creative Director Agent",
-      goal: `3-Stage Pipeline: ${goal}`,
-      timestamp: nowStr,
-      // A partially-executed pipeline is NOT a success. Unconditionally writing
-      // status:"Success" here is how a blocked pipeline previously read to the
-      // client as delivered work.
-      status: failedOrBlocked ? "Failed" : "Success",
-      steps: stageResults.flatMap((s) => s.steps),
-      output: finalOutput,
-      requestedBy: res.locals.userId,
-      reviewedBy: res.locals.userId,
-      reviewedAt: new Date().toISOString(),
-    };
-    db.agentTasks.unshift(pipelineTask);
+    // Complete the durable parent and child records only after the graph has
+    // produced its terminal state. A crash before this point leaves the mission
+    // visibly Running instead of fabricating completion.
+    pipelineTask.status = failedOrBlocked ? "Failed" : "Success";
+    pipelineTask.steps = stageResults.flatMap((s) => s.steps);
+    pipelineTask.output = finalOutput;
+    for (const stageResult of stageResults) {
+      const stageTask = stageTasks.get(stageResult.id);
+      if (!stageTask) continue;
+      stageTask.status = stageResult.status === "succeeded" ? "Success" : "Failed";
+      stageTask.steps = stageResult.steps;
+      stageTask.output = stageResult.error || "";
+      await recordLedgerTask(
+        res,
+        stageTask,
+        res.locals.userId,
+        stageResult.status === "succeeded" ? `Mission child completed: ${stageResult.id}` : `Mission child ${stageResult.status}: ${stageResult.id}`,
+        {
+          missionId: pipelinePlan.missionId,
+          planId: pipelinePlan.planId,
+          subAgent: stageTask.subAgentId,
+          requiresApproval: stageTask.requiresApproval,
+        },
+      );
+    }
     await saveDB(res, db);
     // A pipeline lands already-executed, so its ledger run records the terminal
     // state directly (requested -> ... -> succeeded) rather than pretending it

@@ -98,32 +98,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
     setCurrentWorkspaceId(workspaceId);
-    notifyInfo('Workspace Switched', `Switched active sovereign enclave to "${target.name}" (${target.domain}). All 15 modules re-scoped.`);
+    notifyInfo('Workspace Switched', `Now viewing "${target.name}" (${target.domain}) in this browser.`);
   };
 
   // Provision new client workspace
   const provisionWorkspace = (clientData: Partial<ClientWorkspace>): ClientWorkspace => {
-    const rawDomain = clientData.domain || 'clientcompany.com';
+    const rawDomain = clientData.domain || '';
     const cleanDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
     const newId = `ws-${Date.now()}`;
 
     const newWorkspace: ClientWorkspace = {
       id: newId,
-      name: clientData.name || clientData.domain || 'New Client Enclave',
+      name: clientData.name || clientData.domain || 'New client',
       domain: cleanDomain,
-      industry: clientData.industry || 'B2B Enterprise SaaS',
-      icp: clientData.icp || 'Growth Directors & Revenue Leaders',
-      geography: clientData.geography || 'Global (NA & EMEA)',
-      region: clientData.region || 'AWS us-east-1 (N. Virginia)',
-      tier: clientData.tier || 'growth',
-      status: 'ACTIVE',
-      vaultSecurity: 'AES-256 GCM • Isolated pgvector',
+      industry: clientData.industry || '',
+      icp: clientData.icp || '',
+      geography: clientData.geography || '',
+      region: clientData.region || 'Not configured',
+      tier: clientData.tier || 'starter',
+      status: 'PROVISIONING',
+      vaultSecurity: 'Not verified',
       createdAt: new Date().toISOString().split('T')[0],
-      activeModel: clientData.activeModel || 'gemini-2.5-flash',
+      activeModel: clientData.activeModel,
       brandVault: clientData.brandVault || {
-        corePositioning: `${clientData.name || 'Client'} sovereign AI growth infrastructure.`,
-        offersAndPricing: 'Custom Enterprise Retainer',
-        voiceAndTone: 'Empirical, authoritative, high-converting.'
+        corePositioning: '',
+        offersAndPricing: '',
+        voiceAndTone: ''
       },
       connectors: clientData.connectors || []
     };
@@ -136,8 +136,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setCurrentWorkspaceId(newId);
 
     notifySuccess(
-      'Client Enclave Provisioned',
-      `"${newWorkspace.name}" (${newWorkspace.domain}) successfully initialized with dedicated Second Brain vaults.`
+      'Workspace Draft Created',
+      `"${newWorkspace.name}" (${newWorkspace.domain}) was saved in this browser. Connectors and infrastructure are not yet verified.`
     );
 
     return newWorkspace;
@@ -156,7 +156,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setCurrentWorkspaceId('ws-primary');
     }
 
-    notifyInfo('Enclave Terminated', `Client enclave ${workspaceId} was removed from active provisioning.`);
+    notifyInfo('Workspace Removed', `Workspace ${workspaceId} was removed from this browser.`);
   };
 
   // Update workspace tier
