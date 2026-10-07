@@ -27,12 +27,15 @@ import {
   ShieldAlert,
   ArrowRight,
   TrendingUp,
-  DownloadCloud
+  DownloadCloud,
+  Archive,
+  FolderArchive
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/src/contexts/ToastContext';
 import { getAgentReachDoctor, getGoogleAdsMcpStatus } from '@/src/lib/api';
+import { PROJECT_SKILLS, ProjectSkill } from '@/src/data/skillsCatalog';
 
 interface MCPServerInfo {
   id: string;
@@ -433,6 +436,12 @@ export default function ProductionSkillsMCPTab() {
   const [skillSearchQuery, setSkillSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
+  // Project Skills State (Active & Archived)
+  const [projectSkillSearch, setProjectSkillSearch] = useState('');
+  const [projectSkillStatusFilter, setProjectSkillStatusFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ALL');
+  const [projectSkillCategoryFilter, setProjectSkillCategoryFilter] = useState<string>('ALL');
+  const [registryView, setRegistryView] = useState<'workspace' | 'spec'>('workspace');
+
   // Laya Eval State
   const [evalFilterOp, setEvalFilterOp] = useState<string>('ALL');
   const [evalFilterRisk, setEvalFilterRisk] = useState<string>('ALL');
@@ -553,6 +562,19 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
     });
   }, [evalFilterOp, evalFilterRisk]);
 
+  const filteredProjectSkills = useMemo(() => {
+    return PROJECT_SKILLS.filter(skill => {
+      const matchesStatus = projectSkillStatusFilter === 'ALL' || skill.status === projectSkillStatusFilter;
+      const matchesCat = projectSkillCategoryFilter === 'ALL' || skill.category === projectSkillCategoryFilter;
+      const matchesSearch = !projectSkillSearch ||
+        skill.id.toLowerCase().includes(projectSkillSearch.toLowerCase()) ||
+        skill.name.toLowerCase().includes(projectSkillSearch.toLowerCase()) ||
+        skill.description.toLowerCase().includes(projectSkillSearch.toLowerCase()) ||
+        skill.category.toLowerCase().includes(projectSkillSearch.toLowerCase());
+      return matchesStatus && matchesCat && matchesSearch;
+    });
+  }, [projectSkillSearch, projectSkillStatusFilter, projectSkillCategoryFilter]);
+
   return (
     <div className="space-y-8">
       {/* Header & Sub-Tab Switcher */}
@@ -610,7 +632,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               activeSubTab === 'skills' ? "sigma-segment-active" : ""
             )}
           >
-            <Zap size={14} /> Skills Registry ({PRODUCTION_SKILLS_CATALOG.length})
+            <Zap size={14} /> Skills Registry ({PROJECT_SKILLS.length})
           </button>
         </div>
       </div>
@@ -1189,63 +1211,308 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
         </div>
       )}
 
-      {/* SUB-TAB 5: SKILLS REGISTRY (skillspec, pm-skills) */}
+      {/* SUB-TAB 5: SKILLS REGISTRY (Workspace & Spec Skills) */}
       {activeSubTab === 'skills' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {PRODUCTION_SKILLS_CATALOG.map((skill) => (
-              <div
-                key={skill.id}
-                className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-3xl p-6 shadow-xl space-y-4 hover:border-accent/40 transition-all"
+          {/* Sub-view switcher & stats header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-3xl p-6 shadow-xl">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-accent/20 text-accent font-mono text-[10px] font-bold border border-accent/40 flex items-center gap-1">
+                  <Zap size={11} /> Project Skills Registry
+                </span>
+                <span className="text-[var(--sigma-text-muted)] font-mono text-[11px]">
+                  • 20 Active / 8 Archived
+                </span>
+              </div>
+              <h3 className="text-xl font-heading font-black text-[var(--sigma-text)]">
+                Agent Capability & Skills Registry
+              </h3>
+              <p className="text-xs text-[var(--sigma-text-muted)] max-w-2xl">
+                Active skills are kept in agent discovery context for daily execution. Non-essential skills are archived to conserve prompt tokens, but remain indexed for instant search and restoration.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 bg-[var(--sigma-surface-subtle)] p-1.5 rounded-2xl border border-[var(--sigma-border)] shrink-0">
+              <button
+                onClick={() => setRegistryView('workspace')}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer",
+                  registryView === 'workspace'
+                    ? "bg-accent text-background shadow-md"
+                    : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
+                )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase tracking-widest font-bold">
-                        {skill.source}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[9px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> {skill.specStatus} SPEC
-                      </span>
-                    </div>
-                    <h4 className="text-base font-bold text-[var(--sigma-text)] mt-1">
-                      {skill.name}
-                    </h4>
-                  </div>
-                  {skill.locSavingsEstimate && (
-                    <span className="px-2.5 py-1 rounded-xl bg-accent/10 border border-accent/30 text-accent font-mono text-xs font-bold shrink-0">
-                      {skill.locSavingsEstimate}
-                    </span>
+                Workspace Skills ({PROJECT_SKILLS.length})
+              </button>
+              <button
+                onClick={() => setRegistryView('spec')}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer",
+                  registryView === 'spec'
+                    ? "bg-accent text-background shadow-md"
+                    : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
+                )}
+              >
+                Spec Skills ({PRODUCTION_SKILLS_CATALOG.length})
+              </button>
+            </div>
+          </div>
+
+          {registryView === 'workspace' ? (
+            <div className="space-y-6">
+              {/* Search & Filter Toolbar */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl p-4">
+                <div className="relative flex-1">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)]" />
+                  <input
+                    type="text"
+                    value={projectSkillSearch}
+                    onChange={(e) => setProjectSkillSearch(e.target.value)}
+                    placeholder="Search active & archived skills by name, keyword, or category..."
+                    className="w-full pl-10 pr-4 py-2 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-text-muted)] focus:outline-none focus:border-accent font-sans"
+                  />
+                  {projectSkillSearch && (
+                    <button
+                      onClick={() => setProjectSkillSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] cursor-pointer"
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
 
-                <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed">
-                  {skill.description}
-                </p>
-
-                <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl text-[10px] font-mono text-accent overflow-x-auto">
-                  {skill.signature}
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-[var(--sigma-border)]">
-                  <div className="flex flex-wrap gap-1.5">
-                    {skill.tags.map((t, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[9px] font-mono">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 shrink-0">
                   <button
-                    onClick={() => notifySuccess(`Attached ${skill.name} to active workspace agents!`)}
-                    className="px-3.5 py-1.5 bg-accent/20 hover:bg-accent text-accent hover:text-background rounded-xl font-mono text-xs font-bold transition-all cursor-pointer shrink-0"
+                    onClick={() => setProjectSkillStatusFilter('ALL')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border",
+                      projectSkillStatusFilter === 'ALL'
+                        ? "bg-accent/20 text-accent border-accent/40"
+                        : "bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:text-[var(--sigma-text)]"
+                    )}
                   >
-                    Bind Skill
+                    All ({PROJECT_SKILLS.length})
+                  </button>
+                  <button
+                    onClick={() => setProjectSkillStatusFilter('ACTIVE')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5",
+                      projectSkillStatusFilter === 'ACTIVE'
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                        : "bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:text-[var(--sigma-text)]"
+                    )}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Active ({PROJECT_SKILLS.filter(s => s.status === 'ACTIVE').length})
+                  </button>
+                  <button
+                    onClick={() => setProjectSkillStatusFilter('ARCHIVED')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5",
+                      projectSkillStatusFilter === 'ARCHIVED'
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                        : "bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:text-[var(--sigma-text)]"
+                    )}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Archived ({PROJECT_SKILLS.filter(s => s.status === 'ARCHIVED').length})
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Quick CLI Banner */}
+              <div className="p-4 bg-gradient-to-r from-accent/10 via-[var(--sigma-surface)] to-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <Terminal size={14} className="text-accent shrink-0" />
+                  <span className="text-[var(--sigma-text-muted)]">CLI Search & Management:</span>
+                  <code className="text-accent bg-[var(--sigma-surface-subtle)] px-2 py-0.5 rounded border border-[var(--sigma-border)]">
+                    npm run skills:search &lt;query&gt;
+                  </code>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleCopyCmd('npm run skills:search', 'cli-search')}
+                    className="px-2.5 py-1 bg-[var(--sigma-surface)] hover:bg-[var(--sigma-surface-strong)] border border-[var(--sigma-border)] rounded-lg text-[11px] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    {copiedId === 'cli-search' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} Copy CLI Search
+                  </button>
+                  <button
+                    onClick={() => handleCopyCmd('npm run skills:list', 'cli-list')}
+                    className="px-2.5 py-1 bg-[var(--sigma-surface)] hover:bg-[var(--sigma-surface-strong)] border border-[var(--sigma-border)] rounded-lg text-[11px] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    {copiedId === 'cli-list' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} Copy List
+                  </button>
+                </div>
+              </div>
+
+              {/* Skills Grid */}
+              {filteredProjectSkills.length === 0 ? (
+                <div className="p-12 text-center bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-3xl space-y-3">
+                  <Archive className="mx-auto text-[var(--sigma-text-muted)] opacity-50" size={36} />
+                  <p className="text-sm font-bold text-[var(--sigma-text)]">No skills matched your search criteria.</p>
+                  <p className="text-xs text-[var(--sigma-text-muted)]">Try adjusting your search query or clear the filter.</p>
+                  <button
+                    onClick={() => { setProjectSkillSearch(''); setProjectSkillStatusFilter('ALL'); }}
+                    className="px-4 py-2 bg-accent/20 text-accent rounded-xl text-xs font-mono font-bold hover:bg-accent hover:text-background transition-all cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredProjectSkills.map((skill) => {
+                    const isActive = skill.status === 'ACTIVE';
+                    return (
+                      <div
+                        key={skill.id}
+                        className={cn(
+                          "bg-[var(--sigma-surface)] border rounded-3xl p-6 shadow-xl space-y-4 transition-all flex flex-col justify-between",
+                          isActive
+                            ? "border-[var(--sigma-border)] hover:border-emerald-500/40"
+                            : "border-amber-500/20 bg-amber-500/[0.02] hover:border-amber-500/40"
+                        )}
+                      >
+                        <div className="space-y-3">
+                          {/* Card Header */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={cn(
+                                  "px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border flex items-center gap-1",
+                                  isActive
+                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                    : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                )}>
+                                  {isActive ? (
+                                    <>
+                                      <CheckCircle2 size={11} /> ACTIVE
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Archive size={11} /> ARCHIVED
+                                    </>
+                                  )}
+                                </span>
+                                <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] px-2 py-0.5 bg-[var(--sigma-surface-subtle)] rounded border border-[var(--sigma-border)]">
+                                  {skill.category}
+                                </span>
+                              </div>
+                              <h4 className="text-base font-bold text-[var(--sigma-text)] mt-2 font-mono">
+                                {skill.id}
+                              </h4>
+                            </div>
+
+                            <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] truncate max-w-[150px] bg-[var(--sigma-surface-subtle)] px-2 py-1 rounded-lg border border-[var(--sigma-border)]">
+                              {skill.path}
+                            </span>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed line-clamp-3">
+                            {skill.description}
+                          </p>
+
+                          {/* Archive reason if applicable */}
+                          {skill.archiveReason && (
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[11px] text-amber-300 space-y-1">
+                              <span className="font-bold text-[10px] uppercase tracking-wider block text-amber-400">
+                                Archive Note:
+                              </span>
+                              <p className="leading-relaxed">{skill.archiveReason}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Card Action Footer */}
+                        <div className="pt-4 border-t border-[var(--sigma-border)] flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
+                            {isActive ? 'In agent context' : 'Searchable offline'}
+                          </span>
+
+                          {isActive ? (
+                            <button
+                              onClick={() => handleCopyCmd(`npm run skills:archive ${skill.id}`, `arch-${skill.id}`)}
+                              className="px-3 py-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl font-mono text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                              title="Copy command to archive this skill"
+                            >
+                              {copiedId === `arch-${skill.id}` ? <Check size={12} className="text-emerald-400" /> : <Archive size={12} />}
+                              Archive
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleCopyCmd(`npm run skills:restore ${skill.id}`, `rest-${skill.id}`)}
+                              className="px-3 py-1.5 bg-accent/20 hover:bg-accent text-accent hover:text-background border border-accent/40 rounded-xl font-mono text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                              title="Copy command to restore this skill"
+                            >
+                              {copiedId === `rest-${skill.id}` ? <Check size={12} /> : <RotateCcw size={12} />}
+                              Restore Skill
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Spec Skills View */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {PRODUCTION_SKILLS_CATALOG.map((skill) => (
+                <div
+                  key={skill.id}
+                  className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-3xl p-6 shadow-xl space-y-4 hover:border-accent/40 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase tracking-widest font-bold">
+                          {skill.source}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[9px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                          <CheckCircle2 size={10} /> {skill.specStatus} SPEC
+                        </span>
+                      </div>
+                      <h4 className="text-base font-bold text-[var(--sigma-text)] mt-1">
+                        {skill.name}
+                      </h4>
+                    </div>
+                    {skill.locSavingsEstimate && (
+                      <span className="px-2.5 py-1 rounded-xl bg-accent/10 border border-accent/30 text-accent font-mono text-xs font-bold shrink-0">
+                        {skill.locSavingsEstimate}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed">
+                    {skill.description}
+                  </p>
+
+                  <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl text-[10px] font-mono text-accent overflow-x-auto">
+                    {skill.signature}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-[var(--sigma-border)]">
+                    <div className="flex flex-wrap gap-1.5">
+                      {skill.tags.map((t, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[9px] font-mono">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => notifySuccess(`Attached ${skill.name} to active workspace agents!`)}
+                      className="px-3.5 py-1.5 bg-accent/20 hover:bg-accent text-accent hover:text-background rounded-xl font-mono text-xs font-bold transition-all cursor-pointer shrink-0"
+                    >
+                      Bind Skill
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

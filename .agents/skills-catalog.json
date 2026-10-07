@@ -1,0 +1,320 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-10-06",
+  "project": "SigmaTactix Growth OS",
+  "counts": {
+    "total": 28,
+    "active": 20,
+    "archived": 8
+  },
+  "skills": [
+    {
+      "id": "agent-reach",
+      "name": "agent-reach",
+      "status": "ACTIVE",
+      "category": "Research & Ingestion",
+      "description": "MUST USE when user wants to research/search/look up/find anything on the internet — e.g. \"research this topic\", \"do a deep dive on X\", \"search the web for X\", \"see what people say about X\", \"look this up\". Also MUST USE when user mentions any platform or shares any URL/link: Twitter/X, Reddit, Facebook, Instagram, YouTube, GitHub, Bilibili, XiaoHongShu, Xiaoyuzhou Podcast, LinkedIn/jobs/recruiting, V2EX, Xueqiu (stocks), RSS. 15 platforms, multi-backend routing (OpenCLI / per-platform CLIs / APIs). Zero config for 6 channels. Run `agent-reach doctor --json` to see which backend serves each platform right now. NOT for: writing reports/analysis/translation (this skill only FETCHES internet content); posting/commenting/liking (write operations); platforms that already have a dedicated skill installed (prefer that skill).",
+      "path": ".agents/skills/agent-reach",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive agent-reach"
+    },
+    {
+      "id": "code-review",
+      "name": "code-review",
+      "status": "ACTIVE",
+      "category": "Quality & Testing",
+      "description": "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \\\"review since X\\\".",
+      "path": ".agents/skills/code-review",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive code-review"
+    },
+    {
+      "id": "codebase-design",
+      "name": "codebase-design",
+      "status": "ACTIVE",
+      "category": "Architecture & Design",
+      "description": "Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.",
+      "path": ".agents/skills/codebase-design",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive codebase-design"
+    },
+    {
+      "id": "diagnosing-bugs",
+      "name": "diagnosing-bugs",
+      "status": "ACTIVE",
+      "category": "Quality & Testing",
+      "description": "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose\"/\"debug this\", or reports something broken/throwing/failing/slow.",
+      "path": ".agents/skills/diagnosing-bugs",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive diagnosing-bugs"
+    },
+    {
+      "id": "domain-modeling",
+      "name": "domain-modeling",
+      "status": "ACTIVE",
+      "category": "Architecture & Design",
+      "description": "Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a CONTEXT.md, or recording or editing an ADR.",
+      "path": ".agents/skills/domain-modeling",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive domain-modeling"
+    },
+    {
+      "id": "grilling",
+      "name": "grilling",
+      "status": "ACTIVE",
+      "category": "Governance & Stress-Testing",
+      "description": "Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.",
+      "path": ".agents/skills/grilling",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive grilling"
+    },
+    {
+      "id": "handoff",
+      "name": "handoff",
+      "status": "ACTIVE",
+      "category": "Execution & Delivery",
+      "description": "Compact the current conversation into a handoff document for another agent to pick up.",
+      "path": ".agents/skills/handoff",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive handoff"
+    },
+    {
+      "id": "implement",
+      "name": "implement",
+      "status": "ACTIVE",
+      "category": "Execution & Delivery",
+      "description": "Implement a piece of work based on a spec or set of tickets.",
+      "path": ".agents/skills/implement",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive implement"
+    },
+    {
+      "id": "improve-codebase-architecture",
+      "name": "improve-codebase-architecture",
+      "status": "ACTIVE",
+      "category": "Architecture & Design",
+      "description": "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.",
+      "path": ".agents/skills/improve-codebase-architecture",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive improve-codebase-architecture"
+    },
+    {
+      "id": "master-context-sync",
+      "name": "master-context-sync",
+      "status": "ACTIVE",
+      "category": "Governance & Context Truth",
+      "description": "Analyzes all sessions, git commits, unstaged diffs, docs, and architectural changes across agents, sub-agents, and providers to verify and synchronize MASTER_CONTEXT.md (or project context) so zero context is lost.",
+      "path": ".agents/skills/master-context-sync",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive master-context-sync"
+    },
+    {
+      "id": "prototype",
+      "name": "prototype",
+      "status": "ACTIVE",
+      "category": "Prototyping & Spike",
+      "description": "Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.",
+      "path": ".agents/skills/prototype",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive prototype"
+    },
+    {
+      "id": "research",
+      "name": "research",
+      "status": "ACTIVE",
+      "category": "Research & Strategy",
+      "description": "Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.",
+      "path": ".agents/skills/research",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive research"
+    },
+    {
+      "id": "resolving-merge-conflicts",
+      "name": "resolving-merge-conflicts",
+      "status": "ACTIVE",
+      "category": "Quality & Testing",
+      "description": "Use when you need to resolve an in-progress git merge/rebase conflict.",
+      "path": ".agents/skills/resolving-merge-conflicts",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive resolving-merge-conflicts"
+    },
+    {
+      "id": "tdd",
+      "name": "tdd",
+      "status": "ACTIVE",
+      "category": "Quality & Testing",
+      "description": "Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions \"red-green-refactor\", or wants integration tests.",
+      "path": ".agents/skills/tdd",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive tdd"
+    },
+    {
+      "id": "to-spec",
+      "name": "to-spec",
+      "status": "ACTIVE",
+      "category": "Execution & Delivery",
+      "description": "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed.",
+      "path": ".agents/skills/to-spec",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive to-spec"
+    },
+    {
+      "id": "to-tickets",
+      "name": "to-tickets",
+      "status": "ACTIVE",
+      "category": "Execution & Delivery",
+      "description": "Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker).",
+      "path": ".agents/skills/to-tickets",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive to-tickets"
+    },
+    {
+      "id": "triage",
+      "name": "triage",
+      "status": "ACTIVE",
+      "category": "Workflow & Triage",
+      "description": "Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs.",
+      "path": ".agents/skills/triage",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive triage"
+    },
+    {
+      "id": "wayfinder",
+      "name": "wayfinder",
+      "status": "ACTIVE",
+      "category": "Architecture & Design",
+      "description": "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear.",
+      "path": ".agents/skills/wayfinder",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive wayfinder"
+    },
+    {
+      "id": "wizard",
+      "name": "wizard",
+      "status": "ACTIVE",
+      "category": "DevOps & Setup",
+      "description": "Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover. Don't invoke this for steps the agent can perform itself.",
+      "path": ".agents/skills/wizard",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive wizard"
+    },
+    {
+      "id": "writing-for-agents",
+      "name": "writing-for-agents",
+      "status": "ACTIVE",
+      "category": "Agent Engineering",
+      "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
+      "path": ".agents/skills/writing-for-agents",
+      "archiveReason": null,
+      "restoreCommand": null,
+      "archiveCommand": "npm run skills:archive writing-for-agents"
+    },
+    {
+      "id": "ask-matt",
+      "name": "ask-matt",
+      "status": "ARCHIVED",
+      "category": "Archived / Router",
+      "description": "Ask which skill or flow fits your situation. A router over the skills in this repo.",
+      "path": ".agents/skills-archive/ask-matt",
+      "archiveReason": "Course-specific skill router; not relevant for SigmaTactix Growth OS product engineering.",
+      "restoreCommand": "npm run skills:restore ask-matt",
+      "archiveCommand": null
+    },
+    {
+      "id": "grill-me",
+      "name": "grill-me",
+      "status": "ARCHIVED",
+      "category": "Archived / Redundant Alias",
+      "description": "A relentless interview to sharpen a plan or design.",
+      "path": ".agents/skills-archive/grill-me",
+      "archiveReason": "Redundant alias to grilling (literally redirects to grilling).",
+      "restoreCommand": "npm run skills:restore grill-me",
+      "archiveCommand": null
+    },
+    {
+      "id": "grill-with-docs",
+      "name": "grill-with-docs",
+      "status": "ARCHIVED",
+      "category": "Archived / Redundant Alias",
+      "description": "A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go.",
+      "path": ".agents/skills-archive/grill-with-docs",
+      "archiveReason": "Redundant alias calling grilling and domain-modeling in sequence.",
+      "restoreCommand": "npm run skills:restore grill-with-docs",
+      "archiveCommand": null
+    },
+    {
+      "id": "lecture-deck",
+      "name": "lecture-deck",
+      "status": "ARCHIVED",
+      "category": "Archived / Presentation",
+      "description": "Build a high-quality animated HTML lecture or workshop deck from a storyboard, in any theme. Use whenever someone asks for a slide deck, session deck, workshop slides, lecture screens, a run-of-show deck, or speaker notes for a talk, especially one delivered live (in a room or on Zoom) with breakouts, share-screen moments and handoffs. Produces one self-contained HTML file with keyboard navigation, speaker notes, overview, print, copy-to-clipboard prompts and a mode strip on every screen, plus PNG renders for checking. Ships with three themes and a kit for diagrams, animation, a recurring cast of figures, and a register checker. Not for pitch decks that must be PowerPoint, or for data dashboards.",
+      "path": ".agents/skills-archive/lecture-deck",
+      "archiveReason": "Classroom/conference HTML slide deck creator; non-core for day-to-day Growth OS operation.",
+      "restoreCommand": "npm run skills:restore lecture-deck",
+      "archiveCommand": null
+    },
+    {
+      "id": "setup-matt-pocock-skills",
+      "name": "setup-matt-pocock-skills",
+      "status": "ARCHIVED",
+      "category": "Archived / Setup",
+      "description": "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.",
+      "path": ".agents/skills-archive/setup-matt-pocock-skills",
+      "archiveReason": "One-time initial tracker setup script; repo already has tracked workflows and standards.",
+      "restoreCommand": "npm run skills:restore setup-matt-pocock-skills",
+      "archiveCommand": null
+    },
+    {
+      "id": "teach",
+      "name": "teach",
+      "status": "ARCHIVED",
+      "category": "Archived / Education",
+      "description": "Teach the user a new skill or concept, within this workspace.",
+      "path": ".agents/skills-archive/teach",
+      "archiveReason": "Multi-session interactive educational tutoring; out of scope for autonomous software agent harness.",
+      "restoreCommand": "npm run skills:restore teach",
+      "archiveCommand": null
+    },
+    {
+      "id": "to-questionnaire",
+      "name": "to-questionnaire",
+      "status": "ARCHIVED",
+      "category": "Archived / Stakeholder Utility",
+      "description": "Turn a decision you can't fully answer into a questionnaire for someone else to fill in.",
+      "path": ".agents/skills-archive/to-questionnaire",
+      "archiveReason": "Generic stakeholder survey generator; rarely used in automated system agent workflows.",
+      "restoreCommand": "npm run skills:restore to-questionnaire",
+      "archiveCommand": null
+    },
+    {
+      "id": "wait-what",
+      "name": "wait-what",
+      "status": "ARCHIVED",
+      "category": "Archived / Prompt Snippet",
+      "description": "Stop. That last message did not land: re-pitch it.",
+      "path": ".agents/skills-archive/wait-what",
+      "archiveReason": "8-line prompt snippet for ASD-STE100 English; superseded by direct instruction or grilling.",
+      "restoreCommand": "npm run skills:restore wait-what",
+      "archiveCommand": null
+    }
+  ]
+}

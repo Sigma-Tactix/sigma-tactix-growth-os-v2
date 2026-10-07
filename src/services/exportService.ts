@@ -94,8 +94,70 @@ export const exportService = {
   },
 
   /**
-   * Export a multi-slide 16:9 executive presentation to PPTX
-   * Formatted in deep obsidian (#09090B) and metallic amber (#F59E0B)
+   * Export or View High-Fidelity Animated Lecture Deck (Interactive HTML & Printable PDF)
+   * Powered by RinDig/lecture-deck-skill with Sigma Tactix Sovereign Dark Theme.
+   */
+  async toLectureDeck(
+    data: ExecutiveReportData | any,
+    options: {
+      filename?: string;
+      mode?: 'view' | 'download' | 'both';
+      theme?: string;
+      type?: 'executive' | 'creative' | 'auto';
+    } = {}
+  ): Promise<{ success: boolean; viewUrl?: string; downloadUrl?: string; deckId?: string }> {
+    try {
+      const mode = options.mode || 'both';
+      const res = await fetch('/api/reports/deck/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportData: data,
+          theme: options.theme || 'sigmatactix',
+          type: options.type || 'auto',
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${await res.text()}`);
+      }
+
+      const result = await res.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Deck generation failed');
+      }
+
+      // If user requested view or both, open in new tab
+      if (mode === 'view' || mode === 'both') {
+        window.open(result.viewUrl, '_blank');
+      }
+
+      // If user requested download or both, trigger download
+      if (mode === 'download' || mode === 'both') {
+        const link = document.createElement('a');
+        link.href = result.downloadUrl;
+        link.download = options.filename || result.filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      return {
+        success: true,
+        viewUrl: result.viewUrl,
+        downloadUrl: result.downloadUrl,
+        deckId: result.deckId,
+      };
+    } catch (err) {
+      console.error('Lecture Deck generation error:', err);
+      return { success: false };
+    }
+  },
+
+  /**
+   * Export presentation deck: Upgraded to interactive animated Lecture Deck (HTML & PDF),
+   * with automatic fallback to client-side PPTX if offline.
    */
   async toPPTX(
     targetOrData: string | ExecutiveReportData,
@@ -104,10 +166,10 @@ export const exportService = {
   ) {
     try {
       let data: ExecutiveReportData;
-      let filename = 'sigmatactix-executive-deck.pptx';
+      let filename = 'sigmatactix-presentation-deck.html';
 
       if (typeof targetOrData === 'string') {
-        filename = maybeFilename || 'sigmatactix-executive-deck.pptx';
+        filename = maybeFilename || 'sigmatactix-presentation-deck.html';
         const raw = maybeDataOrFilename || {};
         data = {
           title: raw.title || 'Executive Telemetry & Attribution Report',
@@ -133,9 +195,22 @@ export const exportService = {
         };
       } else {
         data = targetOrData;
-        filename = (typeof maybeDataOrFilename === 'string' ? maybeDataOrFilename : maybeFilename) || 'sigmatactix-executive-deck.pptx';
+        filename = (typeof maybeDataOrFilename === 'string' ? maybeDataOrFilename : maybeFilename) || 'sigmatactix-presentation-deck.html';
       }
 
+      // First attempt: High-fidelity Lecture Deck presentation
+      const deckResult = await this.toLectureDeck(data, {
+        filename: filename.replace(/\.pptx$/i, '.html'),
+        mode: 'both',
+        theme: 'sigmatactix',
+        type: 'executive',
+      });
+
+      if (deckResult.success) {
+        return true;
+      }
+
+      console.warn('Lecture Deck API unreachable, falling back to client-side PPTX generation...');
       const pres = new pptxgen();
       pres.layout = 'LAYOUT_16x9';
 

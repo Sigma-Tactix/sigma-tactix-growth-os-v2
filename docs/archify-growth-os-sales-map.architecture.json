@@ -1,0 +1,458 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SigmaTactix Growth OS: System Architecture + $50K MRR Sales Map",
+    "subtitle": "Governed Swarm + Second Brain + Agent Reach. GREEN tags = works today; P0/F tags = fix queue. Full audit: docs/module-health-audit-2026-10-05.md",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "intelligence",
+        "label": "Intelligence path",
+        "focus": [
+          "cockpit",
+          "vanta",
+          "swarm",
+          "reach",
+          "models"
+        ],
+        "note": "Operator works the cockpit; VANTA proposes, Swarm executes under HITL."
+      },
+      {
+        "id": "trust",
+        "label": "Trust and memory moat",
+        "focus": [
+          "swarm",
+          "vaults",
+          "ledger",
+          "hitl",
+          "audit"
+        ],
+        "note": "Every agent act is a ledger row; Secret Vault never reaches agents."
+      },
+      {
+        "id": "mrr",
+        "label": "$50K MRR spine",
+        "focus": [
+          "vaults",
+          "loops",
+          "cockpit",
+          "gateway"
+        ],
+        "note": "Vault memory converts into the weekly loop buyers pay for."
+      },
+      {
+        "id": "health",
+        "label": "Health: works vs fix queue",
+        "focus": [
+          "loops",
+          "p0",
+          "fixes",
+          "links",
+          "ledger",
+          "gateway"
+        ],
+        "note": "Green tags work today; P0 row gates paid launch; F queue restores the five missing start-to-end links."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cockpit",
+      "type": "frontend",
+      "label": "Growth OS Cockpit",
+      "sublabel": "React 19 SPA, 28 routes",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "WORKS: 28 routes + claim contract"
+    },
+    {
+      "id": "gateway",
+      "type": "backend",
+      "label": "Express gateway",
+      "sublabel": "Helmet + Zod + Stripe HMAC",
+      "pos": [
+        300,
+        60
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "P0 OPEN: auth inventory + monolith split"
+    },
+    {
+      "id": "reach",
+      "type": "cloud",
+      "label": "Agent Reach v1.5.0",
+      "sublabel": "15 platforms, SSRF-guarded",
+      "pos": [
+        560,
+        60
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "WORKS w/ fallback; F-001 fixtures"
+    },
+    {
+      "id": "vanta",
+      "type": "backend",
+      "label": "VANTA neural core",
+      "sublabel": "12-phase, read-only proposals",
+      "tag": "WORKS read-only; F-003 no policy row",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "swarm",
+      "type": "backend",
+      "label": "Swarm (8 agents)",
+      "sublabel": "DAG + telemetry + approvals",
+      "tag": "WORKS: RBAC wired F4 closed",
+      "pos": [
+        300,
+        230
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "hitl",
+      "type": "security",
+      "label": "HITL approval gates",
+      "sublabel": "owner/admin external acts",
+      "tag": "WORKS: owner/admin gates",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "vaults",
+      "type": "database",
+      "label": "Second Brain: 10 vaults",
+      "sublabel": "pgvector RAG, RLS per enclave",
+      "tag": "WORKS; P0-2 isolation proof open",
+      "pos": [
+        40,
+        400
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "Mission ledger",
+      "sublabel": "idempotent runs + lineage",
+      "pos": [
+        300,
+        400
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "READY-OFF: flag false, F-002"
+    },
+    {
+      "id": "models",
+      "type": "external",
+      "label": "Gemini multi-model",
+      "sublabel": "fallback + cost governor",
+      "pos": [
+        560,
+        400
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "WORKS: cost governor"
+    },
+    {
+      "id": "loops",
+      "type": "external",
+      "label": "$50K MRR: 2x12K + 4x6.5K",
+      "sublabel": "6 lighthouse managed loops",
+      "tag": "BLOCKED on 6xP0 + R-001..R-014",
+      "pos": [
+        40,
+        570
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "audit",
+      "type": "security",
+      "label": "WORM audit + verify.sql",
+      "sublabel": "RLS audit, 6 P0 blockers open",
+      "pos": [
+        300,
+        570
+      ],
+      "size": [
+        220,
+        70
+      ],
+      "tag": "WORKS schema; F-004 export wiring"
+    },
+    {
+      "id": "p0",
+      "type": "security",
+      "label": "P0: 6 launch blockers",
+      "sublabel": "check, isolation, auth, Stripe, scan, license",
+      "tag": "FIX FIRST",
+      "pos": [
+        40,
+        720
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "fixes",
+      "type": "backend",
+      "label": "F-001..F-008 fix queue",
+      "sublabel": "fixtures, cutover, VANTA row, exports",
+      "tag": "P1-P3",
+      "pos": [
+        300,
+        720
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "links",
+      "type": "messagebus",
+      "label": "5 missing links",
+      "sublabel": "enclave, money, truth, intel, voice",
+      "tag": "R-001..R-014",
+      "pos": [
+        560,
+        720
+      ],
+      "size": [
+        220,
+        70
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client Enclave (per-tenant RLS isolation)",
+      "wraps": [
+        "vanta",
+        "swarm",
+        "hitl",
+        "vaults",
+        "ledger",
+        "models",
+        "loops",
+        "audit",
+        "p0",
+        "fixes",
+        "links"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "cockpit",
+      "to": "vanta",
+      "label": "operates",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c2",
+      "from": "vanta",
+      "to": "swarm",
+      "label": "proposes, never executes",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 59
+    },
+    {
+      "id": "c3",
+      "from": "hitl",
+      "to": "swarm",
+      "label": "approves external sends",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelDy": 59
+    },
+    {
+      "id": "c4",
+      "from": "swarm",
+      "to": "models",
+      "label": "governed inference",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 55
+    },
+    {
+      "id": "c5",
+      "from": "swarm",
+      "to": "vaults",
+      "label": "reads 8 vaults, Secret denied",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c6",
+      "from": "swarm",
+      "to": "ledger",
+      "label": "every act a ledger row",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 86
+    },
+    {
+      "id": "c7",
+      "from": "cockpit",
+      "to": "gateway",
+      "label": "HTTPS + session gate",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -29
+    },
+    {
+      "id": "c8",
+      "from": "gateway",
+      "to": "swarm",
+      "label": "session-guarded API",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c9",
+      "from": "reach",
+      "to": "swarm",
+      "label": "15-channel intel feed",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c10",
+      "from": "ledger",
+      "to": "audit",
+      "label": "immutable evidence",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c11",
+      "from": "vaults",
+      "to": "loops",
+      "label": "compounds into weekly briefs",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c12",
+      "from": "loops",
+      "to": "p0",
+      "label": "gated by",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c13",
+      "from": "audit",
+      "to": "fixes",
+      "label": "queues",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "c14",
+      "from": "fixes",
+      "to": "links",
+      "label": "unblocks",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -29
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Experience",
+      "items": [
+        "React 19 cockpit: Dashboard, 12-module Marketing Suite, Reports, Scheduler, Tenants",
+        "High-Signal Action Queue stages battlecards for 1-click HITL execution"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Intelligence",
+      "items": [
+        "VANTA proposes read-only; 8-agent Swarm executes via DAG",
+        "Agent Reach 15 platforms; Gemini multi-model with cost governor"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Memory + commercial",
+      "items": [
+        "10 Knowledge Vaults compound per client; Secret Vault STRICT DENY",
+        "2x $12K + 4x $6.5K = $50K MRR; 6 P0 blockers gate paid claims"
+      ]
+    }
+  ]
+}

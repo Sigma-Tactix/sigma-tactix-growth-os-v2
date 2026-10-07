@@ -31,12 +31,11 @@ const requirements: Record<string, PriorityConnectorRequirement> = {
     accountHelp: 'The 10-digit client customer ID. Hyphens are accepted.',
     credentialFields: [
       { key: 'accessToken', label: 'OAuth Access Token', placeholder: 'OAuth 2.0 access token with Google Ads access' },
-      { key: 'developerToken', label: 'Developer Token', placeholder: 'Developer token from Google Ads API Center' },
     ],
   },
   'Meta Ads Manager': {
-    canonicalPlatform: 'Meta Ads', accountField: 'adAccountId', accountLabel: 'Meta Ad Account ID', accountPlaceholder: 'e.g. act_123456789', accountHelp: 'Use the ad account ID, normally prefixed with act_.',
-    credentialFields: [{ key: 'accessToken', label: 'Meta User/System User Access Token', placeholder: 'Token with ads_read permission' }],
+    canonicalPlatform: 'Meta Ads', accountField: 'adAccountId', accountLabel: 'Meta Ad Account ID', accountPlaceholder: 'e.g. act_123456789', accountHelp: 'Use the exact Ads account ID beginning with act_. This is not the Facebook Page ID.',
+    credentialFields: [{ key: 'accessToken', label: 'Meta System User Access Token', placeholder: 'Token for this app with ads_read; add ads_management only for approved writes' }],
   },
   'LinkedIn Ads': {
     canonicalPlatform: 'LinkedIn Ads', accountField: 'adAccountId', accountLabel: 'LinkedIn Ad Account ID', accountPlaceholder: 'e.g. 123456789', accountHelp: 'Use the numeric Campaign Manager account ID. The token needs r_ads or rw_ads.',
@@ -89,6 +88,9 @@ export function validatePriorityConnectorCredentials(platform: string, accountId
   const requirement = getPriorityConnectorRequirement(platform);
   if (!requirement) return { valid: false as const, error: `Live verification is not implemented for ${platform}.` };
   if (!accountId.trim()) return { valid: false as const, error: `${requirement.accountLabel} is required.` };
+  if (requirement.canonicalPlatform === 'Meta Ads' && !/^act_\d+$/.test(accountId.trim())) {
+    return { valid: false as const, error: 'Meta Ads requires an Ad Account ID in the format act_<digits>; do not enter a Facebook Page ID.' };
+  }
   const missing = requirement.credentialFields.filter(field => typeof credentials[field.key] !== 'string' || !(credentials[field.key] as string).trim());
   if (missing.length) return { valid: false as const, error: `${platform} requires ${requirement.credentialFields.map(field => field.label).join(' and ')}.` };
   return { valid: true as const };

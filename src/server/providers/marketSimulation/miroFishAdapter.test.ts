@@ -14,4 +14,26 @@ describe('MiroFish private-service adapter', () => {
       baseUrl: 'https://public-mirofish.example.com', serviceToken: 'secret', licensingApproved: true,
     })).toThrow('MiroFish must use a private or loopback service URL');
   });
+
+  it('performs private gateway verification and transitions to verified state upon success', async () => {
+    const fetchMock = (globalThis as any).fetch;
+    try {
+      (globalThis as any).fetch = () => Promise.resolve(new Response(JSON.stringify({ status: 'healthy' }), { status: 200 }));
+      const adapter = new MiroFishMarketSimulationAdapter({
+        baseUrl: 'http://127.0.0.1:5001',
+        serviceToken: 'secure-token',
+        licensingApproved: true,
+      });
+      const verified = await adapter.verify();
+      expect(verified).toBe(true);
+
+      const caps = await adapter.capabilities();
+      expect(caps.configured).toBe(true);
+      expect(caps.verified).toBe(true);
+      expect(caps.detail).toContain('verified and reachable');
+    } finally {
+      (globalThis as any).fetch = fetchMock;
+    }
+  });
 });
+

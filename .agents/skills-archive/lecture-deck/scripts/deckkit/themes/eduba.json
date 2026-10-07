@@ -1,0 +1,39 @@
+{
+  "name": "eduba",
+  "description": "Wine page, cream card, gold and petrol accents. Warm, editorial, high contrast between the frame and the page.",
+  "chrome": "card",
+  "fonts": {
+    "display": "'DM Sans', 'Helvetica Neue', Arial, sans-serif",
+    "mono": "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace",
+    "import": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,900&display=swap"
+  },
+  "colors": {
+    "bg": "#421D24",
+    "card": "#FAF5E9",
+    "panel": "#F3EBD8",
+    "ink": "#2C1519",
+    "muted": "#72554A",
+    "rule": "#CCBCAA",
+    "on_bg": "#EAD5D6",
+    "rule_on_bg": "rgba(234,213,214,.22)",
+    "white": "#FFFFFF",
+    "highlight": "#DDA63A",
+    "cool": "#285E55",
+    "warm": "#9A5B36",
+    "soft": "#80A391",
+    "neutral": "#D8BFC0",
+    "live": "#25CA58",
+    "highlight_bg": "#F7E9C6",
+    "cool_bg": "#DCE8E4",
+    "warm_bg": "#EFDCCB",
+    "soft_bg": "#E3ECE6"
+  },
+  "modes": {
+    "slides": "#421D24",
+    "share": "#DDA63A",
+    "breakout": "#285E55",
+    "solo": "#25CA58",
+    "handoff": "#9A5B36",
+    "break": "#D8BFC0"
+  }
+}

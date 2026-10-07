@@ -112,7 +112,88 @@ export function createBillingRouter(deps: BillingRouterDeps): Router {
     }
   });
 
-  // GET /tiers
+  // POST /checkout-session
+  router.post('/checkout-session', async (req: Request, res: Response) => {
+    if (!isStripeConfigured()) {
+      res.status(503).json({ error: 'Stripe billing is not configured on this server.' });
+      return;
+    }
+    const { tierKey } = req.body;
+    if (!tierKey) {
+      res.status(400).json({ error: 'tierKey is required' });
+      return;
+    }
+    
+    // Tier amounts mapping
+    const amounts: Record<string, number> = {
+      starter: 49900,
+      growth: 149900,
+      enterprise: 349900,
+    };
+    const unit_amount = amounts[tierKey];
+    if (!unit_amount) {
+      res.status(400).json({ error: 'Invalid tierKey' });
+      return;
+    }
+
+    try {
+      const stripe = getStripeClient();
+      const { data: wsRow, error: wsErr } = await res.locals.sb
+        .from('workspaces')
+        .select('stripe_customer_id, name, owner_id')
+        .eq('id', res.locals.wsId)
+        .single();
+      if (wsErr) {
+        res.status(500).json({ error: wsErr.message });
+        return;
+      }
+
+      let customerId = wsRow?.stripe_customer_id as string | undefined;
+      if (!customerId) {
+        if (wsRow?.owner_id !== res.locals.userId) {
+          res.status(403).json({ error: 'Only the workspace owner can set up billing.' });
+          return;
+        }
+        const customer = await stripe.customers.create({
+          email: res.locals.userEmail,
+          name: wsRow?.name || undefined,
+          metadata: { workspace_id: res.locals.wsId },
+        });
+        customerId = customer.id;
+        const { error: updateErr } = await res.locals.sb.from('workspaces').update({ stripe_customer_id: customerId }).eq('id', res.locals.wsId).select().single();
+        if (updateErr) {
+          res.status(403).json({ error: 'Only the workspace owner can set up billing. (' + updateErr.message + ')' });
+          return;
+        }
+      }
+
+      const appUrl = (process.env.APP_URL && !process.env.APP_URL.startsWith('MY_')) ? process.env.APP_URL : 'http://localhost:3000';
+      const checkoutSession = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: { name: `Sigma Tactix - ${tierKey.toUpperCase()}` },
+              unit_amount,
+              recurring: { interval: 'month' },
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        subscription_data: {
+          metadata: { tier_key: tierKey }
+        },
+        success_url: `${appUrl.replace(/\/$/, '')}/admin?tab=TENANTS&checkout=success`,
+        cancel_url: `${appUrl.replace(/\/$/, '')}/admin?tab=TENANTS&checkout=cancel`,
+      });
+      res.json({ success: true, url: checkoutSession.url });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to create Stripe checkout session: ' + (err.message || String(err)) });
+    }
+  });
   router.get('/tiers', async (req: Request, res: Response) => {
     const { data, error } = await res.locals.sb.from('tier_definitions').select('*').order('sort_order');
     if (error) {

@@ -11,6 +11,7 @@ interface TinyFishOptions {
   timeoutMs?: number;
   searchBaseUrl?: string;
   fetchBaseUrl?: string;
+  verified?: boolean;
 }
 
 function assertPublicUrl(raw: string): URL {
@@ -35,6 +36,7 @@ export class TinyFishWebIntelligenceAdapter implements WebIntelligenceProvider {
   private readonly timeoutMs: number;
   private readonly searchBaseUrl: string;
   private readonly fetchBaseUrl: string;
+  private verifiedState: boolean;
 
   constructor(options: TinyFishOptions = {}) {
     this.apiKey = (options.apiKey ?? process.env.TINYFISH_API_KEY ?? '').trim();
@@ -42,15 +44,38 @@ export class TinyFishWebIntelligenceAdapter implements WebIntelligenceProvider {
     this.timeoutMs = options.timeoutMs ?? (Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 15_000);
     this.searchBaseUrl = options.searchBaseUrl ?? 'https://api.search.tinyfish.ai';
     this.fetchBaseUrl = options.fetchBaseUrl ?? 'https://api.fetch.tinyfish.ai';
+    this.verifiedState = options.verified ?? false;
+  }
+
+  async verify(): Promise<boolean> {
+    if (!this.apiKey) {
+      this.verifiedState = false;
+      return false;
+    }
+    try {
+      const url = new URL(this.searchBaseUrl);
+      url.searchParams.set('query', 'ping');
+      const response = await fetch(url, {
+        headers: this.headers(),
+        signal: AbortSignal.timeout(Math.min(5000, this.timeoutMs)),
+      });
+      this.verifiedState = response.ok;
+      return this.verifiedState;
+    } catch {
+      this.verifiedState = false;
+      return false;
+    }
   }
 
   async capabilities(): Promise<WebIntelligenceCapabilities> {
     return {
       provider: 'tinyfish',
       configured: Boolean(this.apiKey),
-      verified: false,
+      verified: this.verifiedState,
       operations: ['search', 'fetch'],
-      detail: this.apiKey
+      detail: this.verifiedState
+        ? 'TinyFish web intelligence is verified and reachable for search and fetch operations.'
+        : this.apiKey
         ? 'API key is configured; no provider request has been verified in this process.'
         : 'Set TINYFISH_API_KEY to enable server-side Search and Fetch.',
     };
@@ -71,6 +96,7 @@ export class TinyFishWebIntelligenceAdapter implements WebIntelligenceProvider {
     const startedAt = Date.now();
     const response = await fetch(url, { headers: this.headers(), signal: AbortSignal.timeout(this.timeoutMs) });
     if (!response.ok) throw new Error(`TinyFish Search returned ${response.status}`);
+    this.verifiedState = true;
     const payload = await response.json() as any;
     const latencyMs = Date.now() - startedAt;
     const limit = Math.max(1, Math.min(20, input.maxResults ?? 10));
@@ -95,6 +121,7 @@ export class TinyFishWebIntelligenceAdapter implements WebIntelligenceProvider {
       signal: AbortSignal.timeout(this.timeoutMs),
     });
     if (!response.ok) throw new Error(`TinyFish Fetch returned ${response.status}`);
+    this.verifiedState = true;
     const payload = await response.json() as any;
     const latencyMs = Date.now() - startedAt;
     const documents = Array.isArray(payload) ? payload : payload.results || payload.data || [];

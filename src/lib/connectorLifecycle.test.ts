@@ -11,7 +11,7 @@ import {
 describe('priority connector lifecycle', () => {
   it.each([
     ['Google Analytics 4 (GA4)', ['serviceAccountKey'], 'propertyId'],
-    ['Google Ads', ['accessToken', 'developerToken'], 'customerId'],
+    ['Google Ads', ['accessToken'], 'customerId'],
     ['Meta Ads Manager', ['accessToken'], 'adAccountId'],
     ['LinkedIn Ads', ['accessToken'], 'adAccountId'],
     ['Twitter (X) Ads', ['accessToken'], 'adAccountId'],
@@ -23,11 +23,9 @@ describe('priority connector lifecycle', () => {
   });
 
   it('rejects incomplete provider credentials instead of treating configuration as live', () => {
-    expect(validatePriorityConnectorCredentials('Google Ads', '123-456-7890', { accessToken: 'oauth' })).toEqual({
-      valid: false,
-      error: 'Google Ads requires OAuth Access Token and Developer Token.',
-    });
+    expect(validatePriorityConnectorCredentials('Google Ads', '123-456-7890', { accessToken: 'oauth' }).valid).toBe(true);
     expect(validatePriorityConnectorCredentials('Meta Ads Manager', '', { accessToken: 'oauth' }).valid).toBe(false);
+    expect(validatePriorityConnectorCredentials('Meta Ads Manager', '109090252077535', { accessToken: 'oauth' }).valid).toBe(false);
   });
 
   it('distinguishes verified access from live metrics', () => {

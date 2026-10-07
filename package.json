@@ -15,7 +15,11 @@
     "setup:google-ads-mcp": "pipx install google-ads-mcp==0.0.4",
     "setup:laya": "pip install \"laya[serve]\"",
     "laya:serve": "LAYA_PRELOAD=0 laya-serve --port 8000",
-    "agents:docs": "node scripts/generateAgentDocs.mjs"
+    "agents:docs": "node scripts/generateAgentDocs.mjs",
+    "skills:search": "node scripts/skillsManager.mjs search",
+    "skills:list": "node scripts/skillsManager.mjs list",
+    "skills:restore": "node scripts/skillsManager.mjs restore",
+    "skills:archive": "node scripts/skillsManager.mjs archive"
   },
   "dependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.3.0",
@@ -40,6 +44,7 @@
     "helmet": "^8.3.0",
     "html2canvas": "^1.4.1",
     "html2canvas-pro": "^2.4.1",
+    "hyperframes": "^0.8.139",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",

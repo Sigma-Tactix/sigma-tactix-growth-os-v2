@@ -10,6 +10,7 @@ import "express-async-errors";
 import { onboardingChatRequest, ONBOARDING_INSTRUCTION } from "./src/lib/onboardingChat.js";
 import { canonicalConnectorPlatform, verifyPipelineConnection, unsupportedConnectorAdapter } from "./src/lib/pipelineVerification.js";
 import { classifyChannelMedia, validatePriorityConnectorCredentials } from "./src/lib/connectorLifecycle.js";
+import { verifyMetaAdsConnection } from "./src/lib/metaAdsVerification.js";
 import {
   VANTA_SYSTEM_INSTRUCTION,
   buildVantaPromptContext,
@@ -38,6 +39,22 @@ import { emptyWorkspaceData } from "./src/initialData.js";
 import { WorkspaceData, GrowthAudit, GrowthFinding, UIUXAudit, ContentAsset, AgentTask, KeywordCluster, AnalyticsAudit, Connector, ConnectorPlatform, TokenUsageRecord, TokenTelemetrySummary, ActivePipeline } from "./src/types.js";
 import { calculateTokenCost, estimateTokens, computeProfitability, aggregateTelemetry, TIER_RETAINERS, ALL_AI_MODELS, MODEL_PRICING } from "./src/lib/tokenCostEngine.js";
 import { encryptCredentials, decryptCredentials } from "./src/lib/credentialCrypto.js";
+import {
+  GSC_DEFAULT_SITE_URL,
+  GSC_REDIRECT_PATH,
+  buildGscAuthUrl,
+  exchangeGscAuthCode,
+  fetchGscAnalyticsPayload,
+  listGscSites,
+  normalizeGscSiteUrl,
+  readGscSettings,
+  readGscTokens,
+  refreshGscTokens,
+  resolveGscOAuthClient,
+  resolveGscRedirectUri,
+  storeGscTokens,
+  writeGscSettings,
+} from "./src/lib/gscService.js";
 import { supabaseForToken, verifySupabaseToken } from "./src/lib/supabaseAdmin.js";
 import { resolveWorkspaceId, loadWorkspace, saveWorkspace, WorkspaceConflictError } from "./src/lib/workspaceStore.js";
 import { syncTaskToLedger, listLedgerRuns, listLedgerTasks, backfillAgentTasks, startNodeAttempt, finishNodeAttempt, recordTermsAcceptance } from "./src/lib/executionLedgerStore.js";
@@ -47,6 +64,7 @@ import { fetchSiteContent, summarizeSnapshotForPrompt, createSyntheticSnapshot }
 import { captureAndStoreAuditScreenshots, ScreenshotCapacityError, type AuditScreenshots } from "./src/lib/screenshot.js";
 import { saveDocument, searchDocuments, indexPerformanceHook } from "./src/lib/rag.js";
 import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall } from "./src/lib/agentTools.js";
+import { executeAgentReActLoop, type SupportedProvider } from "./src/lib/aiProvider.js";
 import { AUDIT_CATEGORIES, runCategoryAgent, runSynthesisAgent } from "./src/lib/growthAuditAgents.js";
 import { computeAuditScore } from "./src/lib/auditScoring.js";
 import { BoundedWorkflowGraph } from "./src/lib/boundedWorkflowGraph.js";
@@ -81,9 +99,18 @@ import { buildCapabilityRegistry } from "./src/lib/capabilityRegistry.js";
 import { buildDecisionTrace, decisionTraceToVantaContext } from "./src/lib/decisionTrace.js";
 import { TinyFishWebIntelligenceAdapter } from "./src/server/providers/webIntelligence/tinyFishAdapter.js";
 import { MiroFishMarketSimulationAdapter } from "./src/server/providers/marketSimulation/miroFishAdapter.js";
+import { FixtureWebIntelligenceAdapter } from "./src/server/providers/webIntelligence/fixtureAdapter.js";
+import { FixtureMarketSimulationAdapter } from "./src/server/providers/marketSimulation/fixtureAdapter.js";
+import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligenceRoutes.js";
+import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
+import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
+import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
+import { buildBrandCreativeStylePresets } from "./src/lib/brandCreativeStyles.js";
 import { buildGrowthStrategies } from "./src/lib/growthStrategy.js";
 import { validateReportSnapshot } from "./src/lib/reportSnapshot.js";
 import { renderExecutiveReportPDF } from "./src/lib/pdfReportRenderer.js";
+import * as fs from "fs";
+import { spawn } from "child_process";
 
 // Load environment variables
 dotenv.config();
@@ -92,8 +119,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const tinyFishWebIntelligence = new TinyFishWebIntelligenceAdapter();
-const miroFishMarketSimulation = new MiroFishMarketSimulationAdapter();
+const tinyFishWebIntelligence = process.env.USE_FIXTURE_PROVIDERS === 'true'
+  ? new FixtureWebIntelligenceAdapter()
+  : new TinyFishWebIntelligenceAdapter();
+const miroFishMarketSimulation = process.env.USE_FIXTURE_PROVIDERS === 'true'
+  ? new FixtureMarketSimulationAdapter()
+  : new MiroFishMarketSimulationAdapter();
 
 async function getGrowthProviderSnapshots() {
   const [tinyfish, mirofish] = await Promise.all([
@@ -199,7 +230,8 @@ app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), asyn
   const customerId: string | undefined = typeof obj.customer === "string" ? obj.customer : obj.customer?.id;
   if (customerId && event.type.startsWith("customer.subscription.")) {
     const status = event.type === "customer.subscription.deleted" ? "canceled" : obj.status;
-    const plan = obj.items?.data?.[0]?.price?.nickname || obj.items?.data?.[0]?.price?.id || null;
+    const tierKey = obj.metadata?.tier_key;
+    const plan = obj.items?.data?.[0]?.price?.nickname || obj.items?.data?.[0]?.price?.id || tierKey || null;
     const periodEnd = obj.current_period_end ? new Date(obj.current_period_end * 1000).toISOString() : null;
     // Service-role client, deliberately — see the comment on getServiceRoleClient()
     // in supabaseAdmin.ts. apply_stripe_webhook_update is no longer anon-granted
@@ -214,6 +246,21 @@ app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), asyn
         p_current_period_end: periodEnd,
       });
       if (error) console.error("Failed to apply Stripe webhook update:", error.message);
+
+      // Update actual workspace tier if tier_key was passed in the subscription metadata
+      if (tierKey && (status === 'active' || status === 'trialing')) {
+        const { data: wsRow } = await getServiceRoleClient()
+          .from('workspaces')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+        if (wsRow) {
+          await getServiceRoleClient()
+            .from('workspaces')
+            .update({ tier: tierKey })
+            .eq('id', wsRow.id);
+        }
+      }
     } catch (err: any) {
       console.error("Failed to apply Stripe webhook update:", err.message);
     }
@@ -551,69 +598,138 @@ app.post("/api/public/intake/:token/complete", publicLimiter, async (req: Reques
   res.json({ success: true });
 });
 
-// Creative Studio & Carousel Creator Endpoints (/api/creative/*)
-// Token-optional so users can generate visuals and carousel copy in real-time
-const PRESET_ENHANCERS: Record<string, string> = {
-  '3D_DATA_NEURAL': '3D isometric data neural architecture, glowing golden amber and magma vectors, glossy obsidian glass pedestal, holographic telemetry HUD, 8k resolution, cinematic Octane render, raytracing, dark navy-black studio background #09090b',
-  'CYBER_SCHEMATIC': 'Technical engineering schematic blueprint, crisp amber laser lines, wireframe nodes, ISO-9001 precision, architectural typography, glowing circuit vectors, clean mathematical precision, dark slate background',
-  'MINIMAL_STUDIO': 'Minimalist luxury studio product photography, elegant metallic amber and brushed obsidian surfaces, soft dramatic rim lighting, shallow depth of field, Hasselblad medium format, ultra-refined executive aesthetic',
-  'CORPORATE_POLISHED': 'High-end B2B corporate editorial aesthetic, modern glass skyscraper atrium with glowing data infographics, crisp lighting, high contrast, Fortune 50 executive boardroom standard, Forbes cover quality'
-};
+// Creative Studio endpoints are authenticated. They never fall back to a
+// browser-side provider or label a still image as a video.
+app.get("/api/creative/providers/status", requireAuth, async (_req: Request, res: Response) => {
+  const geminiApiKey = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
+  const providers = await creativeGateway.getProviderStatus({ geminiApiKey });
+  res.json({ success: true, providers });
+});
 
-app.post("/api/creative/generate-image", async (req: Request, res: Response) => {
+app.get("/api/creative/brand-style-presets", requireAuth, async (_req: Request, res: Response) => {
+  const db = await getDB(res);
+  const presets = buildBrandCreativeStylePresets(db.secondBrain?.brandVault);
+  res.json({ success: true, presets: presets.map(({ promptGuidance: _promptGuidance, ...preset }) => preset) });
+});
+
+app.post("/api/creative/generate-image", requireAuth, async (req: Request, res: Response) => {
   const startTime = Date.now();
-  const { prompt, aspectRatio = '16:9', stylePreset = '3D_DATA_NEURAL', enhancePrompt = true } = req.body || {};
+  const {
+    prompt,
+    aspectRatio = '16:9',
+    stylePreset = '3D_DATA_NEURAL',
+    negativePrompt,
+    enhancePrompt = true,
+    promptEnhancer = 'gemini',
+    enhancerModel,
+    preferredProvider,
+    modelId,
+  } = req.body || {};
   
   if (!prompt || typeof prompt !== 'string') {
     res.status(400).json({ error: "Prompt is required" });
     return;
   }
 
-  const presetTag = PRESET_ENHANCERS[stylePreset] || PRESET_ENHANCERS['3D_DATA_NEURAL'];
-  const enhancedPrompt = enhancePrompt
-    ? `${prompt.trim()}, ${presetTag}`
-    : prompt.trim();
-
-  let width = 1280;
-  let height = 720;
-  if (aspectRatio === '1:1') {
-    width = 1024;
-    height = 1024;
-  } else if (aspectRatio === '9:16') {
-    width = 720;
-    height = 1280;
-  } else if (aspectRatio === '4:5') {
-    width = 1024;
-    height = 1280;
+  if (!['none', 'gemini', 'ollama', 'lmstudio'].includes(promptEnhancer)) {
+    res.status(400).json({ error: 'promptEnhancer must be none, gemini, ollama, or lmstudio' });
+    return;
   }
 
-  const seed = Math.floor(Math.random() * 999999);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+  const geminiApiKey = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
+  const db = await getDB(res);
+  const brandStyles = buildBrandCreativeStylePresets(db.secondBrain?.brandVault);
+  const selectedStyle = brandStyles.find(style => style.id === stylePreset) || brandStyles[0];
+  let result;
+  try {
+    result = await creativeGateway.generateImage({
+      prompt, aspectRatio, negativePrompt, enhancePrompt,
+      promptEnhancer, enhancerModel, preferredProvider, modelId,
+      stylePreset: selectedStyle.id,
+      styleGuidance: selectedStyle.promptGuidance,
+    }, {
+      geminiApiKey,
+      geminiTextModel: await resolveEffectiveGeminiModel(res),
+    });
+  } catch (error: any) {
+    const message = String(error?.message || error || 'Image generation failed')
+      .replace(/AIza[\w-]+/g, '[redacted]');
+    res.status(502).json({ error: message.slice(0, 300) });
+    return;
+  }
 
   await recordTokenUsage(res, {
     actionType: "CREATIVE_IMAGE",
-    provider: "pollinations",
-    modelName: "pollinations-flux",
+    provider: result.provider,
+    modelName: result.modelName || "flux",
     usageMetadata: {
-      promptTokenCount: estimateTokens(enhancedPrompt),
+      promptTokenCount: estimateTokens(result.enhancedPrompt || prompt),
       candidatesTokenCount: 1000,
-      totalTokenCount: estimateTokens(enhancedPrompt) + 1000,
+      totalTokenCount: estimateTokens(result.enhancedPrompt || prompt) + 1000,
     },
     durationMs: Date.now() - startTime,
-    metadata: { prompt, aspectRatio, stylePreset, seed },
+    metadata: { prompt, aspectRatio, stylePreset, seed: result.seed, provider: result.provider, source: result.source },
   });
 
   res.json({
     success: true,
-    imageUrl,
-    enhancedPrompt,
-    aspectRatio,
-    seed,
-    provider: 'pollinations'
+    imageUrl: result.imageUrl,
+    enhancedPrompt: result.enhancedPrompt,
+    aspectRatio: result.aspectRatio,
+    seed: result.seed,
+    provider: result.provider,
+    modelName: result.modelName,
+    source: result.source,
+    promptEnhancer: result.promptEnhancer,
   });
 });
 
-app.post("/api/creative/generate-social", async (req: Request, res: Response) => {
+app.post("/api/creative/generate-video", requireAuth, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const { prompt, aspectRatio = '9:16', durationSeconds = 5, sourceImageUrl, stylePreset = '3D_DATA_NEURAL', preferredProvider, modelId } = req.body || {};
+
+  if (!prompt || typeof prompt !== 'string') {
+    res.status(400).json({ error: "Prompt is required for video generation" });
+    return;
+  }
+
+  const result = await creativeGateway.generateVideo({
+    prompt,
+    aspectRatio,
+    durationSeconds,
+    sourceImageUrl,
+    stylePreset,
+    preferredProvider,
+    modelId,
+  });
+
+  await recordTokenUsage(res, {
+    actionType: "CREATIVE_VIDEO",
+    provider: result.provider,
+    modelName: result.modelName || "video-synthesis",
+    usageMetadata: {
+      promptTokenCount: estimateTokens(prompt),
+      candidatesTokenCount: 3000,
+      totalTokenCount: estimateTokens(prompt) + 3000,
+    },
+    durationMs: Date.now() - startTime,
+    metadata: { prompt, aspectRatio, durationSeconds, provider: result.provider, source: result.source },
+  });
+
+  res.json({
+    success: true,
+    videoUrl: result.videoUrl,
+    thumbnailUrl: result.thumbnailUrl,
+    prompt: result.prompt,
+    aspectRatio: result.aspectRatio,
+    durationSeconds: result.durationSeconds,
+    provider: result.provider,
+    modelName: result.modelName,
+    source: result.source,
+  });
+});
+
+app.post("/api/creative/generate-social", requireAuth, async (req: Request, res: Response) => {
   const startTime = Date.now();
   const { channel = 'LinkedIn', topic, targetAudience, tone } = req.body || {};
 
@@ -622,13 +738,19 @@ app.post("/api/creative/generate-social", async (req: Request, res: Response) =>
     return;
   }
 
-  const audience = targetAudience || 'B2B Tech Founders & Revenue Leaders';
-  const toneDesc = tone || 'Authoritative, empirical, anti-slop, engineering-grade, zero buzzwords';
+  const db = await getDB(res);
+  const brand = db.secondBrain?.brandVault;
+  const audience = targetAudience || db.secondBrain?.customerVault?.idealCustomerProfile || 'B2B Tech Founders & Revenue Leaders';
+  const toneDesc = tone || brand?.voiceAndTone || 'Authoritative, empirical, anti-slop, engineering-grade, zero buzzwords';
+  const geminiApiKey = (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
+  const geminiModel = await resolveEffectiveGeminiModel(res);
 
-  // Try live Gemini 2.5 Flash model if API key is present
-  if (process.env.GEMINI_API_KEY) {
+  // Use the workspace's configured text model; image-model quota and text-model
+  // quota are independent, so a hardcoded legacy model made this surface fail
+  // even when VANTA and other configured Gemini text paths were healthy.
+  if (geminiApiKey) {
     try {
-      const client = getGeminiClient();
+      const client = getGeminiClient(geminiApiKey);
       const geminiPrompt = `
 You are the Principal Creative Director and Viral Growth Architect for Sigma Tactix (Growth OS).
 Generate a high-performing, empirical social campaign for:
@@ -636,6 +758,9 @@ Channel: ${channel}
 Topic / Thesis: ${topic}
 Target Audience: ${audience}
 Tone: ${toneDesc}
+Brand positioning: ${brand?.corePositioning || 'not configured'}
+Brand slogan: ${brand?.brandSlogan || 'not configured'}
+Key messages: ${(brand?.keyMessages || []).join(' | ') || 'not configured'}
 
 STRICT CHANNEL OUTPUT SCHEMA (Return raw JSON only, no markdown backticks, no markdown fence):
 
@@ -743,10 +868,17 @@ ${channel === 'LinkedIn' ? `
 (Generate exactly 7 tweets from 1 to 7, each under 275 characters).
 `}
 `;
-      const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: geminiPrompt
-      });
+      const response = await Promise.race([
+        client.models.generateContent({
+          model: geminiModel,
+          contents: geminiPrompt,
+          config: { responseMimeType: 'application/json', temperature: 0.55, maxOutputTokens: 2800 },
+        }),
+        new Promise<never>((_, reject) => setTimeout(
+          () => reject(new Error('Gemini social generation timed out after 35 seconds.')),
+          35_000,
+        )),
+      ]);
 
       const raw = response.text || "{}";
       const cleanJson = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
@@ -754,7 +886,7 @@ ${channel === 'LinkedIn' ? `
 
       await recordTokenUsage(res, {
         actionType: "CREATIVE_SOCIAL",
-        modelName: "gemini-2.5-flash",
+        modelName: geminiModel,
         usageMetadata: (response as any).usageMetadata,
         promptText: geminiPrompt,
         responseText: raw,
@@ -765,91 +897,21 @@ ${channel === 'LinkedIn' ? `
       res.json({ success: true, result: parsed, source: 'gemini' });
       return;
     } catch (err: any) {
-      console.warn("Live Gemini social generation failed, using intelligent framework fallback:", err.message);
+      const detail = String(err?.message || err || 'Unknown provider error')
+        .replace(/AIza[\w-]+/g, '[redacted]')
+        .replace(/\s+/g, ' ')
+        .slice(0, 260);
+      console.warn("Live Gemini social generation failed:", detail);
+      res.status(502).json({ error: `Gemini could not generate a valid social campaign. ${detail}. No local draft was substituted.` });
+      return;
     }
   }
 
-  // Resilient fallback if offline or rate-limited
-  res.json({
-    success: true,
-    result: {
-      channel,
-      topic,
-      hook: `Most ${audience} believe their growth bottlenecks are caused by market headwinds. In reality, they are trapped in a negative-compounding cycle of rented headcount.`,
-      slides: [
-        {
-          slideNumber: 1,
-          badge: "EXECUTIVE AUDIT",
-          title: topic,
-          subtitle: `Strategic teardown for ${audience}`,
-          contentPoints: [
-            "Why the legacy agency model fails in 2026.",
-            "The 3 structural errors costing founders 30%+ in pipeline velocity.",
-            "The client-owned sovereign framework to dominate."
-          ],
-          takeaway: "Rented agency headcount evaporates. Owned infrastructure compounds.",
-          visualCue: "Obsidian glass card with glowing amber diagnostic vectors"
-        },
-        {
-          slideNumber: 2,
-          badge: "THE LEAK",
-          title: "Attribution Blindness",
-          subtitle: "Last-click measurement is killing high-intent demand",
-          contentPoints: [
-            "82% of buyer journeys originate in dark social & AI search.",
-            "CRM credits Google Brand Search for deals sparked on LinkedIn.",
-            "You underfund high-converting brand affinity channels."
-          ],
-          takeaway: "Shift from last-click delusion to unified blended CAC telemetry.",
-          visualCue: "Radar chart showing fragmented touchpoints converging on deal close"
-        },
-        {
-          slideNumber: 3,
-          badge: "CREATIVE DECAY",
-          title: "Ad Creative Fatigue",
-          subtitle: "Ad frequency hits 4.8x while CTR plummets 28%",
-          contentPoints: [
-            "Target accounts have seen the same 2 static graphics for 90 days.",
-            "Agency turnaround for fresh creative hooks takes 3 weeks.",
-            "Result: algorithmic decay and negative brand recall."
-          ],
-          takeaway: "Deploy autonomous multi-hook creative sprints every 72 hours.",
-          visualCue: "Decaying curve showing frequency spikes vs conversion drop"
-        },
-        {
-          slideNumber: 4,
-          badge: "AEO VISIBILITY",
-          title: "Zero Generative Search Ranking",
-          subtitle: "ChatGPT & Perplexity are recommending your competitors",
-          contentPoints: [
-            "58% of executive purchase queries now hit AI answer engines.",
-            "Traditional SEO keywords miss conversational citation indexing.",
-            "Competitors with structured knowledge graphs own 8x more citations."
-          ],
-          takeaway: "Engineer categorical schema markup and authoritative citation nodes.",
-          visualCue: "Generative search engine answer card highlighting competitor citations"
-        },
-        {
-          slideNumber: 5,
-          badge: "THE FIX",
-          title: "Deploy an AI-Native Growth OS",
-          subtitle: "Permanent institutional intelligence you own forever",
-          contentPoints: [
-            "10 permissioned vaults preserving brand voice, ICPs, and telemetry.",
-            "Autonomous agent swarms executing CRO, content, and ad optimization.",
-            "Strict Human-in-the-Loop guardrails protecting brand capital."
-          ],
-          takeaway: "Stop renting headcount. Own your growth infrastructure.",
-          visualCue: "Sigma Tactix Growth OS golden core radiating active telemetry"
-        }
-      ],
-      hashtags: ["#GrowthOS", "#B2BGrowth", "#AIAgents", "#SigmaTactix"]
-    },
-    source: 'framework_fallback'
-  });
+  res.status(503).json({ error: 'Configure a workspace Gemini API key before generating a social campaign.' });
+  return;
 });
 
-app.post("/api/creative/generate-text", async (req: Request, res: Response) => {
+app.post("/api/creative/generate-text", requireAuth, async (req: Request, res: Response) => {
   const startTime = Date.now();
   const { topic, format = 'LONG_FORM', targetAudience, antiSlop = true } = req.body || {};
   
@@ -1334,6 +1396,80 @@ app.post(["/api/outreach/send-email", "/api/workspace/outreach/send-email"], asy
 app.use("/api", apiLimiter);
 app.use("/api/workspace", requireAuth);
 
+// Deterministic motion is a governed execution, not an instant client-side
+// preview. Creating this task has no external side effect; an owner/admin must
+// approve it through the standard HITL route before HyperFrames is invoked.
+app.post("/api/workspace/creative/renders", async (req: Request, res: Response) => {
+  const { title, subtitle, cta, aspectRatio = "9:16", durationSeconds = 8 } = req.body || {};
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "A render title is required." });
+    return;
+  }
+  if (!["16:9", "9:16", "1:1"].includes(aspectRatio)) {
+    res.status(400).json({ error: "aspectRatio must be 16:9, 9:16, or 1:1." });
+    return;
+  }
+  if (!Number.isInteger(durationSeconds) || durationSeconds < 3 || durationSeconds > 30) {
+    res.status(400).json({ error: "durationSeconds must be an integer between 3 and 30." });
+    return;
+  }
+  if (!hyperframesRenderer.isReady()) {
+    res.status(503).json({ error: hyperframesRenderer.statusMessage() });
+    return;
+  }
+  const db = await getDB(res);
+  const plan = createDispatchPlan({
+    intent: `Render approved Sigma motion creative: ${title.trim().slice(0, 120)}`,
+    agentName: "Creative Director Agent",
+    moduleKey: "content",
+  });
+  const task: AgentTask = {
+    id: "task-" + crypto.randomUUID(),
+    agentName: "Creative Director Agent",
+    goal: plan.intent,
+    missionId: plan.missionId,
+    planId: plan.planId,
+    subAgentId: plan.entrySubAgent,
+    executionSubAgentIds: plan.executionSubAgentIds,
+    requiresApproval: true,
+    moduleKey: "content",
+    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+    status: "Pending Approval",
+    allowedScope: getAgentPolicy("Creative Director Agent").allowed,
+    requestedBy: res.locals.userId,
+    steps: ["Deterministic motion render requested; awaiting owner/admin approval."],
+    output: "",
+    creativeRender: { title: title.trim(), subtitle: typeof subtitle === "string" ? subtitle.trim() : undefined, cta: typeof cta === "string" ? cta.trim() : undefined, aspectRatio, durationSeconds },
+  };
+  db.agentTasks.unshift(task);
+  await saveDB(res, db);
+  await recordLedgerTask(res, task, res.locals.userId, "HyperFrames render queued for HITL approval", {
+    ...taskMetadata(plan, task),
+  });
+  res.status(202).json({ success: true, task });
+});
+
+app.get("/api/workspace/creative/renders/:taskId/download", async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const task = (await loadAgentTasks(res, db)).find(t => t.id === req.params.taskId);
+  if (!task || !task.creativeRender) {
+    res.status(404).json({ error: "Creative render task not found." });
+    return;
+  }
+  if (task.status !== "Success") {
+    res.status(409).json({ error: "This render is not complete." });
+    return;
+  }
+  const artifactPath = hyperframesRenderer.artifactPath(task.id);
+  if (!fs.existsSync(artifactPath)) {
+    res.status(410).json({ error: "The local render artifact is unavailable. Re-render from a new approved task." });
+    return;
+  }
+  res.type("video/mp4");
+  res.attachment(`${task.id}.mp4`);
+  res.sendFile(artifactPath);
+});
+
 app.post('/api/workspace/onboarding-chat', expensiveLimiter, async (req: Request, res: Response) => {
   const parsed = onboardingChatRequest.safeParse(req.body);
   if (!parsed.success) {
@@ -1521,6 +1657,22 @@ app.use('/api/workspace/decision', createDecisionRouter({
   buildDecisionTrace,
 }));
 
+app.use(
+  "/api/workspace/web-intelligence",
+  createWebIntelligenceRouter({
+    provider: tinyFishWebIntelligence,
+    expensiveLimiter,
+  }),
+);
+
+app.use(
+  "/api/workspace/market-simulations",
+  createMarketSimulationRouter({
+    provider: miroFishMarketSimulation,
+    expensiveLimiter,
+  }),
+);
+
 
 // MCP servers + Agent Skills (#task11, Cockpit sections) — the toggle in
 // the old combined "MCP & Agent Skills" Settings card had no save handler
@@ -1680,41 +1832,381 @@ app.post("/api/workspace/verify-domain-dns", async (req: Request, res: Response)
 });
 
 // Google Search Console (GSC) Integration Endpoints
-app.get("/api/gsc/status", async (req: Request, res: Response) => {
+//
+// The data routes below run behind requireAuth: they read and write the
+// workspace blob through getDB()/saveDB(), which need the request-scoped RLS
+// client that requireAuth stashes on res.locals. The pre-fix routes were
+// registered WITHOUT auth, so getDB() threw on every call, /api/gsc/status
+// always answered 500, and the client rendered demo data no matter what the
+// connect popups claimed.
+//
+// /api/gsc/auth and /api/gsc/callback stay public: they are browser
+// navigations in the Google OAuth round-trip and cannot carry a Bearer
+// header. The callback never touches the database — it bounces the
+// authorization code back to the SPA, and the authenticated SPA then POSTs
+// it to /api/gsc/token-exchange, so every workspace write still runs under RLS.
+function resolveRequestOrigin(req: Request): string {
+  const origin = req.get("origin") || `${req.protocol}://${req.get("host") || "localhost"}`;
+  return origin.replace(/\/+$/, "");
+}
+
+// Canonical public redirect URI for the GSC OAuth round-trip. Google matches
+// redirect_uri EXACTLY (scheme + host + port + path), so a per-request origin
+// (dev port vs. APP_URL vs. proxy host) is a guaranteed redirect_uri_mismatch.
+// Canonical order: APP_URL / APP_ORIGIN / PUBLIC_APP_URL env (deployment
+// truth) → request origin (dev / same-origin). The connect/token-exchange
+// routes MUST share this helper so authorize and exchange always agree.
+function resolveGscCallbackUri(req: Request): string {
+  return resolveGscRedirectUri(resolveRequestOrigin(req));
+}
+
+app.get("/api/gsc/status", requireAuth, async (req: Request, res: Response) => {
   const db = await getDB(res);
-  const isConnected = !!(db.settings as any)?.gscConnected;
+  const gsc = readGscSettings(db);
   res.json({
-    connected: isConnected,
-    siteUrl: (db.settings as any)?.gscSiteUrl || "sc-domain:sigmatactix.com",
-    lastFetched: (db.settings as any)?.gscLastFetched || new Date().toISOString()
+    connected: gsc.connected,
+    siteUrl: gsc.siteUrl,
+    verificationState: gsc.verificationState,
+    verificationMessage: gsc.verificationMessage,
+    hasGrant: Boolean(readGscTokens(db)),
+    oauthConfigured: Boolean(resolveGscOAuthClient(db)),
+    // The EXACT redirect URI Google must have whitelisted. Surfaced so the
+    // Connect dialog can display it (copy button) and so a mismatch is
+    // diagnosable without guessing which origin the server used.
+    redirectUri: resolveGscCallbackUri(req),
+    lastFetched: gsc.lastFetched,
+    lastError: gsc.lastError,
   });
 });
 
-app.post("/api/gsc/connect", async (req: Request, res: Response) => {
+// Authenticated self-check for the OAuth setup: reports the canonical
+// redirect URI, whether an OAuth client is configured, and whether the
+// workspace has a stored grant — so redirect_uri_mismatch and sibling setup
+// errors are diagnosable from inside the app instead of from Google's
+// generic error page.
+app.get("/api/gsc/diagnostics", requireAuth, async (req: Request, res: Response) => {
   const db = await getDB(res);
-  if (!db.settings) (db as any).settings = {};
-  (db.settings as any).gscConnected = true;
-  (db.settings as any).gscSiteUrl = req.body?.siteUrl || "sc-domain:sigmatactix.com";
-  (db.settings as any).gscLastFetched = new Date().toISOString();
-  await saveDB(res, db);
-  res.json({ success: true, connected: true, siteUrl: (db.settings as any).gscSiteUrl });
+  const gsc = readGscSettings(db);
+  const redirectUri = resolveGscCallbackUri(req);
+  res.json({
+    redirectUri,
+    redirectPath: GSC_REDIRECT_PATH,
+    oauthConfigured: Boolean(resolveGscOAuthClient(db)),
+    connected: gsc.connected,
+    siteUrl: gsc.siteUrl,
+    verificationState: gsc.verificationState,
+    hasGrant: Boolean(readGscTokens(db)),
+    storedRedirectUri: gsc.oauthRedirectUri || null,
+    redirectUriMatchesStored: !gsc.oauthRedirectUri || gsc.oauthRedirectUri === redirectUri,
+  });
 });
 
-app.post("/api/gsc/disconnect", async (req: Request, res: Response) => {
+app.post("/api/gsc/connect", requireAuth, async (req: Request, res: Response) => {
   const db = await getDB(res);
-  if (db.settings) {
-    (db.settings as any).gscConnected = false;
+  const siteUrl = typeof req.body?.siteUrl === "string" && req.body.siteUrl.trim()
+    ? req.body.siteUrl.trim()
+    : "";
+  if (!siteUrl) {
+    res.status(400).json({
+      success: false,
+      error: "A verified Search Console property is required (e.g. sc-domain:example.com or https://example.com/).",
+    });
+    return;
   }
+  const clientId = typeof req.body?.clientId === "string" ? req.body.clientId.trim() : "";
+  const clientSecret = typeof req.body?.clientSecret === "string" ? req.body.clientSecret.trim() : "";
+  if (Boolean(clientId) !== Boolean(clientSecret)) {
+    res.status(400).json({ success: false, error: "Provide both an OAuth Client ID and Client Secret, or neither." });
+    return;
+  }
+
+  const previous = readGscSettings(db);
+  const oauthState = crypto.randomBytes(24).toString("hex");
+  // Canonical redirect URI (APP_URL/APP_ORIGIN/PUBLIC_APP_URL → request
+  // origin). Stored on the workspace so token-exchange reuses the EXACT same
+  // value Google authorized — Google compares authorize/exchange literally.
+  const oauthRedirectUri = resolveGscCallbackUri(req);
+  if (!oauthRedirectUri) {
+    res.status(503).json({
+      success: false,
+      error: "Cannot determine this app's public URL, so no OAuth redirect URI can be minted. Set APP_URL (e.g. APP_URL=http://localhost:8787) on the server and reconnect.",
+    });
+    return;
+  }
+  const alreadyVerified =
+    Boolean(readGscTokens(db)) &&
+    previous.verificationState === "verified" &&
+    normalizeGscSiteUrl(previous.siteUrl || "") === normalizeGscSiteUrl(siteUrl);
+
+  writeGscSettings(db, {
+    connected: true,
+    siteUrl,
+    oauthState,
+    oauthRedirectUri,
+    verificationState: alreadyVerified ? "verified" : "configured",
+    verificationMessage: undefined,
+    lastError: undefined,
+  });
+  if (clientId && clientSecret) {
+    writeGscSettings(db, { oauthClientEncrypted: encryptCredentials({ clientId, clientSecret }) });
+  }
+
+  const client = resolveGscOAuthClient(db);
+  const gsc = readGscSettings(db);
+  await saveDB(res, db);
+
+  const authUrl = client
+    ? buildGscAuthUrl({ clientId: client.clientId, redirectUri: oauthRedirectUri, state: oauthState })
+    : null;
+
+  res.json({
+    success: true,
+    connected: true,
+    siteUrl,
+    verificationState: gsc.verificationState,
+    hasGrant: Boolean(readGscTokens(db)),
+    oauthConfigured: Boolean(client),
+    authUrl,
+    // Echoed so the dialog can show the EXACT URI the user must whitelist in
+    // Google Cloud → Credentials → Authorized redirect URIs.
+    redirectUri: oauthRedirectUri,
+    error: client
+      ? undefined
+      : "Google OAuth is not configured. Enter a Client ID & Secret in this dialog, or set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET on the server. Without an OAuth client no live Search Console data can be fetched.",
+  });
+});
+
+// Completes the OAuth grant. Runs authenticated so the token write stays
+// inside the caller's RLS-scoped workspace blob. The state nonce minted by
+// /api/gsc/connect binds the incoming code to THIS workspace's pending flow
+// (CSRF protection for the public callback bounce).
+app.post("/api/gsc/token-exchange", requireAuth, async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const gsc = readGscSettings(db);
+  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  const state = typeof req.body?.state === "string" ? req.body.state.trim() : "";
+
+  if (!gsc.connected) {
+    res.status(409).json({ success: false, error: "Google Search Console is not connected for this workspace. Start the connection again." });
+    return;
+  }
+  if (!code) {
+    res.status(400).json({ success: false, error: "Missing OAuth authorization code." });
+    return;
+  }
+  if (!state || !gsc.oauthState || state !== gsc.oauthState) {
+    res.status(400).json({ success: false, error: "OAuth state mismatch — the grant does not match this workspace's pending connection. Start the connection again." });
+    return;
+  }
+  const client = resolveGscOAuthClient(db);
+  if (!client) {
+    res.status(503).json({ success: false, error: "Google OAuth is not configured (no stored client and no GOOGLE_OAUTH_CLIENT_ID/SECRET on the server)." });
+    return;
+  }
+
+  // Reuse the URI stored at /api/gsc/connect time — Google requires the
+  // exchange's redirect_uri to be byte-identical to the authorize one. The
+  // canonical fallback only fires for grants minted before this fix shipped.
+  const redirectUri = gsc.oauthRedirectUri || resolveGscCallbackUri(req);
+  if (!redirectUri) {
+    const message = "Stored OAuth flow has no redirect URI and this app's public URL cannot be determined. Set APP_URL on the server and reconnect.";
+    writeGscSettings(db, { verificationState: "failed", verificationMessage: message, lastError: message });
+    await saveDB(res, db);
+    res.status(503).json({ success: false, error: message });
+    return;
+  }
+
+  const exchanged = await exchangeGscAuthCode({
+    code,
+    clientId: client.clientId,
+    clientSecret: client.clientSecret,
+    redirectUri,
+  });
+  if (!exchanged.ok || !exchanged.tokens) {
+    const raw = exchanged.error || "Google rejected the OAuth grant.";
+    // redirect_uri_mismatch is a SETUP error, not a transient one: surface the
+    // exact stored URI so the user can whitelist it instead of retrying blind.
+    const message = /redirect_uri_mismatch/i.test(raw)
+      ? `Google rejected the grant: redirect_uri_mismatch. Add this EXACT redirect URI in Google Cloud → APIs & Services → Credentials → your OAuth client → Authorized redirect URIs, then reconnect: ${redirectUri}`
+      : raw;
+    writeGscSettings(db, { verificationState: "failed", verificationMessage: message, lastError: message });
+    await saveDB(res, db);
+    res.status(422).json({ success: false, error: message });
+    return;
+  }
+
+  storeGscTokens(db, exchanged.tokens);
+  const siteUrl = gsc.siteUrl || GSC_DEFAULT_SITE_URL;
+  const sites = await listGscSites(exchanged.tokens.accessToken);
+  if (!sites.ok) {
+    const message = `OAuth grant stored, but the Search Console API rejected the access check: ${sites.error}`;
+    writeGscSettings(db, { verificationState: "failed", verificationMessage: message, lastError: message });
+    await saveDB(res, db);
+    res.status(422).json({ success: false, connected: true, error: message });
+    return;
+  }
+
+  const entries = sites.json?.siteEntries || [];
+  const accessible = entries.some(entry => normalizeGscSiteUrl(entry.siteUrl) === normalizeGscSiteUrl(siteUrl));
+  const message = accessible
+    ? undefined
+    : `The granted Google account cannot read "${siteUrl}". Properties it can read: ${
+        entries.slice(0, 8).map(entry => entry.siteUrl).join(", ") || "(none returned)"
+      }${entries.length > 8 ? " …" : ""}`;
+  writeGscSettings(db, {
+    verificationState: accessible ? "verified" : "failed",
+    verificationMessage: message,
+    lastError: message,
+  });
+  await saveDB(res, db);
+  res.json({
+    success: accessible,
+    connected: true,
+    siteUrl,
+    propertyAccessible: accessible,
+    accessibleSites: entries.map(entry => entry.siteUrl),
+    verificationState: accessible ? "verified" : "failed",
+    verificationMessage: message,
+    error: message,
+  });
+});
+
+app.post("/api/gsc/disconnect", requireAuth, async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  // Keep siteUrl + the stored OAuth client so a reconnect does not force the
+  // user to re-enter credentials; drop the grant and every claim of state —
+  // including the minted redirect URI, which would otherwise go stale.
+  writeGscSettings(db, {
+    connected: false,
+    tokensEncrypted: undefined,
+    oauthState: undefined,
+    oauthRedirectUri: undefined,
+    verificationState: undefined,
+    verificationMessage: undefined,
+    lastFetched: undefined,
+    lastError: undefined,
+  });
   await saveDB(res, db);
   res.json({ success: true, connected: false });
 });
 
+// Public: browser navigation during the OAuth round-trip (no Bearer header
+// possible). With no `state` minted by an authenticated /api/gsc/connect call
+// there is nothing to bind the grant to, so this route answers honestly with
+// an error redirect instead of the old fake "gsc_connected=true" bounce.
+// Uses the same canonical redirect URI as /api/gsc/connect so both Google
+// consent URLs agree byte-for-byte.
 app.get("/api/gsc/auth", (req: Request, res: Response) => {
-  res.redirect("/seo-aeo?tab=SEARCH_CONSOLE&gsc_connected=true");
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim();
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const redirectUri = resolveGscCallbackUri(req);
+  if (!clientId || !state || !redirectUri) {
+    const reason = !clientId ? "oauth_not_configured" : !state ? "missing_state" : "redirect_uri_unresolvable";
+    res.redirect(`/seo-aeo?tab=SEARCH_CONSOLE&gsc_error=${reason}`);
+    return;
+  }
+  res.redirect(
+    buildGscAuthUrl({
+      clientId,
+      redirectUri,
+      state,
+    }),
+  );
 });
 
+// Public: Google redirects here with the authorization code. Touches NO
+// database — it only forwards code+state to the authenticated SPA, which
+// POSTs them to /api/gsc/token-exchange.
 app.get("/api/gsc/callback", (req: Request, res: Response) => {
-  res.redirect("/seo-aeo?tab=SEARCH_CONSOLE&gsc_connected=true");
+  const code = typeof req.query.code === "string" ? req.query.code : "";
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const oauthError = typeof req.query.error === "string" ? req.query.error : "";
+  if (oauthError) {
+    res.redirect(`/seo-aeo?tab=SEARCH_CONSOLE&gsc_error=${encodeURIComponent(oauthError)}`);
+    return;
+  }
+  if (!code || !state) {
+    res.redirect("/seo-aeo?tab=SEARCH_CONSOLE&gsc_error=missing_code");
+    return;
+  }
+  res.redirect(`/seo-aeo?tab=SEARCH_CONSOLE&gsc_code=${encodeURIComponent(code)}&gsc_state=${encodeURIComponent(state)}`);
+});
+
+// Real searchAnalytics queries for the connected property. Structured
+// honesty: never returns fabricated numbers. Four outcomes —
+//   409   not connected (client switches to demo + DEMO DATA badge)
+//   200   {connected, hasData:false, reason:'awaiting_grant'} — connected but
+//         no OAuth grant stored yet
+//   422   connected but Google rejected the fetch (client shows the error)
+//   200   full GSCAnalyticsResponse — client renders LIVE
+app.get("/api/gsc/analytics", requireAuth, async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const gsc = readGscSettings(db);
+  if (!gsc.connected) {
+    res.status(409).json({ connected: false, error: "Google Search Console is not connected." });
+    return;
+  }
+
+  const client = resolveGscOAuthClient(db);
+  let tokens = readGscTokens(db);
+
+  // Refresh the access token when it is (nearly) expired. A failed refresh
+  // with a still-valid access token degrades to the fetch below; a failed
+  // refresh with no usable token is an honest 401, not demo data.
+  if (tokens?.refreshToken && client) {
+    const expiresAt = tokens.expiresAt ? new Date(tokens.expiresAt).getTime() : 0;
+    if (!expiresAt || expiresAt <= Date.now() + 60_000) {
+      const refreshed = await refreshGscTokens({
+        clientId: client.clientId,
+        clientSecret: client.clientSecret,
+        refreshToken: tokens.refreshToken,
+      });
+      if (refreshed.ok && refreshed.tokens) {
+        tokens = { ...tokens, ...refreshed.tokens, refreshToken: refreshed.tokens.refreshToken || tokens.refreshToken };
+        storeGscTokens(db, tokens);
+        await saveDB(res, db);
+      } else if (!tokens.accessToken || expiresAt <= Date.now()) {
+        const message = `Stored Google tokens expired and the refresh failed: ${refreshed.error}. Reconnect Google Search Console.`;
+        writeGscSettings(db, { verificationState: "failed", verificationMessage: message, lastError: message });
+        await saveDB(res, db);
+        res.status(401).json({ connected: true, hasData: false, reason: "token_refresh_failed", error: message });
+        return;
+      }
+    }
+  }
+
+  if (!tokens?.accessToken) {
+    res.json({
+      connected: true,
+      hasData: false,
+      reason: "awaiting_grant",
+      message: "Connected — no Google OAuth grant stored yet. Complete the OAuth flow (connect with a Client ID/Secret) to fetch live Search Console data.",
+    });
+    return;
+  }
+
+  const siteUrl = gsc.siteUrl || GSC_DEFAULT_SITE_URL;
+  const result = await fetchGscAnalyticsPayload({
+    accessToken: tokens.accessToken,
+    siteUrl,
+    range: typeof req.query.range === "string" ? req.query.range : "28d",
+  });
+  if (!result.ok) {
+    const errorMsg = (result as { ok: false; error: string; status: number }).error;
+    writeGscSettings(db, { lastError: errorMsg });
+    await saveDB(res, db);
+    res.status(422).json({ connected: true, hasData: false, reason: "fetch_failed", error: errorMsg, siteUrl });
+    return;
+  }
+
+  writeGscSettings(db, {
+    lastFetched: new Date().toISOString(),
+    lastError: undefined,
+    verificationState: "verified",
+    verificationMessage: undefined,
+  });
+  await saveDB(res, db);
+  res.json(result.data);
 });
 
 // Workspace Template Structure Cloning Route (FEAT-004)
@@ -4180,23 +4672,6 @@ async function executeAgentTaskInner(
   geminiModel: string = DEFAULT_GEMINI_MODEL,
   sbContext?: { sb: any; workspaceId: string; taskId?: string },
 ): Promise<{ steps: string[]; output: string }> {
-  const client = getGeminiClient(geminiKey);
-  // No API key configured. This used to return a canned artifact plus four
-  // invented log lines ("Queried Customer Vault…", "Searched Second Brain
-  // pgvector memory…") describing work that never happened, and the approve
-  // route then recorded the task as 'Success'. A workspace whose key lapsed
-  // would have kept producing confident, entirely fictional deliverables with
-  // no signal that anything was wrong. Fail loudly instead: the approve route
-  // catches this, marks the task 'Failed', and surfaces the reason.
-  if (!process.env.GEMINI_API_KEY && !geminiKey) {
-    throw new Error(
-      "No Gemini API key is configured for this workspace, so no agent run can be executed. " +
-      "Set GEMINI_API_KEY on the server, or add a workspace key under Admin > AI Model Config."
-    );
-  }
-
-  // Real execution log, assembled from what this function actually did. See the
-  // note above the return statement for why this is not the model's job.
   const executionLog: string[] = [];
   const startedAt = Date.now();
   executionLog.push(
@@ -4209,10 +4684,6 @@ async function executeAgentTaskInner(
   let ragSnippets: string[] = [];
   if (sbContext?.sb && sbContext.workspaceId) {
     try {
-      // Scoped to the agent's own policy. Unscoped, this retrieved across every
-      // vault in the workspace and appended the snippets beneath a prompt
-      // preamble that HAD been filtered — so RBAC held on one context path and
-      // not the other.
       const scopedVaultIds = documentVaultIdsForScope(allowedScope);
       const matches = await searchDocuments(sbContext.sb, sbContext.workspaceId, goal, { topK: 3, vaultIds: scopedVaultIds });
       ragSnippets = matches.map(m => `[${m.fileName} | Sim: ${(m.similarity * 100).toFixed(0)}%]: ${(m.contentText || "").slice(0, 300)}`);
@@ -4229,31 +4700,8 @@ async function executeAgentTaskInner(
     executionLog.push(`No database context supplied — Second Brain vector search skipped.`);
   }
 
-  // 2. Active performance targets — read from THIS workspace's Marketing Vault.
-  //
-  // These were previously hardcoded to targetRoas 3.5 / targetCpa 45 /
-  // targetCpl 15 / targetCac 120 / monthlyBudget 10000 and injected into every
-  // agent prompt for every tenant under the label "Active Performance KPI
-  // Benchmarks". Every deliverable this system produced was therefore anchored
-  // to invented numbers that belonged to no client. There is no honest default
-  // for someone else's economics, so when the vault has no targets we pass
-  // undefined — buildScopedBrainContext already omits the whole block in that
-  // case, and the model reasons without fabricated benchmarks instead of with
-  // them.
-  // Nothing in WorkspaceData stores per-client KPI targets today — grepping the
-  // schema for targetRoas/targetCpa/targetCpl/targetCac/monthlyBudget finds no
-  // field, no route and no UI. The hardcoded object WAS the only source, which
-  // is precisely why it was fabricated rather than merely stale. Adding a typed
-  // slot nothing writes would be inventing a feature, so this passes undefined
-  // and buildScopedBrainContext omits the benchmarks block entirely.
-  //
-  // The client's own words about performance are not lost: marketingVault's
-  // campaignHistory / currentChannels / recentPerformance still reach the model
-  // through scopedContext whenever Marketing Vault is in the agent's scope.
-  // When the Performance module gains a real place to store targets, wire it
-  // in here — do not reintroduce a default.
+  // 2. Active performance targets
   const performanceMetrics = undefined;
-
   const scopedContext = buildScopedBrainContext(allowedScope, brain, {
     performanceMetrics,
     ragSnippets,
@@ -4264,48 +4712,77 @@ async function executeAgentTaskInner(
       : `No performance targets set in the Marketing Vault — none were supplied to the model.`
   );
 
-  const prompt = `
-    You are the premium, highly intelligent "${agentName}" agent inside the Sigma Tactix Growth OS.
-    Your goal is: "${goal}"
+  // 3. Provider & Model Resolution (Supports Gemini, Ollama, LM Studio, OpenAI, etc.)
+  let effectiveProvider: SupportedProvider = "google";
+  let effectiveModel = geminiModel;
+  let effectiveApiKey = geminiKey || process.env.GEMINI_API_KEY;
+  let effectiveBaseUrl: string | undefined = undefined;
 
-    Your authorized Second Brain & Performance context:
-    ${scopedContext}
+  if (geminiModel.startsWith("local-ollama") || geminiModel.startsWith("ollama")) {
+    effectiveProvider = "ollama";
+    effectiveModel = geminiModel.replace(/^local-ollama-|^ollama-/, "");
+    effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
+  } else if (geminiModel.startsWith("lmstudio")) {
+    effectiveProvider = "lmstudio";
+    effectiveModel = geminiModel.replace(/^lmstudio-/, "");
+    effectiveBaseUrl = process.env.LMSTUDIO_BASE_URL || "http://127.0.0.1:1234/v1";
+  } else if (geminiModel.startsWith("gpt-") || geminiModel.startsWith("o1") || geminiModel.startsWith("o3")) {
+    effectiveProvider = "openai";
+    effectiveApiKey = process.env.OPENAI_API_KEY;
+  } else if (!effectiveApiKey && (process.env.OLLAMA_BASE_URL || process.env.USE_LOCAL_LLM === "true")) {
+    effectiveProvider = "ollama";
+    effectiveModel = process.env.OLLAMA_MODEL || "qwen2.5:14b";
+    effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
+  }
 
-    Produce a concrete, hyper-targeted operational artifact (like a personalized outbound sequence, ad copy, workflow script, or brief).
-    Ground every claim in the authorized context above; do not invent metrics, budgets or client details that are not present in it.
-    Your response must be JSON containing:
-    1. "output": A structured markdown string holding your final output.
-  `;
+  // If Google/Gemini is chosen but no API key exists, fallback to local Ollama if configured
+  if (effectiveProvider === "google" && !effectiveApiKey) {
+    if (process.env.OLLAMA_BASE_URL || process.env.USE_LOCAL_LLM === "true") {
+      effectiveProvider = "ollama";
+      effectiveModel = process.env.OLLAMA_MODEL || "qwen2.5:14b";
+      effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
+      executionLog.push(`No GEMINI_API_KEY found; falling back to local Ollama runtime (${effectiveModel}).`);
+    } else {
+      throw new Error(
+        "No Gemini API key or local LLM is configured for this workspace. " +
+        "Set GEMINI_API_KEY or OLLAMA_BASE_URL on the server, or add a workspace key under Admin > AI Model Config."
+      );
+    }
+  }
 
-  const response = await client.models.generateContent({
-    model: geminiModel,
-    contents: prompt,
+  // 4. Multi-turn ReAct Loop Execution with real sandboxed tools
+  const reactResult = await executeAgentReActLoop({
+    agentName,
+    goal,
+    scopedContext,
     config: {
-      // AbortSignal ceiling: without it a hung Gemini call holds the request
-      // open indefinitely and strands the task at 'Running' forever, because
-      // the only code that writes a terminal status is the approve route's
-      // own catch block.
-      abortSignal: AbortSignal.timeout(90_000),
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          output: { type: Type.STRING, description: "Structured markdown content of the final output." },
-        },
-        required: ["output"],
-      },
+      provider: effectiveProvider,
+      model: effectiveModel,
+      apiKey: effectiveApiKey,
+      baseUrl: effectiveBaseUrl,
+      timeoutMs: 90_000,
     },
+    maxSteps: 5,
+    executeTool: async (name, args) => {
+      return await executeAgentToolCall({
+        name,
+        args,
+        sb: sbContext?.sb,
+        workspaceId: sbContext?.workspaceId,
+        secondBrain: brain,
+        workspaceRoot: process.cwd(),
+      });
+    },
+    geminiClientFactory: (key) => getGeminiClient(key),
   });
 
-  const agentResult = JSON.parse(response.text || "{}");
-  const durationMs = Date.now() - startedAt;
-  const promptTokens = (response as any).usageMetadata?.promptTokenCount || estimateTokens(prompt);
-  const candidateTokens = (response as any).usageMetadata?.candidatesTokenCount || estimateTokens(response.text || "");
-  const totalTokens = (response as any).usageMetadata?.totalTokenCount || (promptTokens + candidateTokens);
-  const estimatedCostUsd = calculateTokenCost(geminiModel, promptTokens, candidateTokens);
+  // Append live ReAct execution steps into the execution log
+  for (const step of reactResult.steps) {
+    executionLog.push(step);
+  }
 
   executionLog.push(
-    `Generated artifact with ${geminiModel} in ${durationMs}ms (${totalTokens.toLocaleString()} tokens, ~$${estimatedCostUsd.toFixed(6)} USD).`
+    `Completed task with ${reactResult.providerUsed} (${reactResult.modelUsed}) in ${reactResult.durationMs}ms (${reactResult.totalTokens.toLocaleString()} tokens, ~$${reactResult.estimatedCostUsd.toFixed(6)} USD).`
   );
 
   // Record telemetry in database & workspace store
@@ -4316,15 +4793,15 @@ async function executeAgentTaskInner(
       taskId: sbContext.taskId,
       agentId: agentName,
       actionType: "AGENT_EXECUTION",
-      provider: "gemini",
-      modelName: geminiModel,
-      promptTokens,
-      candidateTokens,
-      totalTokens,
-      estimatedCostUsd,
-      durationMs,
+      provider: reactResult.providerUsed as any,
+      modelName: reactResult.modelUsed,
+      promptTokens: reactResult.promptTokens,
+      candidateTokens: reactResult.candidateTokens,
+      totalTokens: reactResult.totalTokens,
+      estimatedCostUsd: reactResult.estimatedCostUsd,
+      durationMs: reactResult.durationMs,
       status: "SUCCESS",
-      metadata: { agentName, goal },
+      metadata: { agentName, goal, detailedSteps: reactResult.detailedSteps },
       createdAt: new Date().toISOString(),
     };
 
@@ -4368,7 +4845,7 @@ async function executeAgentTaskInner(
   // during execution.
   return {
     steps: executionLog,
-    output: agentResult.output || "Artifact compiled.",
+    output: reactResult.output || "Artifact compiled.",
   };
 }
 
@@ -4603,6 +5080,34 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
   await recordLedgerTask(res, task, res.locals.userId, "Approved by reviewer; execution starting");
 
   try {
+    if (task.creativeRender) {
+      const attemptId = await startNodeAttempt(res.locals.sb, res.locals.wsId, task.id, {
+        nodeId: "renderer:hyperframes",
+        executorVersion: "hyperframes:0.8.139",
+      }).catch(() => null);
+      const rendered = await hyperframesRenderer.render({ taskId: task.id, ...task.creativeRender });
+      await finishNodeAttempt(res.locals.sb, res.locals.wsId, attemptId || "", {}).catch(() => {});
+      task.status = "Success";
+      task.steps = [
+        "Owner/admin approval recorded.",
+        `HyperFrames stitched ${rendered.sceneCount} scenes into a ${rendered.durationSeconds}s ${rendered.aspectRatio} MP4.`,
+        "A local voice-over audio stream was muxed and verified in the MP4 artifact.",
+        "Artifact is available through the authenticated workspace download route.",
+      ];
+      task.output = JSON.stringify({
+        kind: "deterministic_mp4",
+        renderer: "hyperframes",
+        downloadUrl: `/api/workspace/creative/renders/${task.id}/download`,
+        durationSeconds: rendered.durationSeconds,
+        aspectRatio: rendered.aspectRatio,
+        sceneCount: rendered.sceneCount,
+        hasVoiceover: rendered.hasVoiceover,
+      });
+      await saveDB(res, db);
+      await recordLedgerTask(res, task, res.locals.userId, `HyperFrames render completed: ${rendered.filename}`);
+      res.json({ success: true, task, artifact: JSON.parse(task.output) });
+      return;
+    }
     // Fallback for tasks created before allowedScope existed on the type —
     // re-derive from policy rather than defaulting to full/no access.
     //
@@ -5842,6 +6347,154 @@ app.get("/api/workspace/reports/artifact/:hash/download", async (req: Request, r
   res.send(artifact.buffer);
 });
 
+// =========================================================================
+// LECTURE DECK ENGINE (Phase 3 Presentation Engine)
+// Generates self-contained interactive animated HTML decks & printable PDFs
+// =========================================================================
+interface LectureDeckArtifact {
+  html: string;
+  filename: string;
+  title: string;
+  slideCount: number;
+  theme: string;
+  createdAt: number;
+}
+const lectureDeckCache = new Map<string, LectureDeckArtifact>();
+
+async function generateLectureDeck(payload: any, options: { theme?: string; type?: string } = {}): Promise<LectureDeckArtifact & { deckId: string; viewUrl: string; downloadUrl: string }> {
+  return new Promise((resolve, reject) => {
+    const deckId = payload.id || crypto.randomBytes(4).toString("hex");
+    const scriptPath = path.resolve(__dirname, "tools/lecture-deck-skill/scripts/generate_from_report.py");
+    const outDir = path.resolve(__dirname, "dist/decks");
+
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir, { recursive: true });
+    }
+
+    const theme = options.theme || payload.theme || "sigmatactix";
+    const deckType = options.type || "auto";
+
+    const proc = spawn("python3", [
+      scriptPath,
+      "--stdin",
+      "--theme", theme,
+      "--out-dir", outDir,
+      "--type", deckType
+    ]);
+
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on("data", (d) => { stdout += d.toString(); });
+    proc.stderr.on("data", (d) => { stderr += d.toString(); });
+
+    proc.on("error", (err) => {
+      reject(new Error(`Failed to spawn deck generator: ${err.message}`));
+    });
+
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        return reject(new Error(`Deck generator failed (exit ${code}): ${stderr || stdout}`));
+      }
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        const html = fs.readFileSync(parsed.htmlPath, "utf-8");
+        const artifact: LectureDeckArtifact = {
+          html,
+          filename: parsed.filename,
+          title: parsed.title,
+          slideCount: parsed.slideCount,
+          theme: parsed.theme,
+          createdAt: Date.now()
+        };
+        lectureDeckCache.set(parsed.deckId, artifact);
+        resolve({
+          ...artifact,
+          deckId: parsed.deckId,
+          viewUrl: `/api/reports/deck/${parsed.deckId}/view`,
+          downloadUrl: `/api/reports/deck/${parsed.deckId}/download`
+        });
+      } catch (err: any) {
+        reject(new Error(`Failed to parse deck generator output: ${err.message}. Output was: ${stdout}`));
+      }
+    });
+
+    proc.stdin.write(JSON.stringify(payload));
+    proc.stdin.end();
+  });
+}
+
+// Handler for generating a presentation deck
+const handleDeckGeneration = async (req: Request, res: Response) => {
+  try {
+    const { reportData, theme, type } = req.body;
+    if (!reportData) {
+      return res.status(400).json({ error: "reportData is required" });
+    }
+    const result = await generateLectureDeck(reportData, { theme, type });
+    res.json({
+      success: true,
+      deckId: result.deckId,
+      title: result.title,
+      slideCount: result.slideCount,
+      theme: result.theme,
+      filename: result.filename,
+      viewUrl: result.viewUrl,
+      downloadUrl: result.downloadUrl
+    });
+  } catch (err: any) {
+    console.error("Lecture Deck generation error:", err);
+    res.status(500).json({ error: err.message || String(err) });
+  }
+};
+
+app.post("/api/reports/deck/generate", handleDeckGeneration);
+app.post("/api/workspace/reports/deck/generate", handleDeckGeneration);
+
+// Serve interactive fullscreen presentation deck in browser
+app.get("/api/reports/deck/:id/view", (req: Request, res: Response) => {
+  const deck = lectureDeckCache.get(req.params.id);
+  if (!deck) {
+    const outDir = path.resolve(__dirname, "dist/decks");
+    if (fs.existsSync(outDir)) {
+      const files = fs.readdirSync(outDir);
+      const match = files.find(f => f.includes(req.params.id) && f.endsWith(".html"));
+      if (match) {
+        const html = fs.readFileSync(path.join(outDir, match), "utf-8");
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.send(html);
+      }
+    }
+    return res.status(404).send("Lecture deck presentation not found or expired.");
+  }
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(deck.html);
+});
+
+// Download standalone HTML deck for offline presentation
+app.get("/api/reports/deck/:id/download", (req: Request, res: Response) => {
+  const deck = lectureDeckCache.get(req.params.id);
+  let html = deck?.html;
+  let filename = deck?.filename || `sigmatactix-presentation-${req.params.id}.html`;
+  if (!html) {
+    const outDir = path.resolve(__dirname, "dist/decks");
+    if (fs.existsSync(outDir)) {
+      const files = fs.readdirSync(outDir);
+      const match = files.find(f => f.includes(req.params.id) && f.endsWith(".html"));
+      if (match) {
+        html = fs.readFileSync(path.join(outDir, match), "utf-8");
+        filename = match;
+      }
+    }
+  }
+  if (!html) {
+    return res.status(404).json({ error: "Lecture deck artifact not found" });
+  }
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(html);
+});
+
 app.post("/api/workspace/agents", requireModule("agents"), async (req: Request, res: Response) => {
   const { name, role, goal, targetModule, skills, instructions, pluginIds, connectorIds } = req.body as {
     name?: string; role?: string; goal?: string; targetModule?: string;
@@ -6434,24 +7087,20 @@ async function testHubspotConnection(token?: string): Promise<boolean> {
 }
 
 async function testMetaAdsConnection(token?: string, accountId?: string): Promise<boolean> {
-  if (!token || !accountId) return false;
-  try {
-    const res = await fetch(`https://graph.facebook.com/v17.0/${accountId}/insights?access_token=${token}`);
-    return res.status === 200;
-  } catch {
-    return false;
-  }
+  const result = await verifyMetaAdsConnection(token, accountId);
+  if (result.verified === false) throw new Error(result.message);
+  return true;
 }
 
 async function testGoogleAdsConnection(token?: string, customerId?: string, devToken?: string): Promise<boolean> {
-  if (!token || !customerId || !devToken) return false;
+  if (!token || !customerId) return false;
   try {
     const normalizedCustomerId = customerId.replace(/-/g, '');
     const res = await fetch(`https://googleads.googleapis.com/v25/customers/${normalizedCustomerId}/googleAds:search`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
-        "developer-token": devToken
+        ...(devToken ? { "developer-token": devToken } : {})
       },
       body: JSON.stringify({ query: "SELECT campaign.id FROM campaign LIMIT 1" })
     });

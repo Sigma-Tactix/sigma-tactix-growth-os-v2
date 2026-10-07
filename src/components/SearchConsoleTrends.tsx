@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -19,19 +19,24 @@ import {
   X,
   ShieldCheck,
   Key,
-  Lock
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
-import { apiFetch } from '@/src/lib/api';
 import {
   GSCAnalyticsResponse,
   GSCTimeSeriesPoint,
+  GSCConnectionStatus,
   fetchGSCAnalytics,
+  fetchGSCDiagnostics,
   getGSCConnectionStatus,
   generateDemoGSCData,
-  getGSCAuthUrl
+  connectGSC,
+  exchangeGSCCode,
+  disconnectGSC,
+  describeGscOAuthError
 } from '@/src/lib/searchConsoleApi';
 
 interface SearchConsoleTrendsProps {
@@ -78,12 +83,15 @@ function TrendChart({ timeSeries, metric, color, label }: {
   const chartH = height - padding.top - padding.bottom;
 
   const values = timeSeries.map(p => p[metric]);
+  if (!values.length) return null;
   const max = Math.max(...values) * 1.1;
   const min = 0;
   const range = max - min || 1;
 
   const points = values.map((v, i) => {
-    const x = padding.left + (i / (values.length - 1)) * chartW;
+    // Math.max guard: a live payload can legitimately contain a single day,
+    // and dividing by (length - 1) would produce NaN coordinates.
+    const x = padding.left + (i / Math.max(values.length - 1, 1)) * chartW;
     const y = padding.top + chartH - ((v - min) / range) * chartH;
     return { x, y };
   });
@@ -137,83 +145,209 @@ function TrendChart({ timeSeries, metric, color, label }: {
 }
 
 export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrendsProps) {
-  const { notifySuccess, notifyInfo, notifyError } = useToast();
-  const [isConnected, setIsConnected] = useState(false);
+  const { notifySuccess, notifyInfo, notifyError, notifyWarning } = useToast();
+  const [connection, setConnection] = useState<GSCConnectionStatus>({ connected: false });
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<'7d' | '28d' | '90d' | '16m'>('28d');
   const [data, setData] = useState<GSCAnalyticsResponse | null>(null);
+  // Connected-but-not-live explainer: 'awaiting' (OAuth grant / first sync
+  // pending) or 'error' (fetch failed). Null for the LIVE and DEMO states.
+  const [dataNote, setDataNote] = useState<{ kind: 'awaiting' | 'error'; message: string } | null>(null);
   const [queryView, setQueryView] = useState<'queries' | 'pages'>('queries');
 
   // GSC Connection Modal State
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
-  const [gscSiteUrl, setGscSiteUrl] = useState('sc-domain:sigmatactix.com');
+  const [gscSiteUrl, setGscSiteUrl] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  // Exact redirect URI the server will send to Google — displayed with a copy
+  // button so the user can whitelist it verbatim and avoid Error 400
+  // redirect_uri_mismatch. Refreshed when the dialog opens and after connect.
+  const [dialogRedirectUri, setDialogRedirectUri] = useState<string | null>(null);
+  const [redirectUriCopied, setRedirectUriCopied] = useState(false);
 
-  // Load data & check connection
+  const isConnected = connection.connected;
+  const paramsHandledRef = useRef(false);
+  const initialLoadRef = useRef(true);
+
+  // One-time: complete the OAuth round-trip the callback bounced back with
+  // (gsc_code/gsc_state/gsc_error), clean the URL, then load authoritative
+  // state from the server. Success/failure toasts come from the exchange
+  // itself — never from URL params alone (the old code trusted
+  // ?gsc_connected=true and toasted success for a connection that never
+  // persisted).
   useEffect(() => {
-    // Check URL parameters for connection return
+    if (paramsHandledRef.current) return;
+    paramsHandledRef.current = true;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('gsc_connected') === 'true') {
-      setIsConnected(true);
-      notifySuccess('Google Search Console Connected', 'Verified property sigmatactix.com linked successfully.');
+    const code = params.get('gsc_code');
+    const state = params.get('gsc_state');
+    const oauthError = params.get('gsc_error');
+    const legacyConnected = params.get('gsc_connected');
+
+    // Clean the URL BEFORE the async exchange so a re-run (StrictMode / HMR)
+    // cannot replay a single-use authorization code.
+    if (code || oauthError || legacyConnected) {
+      params.delete('gsc_code');
+      params.delete('gsc_state');
+      params.delete('gsc_error');
+      params.delete('gsc_connected');
+      const query = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    }
+
+    (async () => {
+      if (code && state) {
+        const result = await exchangeGSCCode(code, state);
+        if (result.success) {
+          notifySuccess(
+            'Google Search Console Verified',
+            result.propertyAccessible === false
+              ? `OAuth completed, but ${result.siteUrl || gscSiteUrl || 'the property'} is not readable by this Google account. ${result.verificationMessage || ''}`.trim()
+              : `Property ${result.siteUrl || gscSiteUrl || 'the property'} now has live Search Console access.`
+          );
+        } else {
+          notifyError('GSC Verification Failed', result.error || 'The OAuth grant could not be verified.');
+        }
+      } else if (oauthError) {
+        notifyError('Google Search Console', describeGscOAuthError(oauthError));
+      } else if (legacyConnected === 'true') {
+        // Legacy links claim success — defer to the server's actual state.
+        notifyInfo('Connection Return Detected', 'Confirming Search Console connection state with the server…');
+      }
+      await loadData();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch when the date range changes (the mount load happens above).
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
     }
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
+  const refreshDialogRedirectUri = async () => {
+    try {
+      const diagnostics = await fetchGSCDiagnostics();
+      if (diagnostics?.redirectUri) {
+        setDialogRedirectUri(diagnostics.redirectUri);
+        return;
+      }
+    } catch {
+      // Fall through to the connection status below.
+    }
+    const status = await getGSCConnectionStatus();
+    setDialogRedirectUri(status.redirectUri || null);
+  };
+
   const handleConnectDirect = async () => {
+    const siteUrl = gscSiteUrl.trim();
+    if (!siteUrl) {
+      notifyError('Property Required', 'Enter the verified Search Console property, e.g. sc-domain:example.com or https://example.com/.');
+      return;
+    }
     setIsConnecting(true);
     try {
-      const res = await apiFetch('/api/gsc/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteUrl: gscSiteUrl })
+      const result = await connectGSC({
+        siteUrl,
+        clientId: clientId.trim() || undefined,
+        clientSecret: clientSecret.trim() || undefined,
       });
-      setIsConnected(true);
+      if (!result.success) {
+        // Honest failure: the old handler toasted success on ANY outcome,
+        // including a 500, which is exactly why "connected" showed demo data.
+        notifyError('Connection Failed', result.error || 'The server rejected the Search Console connection.');
+        return;
+      }
+      setConnection(prev => ({
+        ...prev,
+        connected: true,
+        siteUrl: result.siteUrl || siteUrl,
+        verificationState: result.verificationState,
+        hasGrant: result.hasGrant,
+        oauthConfigured: result.oauthConfigured,
+        redirectUri: result.redirectUri || prev.redirectUri,
+      }));
+      if (result.redirectUri) setDialogRedirectUri(result.redirectUri);
+      if (result.authUrl) {
+        notifyInfo('Continue in Google', 'Redirecting to Google for the OAuth grant — approve Search Console access to finish.');
+        window.location.href = result.authUrl;
+        return;
+      }
       setIsConnectModalOpen(false);
-      notifySuccess('Google Search Console Connected', `Successfully connected property: ${gscSiteUrl}`);
-      loadData();
-    } catch {
-      setIsConnected(true);
-      setIsConnectModalOpen(false);
-      notifySuccess('GSC Connected (Simulated Live)', `Connected property: ${gscSiteUrl}`);
-      loadData();
+      if (result.hasGrant) {
+        notifySuccess('Google Search Console Connected', `Property ${result.siteUrl || siteUrl} is connected with live access.`);
+      } else {
+        notifyWarning(
+          'Property Saved — OAuth Required',
+          result.error || 'No OAuth client is configured yet, so live data cannot be fetched. Enter a Google OAuth Client ID/Secret and connect again.'
+        );
+      }
+      await loadData();
+    } catch (err) {
+      notifyError('Connection Failed', err instanceof Error ? err.message : 'Network error while connecting to the server.');
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleDisconnect = async () => {
+  const copyRedirectUri = async () => {
+    const uri = dialogRedirectUri || connection.redirectUri;
+    if (!uri) return;
     try {
-      await apiFetch('/api/gsc/disconnect', { method: 'POST' });
-    } catch {}
-    setIsConnected(false);
+      await navigator.clipboard.writeText(uri);
+      setRedirectUriCopied(true);
+      notifySuccess('Redirect URI Copied', 'Paste it verbatim into Google Cloud → Authorized redirect URIs.');
+    } catch {
+      notifyError('Copy Failed', 'Select the URI text and copy it manually.');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    await disconnectGSC();
+    setConnection({ connected: false });
+    setData(generateDemoGSCData(dateRange));
+    setDataNote(null);
     notifyInfo('GSC Disconnected', 'Switched to demonstration mode.');
-    loadData();
   };
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const status = await getGSCConnectionStatus();
-      setIsConnected(status.connected);
+      setConnection(status);
 
-      if (status.connected) {
-        const analytics = await fetchGSCAnalytics(dateRange);
-        if (analytics) {
-          setData(analytics);
-          setIsLoading(false);
-          return;
-        }
+      if (!status.connected) {
+        // Genuinely disconnected → demo numbers under the DEMO DATA badge.
+        setData(generateDemoGSCData(dateRange));
+        setDataNote(null);
+        return;
       }
 
-      // Fall back to demo data
-      const demo = generateDemoGSCData(dateRange);
-      setData(demo);
+      const result = await fetchGSCAnalytics(dateRange);
+      if (result.kind === 'live') {
+        setData(result.data);
+        setDataNote(null);
+        return;
+      }
+      if (result.kind === 'disconnected') {
+        setConnection({ connected: false });
+        setData(generateDemoGSCData(dateRange));
+        setDataNote(null);
+        return;
+      }
+      // Connected but not live ('awaiting' grant/first sync, or 'error'):
+      // render the explicit panel — NEVER demo numbers under a LIVE badge.
+      setData(null);
+      setDataNote({ kind: result.kind, message: result.message });
     } catch {
-      const demo = generateDemoGSCData(dateRange);
-      setData(demo);
+      setData(generateDemoGSCData(dateRange));
+      setDataNote(null);
     } finally {
       setIsLoading(false);
     }
@@ -256,19 +390,58 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
   }
 
   if (!data) {
+    // Connected but not live: awaiting the OAuth grant / first sync, or an
+    // honest fetch error. Explicit states — no fabricated numbers, and no
+    // LIVE badge over demo data.
+    if (isConnected && dataNote) {
+      const isError = dataNote.kind === 'error';
+      return (
+        <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
+          {isError ? (
+            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
+          ) : (
+            <ShieldCheck className="w-12 h-12 text-blue-400 mx-auto" />
+          )}
+          <h3 className="text-lg font-bold text-white">
+            {isError ? 'Search Console Fetch Failed' : 'Connected — Awaiting OAuth Grant'}
+          </h3>
+          <p className="text-sm text-zinc-400 max-w-md mx-auto">{dataNote.message}</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => loadData()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-200 font-semibold rounded-xl text-sm border border-white/10 cursor-pointer transition-all"
+            >
+              <RefreshCw className="w-4 h-4" /> Retry Fetch
+            </button>
+            <button
+              onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl text-sm cursor-pointer shadow-md hover:from-blue-600 hover:to-purple-700 transition-all"
+            >
+              <Link2 className="w-4 h-4" /> Open Connect Dialog
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-medium rounded-xl text-sm border border-white/10 cursor-pointer transition-all"
+            >
+              Disconnect
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
         <Globe className="w-12 h-12 text-zinc-600 mx-auto" />
         <h3 className="text-lg font-bold text-white">Connect Google Search Console</h3>
         <p className="text-sm text-zinc-400 max-w-md mx-auto">
-          Link your Google Search Console account to see real-time click, impression, CTR, and ranking data for sigmatactix.com.
+          Link your Google Search Console account to see real-time click, impression, CTR, and ranking data for your verified property.
         </p>
-        <a
-          href={getGSCAuthUrl()}
+        <button
+          onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold rounded-xl text-sm cursor-pointer shadow-lg shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600 transition-all"
         >
           <Link2 className="w-4 h-4" /> Connect Search Console
-        </a>
+        </button>
       </div>
     );
   }
@@ -377,7 +550,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
 
           {!isConnected ? (
             <button
-              onClick={() => setIsConnectModalOpen(true)}
+              onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
               className="px-3.5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl text-[11px] flex items-center gap-1.5 cursor-pointer shadow-md hover:from-blue-600 hover:to-purple-700 transition-all"
             >
               <Link2 className="w-3.5 h-3.5" /> Connect GSC
@@ -519,7 +692,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">Connect Google Search Console</h3>
-                    <p className="text-[11px] text-zinc-400">Authenticate verified search property for sigmatactix.com</p>
+                    <p className="text-[11px] text-zinc-400">Store a property + OAuth client, then complete the read-only Google grant</p>
                   </div>
                 </div>
                 <button
@@ -540,7 +713,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                     type="text"
                     value={gscSiteUrl}
                     onChange={e => setGscSiteUrl(e.target.value)}
-                    placeholder="e.g. sc-domain:sigmatactix.com or https://sigmatactix.com"
+                    placeholder="e.g. sc-domain:example.com or https://example.com/"
                     className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-blue-500/50"
                   />
                   <p className="text-[10px] text-zinc-500 mt-1">Domain properties require DNS verification. URL-prefix properties require meta tag.</p>
@@ -549,25 +722,25 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                 <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-semibold text-blue-300">
                     <ShieldCheck className="w-4 h-4 text-blue-400" />
-                    1-Click Verified Domain Connect
+                    Save Property &amp; Continue to Google
                   </div>
                   <p className="text-[11px] text-zinc-300 leading-relaxed">
-                    Connects directly to your pre-verified Google Search Console property for <strong className="text-white">sigmatactix.com</strong> without navigating away.
+                    Stores your property and OAuth client <strong className="text-white">AES-256-GCM encrypted</strong> in this workspace's vault, then redirects you to Google to grant read-only Search Console access. The connection is only marked live after Google confirms the grant.
                   </p>
                   <button
                     onClick={handleConnectDirect}
-                    disabled={isConnecting}
+                    disabled={isConnecting || !gscSiteUrl.trim()}
                     className="w-full mt-2 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all"
                   >
                     {isConnecting ? (
                       <>
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        Verifying Property Credentials...
+                        Saving Property...
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Verify & Link sigmatactix.com Property
+                        Connect &amp; Grant Search Console Access
                       </>
                     )}
                   </button>
@@ -594,6 +767,33 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                       className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/50"
                     />
                   </div>
+                </div>
+
+                {/* Redirect URI whitelist helper — the #1 cause of Google's
+                    Error 400 redirect_uri_mismatch is a URI that differs by a
+                    single character (port, trailing slash, http vs https). */}
+                <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                  <div className="text-[11px] font-semibold text-amber-300">
+                    Step 0 — Whitelist this Redirect URI in Google Cloud
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Google Cloud → APIs &amp; Services → Credentials → your OAuth client → <strong className="text-zinc-200">Authorized redirect URIs</strong> → add the URI below <strong className="text-zinc-200">exactly</strong> (scheme, host, port and path must match byte-for-byte).
+                  </p>
+                  {(dialogRedirectUri || connection.redirectUri) ? (
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 min-w-0 truncate px-2.5 py-2 bg-black/50 border border-white/10 rounded-lg text-[11px] font-mono text-emerald-300">
+                        {dialogRedirectUri || connection.redirectUri}
+                      </code>
+                      <button
+                        onClick={copyRedirectUri}
+                        className="shrink-0 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] font-semibold text-zinc-200 cursor-pointer transition-colors"
+                      >
+                        {redirectUriCopied ? 'Copied ✓' : 'Copy'}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-zinc-500">Loading the exact redirect URI from the server…</p>
+                  )}
                 </div>
               </div>
 

@@ -1,0 +1,39 @@
+{
+  "name": "slate",
+  "description": "Dark slate page, cool white card, amber highlight with teal and rust accents. Technical rooms, evening sessions.",
+  "chrome": "card",
+  "fonts": {
+    "display": "'Space Grotesk', 'Helvetica Neue', Arial, sans-serif",
+    "mono": "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace",
+    "import": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+  },
+  "colors": {
+    "bg": "#1B2430",
+    "card": "#F5F7F9",
+    "panel": "#E9EEF2",
+    "ink": "#17202A",
+    "muted": "#5C6B7A",
+    "rule": "#C9D2DA",
+    "on_bg": "#D7DFE7",
+    "rule_on_bg": "rgba(215,223,231,.22)",
+    "white": "#FFFFFF",
+    "highlight": "#E8A33D",
+    "cool": "#2F6F8F",
+    "warm": "#B5533C",
+    "soft": "#6E9E86",
+    "neutral": "#CBD2D9",
+    "live": "#3DDC84",
+    "highlight_bg": "#FBEBD0",
+    "cool_bg": "#DCE9F0",
+    "warm_bg": "#F3DDD6",
+    "soft_bg": "#DFEDE5"
+  },
+  "modes": {
+    "slides": "#1B2430",
+    "share": "#E8A33D",
+    "breakout": "#2F6F8F",
+    "solo": "#3DDC84",
+    "handoff": "#B5533C",
+    "break": "#CBD2D9"
+  }
+}

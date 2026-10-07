@@ -42,6 +42,7 @@ import {
   fetchProviderModels, 
   getWorkspaceTier, 
   setWorkspaceTier, 
+  createCheckoutSession,
   getBillingTiers,
   testModelInference
 } from '@/src/lib/api';
@@ -253,13 +254,12 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
 
   const handleChangeTier = async (newTier: string) => {
     try {
-      await setWorkspaceTier(newTier);
-      setActiveTier(newTier);
-      updateWorkspaceTier(currentWorkspace.id, newTier as any);
-      setCalcRetainer(TIER_RETAINERS[newTier]?.priceMonthly || 1499);
-      await loadData();
+      const res = await createCheckoutSession(newTier);
+      if (res.url) {
+        window.location.href = res.url;
+      }
     } catch (err: any) {
-      alert(`Could not change tier: ${err.message}`);
+      alert(`Could not start Stripe Checkout: ${err.message}`);
     }
   };
 

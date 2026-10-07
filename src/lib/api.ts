@@ -187,6 +187,18 @@ export async function setWorkspaceTier(tierKey: string): Promise<any> {
   return res.json();
 }
 
+export async function createCheckoutSession(tierKey: string): Promise<{ success: boolean; url: string }> {
+  const res = await apiFetch('/api/workspace/billing/checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ tierKey }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Failed to create checkout session: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 // Second Brain Document Analysis & Summarization
 export interface DocumentAnalysisResult {
   title: string;
@@ -358,3 +370,72 @@ export async function fetchDecisionTraces(limit: number = 25): Promise<DecisionT
   if (!res.ok) throw new Error(data.error || `Decision traces unavailable: ${res.statusText}`);
   return data.traces || [];
 }
+
+// Web Intelligence (TinyFish) API
+export async function getWebIntelligenceCapabilities() {
+  const res = await apiFetch('/api/workspace/web-intelligence/capabilities');
+  if (!res.ok) throw new Error(`Failed to fetch web intelligence capabilities: ${res.statusText}`);
+  return res.json();
+}
+
+export async function verifyWebIntelligence() {
+  const res = await apiFetch('/api/workspace/web-intelligence/verify', { method: 'POST' });
+  if (!res.ok) throw new Error(`Web intelligence verification failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function searchWebIntelligence(query: string, maxResults?: number, location?: string, language?: string) {
+  const res = await apiFetch('/api/workspace/web-intelligence/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, maxResults, location, language }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Web intelligence search failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function fetchWebIntelligence(urls: string[], format?: 'markdown' | 'html' | 'json') {
+  const res = await apiFetch('/api/workspace/web-intelligence/fetch', {
+    method: 'POST',
+    body: JSON.stringify({ urls, format }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Web intelligence fetch failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// Market Simulation (MiroFish) API
+export async function getMarketSimulationCapabilities() {
+  const res = await apiFetch('/api/workspace/market-simulations/capabilities');
+  if (!res.ok) throw new Error(`Failed to fetch market simulation capabilities: ${res.statusText}`);
+  return res.json();
+}
+
+export async function verifyMarketSimulation() {
+  const res = await apiFetch('/api/workspace/market-simulations/verify', { method: 'POST' });
+  if (!res.ok) throw new Error(`Market simulation verification failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function createMarketSimulation(payload: {
+  title: string;
+  question: string;
+  evidenceSnapshotIds?: string[];
+  assumptions?: string[];
+  excludedDataClasses?: string[];
+}) {
+  const res = await apiFetch('/api/workspace/market-simulations/simulations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Market simulation failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+

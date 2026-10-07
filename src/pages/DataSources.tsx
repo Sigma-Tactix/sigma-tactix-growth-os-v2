@@ -143,6 +143,16 @@ const libraryConnectors = [
     metrics: ['Active Users', 'Sessions', 'Engagement Rate', 'Conversions', 'Event Streams']
   },
   {
+    name: 'Google Search Console',
+    cat: 'reporting',
+    color: '#4285F4',
+    desc: 'Organic search performance: queries, clicks, impressions, CTR & average position.',
+    details: 'Verifies a read-only OAuth 2.0 grant (webmasters.readonly) against a verified property before any Search Console numbers are shown. Handshake proves live API access; it does not ingest data.',
+    targetVault: 'Authority Vault',
+    defaultProtocol: 'Google Search Console API (OAuth 2.0)',
+    metrics: ['Clicks', 'Impressions', 'CTR', 'Avg Position', 'Indexed Pages']
+  },
+  {
     name: 'LinkedIn Ads', cat: 'ads', color: '#0A66C2', desc: 'B2B campaign and lead-generation reporting.',
     details: 'Verify Campaign Manager account access before enabling reporting or activation workflows.', targetVault: 'Marketing Vault',
     defaultProtocol: 'LinkedIn Marketing API (OAuth 2.0)', metrics: ['Impressions', 'Clicks', 'Leads', 'Spend', 'Conversions']

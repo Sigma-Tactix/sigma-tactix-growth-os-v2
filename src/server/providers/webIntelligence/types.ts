@@ -35,4 +35,6 @@ export interface WebIntelligenceProvider {
   capabilities(): Promise<WebIntelligenceCapabilities>;
   search(input: SearchRequest): Promise<WebEvidence[]>;
   fetch(input: FetchRequest): Promise<WebEvidence[]>;
+  verify?(): Promise<boolean>;
 }
+

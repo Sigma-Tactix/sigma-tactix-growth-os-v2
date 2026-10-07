@@ -1,0 +1,39 @@
+{
+  "name": "sigmatactix",
+  "description": "Sigma Tactix sovereign dark: Deep obsidian page, dark card, electric Sigma Orange (#FF481B) highlight with metallic amber (#F59E0B) and emerald (#10B981) accents.",
+  "chrome": "card",
+  "fonts": {
+    "display": "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif",
+    "mono": "'JetBrains Mono', 'Fira Code', ui-monospace, monospace",
+    "import": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+  },
+  "colors": {
+    "bg": "#09090B",
+    "card": "#121217",
+    "panel": "#18181B",
+    "ink": "#FAFAFA",
+    "muted": "#A1A1AA",
+    "rule": "#27272A",
+    "on_bg": "#71717A",
+    "rule_on_bg": "rgba(255,255,255,.08)",
+    "white": "#FFFFFF",
+    "highlight": "#FF481B",
+    "cool": "#38BDF8",
+    "warm": "#F59E0B",
+    "soft": "#A78BFA",
+    "neutral": "#3F3F46",
+    "live": "#10B981",
+    "highlight_bg": "rgba(255, 72, 27, 0.15)",
+    "cool_bg": "rgba(56, 189, 248, 0.15)",
+    "warm_bg": "rgba(245, 158, 11, 0.15)",
+    "soft_bg": "rgba(167, 139, 250, 0.15)"
+  },
+  "modes": {
+    "slides": "#FF481B",
+    "share": "#F59E0B",
+    "breakout": "#38BDF8",
+    "solo": "#10B981",
+    "handoff": "#A78BFA",
+    "break": "#71717A"
+  }
+}

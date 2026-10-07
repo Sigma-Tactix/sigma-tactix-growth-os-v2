@@ -54,15 +54,9 @@
       "description": "Develops agent prompts, skills, documentation, and stress-tests plans via relentless grilling.",
       "role_file": ".agents/subagents/agent-trainer/SUBAGENT.md",
       "skills": [
-        "ask-matt",
-        "grill-me",
-        "grill-with-docs",
         "grilling",
-        "teach",
-        "wait-what",
         "wizard",
-        "writing-for-agents",
-        "setup-matt-pocock-skills"
+        "writing-for-agents"
       ],
       "permission": {
         "edit": {
@@ -83,8 +77,7 @@
         "implement",
         "handoff",
         "to-spec",
-        "to-tickets",
-        "to-questionnaire"
+        "to-tickets"
       ],
       "permission": {
         "edit": {

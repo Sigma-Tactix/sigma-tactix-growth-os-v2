@@ -311,8 +311,8 @@ export default function Dashboard() {
     if (formatType === 'PDF') {
       await exportService.toPDF('dashboard-content', `sigmatactix-intel-${timestamp}.pdf`);
     } else if (formatType === 'PPTX') {
-      // Capture exactly what user sees (elementId) + data
-      await exportService.toPPTX('dashboard-content', reportData, `sigmatactix-intel-${timestamp}.pptx`);
+      // Capture exactly what user sees (elementId) + data into lecture deck
+      await exportService.toPPTX('dashboard-content', reportData, `sigmatactix-intel-${timestamp}.html`);
     } else if (formatType === 'XLSX') {
       const exportData = [
         ...segmentsData.map(s => ({ ...s, type: 'Segment' })),
@@ -552,7 +552,7 @@ export default function Dashboard() {
                       >
                         {[
                           { type: 'PDF', label: 'PDF Report', icon: FileText },
-                          { type: 'PPTX', label: 'Executive Deck', icon: FileJson },
+                          { type: 'PPTX', label: 'Presentation Deck (HTML/PDF)', icon: FileJson },
                           { type: 'XLSX', label: 'Excel Dataset', icon: FileSpreadsheet },
                         ].map((opt) => (
                           <button 

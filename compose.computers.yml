@@ -1,0 +1,33 @@
+# OpenBot container supervisor for Sigma Tactix Growth OS Agents
+# Compatible with OrbStack (recommended on Apple Silicon) or Docker Desktop.
+#
+# To start the supervisor on OrbStack:
+#   docker compose -f compose.computers.yml up -d computer-supervisor
+#
+# The supervisor manages dedicated sandboxes for specialist agents with isolated
+# filesystem volumes, persistent browser profiles, and bash shell execution.
+
+services:
+  computer-image:
+    profiles: [build-computers]
+    image: opendots-computer:b6932d3
+    build:
+      context: https://github.com/CopilotKit/OpenBot.git#b6932d31a8d6e7896c15139dfc27a6c6911deb27
+      dockerfile: agent-computer/Dockerfile
+    command: ['true']
+
+  computer-supervisor:
+    image: opendots-supervisor:b6932d3-dot-auth
+    build:
+      context: https://github.com/CopilotKit/OpenDots.git#main
+      dockerfile: deployment/computers/supervisor.Dockerfile
+      additional_contexts:
+        openbot: https://github.com/CopilotKit/OpenBot.git#b6932d31a8d6e7896c15139dfc27a6c6911deb27
+    ports:
+      - '127.0.0.1:4312:4300'
+    environment:
+      PORT: '4300'
+      SUPERVISOR_TOKEN: ${COMPUTER_SUPERVISOR_TOKEN:-sigmatactix_supervisor_secret_dev}
+      COMPUTER_TOKEN: ${COMPUTER_TOKEN:-sigmatactix_computer_master_secret_dev}
+      COMPUTER_NAMESPACE: sigmatactix
+    restart: unless-stopped

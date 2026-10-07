@@ -1,0 +1,39 @@
+{
+  "name": "paper",
+  "description": "Flat, light, print-like: warm grey page with the card filling the screen, a red highlight, ink blue and olive accents. Reads well projected in a bright room.",
+  "chrome": "flat",
+  "fonts": {
+    "display": "'Inter', 'Helvetica Neue', Arial, sans-serif",
+    "mono": "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace",
+    "import": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+  },
+  "colors": {
+    "bg": "#F4F1EA",
+    "card": "#F4F1EA",
+    "panel": "#FFFFFF",
+    "ink": "#1F1F1F",
+    "muted": "#6B665C",
+    "rule": "#D6D0C4",
+    "on_bg": "#6B665C",
+    "rule_on_bg": "rgba(31,31,31,.12)",
+    "white": "#FFFFFF",
+    "highlight": "#C8371D",
+    "cool": "#1F5F8B",
+    "warm": "#8A6D3B",
+    "soft": "#6B8F71",
+    "neutral": "#D6D0C4",
+    "live": "#2BB673",
+    "highlight_bg": "#F8DDD6",
+    "cool_bg": "#DCE8F1",
+    "warm_bg": "#EFE6D6",
+    "soft_bg": "#E1ECE2"
+  },
+  "modes": {
+    "slides": "#1F1F1F",
+    "share": "#C8371D",
+    "breakout": "#1F5F8B",
+    "solo": "#2BB673",
+    "handoff": "#8A6D3B",
+    "break": "#D6D0C4"
+  }
+}

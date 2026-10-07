@@ -37,6 +37,7 @@ import {
   SocialCampaignData
 } from '@/src/data/marketingModulesData';
 import { repurposeCarouselWithAgentReach } from '@/src/lib/api';
+import { generateSocialCampaign } from '@/src/lib/creativeApi';
 import { RepurposedCarouselAndThread } from '@/src/types';
 
 const DEMO_INITIAL_LINKEDIN_SLIDES: CarouselSlide[] = [
@@ -190,15 +191,7 @@ export default function SocialCarouselsPage() {
   // Active Slides & Campaign Data
   const [slides, setSlides] = useState<CarouselSlide[]>(INITIAL_LINKEDIN_SLIDES);
   const [threadTweets, setThreadTweets] = useState<TweetItem[]>(INITIAL_THREAD_TWEETS);
-  const [caption, setCaption] = useState<string>(`Stop renting your growth engine. 🛑
-
-When you rely exclusively on outsourced agency retainers, you are leasing headcount that turns over every 9 months. With them goes your positioning nuance, ad test data, and competitive advantage.
-
-Swipe through the carousel above to see how modern B2B operators install an AI-native Growth OS directly into their cloud.
-
-Which slide hit closest to home? Drop a comment below 👇
-
-#GrowthOS #B2BMarketing #AIAgents #SigmaTactix #SaaSGrowth`);
+  const [caption, setCaption] = useState<string>('');
 
   // Run History — starts empty. Verified runs appear only after local render
   // completion or a provider receipt; the seeded verbose copy lives only in
@@ -265,92 +258,49 @@ Which slide hit closest to home? Drop a comment below 👇
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!topic.trim()) {
       notifyError('Topic Required', 'Please enter a campaign topic.');
       return;
     }
 
-    // Phase 0 truthful state: local draft assembly only. No timer, no
-    // fabricated success — the run is recorded as a staged local draft.
     setIsGenerating(true);
-    const newSlides: CarouselSlide[] = [
-      {
-        slideNumber: 1,
-        badge: 'DRAFT OUTLINE',
-        title: topic,
-        subtitle: `Local draft outline for ${audience}`,
-        contentPoints: [
-          'Traditional playbooks are producing diminishing returns.',
-          'First-principles analysis reveals the true leverage points.',
-          'Swipe through the operational framework.'
+    try {
+      const result = await generateSocialCampaign({ channel, topic: topic.trim(), targetAudience: audience });
+      const nextSlides = result.slides || [];
+      const nextTweets = (result.threadTweets || []).map((tweet, index) => ({
+        tweetNumber: Number(tweet.tweetNumber) || index + 1,
+        text: tweet.text,
+        charCount: tweet.charCount || tweet.text.length,
+      }));
+      if (channel === 'X_Thread' && nextTweets.length === 0) throw new Error('The provider returned no thread posts.');
+      if (channel !== 'X_Thread' && nextSlides.length === 0) throw new Error('The provider returned no carousel slides.');
+      if (nextSlides.length) setSlides(nextSlides);
+      if (nextTweets.length) setThreadTweets(nextTweets);
+      setCaption(result.caption || [result.hook, result.hashtags?.join(' ')].filter(Boolean).join('\n\n'));
+      setRunHistory(prev => [{
+        id: `run-carousel-${Date.now()}`,
+        agentName: 'Social Growth Swarm',
+        agentRole: 'Provider-backed campaign generation',
+        timestamp: 'Just now',
+        status: 'SUCCESS',
+        moduleOrigin: 'Social & Carousel Studio',
+        inputSummary: `${channel}: ${topic}`,
+        outputSummary: `Gemini returned ${channel === 'X_Thread' ? `${nextTweets.length} thread posts` : `${nextSlides.length} carousel slides`}. Nothing was published.`,
+        fullOutput: JSON.stringify(result, null, 2),
+        metrics: [
+          { label: 'Channel', value: channel },
+          { label: channel === 'X_Thread' ? 'Posts' : 'Slides', value: `${channel === 'X_Thread' ? nextTweets.length : nextSlides.length}` },
+          { label: 'Publication', value: 'Not published' },
+          { label: 'Source', value: result.source || 'gemini' },
         ],
-        takeaway: 'Systematic infrastructure compounds over time.',
-        visualCue: 'Deep obsidian backdrop with glowing gold accents'
-      },
-      {
-        slideNumber: 2,
-        badge: 'PILLAR 01',
-        title: 'Establish Sovereign Data Vaults',
-        subtitle: 'Own your intelligence instead of leasing it',
-        contentPoints: [
-          'Consolidate customer touchpoints into a unified Second Brain.',
-          'Ensure zero context loss across marketing and sales.',
-          'Eliminate dependency on third-party agencies.'
-        ],
-        takeaway: 'Data sovereignty is the ultimate competitive moat.',
-        visualCue: 'Neural knowledge graph with connected gold nodes'
-      },
-      {
-        slideNumber: 3,
-        badge: 'PILLAR 02',
-        title: 'Deploy Autonomous Execution',
-        subtitle: 'Continuous optimization under human supervision',
-        contentPoints: [
-          'AI swarms operate 24/7 on creative hooks and ad copy.',
-          'Deterministic guardrails protect brand reputation.',
-          'Scale output by 10x with zero headcount increase.'
-        ],
-        takeaway: 'Autonomous agents eliminate operational bottlenecks.',
-        visualCue: 'High-speed data streams routing into execution nodes'
-      },
-      {
-        slideNumber: 4,
-        badge: 'EXECUTION',
-        title: 'The Next Steps',
-        subtitle: 'Audit your current architecture today',
-        contentPoints: [
-          'Identify the 3 largest leaks in your current funnel.',
-          'Replace manual spreadsheets with live telemetry.',
-          'Visit sigmatactix.com to run your Growth OS diagnostic.'
-        ],
-        takeaway: 'Action beats analysis. Deploy your Growth OS.',
-        visualCue: 'Golden Sigma Tactix badge with action vector'
-      }
-    ];
-
-    setSlides(newSlides);
-
-    const newRun: AgentRunRecord = {
-      id: `run-carousel-${Date.now()}`,
-      agentName: 'Social Growth Swarm',
-      agentRole: 'Viral Hook & Carousel Architect',
-      timestamp: 'Just now',
-      status: 'PARTIAL',
-      moduleOrigin: 'Social & Carousel Studio',
-      inputSummary: `${channel}: ${topic}`,
-      outputSummary: `Assembled ${newSlides.length}-slide local draft. Not published. Distribution requires an approved distribution run and provider credentials.`,
-      fullOutput: JSON.stringify(newSlides, null, 2),
-      metrics: [
-        { label: 'Channel', value: channel },
-        { label: 'Slides', value: `${newSlides.length}` },
-        { label: 'Publication', value: 'Not published (local draft)' }
-      ]
-    };
-
-    setRunHistory(prev => [newRun, ...prev]);
-    setIsGenerating(false);
-    notifySuccess('Local Draft Assembled', 'Generated multi-slide carousel draft locally. Nothing was published.');
+      }, ...prev]);
+      notifySuccess('Campaign generated', 'Gemini returned a provider-backed draft. Nothing was published.');
+    } catch (error: any) {
+      notifyError('Campaign generation failed', error?.message || 'The provider did not return a campaign.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopyText = (text: string, idx: number) => {
@@ -543,7 +493,9 @@ Which slide hit closest to home? Drop a comment below 👇
               </div>
 
               <div className="space-y-3">
-                {threadTweets.map((tweet, idx) => (
+                {threadTweets.length === 0 ? (
+                  <GlassCard elevation="flat" className="p-8 text-center text-sm text-[var(--sigma-text-muted)]">Generate a provider-backed X thread to see it here.</GlassCard>
+                ) : threadTweets.map((tweet, idx) => (
                   <GlassCard key={idx} elevation="flat" className="p-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-[var(--sigma-text-muted)]">
                       <span className="font-semibold text-sky-600 dark:text-sky-400">Tweet {tweet.tweetNumber} of {threadTweets.length}</span>
@@ -581,7 +533,9 @@ Which slide hit closest to home? Drop a comment below 👇
                 </div>
               </div>
 
-              {viewMode === 'CARDS' ? (
+              {slides.length === 0 ? (
+                <GlassCard elevation="flat" className="p-10 text-center text-sm text-[var(--sigma-text-muted)]">Generate a provider-backed carousel to see its slides here.</GlassCard>
+              ) : viewMode === 'CARDS' ? (
                 <div className="sigma-panel-raised p-4 sm:p-6 flex justify-center overflow-hidden">
                   <CarouselCardViewer slides={slides} />
                 </div>

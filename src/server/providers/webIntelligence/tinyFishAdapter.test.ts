@@ -29,4 +29,15 @@ describe('TinyFish web-intelligence adapter', () => {
     const adapter = new TinyFishWebIntelligenceAdapter({ apiKey: 'test-key' });
     await expect(adapter.fetch({ urls: ['http://127.0.0.1/admin'] })).rejects.toThrow('Public HTTP(S) URL required');
   });
+
+  it('performs runtime handshake and transitions to verified state upon success', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'ok' }), { status: 200 })));
+    const adapter = new TinyFishWebIntelligenceAdapter({ apiKey: 'test-key' });
+    const verified = await adapter.verify();
+    expect(verified).toBe(true);
+
+    const caps = await adapter.capabilities();
+    expect(caps.verified).toBe(true);
+    expect(caps.detail).toContain('verified and reachable');
+  });
 });

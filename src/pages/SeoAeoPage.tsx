@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -41,6 +41,7 @@ import {
   AeoCitationBenchmark 
 } from '@/src/data/marketingModulesData';
 import SearchConsoleTrends from '@/src/components/SearchConsoleTrends';
+import { getGSCConnectionStatus, connectGSC, GSCConnectionStatus } from '@/src/lib/searchConsoleApi';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
@@ -273,7 +274,7 @@ export const SCHEMA_DEFINITIONS: Record<SchemaType, {
 
 export default function SeoAeoPage() {
   const navigate = useNavigate();
-  const { notifySuccess, notifyInfo } = useToast();
+  const { notifySuccess, notifyInfo, notifyError, notifyWarning } = useToast();
   const [clusters, setClusters] = useState<KeywordCluster[]>(SEED_KEYWORD_CLUSTERS);
   const [aeoBenchmarks, setAeoBenchmarks] = useState<AeoCitationBenchmark[]>(SEED_AEO_BENCHMARKS);
   const [selectedCluster, setSelectedCluster] = useState<KeywordCluster>(SEED_KEYWORD_CLUSTERS[0]);
@@ -287,9 +288,23 @@ export default function SeoAeoPage() {
 
   // GSC Connection Modal State
   const [isGscModalOpen, setIsGscModalOpen] = useState(false);
-  const [gscPropertyUrl, setGscPropertyUrl] = useState('https://sigmatactix.com');
-  const [isGscConnected, setIsGscConnected] = useState(true);
+  const [gscPropertyUrl, setGscPropertyUrl] = useState('');
+  // Server-owned connection truth — never assumed. The pre-fix default of
+  // `true` made the header claim "GSC Linked" while the trends widget showed
+  // demo data, because the popup never called the API at all.
+  const [gscStatus, setGscStatus] = useState<GSCConnectionStatus | null>(null);
   const [isConnectingGsc, setIsConnectingGsc] = useState(false);
+  const isGscConnected = gscStatus?.connected === true;
+
+  useEffect(() => {
+    let cancelled = false;
+    getGSCConnectionStatus().then(status => {
+      if (!cancelled) setGscStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Agent trigger state
   const [isDeployingAgent, setIsDeployingAgent] = useState(false);
@@ -372,19 +387,54 @@ export default function SeoAeoPage() {
     );
   };
 
-  const handleConnectGsc = (e: React.FormEvent) => {
+  const handleConnectGsc = async (e: React.FormEvent) => {
     e.preventDefault();
+    const siteUrl = gscPropertyUrl.trim();
+    if (!siteUrl) {
+      notifyWarning('Property URL Required', 'Enter the verified Search Console property, e.g. sc-domain:example.com or https://example.com/.');
+      return;
+    }
     setIsConnectingGsc(true);
-    setTimeout(() => {
-      setIsConnectingGsc(false);
-      setIsGscConnected(true);
+    try {
+      const result = await connectGSC({ siteUrl });
+      if (!result.success) {
+        // Honest failure — the old handler was a setTimeout that toasted
+        // success without ever contacting the server.
+        notifyError('Connection Failed', result.error || 'The server rejected the Search Console connection.');
+        return;
+      }
+      setGscStatus(prev => ({
+        ...(prev || {}),
+        connected: true,
+        siteUrl: result.siteUrl || siteUrl,
+        verificationState: result.verificationState,
+        hasGrant: result.hasGrant,
+        oauthConfigured: result.oauthConfigured,
+        redirectUri: result.redirectUri || prev?.redirectUri,
+      }));
       setIsGscModalOpen(false);
-      notifySuccess(
-        'Google Search Console Linked',
-        `Successfully authenticated & verified property ${gscPropertyUrl}. Search query & impression telemetry is live.`,
-        { category: 'SYNC' }
-      );
-    }, 1200);
+      if (result.authUrl) {
+        notifyInfo('Continue in Google', 'Redirecting to Google for the OAuth grant — approve Search Console access to finish.');
+        window.location.href = result.authUrl;
+        return;
+      }
+      if (result.hasGrant) {
+        notifySuccess(
+          'Google Search Console Linked',
+          `Property ${result.siteUrl || siteUrl} is connected with live Search Console access.`,
+          { category: 'SYNC' }
+        );
+      } else {
+        notifyWarning(
+          'Property Saved — OAuth Required',
+          `${result.error || 'No OAuth client is configured yet.'} The SEO & AEO Search Console tab will show an explicit waiting state until the grant completes.`
+        );
+      }
+    } catch (err) {
+      notifyError('Connection Failed', err instanceof Error ? err.message : 'Network error while connecting to the server.');
+    } finally {
+      setIsConnectingGsc(false);
+    }
   };
 
   return (
@@ -876,7 +926,7 @@ export default function SeoAeoPage() {
                     type="text"
                     value={gscPropertyUrl}
                     onChange={(e) => setGscPropertyUrl(e.target.value)}
-                    placeholder="sc-domain:sigmatactix.com or https://..."
+                    placeholder="sc-domain:example.com or https://example.com/"
                     className="w-full px-3.5 py-2.5 bg-black/50 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-400/50"
                   />
                   <p className="text-[11px] text-zinc-500">Domain properties require DNS verification; URL prefix properties accept HTML tag or Google Analytics verification.</p>
@@ -909,7 +959,7 @@ export default function SeoAeoPage() {
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium rounded-xl text-xs flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                   >
                     <Globe className="w-3.5 h-3.5" />
-                    {isConnectingGsc ? 'Verifying Credentials...' : 'Authenticate & Sync GSC'}
+                    {isConnectingGsc ? 'Saving Property...' : 'Connect & Grant GSC Access'}
                   </button>
                 </div>
               </form>

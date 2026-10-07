@@ -1,9 +1,19 @@
 /**
  * Google Search Console API Client Wrapper
- * 
- * Provides methods to interact with Google Search Console data.
- * Requires OAuth 2.0 credentials configured via the Admin panel.
- * Falls back to demo data when no credentials are available.
+ *
+ * Client half of the /api/gsc/* contract (server: server.ts + gscService.ts).
+ *
+ * Truthfulness contract (SEO & AEO Authority module):
+ *  - getGSCConnectionStatus() reports what the SERVER says; on transport
+ *    failure it answers {connected:false} so the UI shows DEMO DATA rather
+ *    than claiming a connection.
+ *  - fetchGSCAnalytics() never silently falls back to demo numbers. It
+ *    returns a discriminated result ('live' | 'disconnected' | 'awaiting' |
+ *    'error') so the caller can render the exact state; generateDemoGSCData()
+ *    must only be used for the explicit DEMO DATA (disconnected) state.
+ *
+ * OAuth secrets never transit this module — the server stores the client
+ * pair and Google tokens AES-256-GCM wrapped in the workspace blob.
  */
 
 import { apiFetch } from './api';
@@ -49,11 +59,25 @@ export interface GSCAnalyticsResponse {
   fetchedAt: string;
 }
 
+export type GscVerificationState = 'configured' | 'verified' | 'failed';
+
 export interface GSCConnectionStatus {
   connected: boolean;
   siteUrl?: string;
+  verificationState?: GscVerificationState;
+  verificationMessage?: string;
+  /** A stored Google OAuth grant exists (tokens in the encrypted vault). */
+  hasGrant?: boolean;
+  /** An OAuth client (popup-supplied or env) is available for the flow. */
+  oauthConfigured?: boolean;
+  /**
+   * The EXACT redirect URI Google must have whitelisted (origin + path).
+   * The dialog displays this with a copy button so redirect_uri_mismatch is
+   * fixable without guessing which origin the server used.
+   */
+  redirectUri?: string;
   lastFetched?: string;
-  error?: string;
+  lastError?: string;
 }
 
 /**
@@ -71,33 +95,193 @@ export async function getGSCConnectionStatus(): Promise<GSCConnectionStatus> {
   return { connected: false };
 }
 
+export type GSCAnalyticsResult =
+  | { kind: 'live'; data: GSCAnalyticsResponse }
+  | { kind: 'disconnected' }
+  | { kind: 'awaiting'; message: string }
+  | { kind: 'error'; message: string };
+
+function readErrorMessage(payload: unknown, fallback: string): string {
+  const record = payload as Record<string, unknown> | null | undefined;
+  if (record && typeof record.message === 'string' && record.message.trim()) return record.message;
+  if (record && typeof record.error === 'string' && record.error.trim()) return record.error;
+  return fallback;
+}
+
 /**
- * Fetch GSC analytics data for the configured site.
+ * Fetch GSC analytics for the configured site.
+ *
+ * Distinguishes the states the old null-return conflated:
+ *  - 'live'         real payload → render LIVE
+ *  - 'disconnected' server says not connected → render DEMO DATA
+ *  - 'awaiting'     connected but no OAuth grant / no data yet → render the
+ *                   explicit waiting panel (never demo numbers, never LIVE)
+ *  - 'error'        connected but the fetch failed → render the error
  */
 export async function fetchGSCAnalytics(
   dateRange: '7d' | '28d' | '90d' | '16m' = '28d'
-): Promise<GSCAnalyticsResponse | null> {
+): Promise<GSCAnalyticsResult> {
+  let res: Response;
   try {
-    const res = await apiFetch(`/api/gsc/analytics?range=${dateRange}`);
-    if (res.ok) {
-      return await res.json();
-    }
+    res = await apiFetch(`/api/gsc/analytics?range=${dateRange}`);
   } catch {
-    // Backend not available
+    return { kind: 'error', message: 'Backend unreachable — Search Console data could not be fetched.' };
   }
-  return null;
+  const payload: unknown = await res.json().catch(() => ({}));
+
+  const candidate = payload as Partial<GSCAnalyticsResponse> | null | undefined;
+  if (
+    res.ok &&
+    candidate &&
+    typeof candidate === 'object' &&
+    Array.isArray(candidate.timeSeries) &&
+    candidate.totals &&
+    typeof candidate.totals === 'object'
+  ) {
+    return { kind: 'live', data: candidate as GSCAnalyticsResponse };
+  }
+
+  const record = payload as Record<string, unknown> | null | undefined;
+  if (res.status === 409 || record?.connected === false) {
+    return { kind: 'disconnected' };
+  }
+
+  const message = readErrorMessage(payload, `Search Console request failed (HTTP ${res.status}).`);
+  if (res.ok && record?.hasData === false) {
+    return { kind: 'awaiting', message };
+  }
+  return { kind: 'error', message };
+}
+
+export interface GSCConnectResult {
+  success: boolean;
+  connected?: boolean;
+  siteUrl?: string;
+  verificationState?: GscVerificationState;
+  hasGrant?: boolean;
+  oauthConfigured?: boolean;
+  /** Google consent URL — navigate here to complete the OAuth grant. */
+  authUrl?: string | null;
+  /** EXACT redirect URI Google must have whitelisted — display in the dialog. */
+  redirectUri?: string;
+  error?: string;
 }
 
 /**
- * Get the OAuth authorization URL for GSC.
+ * Store the property (and optional custom OAuth client) server-side. When
+ * `authUrl` comes back, the caller MUST navigate to it to finish the Google
+ * grant — until then the connection is only 'configured', not verified.
  */
-export function getGSCAuthUrl(): string {
-  const baseUrl = (import.meta as any).env?.VITE_API_BASE || '';
-  return `${baseUrl}/api/gsc/auth`;
+export async function connectGSC(input: {
+  siteUrl: string;
+  clientId?: string;
+  clientSecret?: string;
+}): Promise<GSCConnectResult> {
+  let res: Response;
+  try {
+    res = await apiFetch('/api/gsc/connect', { method: 'POST', body: JSON.stringify(input) });
+  } catch {
+    return { success: false, error: 'Backend unreachable — could not reach the server to connect Search Console.' };
+  }
+  const payload: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { success: false, error: readErrorMessage(payload, `Connection failed (HTTP ${res.status}).`) };
+  }
+  return { success: true, ...(payload as Omit<GSCConnectResult, 'success'>) };
+}
+
+export interface GSCExchangeResult {
+  success: boolean;
+  connected?: boolean;
+  siteUrl?: string;
+  propertyAccessible?: boolean;
+  accessibleSites?: string[];
+  verificationState?: GscVerificationState;
+  verificationMessage?: string;
+  error?: string;
+}
+
+export interface GSCDiagnostics {
+  redirectUri: string;
+  redirectPath: string;
+  oauthConfigured: boolean;
+  connected: boolean;
+  siteUrl?: string;
+  verificationState?: GscVerificationState;
+  hasGrant: boolean;
+  storedRedirectUri: string | null;
+  redirectUriMatchesStored: boolean;
+}
+
+/** Self-check for the OAuth setup — surfaces the canonical redirect URI. */
+export async function fetchGSCDiagnostics(): Promise<GSCDiagnostics | null> {
+  try {
+    const res = await apiFetch('/api/gsc/diagnostics');
+    if (!res.ok) return null;
+    return (await res.json()) as GSCDiagnostics;
+  } catch {
+    return null;
+  }
+}
+
+/** Completes the OAuth grant by exchanging the callback's code + state. */
+export async function exchangeGSCCode(code: string, state: string): Promise<GSCExchangeResult> {
+  let res: Response;
+  try {
+    res = await apiFetch('/api/gsc/token-exchange', {
+      method: 'POST',
+      body: JSON.stringify({ code, state }),
+    });
+  } catch {
+    return { success: false, error: 'Backend unreachable — the OAuth grant could not be verified.' };
+  }
+  const payload: unknown = await res.json().catch(() => ({}));
+  const body = (payload || {}) as Omit<GSCExchangeResult, 'success'>;
+  if (!res.ok) {
+    return {
+      success: false,
+      ...body,
+      error: body.error || readErrorMessage(payload, `OAuth verification failed (HTTP ${res.status}).`),
+    };
+  }
+  return { success: true, ...body };
+}
+
+/** Clears the connection server-side. The caller re-reads status via
+ *  loadData() afterwards, so a transport failure still renders the truth. */
+export async function disconnectGSC(): Promise<void> {
+  try {
+    await apiFetch('/api/gsc/disconnect', { method: 'POST' });
+  } catch {
+    // Caller re-reads status and renders whatever the server reports.
+  }
+}
+
+/** Human-readable copy for the ?gsc_error= codes the OAuth callback emits. */
+export function describeGscOAuthError(code: string): string {
+  switch (code) {
+    case 'oauth_not_configured':
+      return 'Google OAuth is not configured. Enter a Client ID & Secret in the connect dialog, or set GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET on the server.';
+    case 'missing_state':
+      return 'The OAuth link was missing its workspace state. Start the connection from the connect dialog instead.';
+    case 'missing_code':
+      return 'Google did not return an authorization code. Try connecting again.';
+    case 'redirect_uri_unresolvable':
+      return "The server could not determine its own public URL, so no OAuth redirect URI could be minted. Set APP_URL on the server (e.g. APP_URL=http://localhost:8787) and reconnect.";
+    case 'redirect_uri_mismatch':
+      return 'Google rejected the redirect URI (redirect_uri_mismatch). Open the Connect dialog, copy the exact Redirect URI shown, add it under Google Cloud → APIs & Services → Credentials → your OAuth client → Authorized redirect URIs, then reconnect. The URI must match byte-for-byte (scheme, host, port and path).';
+    case 'access_denied':
+      return 'Authorization was declined on the Google consent screen. Grant Search Console access to continue.';
+    default:
+      return `Google OAuth returned an error: ${code}`;
+  }
 }
 
 /**
- * Generate realistic demo data for sigmatactix.com when no real GSC data is available.
+ * DEMO-ONLY fallback data for the disconnected state (rendered under the
+ * DEMO DATA badge). Never surface this under a LIVE badge or while the
+ * workspace reports an active GSC connection — awaiting/error states have
+ * their own explicit panels in SearchConsoleTrends.
  */
 export function generateDemoGSCData(dateRange: '7d' | '28d' | '90d' | '16m' = '28d'): GSCAnalyticsResponse {
   const days = dateRange === '7d' ? 7 : dateRange === '28d' ? 28 : dateRange === '90d' ? 90 : 480;

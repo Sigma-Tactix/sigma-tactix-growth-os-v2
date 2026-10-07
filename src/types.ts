@@ -12,6 +12,8 @@ export interface ConnectorCredentialsInput {
   clientId?: string;
   clientSecret?: string;
   accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
   developerToken?: string;
   accountId?: string;
   propertyId?: string;
@@ -406,6 +408,14 @@ export interface AgentTask {
   output: string;
   moduleKey?: string;
   priority?: 'critical' | 'high' | 'medium' | 'low';
+  /** Server-owned deterministic-render request. Only the approval route may execute it. */
+  creativeRender?: {
+    title: string;
+    subtitle?: string;
+    cta?: string;
+    aspectRatio: '16:9' | '9:16' | '1:1';
+    durationSeconds: number;
+  };
 }
 
 export interface TeamMember {
@@ -446,6 +456,43 @@ export interface AnalyticsAudit {
   }>;
 }
 
+// Google Search Console (SEO & AEO Authority module).
+//
+// Secrets stored in these structures (OAuth client pair, Google-granted
+// tokens) are always AES-256-GCM wrapped via credentialCrypto before they
+// reach the workspace blob — never raw (clinerules rule 4).
+export type GscVerificationState = 'configured' | 'verified' | 'failed';
+
+export interface GscOAuthClientConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface GscTokens {
+  accessToken: string;
+  refreshToken?: string;
+  /** ISO timestamp after which accessToken must be refreshed. */
+  expiresAt: string;
+  scope?: string;
+}
+
+export interface GscWorkspaceSettings {
+  connected: boolean;
+  siteUrl: string;
+  verificationState?: GscVerificationState;
+  verificationMessage?: string;
+  /** Single-use CSRF nonce minted at connect time for the OAuth grant. */
+  oauthState?: string;
+  /** Absolute callback URI captured from the connect request's origin. */
+  oauthRedirectUri?: string;
+  /** encryptCredentials({ clientId, clientSecret }) */
+  oauthClientEncrypted?: string;
+  /** encryptCredentials(GscTokens) */
+  tokensEncrypted?: string;
+  lastFetched?: string;
+  lastError?: string;
+}
+
 export interface WorkspaceSettings {
   technical: {
     customDomain: string;
@@ -456,6 +503,7 @@ export interface WorkspaceSettings {
   skills: Array<{ id: string; name: string; moduleKey: string; enabled: boolean; content?: string; fileName?: string }>;
   agentTeams?: Record<string, string[]>;
   plugins?: Array<{ id: string; name: string; enabled: boolean; moduleKey?: string; purpose?: string }>;
+  gsc?: GscWorkspaceSettings;
 }
 
 export interface SetupProgress {

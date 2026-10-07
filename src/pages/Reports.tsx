@@ -348,13 +348,13 @@ export default function Reports() {
         { name: 'Brand Vault (Messaging & Voice)', records: 124, status: '100% Encrypted' },
         { name: 'Authority Vault (Topical Maps & SEO)', records: 310, status: '100% Encrypted' }
       ]
-    }, `sigmatactix-${currentTemplate.id}-deck.pptx`);
+    }, `sigmatactix-${currentTemplate.id}-presentation.html`);
 
     setIsExporting(false);
     if (success) {
-      setExportFeedback('Executive Presentation Deck (PPTX) downloaded.');
-      notifySuccess('Deck Export Completed', 'Branded 6-slide PPTX presentation generated.');
-      setTimeout(() => setExportFeedback(null), 4000);
+      setExportFeedback('Interactive Presentation Deck generated and downloaded.');
+      notifySuccess('Lecture Deck Generated', 'Interactive presentation opened with speaker notes (N), overview (O) & print-to-PDF.');
+      setTimeout(() => setExportFeedback(null), 5000);
     }
   };
 
@@ -576,7 +576,7 @@ export default function Reports() {
                       className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
                     >
                       <FileJson size={14} className="text-[var(--sigma-vermilion)]" />
-                      <span>Presentation Deck (PPTX)</span>
+                      <span>Presentation Deck (HTML / PDF)</span>
                     </button>
                   </motion.div>
                 )}

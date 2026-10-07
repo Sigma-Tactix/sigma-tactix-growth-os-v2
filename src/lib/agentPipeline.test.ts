@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildScopedBrainContext } from "./agentPolicies.js";
-import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall } from "./agentTools.js";
+import { GROWTH_OS_AGENT_TOOLS, GROWTH_OS_OPENAI_TOOLS, executeAgentToolCall } from "./agentTools.js";
 import type { SecondBrain } from "../types.js";
 
 const mockBrain: SecondBrain = {
@@ -54,5 +54,49 @@ describe("Agentic OS Enhancements", () => {
       secondBrain: mockBrain,
     });
     expect(res.connectedPlatforms).toEqual(["Meta Ads", "Google Ads"]);
+  });
+
+  it("exports valid OpenAI-compatible tools including sandboxed tools", () => {
+    expect(Array.isArray(GROWTH_OS_OPENAI_TOOLS)).toBe(true);
+    expect(GROWTH_OS_OPENAI_TOOLS.length).toBeGreaterThanOrEqual(6);
+    const names = GROWTH_OS_OPENAI_TOOLS.map((t: any) => t.function.name);
+    expect(names).toContain("run_sandboxed_command");
+    expect(names).toContain("read_workspace_file");
+    expect(names).toContain("write_workspace_file");
+    expect(names).toContain("http_request");
+  });
+
+  it("executes write_workspace_file and read_workspace_file within workspace", async () => {
+    const testPath = "output/test_deliverable.txt";
+    const testContent = "Sigma Tactix Growth OS autonomous agent artifact verification.";
+
+    const writeRes = await executeAgentToolCall({
+      name: "write_workspace_file",
+      args: { filePath: testPath, content: testContent },
+    });
+    expect(writeRes.success).toBe(true);
+
+    const readRes = await executeAgentToolCall({
+      name: "read_workspace_file",
+      args: { filePath: testPath },
+    });
+    expect(readRes.content).toBe(testContent);
+  });
+
+  it("blocks path traversal outside workspace root", async () => {
+    const res = await executeAgentToolCall({
+      name: "read_workspace_file",
+      args: { filePath: "../../../etc/passwd" },
+    });
+    expect(res.error).toContain("Path traversal");
+  });
+
+  it("executes safe commands with run_sandboxed_command", async () => {
+    const res = await executeAgentToolCall({
+      name: "run_sandboxed_command",
+      args: { command: "echo 'hello from sandbox'" },
+    });
+    expect(res.stdout).toContain("hello from sandbox");
+    expect(res.success).toBe(true);
   });
 });

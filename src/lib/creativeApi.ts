@@ -5,7 +5,12 @@ export interface GenerateImageParams {
   prompt: string;
   aspectRatio?: '16:9' | '1:1' | '9:16' | '4:5';
   stylePreset?: string;
+  negativePrompt?: string;
   enhancePrompt?: boolean;
+  promptEnhancer?: 'none' | 'gemini' | 'ollama' | 'lmstudio';
+  enhancerModel?: string;
+  preferredProvider?: string;
+  modelId?: string;
 }
 
 export interface GenerateImageResult {
@@ -13,7 +18,42 @@ export interface GenerateImageResult {
   enhancedPrompt: string;
   aspectRatio: string;
   seed: number;
-  provider: 'pollinations' | 'imagen' | 'vector_renderer';
+  provider: string;
+  modelName?: string;
+  source?: string;
+  promptEnhancer?: string;
+}
+
+export interface GenerateVideoParams {
+  prompt: string;
+  aspectRatio?: '16:9' | '9:16' | '1:1';
+  durationSeconds?: number;
+  sourceImageUrl?: string;
+  stylePreset?: string;
+  motionIntensity?: 'subtle' | 'dynamic' | 'cinematic';
+  preferredProvider?: string;
+  modelId?: string;
+}
+
+export interface GenerateVideoResult {
+  videoUrl: string;
+  thumbnailUrl: string;
+  prompt: string;
+  aspectRatio: string;
+  durationSeconds: number;
+  provider: string;
+  modelName?: string;
+  source?: string;
+}
+
+export interface CreativeProviderStatus {
+  provider: string;
+  name: string;
+  configured: boolean;
+  active: boolean;
+  tier: string;
+  supportedModals: string[];
+  description: string;
 }
 
 export interface GenerateSocialParams {
@@ -34,85 +74,73 @@ export interface GenerateSocialResult {
   loopCta?: string;
   hashtags?: string[];
   rawMarkdown?: string;
+  source?: 'gemini';
 }
 
-// Preset style descriptions for high-octane B2B aesthetics
-const PRESET_ENHANCERS: Record<string, string> = {
-  '3D_DATA_NEURAL': '3D isometric data neural architecture, glowing golden amber and magma vectors, glossy obsidian glass pedestal, holographic telemetry HUD, 8k resolution, cinematic Octane render, raytracing, dark navy-black studio background #09090b',
-  'CYBER_SCHEMATIC': 'Technical engineering schematic blueprint, crisp amber laser lines, wireframe nodes, ISO-9001 precision, architectural typography, glowing circuit vectors, clean mathematical precision, dark slate background',
-  'MINIMAL_STUDIO': 'Minimalist luxury studio product photography, elegant metallic amber and brushed obsidian surfaces, soft dramatic rim lighting, shallow depth of field, Hasselblad medium format, ultra-refined executive aesthetic',
-  'CORPORATE_POLISHED': 'High-end B2B corporate editorial aesthetic, modern glass skyscraper atrium with glowing data infographics, crisp lighting, high contrast, Fortune 50 executive boardroom standard, Forbes cover quality'
-};
+export interface BrandCreativeStylePreset {
+  id: string;
+  label: string;
+  desc: string;
+  source: 'brand_vault' | 'sigma_default';
+}
 
-export async function generateCreativeImage(params: GenerateImageParams): Promise<GenerateImageResult> {
+export async function getCreativeProvidersStatus(): Promise<CreativeProviderStatus[]> {
   try {
-    const res = await apiFetch('/api/creative/generate-image', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
-
+    const res = await apiFetch('/api/creative/providers/status');
     if (res.ok) {
       const data = await res.json();
-      if (data.imageUrl) {
-        return data;
+      if (Array.isArray(data.providers)) {
+        return data.providers;
       }
     }
   } catch (err) {
-    console.warn('Backend image endpoint unavailable, synthesizing via direct client engine:', err);
+    console.warn('Failed to fetch creative providers status:', err);
   }
+  return [];
+}
 
-  // Resilient direct synthesis fallback:
-  // Use Pollinations AI with enhanced prompt and exact aspect ratio dimensions
-  const presetAddon = PRESET_ENHANCERS[params.stylePreset || '3D_DATA_NEURAL'] || PRESET_ENHANCERS['3D_DATA_NEURAL'];
-  const fullPrompt = params.enhancePrompt !== false
-    ? `${params.prompt.trim()}, ${presetAddon}`
-    : params.prompt.trim();
+export async function generateCreativeImage(params: GenerateImageParams): Promise<GenerateImageResult> {
+  const res = await apiFetch('/api/creative/generate-image', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.imageUrl) throw new Error(data.error || 'Image generation is unavailable. Configure a verified provider and try again.');
+  return data;
+}
 
-  let width = 1280;
-  let height = 720;
-  if (params.aspectRatio === '1:1') {
-    width = 1024;
-    height = 1024;
-  } else if (params.aspectRatio === '9:16') {
-    width = 720;
-    height = 1280;
-  } else if (params.aspectRatio === '4:5') {
-    width = 1024;
-    height = 1280;
-  }
+export async function generateCreativeVideo(params: GenerateVideoParams): Promise<GenerateVideoResult> {
+  const res = await apiFetch('/api/creative/generate-video', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.videoUrl) throw new Error(data.error || 'Generative video is unavailable. Use an approved HyperFrames render or configure a verified video provider.');
+  return data;
+}
 
-  const seed = Math.floor(Math.random() * 999999);
-  const encodedPrompt = encodeURIComponent(fullPrompt);
-  const directUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
-
-  return {
-    imageUrl: directUrl,
-    enhancedPrompt: fullPrompt,
-    aspectRatio: params.aspectRatio || '16:9',
-    seed,
-    provider: 'pollinations'
-  };
+export async function queueDeterministicRender(params: { title: string; subtitle?: string; cta?: string; aspectRatio?: '16:9' | '9:16' | '1:1'; durationSeconds?: number }) {
+  const res = await apiFetch('/api/workspace/creative/renders', { method: 'POST', body: JSON.stringify(params) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not queue deterministic render.');
+  return data as { success: true; task: { id: string; status: string } };
 }
 
 export async function generateSocialCampaign(params: GenerateSocialParams): Promise<GenerateSocialResult> {
-  try {
-    const res = await apiFetch('/api/creative/generate-social', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+  const res = await apiFetch('/api/creative/generate-social', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.result) throw new Error(data.error || 'Social generation did not return a provider-backed result.');
+  return { ...data.result, source: data.source };
+}
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.result) {
-        return data.result;
-      }
-    }
-  } catch (err) {
-    console.warn('Backend social endpoint unavailable, generating via intelligent framework:', err);
-  }
-
-  // High-fidelity fallback generation using Sigma Tactix growth formulas
-  return generateFallbackSocialCampaign(params);
+export async function getBrandCreativeStylePresets(): Promise<BrandCreativeStylePreset[]> {
+  const res = await apiFetch('/api/creative/brand-style-presets');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !Array.isArray(data.presets)) throw new Error(data.error || 'Could not load Brand Vault style presets.');
+  return data.presets;
 }
 
 function generateFallbackSocialCampaign(params: GenerateSocialParams): GenerateSocialResult {
@@ -413,4 +441,66 @@ Which slide hit closest to home? Drop a comment below 👇
     threadTweets,
     hashtags: ['#GrowthOS', '#B2BTech', '#AIAgents', '#SigmaTactix']
   };
+}
+
+/**
+ * Export a generated creative social result (carousel or thread) to an interactive Lecture Deck
+ * Powered by RinDig/lecture-deck-skill with Sigma Tactix theme.
+ */
+export async function exportCreativeLectureDeck(
+  result: GenerateSocialResult,
+  options: { mode?: 'view' | 'download' | 'both'; filename?: string; theme?: string } = {}
+): Promise<{ success: boolean; viewUrl?: string; downloadUrl?: string; deckId?: string }> {
+  try {
+    const mode = options.mode || 'both';
+    const res = await fetch('/api/reports/deck/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reportData: {
+          topic: result.topic,
+          channel: result.channel,
+          hook: result.hook,
+          slides: result.slides,
+          threadTweets: result.threadTweets,
+          loopCta: result.loopCta || 'Bookmark this presentation and implement today.',
+        },
+        type: 'creative',
+        theme: options.theme || 'sigmatactix',
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}: ${await res.text()}`);
+    }
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to generate creative lecture deck');
+    }
+
+    if (mode === 'view' || mode === 'both') {
+      window.open(data.viewUrl, '_blank');
+    }
+
+    if (mode === 'download' || mode === 'both') {
+      const link = document.createElement('a');
+      link.href = data.downloadUrl;
+      link.download = options.filename || data.filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    return {
+      success: true,
+      viewUrl: data.viewUrl,
+      downloadUrl: data.downloadUrl,
+      deckId: data.deckId,
+    };
+  } catch (err) {
+    console.error('Error exporting creative lecture deck:', err);
+    return { success: false };
+  }
 }

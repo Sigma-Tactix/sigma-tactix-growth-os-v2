@@ -1,8 +1,101 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-10-04
-> **Version**: v0.2.4-dev (Mission Execution Control Plane First Slice)
-> **Status**: Pre-release (Governed Integration & Managed Loop Transition); local implementation verified with passing test suites and production build; commercial launch strategy pivoted from broad self-serve to a **Managed Growth Intelligence Loop** targeting $50,000 MRR across 6 lighthouse clients; 6 P0 launch blockers actively tracked.
+> **Last updated**: 2026-10-07
+> **Version**: v0.2.7-dev (Open-Source Agent Ecosystem & ReAct Multi-Provider Execution)
+> **Status**: Pre-release (Governed Integration & Managed Loop Transition); local implementation verified with clean lint (`tsc --noEmit` 0 errors); TinyFish Web Intelligence & MiroFish Market Simulation operationalized with dynamic runtime verification, deterministic fixture adapters, and mounted domain routes (`/api/workspace/web-intelligence`, `/api/workspace/market-simulations`); Google Search Console integration rebuilt as truthful (auth-gated API, real OAuth grant, honest LIVE/DEMO/awaiting/error states); commercial launch strategy pivoted from broad self-serve to a **Managed Growth Intelligence Loop** targeting $50,000 MRR across 6 lighthouse clients.
+
+## TinyFish Web Intelligence & MiroFish Market Simulation Operationalization — 2026-10-07
+
+- **Subsystem Audit & Resolution:**
+  - Audited reason for `setup-required` and unconfigured status across capability registry and growth strategies: missing `.env` variables (`TINYFISH_API_KEY`, `MIROFISH_BASE_URL`, `MIROFISH_SERVICE_TOKEN`, `MIROFISH_LICENSING_APPROVED`) combined with static unverified states in initial adapter stubs.
+  - Added dynamic runtime handshake/verification (`verify()` method) to both `TinyFishWebIntelligenceAdapter` and `MiroFishMarketSimulationAdapter`.
+  - Added `FixtureWebIntelligenceAdapter` (`src/server/providers/webIntelligence/fixtureAdapter.ts`) and `FixtureMarketSimulationAdapter` (`src/server/providers/marketSimulation/fixtureAdapter.ts`) for deterministic development, testing, and offline sandbox execution without incurring third-party API costs or bypassing AGPL private gateway boundaries.
+  - Implemented modular Express routers:
+    - `src/server/routes/webIntelligenceRoutes.ts`: `/capabilities`, `/verify`, `/search`, `/fetch` (with query validation, bounded limits, and private network SSRF protection).
+    - `src/server/routes/marketSimulationRoutes.ts`: `/capabilities`, `/verify`, `/simulations` (with scenario pack validation and persona report generation).
+  - Mounted routers under `/api/workspace` in `server.ts` protected by `requireAuth` and `expensiveLimiter`.
+- **Verification:**
+  - `tsc --noEmit`: 0 errors.
+  - Vitest test suites: 100% green across 6 provider and route test files (22 tests passed):
+    - `src/server/providers/webIntelligence/tinyFishAdapter.test.ts` (4 passed)
+    - `src/server/providers/marketSimulation/miroFishAdapter.test.ts` (3 passed)
+    - `src/server/routes/webIntelligenceRoutes.test.ts` (4 passed)
+    - `src/server/routes/marketSimulationRoutes.test.ts` (3 passed)
+    - `src/lib/capabilityRegistry.test.ts` (4 passed)
+    - `src/lib/growthStrategy.test.ts` (4 passed)
+
+## Google Search Console Truthful Integration & Connector Hub — 2026-10-07
+
+- **Root cause of "Demo Data after connecting GSC" (4-defect chain, confirmed):**
+  2. Popups faked success: `SearchConsoleTrends.handleConnectDirect` never checked `res.ok` (its catch toasted "GSC Connected (Simulated Live)"); `SeoAeoPage.handleConnectGsc` was a `setTimeout` that never called the API while `isGscConnected` defaulted to `true`.
+  3. `/api/gsc/analytics` did not exist — live data was structurally impossible and demo numbers could render under a LIVE badge.
+  4. `/api/gsc/auth` + `/api/gsc/callback` were fake redirects bouncing `gsc_connected=true` without persisting anything.
+- **Fix (server):** GSC data routes behind `requireAuth` (RLS-safe); new `GET /api/gsc/analytics` runs real `searchAnalytics/query` with four honest outcomes (409 not connected / `awaiting_grant` / `fetch_failed` / live payload); real OAuth 2.0 flow — `POST /api/gsc/connect` mints CSRF `state` + returns the Google consent URL, public `/api/gsc/callback` bounces code+state only (no DB write), authenticated `POST /api/gsc/token-exchange` exchanges the code, verifies `sites.list` property access, stores tokens **AES-256-GCM** via `credentialCrypto`, refreshes expired access tokens.
+- **Fix (module):** new deep module `src/lib/gscService.ts` (structured settings + legacy flat-field migration, encrypted secret storage, OAuth plumbing, impression-weighted aggregation) plus typed `GscWorkspaceSettings` on `WorkspaceData.settings`.
+- **Fix (client):** `fetchGSCAnalytics` now returns a discriminated `live | disconnected | awaiting | error` result — demo numbers render ONLY for disconnected (DEMO DATA badge); awaiting/error render explicit panels; `SeoAeoPage` connection state is server-owned; both connect handlers toast only on server-confirmed outcomes; OAuth return params (`gsc_code/gsc_state/gsc_error`) are exchanged once and cleaned from the URL.
+- **Connector Hub:** added the `Google Search Console` entry to `libraryConnectors` (`DataSources.tsx`, category `reporting`, Authority Vault) — backend plumbing already existed (`ConnectorPlatform`, `connectorLifecycle` requirement, `pipelineVerification` mapping, `testGoogleSearchConsoleConnection` adapter).
+- **Config:** `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` documented in `.env.example` (redirect URI `${APP_URL}/api/gsc/callback`, Search Console API must be enabled); a popup-supplied client pair takes precedence and is stored encrypted.
+- **Verification:** `tsc --noEmit` clean; Vitest 69/70 files (474/475) with new `src/lib/gscService.test.ts` at 22/22; live endpoint checks confirmed all `/api/gsc/*` data routes answer 401 JSON unauthenticated, `/api/gsc/auth` answers an honest `gsc_error=oauth_not_configured` redirect, and the callback performs the code/state bounce.
+
+## GSC OAuth redirect_uri_mismatch Robustness Fix — 2026-10-07
+
+- **Root cause of "Error 400: redirect_uri_mismatch" after pasting OAuth Client ID/Secret (confirmed):** `/api/gsc/connect` minted the redirect URI from the per-request origin (`resolveRequestOrigin(req)` → `Origin` header / host), so the URI sent to Google changed with the serving context (dev port vs. `APP_URL` vs. proxy host) and never matched the single URI whitelisted in Google Cloud → Credentials → Authorized redirect URIs. Google compares `redirect_uri` byte-for-byte at both authorize and token-exchange time, so any drift is a hard 400.
+- **Fix (canonical URI):** new `resolveGscAppOrigin()` / `resolveGscRedirectUri()` in `gscService.ts` — precedence `APP_URL` → `APP_ORIGIN` → `PUBLIC_APP_URL` env (deployment truth), falling back to the request origin in dev; `MY_*` placeholders never accepted. `POST /api/gsc/connect` mints, stores (`oauthRedirectUri`), and returns the canonical URI; `POST /api/gsc/token-exchange` reuses the STORED value (canonical fallback only for pre-fix grants) and answers 503 honestly when unresolvable; `GET /api/gsc/auth` uses the same helper; `disconnect` clears the stored URI so it cannot go stale; exchange failures matching `redirect_uri_mismatch` surface the exact stored URI in the error text.
+- **Fix (self-diagnostics):** new authed `GET /api/gsc/diagnostics` reports `redirectUri`, `oauthConfigured`, grant state, stored URI and match flag; `GET /api/gsc/status` and `POST /api/gsc/connect` now echo `redirectUri`; `describeGscOAuthError()` covers `redirect_uri_mismatch` + `redirect_uri_unresolvable`.
+- **Fix (dialog UX):** Connect dialog shows a "Step 0 — Whitelist this Redirect URI" panel with the server-reported exact URI + Copy button (refreshed whenever the dialog opens and after connect); both disconnected-state CTAs refresh it; `SeoAeoPage.handleConnectGsc` preserves the echoed URI.
+- **Config:** `.env.example` documents the canonical-origin precedence, the byte-for-byte whitelist rule, and that dev `APP_URL` must equal the actual serving origin (`http://localhost:3000`, port-correct).
+- **Verification:** `tsc --noEmit` clean; `gscService.test.ts` 27/27 (incl. 5 canonical-URI tests); live checks — `/healthz` 200, unauth `/api/gsc/diagnostics` 401, `/api/gsc/auth` without state → honest `gsc_error=oauth_not_configured` redirect; full suite 488/489 (single failure is the pre-existing `decisionEngine.test.ts` env-dependent test, unrelated).
+
+
+## Open-Source Agent Ecosystem & ReAct Multi-Provider Execution — 2026-10-07
+
+- **Agent Execution Overhaul (OpenDots / OpenBot Alignment):**
+  - Replaced legacy pseudo-execution (single prompt call with unwired tools) in `server.ts` (`executeAgentTaskInner`) with a true multi-turn autonomous ReAct execution loop (`executeAgentReActLoop` in `src/lib/aiProvider.ts`).
+  - Activated real sandboxed tools in `src/lib/agentTools.ts`:
+    - `run_sandboxed_command`: Safe command execution with policy guards against destructive commands, routing to OpenBot container supervisor when active or local workspace sandbox.
+    - `read_workspace_file`: Secure workspace file reader with path traversal protection.
+    - `write_workspace_file`: Delivers artifacts, reports, and code directly into workspace files.
+    - `http_request`: Direct HTTP fetch / scraping tool.
+    - `fetch_site_content`, `search_second_brain`, `get_connector_status`.
+  - Added OpenAI-compatible tool declarations (`GROWTH_OS_OPENAI_TOOLS`) for standard function calling across local and cloud LLMs.
+- **Hybrid Local & Cloud Model Routing:**
+  - Implemented `src/lib/aiProvider.ts` supporting local models via Ollama (`http://localhost:11434/v1`) and LM Studio (`http://localhost:1234/v1`), OpenAI, and Google Gemini with automatic fallback.
+  - Zero-cost token tracking for local models with accurate usage telemetry recording.
+- **Apple Silicon Lightweight Sandboxing:**
+  - Added `compose.computers.yml` targeting [OpenBot](https://github.com/CopilotKit/OpenBot)'s container supervisor (port 4312) with native support for **OrbStack** (and Colima), eliminating Docker Desktop battery/RAM bloat.
+- **Verification:**
+  - `npm run lint` (`tsc --noEmit`): 0 errors across entire codebase.
+  - Vitest test suite: 100% green across all 69 test files (453 tests passed).
+
+## Agent Skills Architecture & Search Registry — 2026-10-06
+
+- **Context Optimization & Skills Separation:**
+  - Audited 28 workspace skills in `.agents/skills/` to eliminate prompt token bloat and context budget saturation.
+  - **20 Active Skills Kept:** Core engineering, architecture, testing, research, and governance workflows (`agent-reach`, `codebase-design`, `domain-modeling`, `improve-codebase-architecture`, `wayfinder`, `prototype`, `research`, `code-review`, `diagnosing-bugs`, `tdd`, `resolving-merge-conflicts`, `triage`, `implement`, `to-spec`, `to-tickets`, `handoff`, `grilling`, `wizard`, `writing-for-agents`, `master-context-sync`).
+  - **8 Non-Essential Skills Archived:** Moved to `.agents/skills-archive/` (`ask-matt`, `grill-me`, `grill-with-docs`, `lecture-deck`, `setup-matt-pocock-skills`, `teach`, `to-questionnaire`, `wait-what`).
+  - Updated `.agents/agentic.json` subagents (`agent-trainer`, `delivery-lead`) to reference strictly active, verified skills.
+- **Unified Search & Retrieval Subsystem:**
+  - Generated `.agents/skills-catalog.json` and human/agent-readable [`.agents/SKILLS_INDEX.md`](./.agents/SKILLS_INDEX.md).
+  - Implemented `scripts/skillsManager.mjs` CLI supporting `search <query>`, `list`, `restore <skill>`, and `archive <skill>`.
+  - Added npm scripts to `package.json`: `skills:search`, `skills:list`, `skills:restore`, `skills:archive`.
+  - Upgraded Admin UI `ProductionSkillsMCPTab.tsx` with a dual-mode Skills Registry supporting interactive keyword search, category filtering, Active (20) vs. Archived (8) views, and one-click copyable CLI commands.
+- **Verification:** `tsc --noEmit` clean (0 errors), Vitest suite 100% green (65 test files / 438 tests pass).
+
+## Creative Center Multi-Provider Gateway & Video Motion Engine — 2026-10-05
+
+- `src/server/providers/creative/creativeGateway.ts` implements a multi-provider gateway mesh supporting:
+  - Hugging Face Inference API (`HF_TOKEN`) for native `black-forest-labs/FLUX.1-schnell` and open video models (`CogVideoX`, `LTX-Video`).
+  - Cloudflare Workers AI (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) for edge FLUX rendering (10,000 neurons/day free tier).
+  - Google AI Studio (`GEMINI_API_KEY`) for Imagen 3 enterprise graphics.
+  - Zero-key community fallback via `pollinations.ai` with B2B style presets (`3D_DATA_NEURAL`, `CYBER_SCHEMATIC`, etc.) and aspect ratio mapping (16:9, 1:1, 9:16, 4:5).
+- Endpoints registered in `server.ts`:
+  - `GET /api/creative/providers/status`: Live gateway availability telemetry.
+  - `POST /api/creative/generate-image`: High-res static visual synthesis with token metering (`CREATIVE_IMAGE`).
+  - `POST /api/creative/generate-video`: 9:16 vertical motion video generation (3s, 5s, 8s clips) with token metering (`CREATIVE_VIDEO`).
+- UI Modules upgraded:
+  - `ImageStudioPage.tsx`: Live provider status ribbon, Static vs. 9:16 Motion Video mode toggle, HTML5 video player viewport with loop playback.
+  - `ContentEnginePage.tsx`: YouTube Shorts section now features one-click "Render Scene 1 Video" with instant vertical video player preview.
+- Tested: 6 new unit tests in `src/server/providers/creative/creativeGateway.test.ts` (suite total: 63 files / 427 tests all green).
 
 ### Mission Execution Control Plane — 2026-10-04 (LOCAL CONTROL PLANE SLICE — TARGET DATABASE VERIFIED)
 
@@ -501,6 +594,8 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | Oct 2 | `1790884878029_6b0ou` follow-up UI/UX audit | Reproduced onboarding, top-bar, light-theme Ecosystem, responsive Reports, typography, and unsupported-claim defects in the live local browser; created an implementation-ready Markdown and DOCX plan. No product remediation or release certification completed. |
 | Oct 3 | UI/UX production-polish first slice | Implemented blank manual-or-file onboarding with review-gated file suggestions, truthful browser-local workspace status, compact Playbook dropdown, bundled IBM Plex fonts, light-theme Ecosystem empty state, overlay behavior, and removal of fabricated Dashboard health/activity claims. Targeted tests and production build passed; durable server-side multi-workspace onboarding and full route acceptance remain open. |
 | Oct 4 | Mission execution control plane first slice | Added `DispatchPlan`, mission/plan/sub-agent task identity, bounded multi-node execution for explicitly dispatched VANTA plans, parent/child pipeline ledger lineage, migration `0018_mission_execution_hierarchy.sql`, VANTA proposal plans, the explicit VANTA-to-task dispatch route, and the transcript confirmation affordance. Local lint and 62-file/421-test suite pass; the configured database migration is verified, while other environments and browser acceptance remain open. |
+| Oct 6 | Lecture Deck Engine Integration | Cloned RinDig/lecture-deck-skill into `tools/lecture-deck-skill` and registered as workspace agent skill `.agents/skills/lecture-deck`; authored sovereign dark `sigmatactix.json` theme; created `generate_from_report.py` bridge adapter; registered `/api/reports/deck/generate`, `/view`, and `/download` endpoints in `server.ts`; upgraded `exportService.toPPTX` and `exportService.toLectureDeck` across `Reports.tsx`, `Dashboard.tsx`, `ContentEnginePage.tsx`, and `creativeApi.ts`. |
+| Oct 7 | GSC Truthful Integration | Diagnosed the 4-defect chain behind "Demo Data after connecting GSC"; put `/api/gsc/*` behind `requireAuth`, added real `/api/gsc/analytics` + OAuth code flow (state CSRF, AES-256-GCM token vault, `sites.list` verification), honest live/disconnected/awaiting/error states in `SearchConsoleTrends.tsx` & `SeoAeoPage.tsx`, added Google Search Console to the Connector Hub catalog, created `src/lib/gscService.ts` + 22 regression tests, documented `GOOGLE_OAUTH_CLIENT_ID/SECRET`. |
 
 ---
 
@@ -515,6 +610,8 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 7. **Token Cost Specificity**: Model name matching must sort descending by length to avoid prefix collisions (e.g. `o1` matching `o1-mini`).
 8. **Theme Token Standard**: Always use `sigma-*` utility classes for components to respect the dynamic light/dark theme system.
 9. **UI Claim Contract**: User-visible metrics and states must identify measured, provider-reported, user-confirmed, estimate, benchmark, simulation, stale, unavailable, or failed status. Words such as live, verified, operational, secure, isolated, and production-ready require evidence.
+10. **GSC Live-Data Prerequisite**: Real Search Console numbers require a Google OAuth client — the env pair (`GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`, redirect URI `${APP_ORIGIN}/api/gsc/callback`, Search Console API enabled) or a pair entered in the Connect GSC dialog (stored AES-256-GCM, takes precedence). Until the grant completes the module intentionally shows the explicit "awaiting OAuth" panel — never demo numbers under a LIVE badge.
+11. **Local decisionEngine Test Fail**: `decisionEngine.test.ts` ("makes no network call when unconfigured") fails locally when `.env` sets `LAYA_BASE_URL` — the engine then treats LAYA as configured and attempts a fetch. Pre-existing env-dependent failure; unrelated to GSC work.
 
 ---
 

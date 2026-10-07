@@ -43,7 +43,9 @@ import {
   Video,
   Share2,
   FileText,
-  Wifi
+  Wifi,
+  Trophy,
+  Swords
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -89,12 +91,14 @@ const navSections: NavSection[] = [
       { label: 'Editorial Content Engine', href: '/content', icon: FileText, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'Social & Carousels', href: '/social-carousels', icon: Share2, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'LinkedIn' },
       { label: 'AI Creative Image Studio', href: '/image-studio', icon: ImageIcon, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Flux Pro' },
-      { label: 'Video & Motion Studio', href: '/video-studio', icon: Video, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Remotion' },
+      { label: 'Video & Motion Studio', href: '/video-studio', icon: Video, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'HyperFrames' },
       { label: 'Email & Lifecycle', href: '/email-marketing', icon: Mail, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'CRO & Landing Pages', href: '/cro-studio', icon: Target, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'Inbound Leads & WhatsApp', href: '/intake', icon: Zap, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Sub-60s' },
       { label: 'Cold Outreach & ABM', href: '/outreach', icon: Send, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'Social Listening & Radar', href: '/social-listening', icon: Ear, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
+      { label: 'Competitor Intelligence', href: '/competitors', icon: Trophy, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'TinyFish' },
+      { label: 'Market Simulator', href: '/market-simulator', icon: Swords, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'MiroFish' },
       { label: 'Attribution & Blended CAC', href: '/attribution', icon: BarChart3, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
     ]
   },

@@ -45,7 +45,7 @@ import {
   SocialCampaignData
 } from '@/src/data/marketingModulesData';
 import CarouselCardViewer from '@/src/components/CarouselCardViewer';
-import { generateCreativeImage, generateSocialCampaign } from '@/src/lib/creativeApi';
+import { generateCreativeImage, generateSocialCampaign, queueDeterministicRender, exportCreativeLectureDeck } from '@/src/lib/creativeApi';
 import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
 
 const DEMO_DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
@@ -247,17 +247,9 @@ export default function ContentEnginePage() {
   const [imageStyle, setImageStyle] = useState<'3D_DATA_NEURAL' | 'CYBER_SCHEMATIC' | 'MINIMAL_STUDIO' | 'CORPORATE_POLISHED'>('3D_DATA_NEURAL');
   const [enhancePrompt, setEnhancePrompt] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState('https://image.pollinations.ai/prompt/Enterprise%20Second%20Brain%20data%20core%20glowing%20amber%20vaults%20obsidian%20space%203D%20isometric?width=1280&height=720&seed=48291&nologo=true');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [activeEnhancedPrompt, setActiveEnhancedPrompt] = useState('');
-  const [imageHistory, setImageHistory] = useState<GeneratedImageRecord[]>([
-    {
-      url: 'https://image.pollinations.ai/prompt/Enterprise%20Second%20Brain%20data%20core%20glowing%20amber%20vaults%20obsidian%20space%203D%20isometric?width=1280&height=720&seed=48291&nologo=true',
-      prompt: 'Enterprise Second Brain data core with 10 glowing vaults',
-      ratio: '16:9',
-      style: '3D_DATA_NEURAL',
-      timestamp: 'Initial Seed'
-    }
-  ]);
+  const [imageHistory, setImageHistory] = useState<GeneratedImageRecord[]>([]);
 
   // Video Storyboard State
   const [videoTopic, setVideoTopic] = useState('60-second agency replacement breakdown');
@@ -272,6 +264,8 @@ export default function ContentEnginePage() {
   const [socialTone, setSocialTone] = useState('Authoritative, empirical, anti-slop, engineering-grade');
   const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
   const [socialViewMode, setSocialViewMode] = useState<'CARDS' | 'COPY'>('CARDS');
+  const [renderedShortsVideo, setRenderedShortsVideo] = useState<{ url: string; sceneIdx: number } | null>(null);
+  const [isRenderingShortsVideo, setIsRenderingShortsVideo] = useState(false);
 
   // Active Social Campaign Data
   const [activeCampaign, setActiveCampaign] = useState<SocialCampaignData>({
@@ -357,7 +351,7 @@ The future belongs to founders who own their intelligence engine rather than ren
       setImageHistory(prev => [record, ...prev.slice(0, 7)]);
       notifySuccess(
         'Visual Creative Synthesized', 
-        `Rendered high-res asset in ${imageRatio} format with ${imageStyle.replace(/_/g, ' ')} aesthetic.`
+        `Generated with verified provider ${result.provider} in ${imageRatio} format.`
       );
     } catch (err: any) {
       console.error('Image synthesis error:', err);
@@ -426,11 +420,31 @@ The future belongs to founders who own their intelligence engine rather than ren
 
   // Video Storyboard Generation Handler
   const handleGenerateVideoStoryboard = () => {
-    setIsGeneratingVideo(true);
-    setTimeout(() => {
-      setIsGeneratingVideo(false);
-      notifySuccess('Video Storyboard Generated', 'Generated 4-scene video script with visual direction, motion prompts, and voiceover.');
-    }, 1200);
+    // The storyboard cards are a template, not generated evidence. Keep this
+    // interaction honest until an approved render task has produced an MP4.
+    notifyInfo('Storyboard ready for review', 'Review the scene directions, then render an approved scene through the HITL queue.');
+  };
+
+  const handleRenderShortsScene = async (sceneIndex: number = 0) => {
+    const scenes = activeCampaign.shortsScenes || DEFAULT_SHORTS_SCENES;
+    const scene = scenes[sceneIndex];
+    if (!scene) return;
+
+    setIsRenderingShortsVideo(true);
+    try {
+      const queued = await queueDeterministicRender({
+        title: scene.screenText || activeCampaign.topic,
+        subtitle: `${scene.visualDirection}. Topic: ${activeCampaign.topic}`,
+        cta: 'SIGMA TACTIX',
+        aspectRatio: '9:16',
+        durationSeconds: 5,
+      });
+      notifySuccess('Render queued for approval', `Scene #${sceneIndex + 1} is task ${queued.task.id}. An owner/admin must approve it before HyperFrames creates the MP4.`);
+    } catch (err: any) {
+      notifyError('Render Failed', err.message || 'Could not synthesize shorts scene.');
+    } finally {
+      setIsRenderingShortsVideo(false);
+    }
   };
 
   const handleCopyContent = (text: string, title = 'Content') => {
@@ -460,7 +474,7 @@ The future belongs to founders who own their intelligence engine rather than ren
               <Badge variant="neutral">NEXUS-03 SWARM</Badge>
               <span className="text-zinc-600 text-xs">•</span>
               <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Live Creative Synthesis Active
+                <ShieldCheck className="w-3.5 h-3.5" /> Provider verification required
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -712,15 +726,33 @@ The future belongs to founders who own their intelligence engine rather than ren
                       <span className="text-xs font-mono font-bold text-zinc-300 uppercase">
                         Slide-by-Slide Markdown Outline
                       </span>
-                      <button
-                        onClick={() => {
-                          const outline = activeCampaign.slides?.map(s => `SLIDE ${s.slideNumber}: ${s.title}\n${(s.contentPoints || []).map(p => `• ${p}`).join('\n')}\nTakeaway: ${s.takeaway || ''}`).join('\n\n') || '';
-                          handleCopyContent(outline, 'Slide Outline');
-                        }}
-                        className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
-                      >
-                        <Copy className="w-3 h-3" /> Copy Outline
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            if (!activeCampaign.slides) return;
+                            await exportCreativeLectureDeck({
+                              channel: 'LinkedIn',
+                              topic: activeCampaign.topic || 'Social Presentation',
+                              hook: activeCampaign.hook || activeCampaign.slides[0]?.title || 'Key Insights',
+                              slides: activeCampaign.slides,
+                              loopCta: 'Sovereign Growth Intelligence by Sigma Tactix.'
+                            }, { mode: 'both' });
+                          }}
+                          className="px-3 py-1 bg-[var(--sigma-vermilion)]/20 hover:bg-[var(--sigma-vermilion)]/30 text-[var(--sigma-vermilion)] border border-[var(--sigma-vermilion)]/40 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer font-medium"
+                          title="Open animated presenter view & download standalone HTML presentation"
+                        >
+                          <Play className="w-3 h-3" /> Present / Export Deck
+                        </button>
+                        <button
+                          onClick={() => {
+                            const outline = activeCampaign.slides?.map(s => `SLIDE ${s.slideNumber}: ${s.title}\n${(s.contentPoints || []).map(p => `• ${p}`).join('\n')}\nTakeaway: ${s.takeaway || ''}`).join('\n\n') || '';
+                            handleCopyContent(outline, 'Slide Outline');
+                          }}
+                          className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy className="w-3 h-3" /> Copy Outline
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-4 bg-black/60 border border-zinc-800 rounded-xl font-mono text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-[380px] overflow-y-auto space-y-4">
@@ -763,6 +795,14 @@ The future belongs to founders who own their intelligence engine rather than ren
 
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handleRenderShortsScene(0)}
+                      disabled={isRenderingShortsVideo}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs flex items-center gap-1.5 cursor-pointer font-medium shadow-md shadow-amber-600/20 disabled:opacity-50"
+                    >
+                      {isRenderingShortsVideo ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                      {isRenderingShortsVideo ? 'Queueing...' : 'Queue Scene 1 Render'}
+                    </button>
+                    <button
                       onClick={() => {
                         const fullScript = (activeCampaign.shortsScenes || DEFAULT_SHORTS_SCENES).map(s => (
                           `[${s.timeCode}]\nVISUAL: ${s.visualDirection}\nSFX: ${s.sfxCue}\nTEXT ON SCREEN: ${s.screenText}\nVOICEOVER: "${s.voiceover}"`
@@ -788,6 +828,40 @@ The future belongs to founders who own their intelligence engine rather than ren
                     </div>
                   </div>
                 </div>
+
+                {/* Rendered Video Preview */}
+                {renderedShortsVideo && (
+                  <div className="p-4 bg-black/70 border border-amber-500/40 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+                    <video
+                      src={renderedShortsVideo.url}
+                      controls
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full max-w-[180px] h-auto rounded-lg border border-amber-500/30 shadow-lg"
+                    />
+                    <div className="space-y-1.5 text-xs text-zinc-300">
+                      <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" /> Scene #{renderedShortsVideo.sceneIdx + 1} Video Preview
+                      </div>
+                      <p className="text-zinc-400 text-[11px]">
+                        Synthesized 9:16 vertical video draft aligned with 0-3s pattern interrupt visual cues.
+                      </p>
+                      <div className="pt-1 flex items-center gap-2">
+                        <a
+                          href={renderedShortsVideo.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          download
+                          className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-medium flex items-center gap-1"
+                        >
+                          <Download className="w-3 h-3" /> Download Scene Video
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Scene Timeline Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

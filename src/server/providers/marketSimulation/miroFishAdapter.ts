@@ -4,6 +4,7 @@ interface MiroFishOptions {
   baseUrl?: string;
   serviceToken?: string;
   licensingApproved?: boolean;
+  verified?: boolean;
 }
 
 function assertPrivateServiceUrl(raw: string): string {
@@ -22,12 +23,32 @@ export class MiroFishMarketSimulationAdapter implements MarketSimulationProvider
   private readonly baseUrl: string;
   private readonly serviceToken: string;
   private readonly licensingApproved: boolean;
+  private isVerified: boolean;
 
   constructor(options: MiroFishOptions = {}) {
     const configuredUrl = (options.baseUrl ?? process.env.MIROFISH_BASE_URL ?? '').trim();
     this.baseUrl = configuredUrl ? assertPrivateServiceUrl(configuredUrl) : '';
     this.serviceToken = (options.serviceToken ?? process.env.MIROFISH_SERVICE_TOKEN ?? '').trim();
     this.licensingApproved = options.licensingApproved ?? process.env.MIROFISH_LICENSING_APPROVED === 'true';
+    this.isVerified = options.verified ?? false;
+  }
+
+  async verify(): Promise<boolean> {
+    if (!this.baseUrl || !this.serviceToken || !this.licensingApproved) {
+      this.isVerified = false;
+      return false;
+    }
+    try {
+      const response = await fetch(`${this.baseUrl}/health`, {
+        headers: { Authorization: `Bearer ${this.serviceToken}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      this.isVerified = response.ok;
+      return this.isVerified;
+    } catch {
+      this.isVerified = false;
+      return false;
+    }
   }
 
   async capabilities(): Promise<MarketSimulationCapabilities> {
@@ -39,11 +60,13 @@ export class MiroFishMarketSimulationAdapter implements MarketSimulationProvider
     return {
       provider: 'mirofish',
       configured: blockers.length === 0,
-      verified: false,
+      verified: this.isVerified,
       executionEligible: false,
       blockers,
       detail: blockers.length
         ? `MiroFish remains disabled until these gates pass: ${blockers.join(', ')}.`
+        : this.isVerified
+        ? 'MiroFish private service is verified and reachable. Scenario simulation is available under human governance gates.'
         : 'Private service settings exist; runtime, tenant gateway, Zep, model provider, and deletion behavior are not verified.',
     };
   }

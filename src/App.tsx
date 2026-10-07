@@ -30,6 +30,7 @@ const AgentCockpit = lazy(() => import('@/src/pages/AgentCockpit'));
 const LivingSystemPage = lazy(() => import('@/src/pages/LivingSystemPage'));
 const SeoAeoPage = lazy(() => import('@/src/pages/SeoAeoPage'));
 const CompetitorResearchPage = lazy(() => import('@/src/pages/CompetitorResearchPage'));
+const MarketSimulatorPage = lazy(() => import('@/src/pages/MarketSimulatorPage'));
 const PaidAdsPage = lazy(() => import('@/src/pages/PaidAdsPage'));
 const OutreachLeadsPage = lazy(() => import('@/src/pages/OutreachLeadsPage'));
 const SocialListeningPage = lazy(() => import('@/src/pages/SocialListeningPage'));
@@ -99,6 +100,7 @@ export default function App() {
                   <Route path="/social-listening" element={<SocialListeningPage />} />
                   <Route path="/attribution" element={<AttributionRoiPage />} />
                   <Route path="/competitors" element={<CompetitorResearchPage />} />
+                  <Route path="/market-simulator" element={<MarketSimulatorPage />} />
 
                   {/* Backwards Compatibility / Secondary Views */}
                   <Route path="/content-engine" element={<EditorialContentPage />} />
