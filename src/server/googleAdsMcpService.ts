@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { withMcpConnection } from './mcp/mcpClient.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -65,104 +65,19 @@ function normalizeCustomers(value: unknown): string[] {
 }
 
 async function probeMcp(options: GoogleAdsMcpRuntimeOptions, callCustomers = false): Promise<McpProbeResult> {
-  const command = options.command || resolveGoogleAdsMcpBinary();
-  const args = options.args || [];
-  const defaultToolsConfig = path.resolve(process.cwd(), 'integrations/google-ads-mcp/tools_config.yaml');
-  const env = options.env === undefined
-    ? {
-        ...process.env,
-        ...(fs.existsSync(defaultToolsConfig) && !process.env.GOOGLE_ADS_MCP_TOOLS_CONFIG
-          ? { GOOGLE_ADS_MCP_TOOLS_CONFIG: defaultToolsConfig }
-          : {}),
-      }
-    : options.env;
-  const timeoutMs = options.timeoutMs ?? 15_000;
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
-    let stdoutBuffer = '';
-    let stderr = '';
-    let initializeResult: any;
-    let tools: McpProbeResult['tools'] = [];
-    let settled = false;
-
-    const finish = (error?: Error, result?: McpProbeResult) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      child.kill('SIGTERM');
-      if (error) reject(error);
-      else resolve(result!);
-    };
-
-    const send = (message: Record<string, unknown>) => {
-      child.stdin.write(`${JSON.stringify(message)}\n`);
-    };
-
-    const handleMessage = (message: any) => {
-      if (message.id === 1 && message.result) {
-        initializeResult = message.result;
-        send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-        send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
-        return;
-      }
-      if (message.id === 2) {
-        if (message.error) return finish(new Error(message.error.message || 'Google Ads MCP tools/list failed.'));
-        tools = Array.isArray(message.result?.tools) ? message.result.tools : [];
-        if (!callCustomers) {
-          finish(undefined, { serverVersion: initializeResult?.serverInfo?.version, tools });
-          return;
-        }
-        send({
-          jsonrpc: '2.0',
-          id: 3,
-          method: 'tools/call',
-          params: { name: 'customers_list_accessible_customers', arguments: {} },
-        });
-        return;
-      }
-      if (message.id === 3) {
-        if (message.error) return finish(new Error(message.error.message || 'Google Ads MCP customer discovery failed.'));
-        if (message.result?.isError) {
-          const text = message.result?.content?.map((item: any) => item.text).filter(Boolean).join(' ');
-          return finish(new Error(text || 'Google Ads MCP customer discovery failed.'));
-        }
-        finish(undefined, {
-          serverVersion: initializeResult?.serverInfo?.version,
-          tools,
-          toolResult: message.result?.structuredContent?.result,
-        });
-      }
-    };
-
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', chunk => {
-      stdoutBuffer += chunk;
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try { handleMessage(JSON.parse(line)); } catch { /* Ignore non-JSON process output. */ }
-      }
-    });
-    child.stderr.setEncoding('utf8');
-    child.stderr.on('data', chunk => { stderr = `${stderr}${chunk}`.slice(-4_000); });
-    child.once('error', error => finish(error));
-    child.once('exit', code => {
-      if (!settled) finish(new Error(`Google Ads MCP exited before completing the handshake (code ${code}). ${stderr}`.trim()));
-    });
-
-    const timer = setTimeout(() => finish(new Error(`Google Ads MCP handshake timed out after ${timeoutMs}ms. ${stderr}`.trim())), timeoutMs);
-    send({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: { name: 'sigmatactix-growth-os', version: '0.2.0' },
-      },
-    });
+  const source = options.env === undefined ? process.env : options.env;
+  const allowedKeys = ['PATH', 'HOME', 'GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_PROJECT_ID', 'GOOGLE_CLOUD_PROJECT',
+    'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_ADS_MCP_OAUTH_CLIENT_ID', 'GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET'];
+  const env = Object.fromEntries(allowedKeys.filter(key => source[key]).map(key => [key, source[key]!]));
+  env.GOOGLE_ADS_MCP_TOOLS_CONFIG = path.resolve('integrations/google-ads-mcp/tools_config.yaml');
+  return withMcpConnection({ command: options.command || resolveGoogleAdsMcpBinary(), args: options.args || [], env }, async connection => {
+    const tools = await connection.listTools({ timeout: options.timeoutMs ?? 15_000 });
+    if (!callCustomers) return { tools, serverVersion: connection.serverInfo?.version };
+    const tool = tools.find(tool => tool.name === 'customers_list_accessible_customers');
+    if (!tool || tool.annotations?.readOnlyHint !== true) throw new Error('Required read-only customer discovery tool is unavailable.');
+    const result = await connection.callTool(tool.name, {}, { timeout: options.timeoutMs ?? 15_000 });
+    if (result.isError) throw new Error('Google Ads MCP customer discovery failed.');
+    return { tools, serverVersion: connection.serverInfo?.version, toolResult: result.structuredContent?.result };
   });
 }
 
@@ -191,7 +106,7 @@ export async function getGoogleAdsMcpStatus(options: GoogleAdsMcpRuntimeOptions 
         : 'Runtime responded but did not expose the required Google Ads tools.',
     };
   } catch (error: any) {
-    const missingBinary = error?.code === 'ENOENT';
+    const missingBinary = error?.code === 'ENOENT' || error?.cause?.code === 'ENOENT' || /ENOENT/.test(error?.message || '');
     return {
       checkedAt: new Date().toISOString(),
       installed: !missingBinary,

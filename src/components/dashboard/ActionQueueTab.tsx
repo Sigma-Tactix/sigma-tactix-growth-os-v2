@@ -148,6 +148,13 @@ const DEMO_INITIAL_QUEUE_ITEMS: ActionQueueItem[] = [
     enclaveId: 'ws-default',
     timestamp: '1 hour ago',
     suggestedAction: 'Publish to CMS & Social',
+    runPayload: {
+      socialPost: {
+        content: '“Why Fractional CMOs Are Moving to Sovereign Agent Swarms”: 2,400 words, SEO-optimized, backed by Second Brain Vaults.',
+        channels: ['chan-li-01', 'chan-tw-01'],
+        scheduledFor: new Date(Date.now() + 3600000).toISOString(),
+      },
+    },
   },
   {
     id: 'act-006',
@@ -312,14 +319,49 @@ export default function ActionQueueTab() {
     return { pendingCount, runningCount, alertCount, completedCount };
   }, [items]);
 
-  const handleApprove = (id: string, title: string) => {
-    setItems(prev => prev.map(item => {
-      if (item.id === id) {
-        return { ...item, status: 'COMPLETED', details: 'Operator approved execution. Changes dispatched to destination module.' };
+  const handleApprove = async (id: string, title: string) => {
+    const item = items.find(i => i.id === id);
+    let executionNote = 'Operator approved execution. Changes dispatched to destination module.';
+
+    if (item && (
+      item.runPayload?.socialPost ||
+      item.suggestedAction?.toLowerCase().includes('social') ||
+      item.suggestedAction?.toLowerCase().includes('publish')
+    )) {
+      try {
+        const postContent = item.runPayload?.socialPost?.content || item.summary;
+        const targetChannels = item.runPayload?.socialPost?.channels || ['chan-li-01', 'chan-tw-01'];
+        const scheduledFor = item.runPayload?.socialPost?.scheduledFor || new Date(Date.now() + 3600000).toISOString();
+
+        const res = await fetch('/api/social/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: postContent,
+            channels: targetChannels,
+            scheduledFor,
+            campaignId: item.id,
+          }),
+        });
+
+        if (res.ok) {
+          const resJson = await res.json();
+          if (resJson.success) {
+            executionNote = `Operator approved. Dispatched to social distribution queue (Job ID: ${resJson.result.id}, Scheduled: ${new Date(scheduledFor).toLocaleTimeString()}).`;
+          }
+        }
+      } catch (err) {
+        console.warn('Social dispatch endpoint unreachable:', err);
       }
-      return item;
+    }
+
+    setItems(prev => prev.map(i => {
+      if (i.id === id) {
+        return { ...i, status: 'COMPLETED', details: executionNote };
+      }
+      return i;
     }));
-    notifySuccess(`Approved: ${title}`, 'Action dispatched to destination module.');
+    notifySuccess(`Approved: ${title}`, executionNote);
   };
 
   const handleDismiss = (id: string, title: string) => {

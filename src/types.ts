@@ -119,11 +119,12 @@ export interface SecondBrain {
     size: string;
     uploadedAt: string;
     vaultId: string;
-    status: 'Ready' | 'Processing';
+    status: 'Ready' | 'Processing' | 'Stored' | 'Indexed';
     storagePath?: string;
     documentId?: string;
     mimeType?: string;
     sha256?: string;
+    vectorIndexed?: boolean;
   }>;
   connectors: Connector[];
   internalStack: Array<{

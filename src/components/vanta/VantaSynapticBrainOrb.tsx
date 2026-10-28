@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Billboard, Text, QuadraticBezierLine } from '@react-three/drei';
 import * as THREE from 'three';
-import type { VantaPhase, VantaTopologyFocus } from '@/src/lib/vanta';
+import type { VantaPhase, VantaTopologyFocus, VantaTopologyNode } from '@/src/lib/vanta';
 
 export type NeuralSequenceFrame = 1 | 2 | 3 | 4 | 5;
 
@@ -168,6 +168,97 @@ export const SAMPLE_VAULT_FILES: VaultFileNode[] = [
   },
 ];
 
+type Point3 = [number, number, number];
+
+interface PositionedTopologyNode {
+  node: VantaTopologyNode;
+  position: Point3;
+}
+
+const NODE_KIND_COLOR: Record<VantaTopologyNode['kind'], string> = {
+  core: '#FFF7ED',
+  decision: '#C084FC',
+  connector: '#38BDF8',
+  agent: '#FF8A4C',
+  document: '#FBBF24',
+  task: '#34D399',
+};
+
+const MEMBRANE_VERTEX_SHADER = `
+  uniform float uTime;
+  uniform float uAudio;
+  uniform float uEnergy;
+  varying vec3 vViewNormal;
+  varying vec3 vViewPosition;
+  varying float vSignal;
+
+  void main() {
+    vec3 p = position;
+    vec3 direction = normalize(p);
+    float azimuth = atan(direction.y, direction.x);
+    float latitude = asin(clamp(direction.z, -1.0, 1.0));
+    float breath = sin(uTime * 1.35) * 0.055;
+    float lobes = sin(azimuth * 6.0 + uTime * 0.28) * cos(latitude * 4.0 - uTime * 0.19);
+    float neuralRipple = sin((p.x + p.y + p.z) * 5.5 - uTime * 1.8) * 0.045;
+    float displacement = breath + lobes * (0.13 + uEnergy * 0.045) + neuralRipple + uAudio * 0.14;
+    p += normal * displacement;
+    p.x *= 1.0 + sin(latitude * 3.0 + uTime * 0.17) * 0.055;
+    p.y *= 1.0 + cos(azimuth * 2.0 - uTime * 0.13) * 0.045;
+
+    vec4 viewPosition = modelViewMatrix * vec4(p, 1.0);
+    vViewPosition = viewPosition.xyz;
+    vViewNormal = normalize(normalMatrix * normal);
+    vSignal = lobes * 0.5 + 0.5;
+    gl_Position = projectionMatrix * viewPosition;
+  }
+`;
+
+const MEMBRANE_FRAGMENT_SHADER = `
+  uniform float uEnergy;
+  varying vec3 vViewNormal;
+  varying vec3 vViewPosition;
+  varying float vSignal;
+
+  void main() {
+    vec3 viewDirection = normalize(-vViewPosition);
+    float fresnel = pow(1.0 - abs(dot(vViewNormal, viewDirection)), 2.25);
+    float vein = smoothstep(0.64, 0.94, vSignal);
+    vec3 ember = vec3(1.0, 0.105, 0.012);
+    vec3 molten = vec3(1.0, 0.45, 0.12);
+    vec3 hot = vec3(1.0, 0.91, 0.76);
+    vec3 color = mix(ember, molten, fresnel);
+    color = mix(color, hot, vein * (0.25 + uEnergy * 0.16));
+    float alpha = 0.12 + fresnel * 0.68 + vein * 0.16;
+    gl_FragColor = vec4(color, alpha);
+  }
+`;
+
+function hashUnit(seed: number) {
+  const value = Math.sin(seed * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function topologyLayout(topology: VantaTopologyFocus): PositionedTopologyNode[] {
+  const visibleNodes = topology.nodes.filter((node) => node.kind !== 'core').slice(0, 42);
+  const total = Math.max(visibleNodes.length, 1);
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+  return visibleNodes.map((node, index) => {
+    const y = 1 - ((index + 0.5) / total) * 2;
+    const radial = Math.sqrt(Math.max(0, 1 - y * y));
+    const angle = index * goldenAngle;
+    const radius = 3.7 + (index % 3) * 0.22;
+    return {
+      node,
+      position: [
+        Math.cos(angle) * radial * radius,
+        y * radius,
+        Math.sin(angle) * radial * radius,
+      ],
+    };
+  });
+}
+
 /* ─── Procedural Volumetric Crystalline Brain Lobes ─── */
 function CrystallineBrainCore({
   frame,
@@ -176,83 +267,75 @@ function CrystallineBrainCore({
   frame: NeuralSequenceFrame;
   audioLevel: number;
 }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const wireRef = useRef<THREE.LineSegments>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const membraneRef = useRef<THREE.ShaderMaterial>(null);
+  const wireRef = useRef<THREE.ShaderMaterial>(null);
+  const geometry = useMemo(() => new THREE.IcosahedronGeometry(1.62, 5), []);
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uAudio: { value: 0 },
+      uEnergy: { value: 0 },
+    }),
+    [],
+  );
+  const wireUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uAudio: { value: 0 },
+      uEnergy: { value: 0 },
+    }),
+    [],
+  );
 
-  // Deformed crystalline icosahedron with brain-like organic lobes
-  const { geometry, wireGeometry } = useMemo(() => {
-    const geo = new THREE.IcosahedronGeometry(1.5, 3);
-    const pos = geo.attributes.position;
-    const vertex = new THREE.Vector3();
-
-    for (let i = 0; i < pos.count; i++) {
-      vertex.fromBufferAttribute(pos, i);
-      // Dual hemispheric cleft & organic folds
-      const hemisphere = Math.abs(vertex.x) * 0.15;
-      const noise =
-        Math.sin(vertex.x * 3.5) * Math.cos(vertex.y * 3.0) * Math.sin(vertex.z * 3.2) * 0.28;
-      const lobeIndent = Math.sin(vertex.y * 2.0) * 0.15;
-      const scale = 1.0 + noise + hemisphere - lobeIndent;
-      vertex.multiplyScalar(scale);
-      pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
-    }
-    geo.computeVertexNormals();
-
-    const wireGeo = new THREE.WireframeGeometry(geo);
-    return { geometry: geo, wireGeometry: wireGeo };
-  }, []);
-
-  useFrame((state, delta) => {
-    if (!meshRef.current || !wireRef.current) return;
+  useFrame((state) => {
+    if (!groupRef.current || !membraneRef.current || !wireRef.current) return;
     const t = state.clock.getElapsedTime();
-
-    // Breathing pulse + audio reactivity
-    const pulseFactor = 1.0 + Math.sin(t * 2.2) * 0.04 + audioLevel * 0.12;
-    const frameScale = frame === 4 ? 1.15 : frame === 3 ? 1.05 : 1.0;
-    const s = pulseFactor * frameScale;
-
-    meshRef.current.scale.set(s, s, s);
-    wireRef.current.scale.set(s, s, s);
-
-    // Slow organic tumble
-    meshRef.current.rotation.y = t * 0.15;
-    meshRef.current.rotation.x = Math.sin(t * 0.2) * 0.1;
-    wireRef.current.rotation.y = t * 0.15;
-    wireRef.current.rotation.x = Math.sin(t * 0.2) * 0.1;
+    const energy = frame === 4 ? 1 : frame === 3 ? 0.72 : frame === 2 ? 0.48 : 0.24;
+    for (const material of [membraneRef.current, wireRef.current]) {
+      material.uniforms.uTime.value = t;
+      material.uniforms.uAudio.value = audioLevel;
+      material.uniforms.uEnergy.value = energy;
+    }
+    const breath = 1 + Math.sin(t * 1.35) * 0.035 + audioLevel * 0.07;
+    groupRef.current.scale.setScalar(breath * (frame === 4 ? 1.12 : 1));
+    groupRef.current.rotation.y = t * 0.11;
+    groupRef.current.rotation.x = Math.sin(t * 0.18) * 0.08;
   });
 
   return (
-    <group>
-      {/* Translucent faceted molten core */}
-      <mesh ref={meshRef} geometry={geometry}>
-        <meshPhysicalMaterial
-          color="#FF3800"
-          emissive="#FF5510"
-          emissiveIntensity={frame === 4 ? 1.8 : frame === 3 ? 1.2 : 0.8 + audioLevel * 0.8}
-          roughness={0.2}
-          transmission={0.7}
-          thickness={1.2}
+    <group ref={groupRef}>
+      <mesh geometry={geometry}>
+        <shaderMaterial
+          ref={membraneRef}
+          uniforms={uniforms}
+          vertexShader={MEMBRANE_VERTEX_SHADER}
+          fragmentShader={MEMBRANE_FRAGMENT_SHADER}
+          side={THREE.DoubleSide}
           transparent
-          opacity={0.88}
-          wireframe={false}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
         />
       </mesh>
-
-      {/* Intricate glowing crystalline edge facets */}
-      <lineSegments ref={wireRef} geometry={wireGeometry}>
-        <lineBasicMaterial
-          color={frame === 4 ? '#FFE8D6' : '#FFA066'}
+      <mesh geometry={geometry} scale={1.018}>
+        <shaderMaterial
+          ref={wireRef}
+          uniforms={wireUniforms}
+          vertexShader={MEMBRANE_VERTEX_SHADER}
+          fragmentShader={MEMBRANE_FRAGMENT_SHADER}
+          wireframe
           transparent
-          opacity={frame === 4 ? 0.95 : 0.65}
-          linewidth={1.5}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
         />
-      </lineSegments>
+      </mesh>
     </group>
   );
 }
 
 /* ─── Outer Synaptic Mantle & Electrical Fiber Web ─── */
 function OuterFilamentMantle({ frame }: { frame: NeuralSequenceFrame }) {
+  const groupRef = useRef<THREE.Group>(null);
   const pointsRef = useRef<THREE.Points>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
 
@@ -265,17 +348,18 @@ function OuterFilamentMantle({ frame }: { frame: NeuralSequenceFrame }) {
     const cHot = new THREE.Color('#FFF5EE');
 
     for (let i = 0; i < count; i++) {
-      const u = Math.random();
-      const v = Math.random();
+      const u = hashUnit(i * 5 + 1);
+      const v = hashUnit(i * 5 + 2);
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      const r = 2.1 + (Math.random() - 0.5) * 0.6;
+      const r = 2.1 + (hashUnit(i * 5 + 3) - 0.5) * 0.6;
 
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = r * Math.cos(phi);
 
-      const col = Math.random() > 0.8 ? cHot : Math.random() > 0.4 ? cAmber : cRed;
+      const colorSeed = hashUnit(i * 5 + 4);
+      const col = colorSeed > 0.8 ? cHot : colorSeed > 0.4 ? cAmber : cRed;
       colors[i * 3] = col.r;
       colors[i * 3 + 1] = col.g;
       colors[i * 3 + 2] = col.b;
@@ -288,8 +372,8 @@ function OuterFilamentMantle({ frame }: { frame: NeuralSequenceFrame }) {
     // Outer fiber curves
     const linePositions: number[] = [];
     for (let j = 0; j < 120; j++) {
-      const idx1 = Math.floor(Math.random() * count);
-      const idx2 = (idx1 + Math.floor(Math.random() * 20) + 1) % count;
+      const idx1 = Math.floor(hashUnit(j * 7 + 17) * count);
+      const idx2 = (idx1 + Math.floor(hashUnit(j * 7 + 23) * 20) + 1) % count;
       linePositions.push(
         positions[idx1 * 3],
         positions[idx1 * 3 + 1],
@@ -307,6 +391,10 @@ function OuterFilamentMantle({ frame }: { frame: NeuralSequenceFrame }) {
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
+    if (groupRef.current) {
+      const breath = 1 + Math.sin(t * 1.35) * 0.025;
+      groupRef.current.scale.setScalar(breath);
+    }
     if (pointsRef.current) {
       pointsRef.current.rotation.y = -t * 0.08;
       pointsRef.current.rotation.z = Math.sin(t * 0.1) * 0.05;
@@ -317,7 +405,7 @@ function OuterFilamentMantle({ frame }: { frame: NeuralSequenceFrame }) {
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       <points ref={pointsRef} geometry={particles}>
         <pointsMaterial
           size={0.035}
@@ -366,11 +454,11 @@ function DynamicSynapticAxons({
     const targets: [number, number, number][] = [];
     const count = 28;
     for (let i = 0; i < count; i++) {
-      const u = Math.random();
-      const v = Math.random();
+      const u = hashUnit(i * 11 + 5);
+      const v = hashUnit(i * 11 + 9);
       const theta = u * 2 * Math.PI;
       const phi = Math.acos(2 * v - 1);
-      const r = 3.8 + Math.random() * 0.6;
+      const r = 3.8 + hashUnit(i * 11 + 13) * 0.6;
       targets.push([r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)]);
     }
     return targets;
@@ -451,9 +539,9 @@ function DynamicSynapticAxons({
       {frame === 4 &&
         frame4Targets.map((target, idx) => {
           const mid: [number, number, number] = [
-            target[0] * 0.5 + (Math.random() - 0.5) * 0.4,
-            target[1] * 0.5 + (Math.random() - 0.5) * 0.4,
-            target[2] * 0.5 + (Math.random() - 0.5) * 0.4,
+            target[0] * 0.5 + (hashUnit(idx * 3 + 41) - 0.5) * 0.4,
+            target[1] * 0.5 + (hashUnit(idx * 3 + 42) - 0.5) * 0.4,
+            target[2] * 0.5 + (hashUnit(idx * 3 + 43) - 0.5) * 0.4,
           ];
           return (
             <group key={`f4-${idx}`}>
@@ -530,6 +618,206 @@ function WhiteHotSingularity({ audioLevel, frame }: { audioLevel: number; frame:
         <sphereGeometry args={[1, 24, 24]} />
         <meshBasicMaterial color="#FF5500" transparent opacity={0.45} blending={THREE.AdditiveBlending} />
       </mesh>
+    </group>
+  );
+}
+
+function FacetedContainmentShell({ frame }: { frame: NeuralSequenceFrame }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const geometry = useMemo(() => new THREE.IcosahedronGeometry(3.15, 2), []);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const time = state.clock.getElapsedTime();
+    groupRef.current.rotation.y = -time * 0.045;
+    groupRef.current.rotation.z = Math.sin(time * 0.11) * 0.08;
+    const breath = 1 + Math.sin(time * 1.35 + 0.8) * 0.012;
+    groupRef.current.scale.setScalar(breath);
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh geometry={geometry}>
+        <meshPhysicalMaterial
+          color="#FF5B24"
+          emissive="#7A1705"
+          emissiveIntensity={frame === 4 ? 1.1 : 0.55}
+          roughness={0.08}
+          metalness={0.05}
+          transmission={0.72}
+          thickness={0.35}
+          transparent
+          opacity={frame === 4 ? 0.12 : 0.07}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      <mesh geometry={geometry} scale={1.008}>
+        <meshBasicMaterial
+          color="#FF7A3D"
+          wireframe
+          transparent
+          opacity={frame === 4 ? 0.24 : 0.12}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function AmbientDust() {
+  const pointsRef = useRef<THREE.Points>(null);
+  const geometry = useMemo(() => {
+    const count = 720;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const ember = new THREE.Color('#FF5A24');
+    const hot = new THREE.Color('#FFD2B3');
+
+    for (let index = 0; index < count; index++) {
+      const theta = hashUnit(index * 7 + 1) * Math.PI * 2;
+      const phi = Math.acos(hashUnit(index * 7 + 2) * 2 - 1);
+      const radius = 5.3 + hashUnit(index * 7 + 3) * 7.5;
+      positions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[index * 3 + 2] = radius * Math.cos(phi);
+      const color = hashUnit(index * 7 + 4) > 0.86 ? hot : ember;
+      colors[index * 3] = color.r;
+      colors[index * 3 + 1] = color.g;
+      colors[index * 3 + 2] = color.b;
+    }
+
+    const dust = new THREE.BufferGeometry();
+    dust.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    dust.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    return dust;
+  }, []);
+
+  useFrame((state) => {
+    if (!pointsRef.current) return;
+    const time = state.clock.getElapsedTime();
+    pointsRef.current.rotation.y = time * 0.006;
+    pointsRef.current.rotation.x = Math.sin(time * 0.04) * 0.04;
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geometry}>
+      <pointsMaterial
+        size={0.045}
+        vertexColors
+        transparent
+        opacity={0.5}
+        sizeAttenuation
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+function TopologyNetwork({
+  topology,
+  selectedNodeId,
+  onSelectNode,
+}: {
+  topology: VantaTopologyFocus;
+  selectedNodeId?: string | null;
+  onSelectNode?: (id: string) => void;
+}) {
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const positionedNodes = useMemo(() => topologyLayout(topology), [topology]);
+  const positionById = useMemo(() => {
+    const positions = new Map<string, Point3>();
+    for (const node of topology.nodes) {
+      if (node.kind === 'core') positions.set(node.id, [0, 0, 0]);
+    }
+    for (const item of positionedNodes) positions.set(item.node.id, item.position);
+    return positions;
+  }, [positionedNodes, topology.nodes]);
+  const visibleEdges = useMemo(
+    () => topology.edges.flatMap((edge) => {
+      const start = positionById.get(edge.from);
+      const end = positionById.get(edge.to);
+      if (!start || !end) return [];
+      const bend = (hashUnit(edge.id.length * 17) - 0.5) * 0.9;
+      const mid: Point3 = [
+        (start[0] + end[0]) * 0.5 + bend,
+        (start[1] + end[1]) * 0.5 + 0.18,
+        (start[2] + end[2]) * 0.5 - bend,
+      ];
+      return [{ ...edge, start, end, mid }];
+    }),
+    [positionById, topology.edges],
+  );
+
+  return (
+    <group>
+      {visibleEdges.map((edge, index) => (
+        <QuadraticBezierLine
+          key={edge.id}
+          start={edge.start}
+          end={edge.end}
+          mid={edge.mid}
+          color={index % 5 === 0 ? '#FFD8C2' : '#FF612A'}
+          lineWidth={selectedNodeId && (edge.from === selectedNodeId || edge.to === selectedNodeId) ? 2.3 : 0.75}
+          transparent
+          opacity={selectedNodeId && (edge.from === selectedNodeId || edge.to === selectedNodeId) ? 0.92 : 0.28}
+        />
+      ))}
+
+      {positionedNodes.map(({ node, position }) => {
+        const selected = node.id === selectedNodeId;
+        const hovered = node.id === hoveredNodeId;
+        const color = NODE_KIND_COLOR[node.kind];
+        const unavailable = node.status === 'unavailable';
+        const radius = node.kind === 'document' ? 0.1 : node.kind === 'agent' ? 0.14 : 0.12;
+        return (
+          <group key={node.id} position={position}>
+            <mesh
+              scale={selected ? 1.65 : hovered ? 1.3 : 1}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectNode?.(node.id);
+              }}
+              onPointerOver={(event) => {
+                event.stopPropagation();
+                setHoveredNodeId(node.id);
+              }}
+              onPointerOut={() => setHoveredNodeId(null)}
+            >
+              <sphereGeometry args={[radius, 18, 18]} />
+              <meshBasicMaterial color={selected ? '#FFFFFF' : color} transparent opacity={unavailable ? 0.35 : 0.96} />
+            </mesh>
+            <mesh scale={selected ? 2.6 : hovered ? 2.1 : 1.65}>
+              <sphereGeometry args={[radius * 1.08, 14, 14]} />
+              <meshBasicMaterial
+                color={color}
+                transparent
+                opacity={selected ? 0.38 : 0.12}
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+            {(selected || hovered) && (
+              <Billboard>
+                <Text
+                  position={[0, radius + 0.28, 0]}
+                  fontSize={0.14}
+                  color={selected ? '#FFFFFF' : '#FFD8C2'}
+                  outlineColor="#050101"
+                  outlineWidth={0.012}
+                  anchorX="center"
+                  maxWidth={2.4}
+                >
+                  {node.label}
+                </Text>
+              </Billboard>
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -638,6 +926,7 @@ export default function VantaSynapticBrainOrb({
   selectedNodeId = null,
   onSelectFile,
   onSelectNode,
+  topology,
   showSphereLayers = true,
   className = '',
   interactive = true,
@@ -645,6 +934,7 @@ export default function VantaSynapticBrainOrb({
   const effectiveFrame: NeuralSequenceFrame =
     sequenceFrame ?? (phase ? PHASE_TO_SEQUENCE_FRAME[phase] : 1);
   const activeFileId = selectedFileId ?? selectedNodeId;
+  const hasLiveTopology = Boolean(topology?.nodes.some((node) => node.kind !== 'core'));
 
   const targetedFile = useMemo(
     () => SAMPLE_VAULT_FILES.find((f) => f.id === activeFileId) ?? null,
@@ -667,8 +957,17 @@ export default function VantaSynapticBrainOrb({
       <Canvas
         camera={{ position: [0, 0, 7.5], fov: 48 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        dpr={[1, 1.75]}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.35;
+        }}
       >
         <color attach="background" args={['#020101']} />
+        <fog attach="fog" args={['#020101', 8, 18]} />
+
+        {/* Sparse spatial dust makes camera movement and depth legible. */}
+        <AmbientDust />
 
         {/* Dynamic Lighting */}
         <ambientLight intensity={0.25} />
@@ -684,16 +983,27 @@ export default function VantaSynapticBrainOrb({
         {/* 3. Outer Synaptic Mantle & Electrical Filaments */}
         <OuterFilamentMantle frame={effectiveFrame} />
 
+        {/* 3b. Slow faceted containment shell from the reference silhouette. */}
+        <FacetedContainmentShell frame={effectiveFrame} />
+
         {/* 4. Synaptic Axon Filaments (The 5 Frames Sequence) */}
         <DynamicSynapticAxons frame={effectiveFrame} targetedFile={targetedFile} />
 
-        {/* 5. Second Brain Sphere Layers (Vault Sectors & Files) */}
-        <SphereVaultLayers
-          files={SAMPLE_VAULT_FILES}
-          selectedFileId={activeFileId}
-          onSelectFile={handleSelect}
-          showRings={showSphereLayers}
-        />
+        {/* 5. Live system graph in-app; deterministic sample files in the isolated visual lab. */}
+        {topology && hasLiveTopology ? (
+          <TopologyNetwork
+            topology={topology}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={onSelectNode}
+          />
+        ) : (
+          <SphereVaultLayers
+            files={SAMPLE_VAULT_FILES}
+            selectedFileId={activeFileId}
+            onSelectFile={handleSelect}
+            showRings={showSphereLayers}
+          />
+        )}
 
         {/* Interactive 3D Camera Controls */}
         {interactive && (

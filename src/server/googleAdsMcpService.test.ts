@@ -11,9 +11,9 @@ rl.on('line', line => {
   }
   if (message.method === 'tools/list') {
     console.log(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { tools: [
-      { name: 'customers_list_accessible_customers', annotations: { readOnlyHint: true } },
-      { name: 'metadata_get_resource_metadata', annotations: { readOnlyHint: true } },
-      { name: 'search_search', annotations: { readOnlyHint: true } }
+      { name: 'customers_list_accessible_customers', inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true } },
+      { name: 'metadata_get_resource_metadata', inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true } },
+      { name: 'search_search', inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true } }
     ] } }));
   }
   if (message.method === 'tools/call') {

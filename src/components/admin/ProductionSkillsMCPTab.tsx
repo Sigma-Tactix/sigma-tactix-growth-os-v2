@@ -36,6 +36,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/src/contexts/ToastContext';
 import { getAgentReachDoctor, getGoogleAdsMcpStatus } from '@/src/lib/api';
 import { PROJECT_SKILLS, ProjectSkill } from '@/src/data/skillsCatalog';
+import { McpGatewayControl } from '@/src/components/connectors/McpGatewayControl';
 
 interface MCPServerInfo {
   id: string;
@@ -1143,6 +1144,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
       {/* SUB-TAB 4: MCP SERVERS DASHBOARD */}
       {activeSubTab === 'mcp' && (
         <div className="space-y-6">
+          <McpGatewayControl />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {MCP_SERVERS_CATALOG.map((server) => (
               <div

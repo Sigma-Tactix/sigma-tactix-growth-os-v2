@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   Database, 
   Shield, 
@@ -32,8 +32,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { SECOND_BRAIN_VAULTS, SecondBrainVault, VaultRecord } from '@/src/data/secondBrainVaults';
-import { useUser } from '@/src/contexts/UserContext';
+import { EMPTY_SECOND_BRAIN_VAULTS, SecondBrainVault, VaultRecord } from '@/src/data/secondBrainVaults';
+import { hydrateSecondBrainVaults, type PersistedVaultDocument } from '@/src/lib/secondBrainDocuments';
 import { useToast } from '@/src/contexts/ToastContext';
 import { analyzeVaultDocument, apiFetch } from '@/src/lib/api';
 import { Button, GlassCard, Badge, Input } from '@/src/components/ui';
@@ -122,8 +122,6 @@ export const identifyDestinationVault = (
   const extensionHints: Record<string, { vaultId: string; label: string }> = {
     'pptx': { vaultId: 'executive-vault', label: 'Executive Vault (Presentations)' },
     'ppt': { vaultId: 'executive-vault', label: 'Executive Vault (Presentations)' },
-    'xlsx': { vaultId: 'marketing-vault', label: 'Marketing Vault (Spreadsheets)' },
-    'xls': { vaultId: 'marketing-vault', label: 'Marketing Vault (Spreadsheets)' },
     'png': { vaultId: 'brand-vault', label: 'Brand Vault (Visual Assets)' },
     'jpg': { vaultId: 'brand-vault', label: 'Brand Vault (Visual Assets)' },
     'jpeg': { vaultId: 'brand-vault', label: 'Brand Vault (Visual Assets)' },
@@ -186,19 +184,20 @@ export const identifyDestinationVault = (
 };
 
 export default function SecondBrain() {
-  const { role } = useUser();
-  const { notifyBackupSuccess, notifySuccess, notifyInfo } = useToast();
+  const { notifySuccess, notifyInfo, notifyError } = useToast();
   // Support 'all' for All Vaults View
   const [selectedVaultId, setSelectedVaultId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<VaultRecord | null>(null);
   const [isNewRecordModalOpen, setIsNewRecordModalOpen] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
-  const [lastBackupTime, setLastBackupTime] = useState<string>('18 mins ago');
+  const [lastBackupTime, setLastBackupTime] = useState<string>('Not exported');
   const [rbacTestRole, setRbacTestRole] = useState<string>('ADMIN');
   const [vectorSearchPrompt, setVectorSearchPrompt] = useState('');
-  const [vectorSearchResults, setVectorSearchResults] = useState<any[] | null>(null);
-  const [vaults, setVaults] = useState<SecondBrainVault[]>(SECOND_BRAIN_VAULTS);
+  const [vectorSearchResults, setVectorSearchResults] = useState<Array<{ record: VaultRecord; similarity: number }> | null>(null);
+  const [vaults, setVaults] = useState<SecondBrainVault[]>(EMPTY_SECOND_BRAIN_VAULTS);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [documentLoadError, setDocumentLoadError] = useState<string | null>(null);
 
   // New Record Form State
   const [targetVaultId, setTargetVaultId] = useState<string>('executive-vault');
@@ -217,6 +216,28 @@ export default function SecondBrain() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const headerFileInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshPersistedDocuments = useCallback(async () => {
+    setIsLoadingDocuments(true);
+    setDocumentLoadError(null);
+    try {
+      const response = await apiFetch('/api/workspace/vault/documents');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !Array.isArray(result.documents)) {
+        throw new Error(result.error || 'The workspace document index could not be loaded.');
+      }
+      setVaults(hydrateSecondBrainVaults(result.documents as PersistedVaultDocument[]));
+    } catch (error) {
+      setDocumentLoadError(error instanceof Error ? error.message : 'The workspace document index could not be loaded.');
+      setVaults(EMPTY_SECOND_BRAIN_VAULTS);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPersistedDocuments();
+  }, [refreshPersistedDocuments]);
 
   // Auto-deduplication checker
   const checkForDuplicate = (title: string, content: string): { isDup: boolean; matchedRecord?: VaultRecord; matchedVault?: SecondBrainVault } => {
@@ -241,41 +262,10 @@ export default function SecondBrain() {
 
   // 1-Click Deduplication Tool
   const handleDeduplicateVaults = () => {
-    let purgedCount = 0;
-    const seenSignatures = new Set<string>();
-
-    setVaults(prevVaults => {
-      return prevVaults.map(v => {
-        const uniqueRecords: VaultRecord[] = [];
-        for (const rec of v.records) {
-          const sig = `${rec.title.trim().toLowerCase()}::${rec.content.slice(0, 80).trim().toLowerCase()}`;
-          if (seenSignatures.has(sig)) {
-            purgedCount++;
-          } else {
-            seenSignatures.add(sig);
-            uniqueRecords.push(rec);
-          }
-        }
-        return {
-          ...v,
-          recordCount: uniqueRecords.length,
-          records: uniqueRecords
-        };
-      });
-    });
-
-    if (purgedCount > 0) {
-      notifySuccess(
-        'Vaults De-duplicated',
-        `Scanned all 10 vaults and purged ${purgedCount} exact duplicate documents. Canonical records preserved.`,
-        { category: 'SYSTEM' }
-      );
-    } else {
-      notifyInfo(
-        'Knowledge Base Clean',
-        'Zero duplicate documents detected across all 10 Second Brain Vaults.'
-      );
-    }
+    notifyInfo(
+      'Duplicate cleanup is not available yet',
+      'No records were changed. Durable deduplication needs a server-side review and an explicit delete/tombstone workflow.'
+    );
   };
 
   const processDocumentFile = async (file: File) => {
@@ -406,7 +396,7 @@ export default function SecondBrain() {
     return vaults.reduce((sum, v) => sum + v.records.length, 0);
   }, [vaults]);
 
-  // Filter records: if 'all', aggregates across all 10 vaults with their vaultId
+  // Filter records: if 'all', aggregates across all configured vaults.
   const filteredRecords = useMemo(() => {
     const baseList: VaultRecord[] = selectedVaultId === 'all'
       ? vaults.flatMap(v => v.records)
@@ -452,46 +442,33 @@ export default function SecondBrain() {
 
     const destinationVaultId = targetVaultId || (selectedVaultId === 'all' ? 'executive-vault' : selectedVaultId);
 
-    const createdRecord: VaultRecord = {
-      id: `rec-${Date.now().toString().slice(-4)}`,
-      vaultId: destinationVaultId,
-      title: newTitle,
-      category: newCategory || 'General Ingest',
-      summary: newSummary || newContent.slice(0, 100) + '...',
-      content: newContent,
-      classification: newClassification,
-      allowedRoles: newClassification === 'RESTRICTED_C_LEVEL' ? ['ADMIN'] : ['ADMIN', 'SUB_ADMIN', 'USER'],
-      vectorIndexed: true,
-      embeddingDimensions: 1536,
-      lastUpdated: 'Just now',
-      author: `${role} Operator`,
-      tags: newTags.split(',').map(t => t.trim()).filter(Boolean)
-    };
-
-    if (pendingUploadFile) {
-      const formData = new FormData();
-      formData.append('file', pendingUploadFile);
-      formData.append('vaultId', destinationVaultId);
-      try {
-        const response = await apiFetch('/api/workspace/vault/upload', { method: 'POST', body: formData });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.success) throw new Error(result.error || 'The file could not be persisted.');
-      } catch (error) {
-        notifyInfo('Document Not Persisted', error instanceof Error ? error.message : 'The file could not be persisted. No vault record was created.');
-        return;
-      }
+    const generatedFile = new File(
+      [[
+        `# ${newTitle}`,
+        newCategory ? `Category (unverified): ${newCategory}` : '',
+        `Proposed classification (not access control): ${newClassification}`,
+        newTags ? `Tags (unverified): ${newTags}` : '',
+        newSummary ? `Summary: ${newSummary}` : '',
+        '',
+        newContent,
+      ].filter(Boolean).join('\n\n')],
+      `${newTitle.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 80) || 'vault-record'}.md`,
+      { type: 'text/markdown' },
+    );
+    const formData = new FormData();
+    formData.append('file', pendingUploadFile || generatedFile);
+    formData.append('vaultId', destinationVaultId);
+    try {
+      const response = await apiFetch('/api/workspace/vault/upload', { method: 'POST', body: formData });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || 'The document could not be persisted.');
+      await refreshPersistedDocuments();
+      const indexState = result.file?.status === 'Indexed' ? 'Semantic index verified.' : 'Stored; semantic index is not verified.';
+      notifySuccess('Document persisted', `Saved "${newTitle}" to the workspace document store. ${indexState}`, { category: 'SYSTEM' });
+    } catch (error) {
+      notifyError('Document not persisted', error instanceof Error ? error.message : 'No vault record was created.');
+      return;
     }
-
-    setVaults(prev => prev.map(v => {
-      if (v.id === destinationVaultId) {
-        return {
-          ...v,
-          recordCount: v.recordCount + 1,
-          records: [createdRecord, ...v.records]
-        };
-      }
-      return v;
-    }));
 
     setIsNewRecordModalOpen(false);
     setNewTitle('');
@@ -503,35 +480,21 @@ export default function SecondBrain() {
     setPendingUploadFile(null);
     setAutoVaultMeta(null);
 
-    const destinationVaultName = vaults.find(v => v.id === destinationVaultId)?.name || 'Vault';
-    notifySuccess(
-      'Document Ingested & Vectorized',
-      `Saved "${createdRecord.title}" into ${destinationVaultName} with 1,536-dim embeddings and persisted the source file.`,
-      { category: 'SYSTEM' }
-    );
   };
 
-  const handleTriggerBackup = () => {
+  const handleTriggerBackup = async () => {
     setIsBackingUp(true);
     const totalRecords = vaults.reduce((acc, v) => acc + v.records.length, 0);
-
-    setTimeout(() => {
-      setIsBackingUp(false);
+    try {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setLastBackupTime(`Just now (${nowTime})`);
-
-      // Generate verified snapshot payload
-      const backupPayload = {
+      const manifest = {
         metadata: {
-          organization: 'Sigma Tactix Growth OS',
-          environment: 'Production Vault (Relational)',
-          backupTimestamp: new Date().toISOString(),
+          exportedAt: new Date().toISOString(),
+          exportType: 'browser-generated document metadata manifest',
           totalVaults: vaults.length,
           totalRecords,
-          pgvectorDimensions: 1536,
-          sha256Checksum: 'sha256:7f3b892a01e4d8c6b54190fa728c11e0d37e29b469851bfae82937cd914a2b9e',
-          rbacEnforced: true,
-          status: 'VERIFIED_CLEAN'
+          contentIncluded: false,
+          note: 'This export is not an encrypted backup, restore verification, or server-side snapshot.',
         },
         vaults: vaults.map(v => ({
           id: v.id,
@@ -540,12 +503,14 @@ export default function SecondBrain() {
           securityZone: v.securityZone,
           description: v.description,
           recordCount: v.records.length,
-          records: v.records
+          records: v.records.map(({ content, ...record }) => record),
         }))
       };
-
-      // Trigger client file export
-      const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
+      const manifestJson = JSON.stringify(manifest, null, 2);
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(manifestJson));
+      const checksum = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+      const backupPayload = JSON.stringify({ ...manifest, integrity: { algorithm: 'SHA-256', checksum } }, null, 2);
+      const blob = new Blob([backupPayload], { type: 'application/json' });
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
@@ -554,39 +519,39 @@ export default function SecondBrain() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(downloadUrl);
-
-      notifyBackupSuccess(
-        vaults.length,
-        totalRecords,
-        'SHA-256 cryptographic verification passed: sha256:7f3b...2b9e. Encrypted snapshot downloaded and persisted.'
-      );
-    }, 1400);
+      setLastBackupTime(`Manifest exported (${nowTime})`);
+      notifySuccess('Document manifest downloaded', `${totalRecords} document metadata records exported. SHA-256: ${checksum.slice(0, 12)}… Content is not included.`, { category: 'SYSTEM' });
+    } catch (error) {
+      notifyError('Manifest export failed', error instanceof Error ? error.message : 'The document metadata manifest could not be created.');
+    } finally {
+      setIsBackingUp(false);
+    }
   };
 
-  const handleVectorSearch = () => {
+  const handleVectorSearch = async () => {
     if (!vectorSearchPrompt.trim()) {
       setVectorSearchResults(null);
       return;
     }
 
-    // Simulate pgvector cosine similarity search across all vaults
-    const allRecords: VaultRecord[] = vaults.flatMap(v => v.records);
-    const q = vectorSearchPrompt.toLowerCase();
-    const matches = allRecords
-      .map(rec => {
-        let score = 0.5 + Math.random() * 0.2;
-        if (rec.title.toLowerCase().includes(q)) score += 0.35;
-        if (rec.summary.toLowerCase().includes(q)) score += 0.2;
-        if (rec.content.toLowerCase().includes(q)) score += 0.15;
-        return {
-          record: rec,
-          similarity: Math.min(0.98, score).toFixed(3)
-        };
-      })
-      .sort((a, b) => parseFloat(b.similarity) - parseFloat(a.similarity))
-      .slice(0, 3);
-
-    setVectorSearchResults(matches);
+    try {
+      const response = await apiFetch('/api/workspace/vault/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: vectorSearchPrompt }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || 'Semantic search could not be completed.');
+      const recordsById = new Map(vaults.flatMap((vault) => vault.records).map((record) => [record.id, record]));
+      const matches = (result.matches || [])
+        .map((match: { id: string; similarity: number }) => ({ record: recordsById.get(match.id), similarity: match.similarity }))
+        .filter((match: { record?: VaultRecord; similarity: number }): match is { record: VaultRecord; similarity: number } => Boolean(match.record));
+      setVectorSearchResults(matches);
+      if (!matches.length) notifyInfo('No semantic result returned', 'There may be no matching indexed documents, or semantic search is currently unavailable.');
+    } catch (error) {
+      setVectorSearchResults(null);
+      notifyError('Semantic search unavailable', error instanceof Error ? error.message : 'The server could not complete this query.');
+    }
   };
 
   return (
@@ -604,11 +569,14 @@ export default function SecondBrain() {
             Second Brain Vaults
           </h1>
           <p className="text-[var(--sigma-text-secondary)] text-sm max-w-3xl mt-1.5 leading-relaxed">
-            10 strictly partitioned, relational vaults storing verified corporate strategy, credentials, brand voice vectors, ICP models, and audit logs with pgvector semantic search.
+            Workspace-scoped document records with server-reported extraction and indexing status. Classification and per-vault policy enforcement are not yet available in this view.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Badge variant={documentLoadError ? 'danger' : 'neutral'} size="sm" dot>
+            {isLoadingDocuments ? 'Loading document index' : documentLoadError ? 'Document index unavailable' : 'Document index loaded'}
+          </Badge>
           <Badge variant="neutral" size="sm" dot>
             Snapshot: <strong className="text-[var(--sigma-text)] ml-1 font-mono">{lastBackupTime}</strong>
           </Badge>
@@ -620,9 +588,9 @@ export default function SecondBrain() {
             disabled={isBackingUp}
             isLoading={isBackingUp}
             icon={!isBackingUp ? <HardDriveDownload size={14} className="text-[var(--sigma-primary)]" /> : undefined}
-            title="Download encrypted snapshot of all 10 Second Brain Vaults and verify SHA-256 checksum"
+            title="Download a browser-generated metadata manifest and calculate its SHA-256 checksum"
           >
-            {isBackingUp ? 'Backing Up...' : 'Backup Second Brain'}
+            {isBackingUp ? 'Exporting...' : 'Export Manifest'}
           </Button>
 
           <Button
@@ -630,7 +598,7 @@ export default function SecondBrain() {
             size="sm"
             onClick={handleDeduplicateVaults}
             icon={<CopyCheck size={14} className="text-amber-400" />}
-            title="Scan all vaults and remove duplicate documents"
+            title="Explain the current durable deduplication limitation"
           >
             Clean Duplicates
           </Button>
@@ -648,7 +616,7 @@ export default function SecondBrain() {
             ref={headerFileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.txt,.md,.markdown,.json,.csv,.xlsx,.xls,.docx,.html"
+            accept=".pdf,.txt,.md,.markdown,.json,.csv,.docx,.html"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
@@ -668,6 +636,11 @@ export default function SecondBrain() {
           </Button>
         </div>
       </div>
+      {documentLoadError && (
+        <div role="alert" className="text-xs text-rose-300 border border-rose-500/30 bg-rose-500/10 rounded-xl px-4 py-3">
+          Durable document records could not be loaded: {documentLoadError}
+        </div>
+      )}
 
       {/* RBAC Role Simulator & Vector Search Strip */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -679,7 +652,7 @@ export default function SecondBrain() {
               <h3 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">pgvector Semantic Search</h3>
             </div>
             <Badge variant="neutral" size="xs">
-              Cosine Distance Metric (1536-dim)
+              Server query · 768-dim when indexed
             </Badge>
           </div>
 
@@ -708,7 +681,7 @@ export default function SecondBrain() {
           {vectorSearchResults && (
             <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)]">
               <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase">
-                Top Vector Matches ({vectorSearchResults.length})
+                Server semantic matches ({vectorSearchResults.length})
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {vectorSearchResults.map(({ record, similarity }, i) => (
@@ -721,7 +694,7 @@ export default function SecondBrain() {
                     className="p-3 bg-[var(--sigma-bg-subtle)] hover:bg-[var(--sigma-border)]/20 border border-[var(--sigma-border)] rounded-xl cursor-pointer transition-all"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-mono text-[var(--sigma-primary)] font-semibold">Sim: {similarity}</span>
+                      <span className="text-[10px] font-mono text-[var(--sigma-primary)] font-semibold">Similarity: {Number(similarity).toFixed(3)}</span>
                       <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{record.vaultId.replace('-vault', '')}</span>
                     </div>
                     <div className="text-xs font-semibold text-[var(--sigma-text)] line-clamp-1">{record.title}</div>
@@ -738,9 +711,9 @@ export default function SecondBrain() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserCheck size={16} className="text-[var(--sigma-primary)]" />
-              <h3 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">RBAC Role Simulator</h3>
+              <h3 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">Visibility Preview</h3>
             </div>
-            <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">Security Sandbox</span>
+            <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">UI-only</span>
           </div>
 
           <div className="space-y-2">
@@ -768,10 +741,7 @@ export default function SecondBrain() {
           </div>
 
           <div className="p-2.5 rounded-lg bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] text-[11px] font-mono text-[var(--sigma-text-muted)]">
-            Perspective: <strong className="text-[var(--sigma-text)]">{rbacTestRole}</strong>. 
-            {rbacTestRole === 'ADMIN' ? ' Full read/write clearance across all 10 vaults.' :
-             rbacTestRole === 'SUB_ADMIN' ? ' Restricted from Executive & Credentials Vaults.' :
-             ' Read-only on operational, website, marketing & brand vaults.'}
+            Perspective: <strong className="text-[var(--sigma-text)]">{rbacTestRole}</strong>. This is a client-side preview only; it does not validate server authorization or grant access.
           </div>
         </GlassCard>
       </div>
@@ -779,9 +749,9 @@ export default function SecondBrain() {
       {/* Vault Grid Selector */}
       <div className="space-y-3">
         <div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] flex items-center justify-between">
-          <span>Select Partitioned Vault (10 Security Zones)</span>
-          <Badge variant="success" size="xs" dot>
-            PostgreSQL 16 Schema Active
+          <span>Select Vault Category ({vaults.length} configured)</span>
+          <Badge variant="neutral" size="xs" dot>
+            Document index state shown per record
           </Badge>
         </div>
 
@@ -867,7 +837,7 @@ export default function SecondBrain() {
                 {selectedVaultId === 'all' ? 'All Vaults View (Unified Catalog)' : activeVault.name}
               </h2>
               <Badge variant="vermilion" size="xs">
-                {selectedVaultId === 'all' ? '10 PARTITIONS' : activeVault.securityZone}
+                {selectedVaultId === 'all' ? `${vaults.length} CATEGORIES` : activeVault.securityZone}
               </Badge>
               <Badge variant="neutral" size="xs">
                 {selectedVaultId === 'all' ? `${totalAllRecordsCount} Documents` : activeVault.encryptionLevel}
@@ -875,7 +845,7 @@ export default function SecondBrain() {
             </div>
             <p className="text-xs text-[var(--sigma-text-muted)] mt-1 max-w-2xl">
               {selectedVaultId === 'all'
-                ? 'Unified view of all corporate knowledge records across all 10 relational vaults with security clearance filters.'
+                ? 'Unified view of durable workspace document records. Visibility preview is not an authorization control.'
                 : activeVault.description
               }
             </p>
@@ -954,10 +924,10 @@ export default function SecondBrain() {
                       {rec.vectorIndexed ? (
                         <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
                           <CheckCircle2 size={12} />
-                          <span>1536-dim</span>
+                          <span>{rec.embeddingDimensions || 'Unknown'}-dim</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-[var(--sigma-text-muted)] font-mono">Raw Secret</span>
+                        <span className="text-xs text-[var(--sigma-text-muted)] font-mono">Not indexed</span>
                       )}
                     </td>
 
@@ -1047,7 +1017,7 @@ export default function SecondBrain() {
                 <div className="grid grid-cols-2 gap-4 text-xs font-mono text-[var(--sigma-text-muted)] pt-3 border-t border-[var(--sigma-border)]">
                   <div>Author: <strong className="text-[var(--sigma-text)]">{selectedRecord.author}</strong></div>
                   <div>Category: <strong className="text-[var(--sigma-text)]">{selectedRecord.category}</strong></div>
-                  <div>Vector Index: <strong className="text-emerald-400">{selectedRecord.vectorIndexed ? '1536-dim Active' : 'None'}</strong></div>
+                  <div>Vector Index: <strong className="text-emerald-400">{selectedRecord.vectorIndexed ? `${selectedRecord.embeddingDimensions || 'Unknown'}-dim active` : 'Not indexed'}</strong></div>
                   <div>Last Synced: <strong className="text-[var(--sigma-text)]">{selectedRecord.lastUpdated}</strong></div>
                 </div>
 
@@ -1174,7 +1144,7 @@ export default function SecondBrain() {
                         Upload Document to Auto-Fill
                       </div>
                       <p className="text-[10px] text-[var(--sigma-text-muted)] font-mono mt-0.5">
-                        PDF, Markdown, TXT, JSON, CSV, XLSX, or DOCX • AI extracts & categorizes
+                        PDF, Markdown, TXT, JSON, CSV, or DOCX • spreadsheet uploads are temporarily quarantined
                       </p>
                     </div>
                   )}
@@ -1183,7 +1153,7 @@ export default function SecondBrain() {
                     ref={fileInputRef}
                     type="file"
                     className="hidden"
-                    accept=".pdf,.txt,.md,.markdown,.json,.csv,.xlsx,.xls,.docx,.html"
+                    accept=".pdf,.txt,.md,.markdown,.json,.csv,.docx,.html"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -1249,7 +1219,7 @@ export default function SecondBrain() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Classification</label>
+                    <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Proposed Classification</label>
                     <select
                       value={newClassification}
                       onChange={(e) => setNewClassification(e.target.value as any)}
@@ -1273,6 +1243,10 @@ export default function SecondBrain() {
                     className="w-full bg-[var(--sigma-bg-subtle)] border border-[var(--sigma-border)] rounded-xl p-2.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
+
+                <p className="text-[10px] text-[var(--sigma-text-muted)] font-mono">
+                  Category, proposed classification, summary, and tags are retained as document text only. They are not access controls or structured metadata yet.
+                </p>
 
                 <div className="space-y-1">
                   <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Content / Raw Payload</label>
@@ -1311,7 +1285,7 @@ export default function SecondBrain() {
                     variant="primary"
                     size="sm"
                   >
-                    Ingest & Vectorize
+                    Persist Document
                   </Button>
                 </div>
               </form>

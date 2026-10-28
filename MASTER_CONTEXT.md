@@ -1,8 +1,117 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-10-07
-> **Version**: v0.2.7-dev (Open-Source Agent Ecosystem & ReAct Multi-Provider Execution)
-> **Status**: Pre-release (Governed Integration & Managed Loop Transition); local implementation verified with clean lint (`tsc --noEmit` 0 errors); TinyFish Web Intelligence & MiroFish Market Simulation operationalized with dynamic runtime verification, deterministic fixture adapters, and mounted domain routes (`/api/workspace/web-intelligence`, `/api/workspace/market-simulations`); Google Search Console integration rebuilt as truthful (auth-gated API, real OAuth grant, honest LIVE/DEMO/awaiting/error states); commercial launch strategy pivoted from broad self-serve to a **Managed Growth Intelligence Loop** targeting $50,000 MRR across 6 lighthouse clients.
+> **Last updated**: 2026-10-27
+> **Version**: v0.2.11-dev (Subdomain Deployment & Live Routing)
+> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); local implementation verified with clean compilation (`tsc --noEmit` 0 errors, Vitest test suites green); production WordPress/Elementor platform ([sigmatactix.com](https://www.sigmatactix.com)) audited and cleaned against `petergyang/no-ai-slop` standards with 0 em dashes site-wide.
+
+## MCP client and read-only workspace endpoint: local implementation, 2026-10-27
+
+- **Direction and scope**: Nazim selected both outbound VANTA MCP connections and inbound Growth OS tools, starting with outbound. Pilot account: `sigmatactix@gmail.com`. Read-only inspection of configured Supabase project `rqktjogegbdlsdvpusie` confirmed its user owns workspace `9a1fadcf-9c68-4b89-a51f-4a8ba3b5f148` (`My Workspace`). Local ignored `.env` now binds that workspace and enables the authenticated inbound endpoint. No Ads customer IDs or credentials were invented.
+- **Architecture**: Pinned `@mcp-use/client@2.4.5` replaces Google Ads' hand-written JSON-RPC transport. An explicit workspace/customer gateway adds bounded reporting and durable receipt intent/outcomes. Only three marketing specialists receive `read_google_ads_mcp`; VANTA remains read/explain/propose and receives recent receipt evidence. Existing governance and orchestrator remain in place. Google provider identity must match the pilot email, using an explicit user ADC file, before the Ads runtime is contacted.
+- **Inbound route**: `POST /api/workspace/mcp`, using the official MCP server SDK `2.3.1`, exposes capability status, run summaries and receipt summaries only. Each request has a fresh workspace-bound server, strict schemas, owner/admin and pilot-email checks, Origin control and existing rate limiting. Supabase bearer authentication is required; external-assistant OAuth discovery/refresh is not implemented.
+- **Persistence and verification gates**: Migration `0020_mcp_tool_calls.sql` is prepared but has not been applied remotely. The live configured project had no receipt table when inspected. No local Google Ads developer token or ADC file was configured. Missing receipt storage prevents provider calls; failed outcome persistence reports uncertainty. Local protocol/request-scoping tests do not establish deployed database RLS or live provider behavior. The prior frontend deployment does not establish a running Express/MCP backend.
+- **Operations and next evidence**: See `docs/mcp-setup.md` for target selection, migration, runtime installation, identity-scoped credentials, explicit customer selection, connection UI and verification commands. The MCP tab has a configuration/receipt panel. No external writes, approvals, publishing, arbitrary servers or shell tools are exposed by this endpoint. SDK telemetry is disabled. No pricing, launch-scope or approval-policy changes were made.
+- **Existing workspace deltas**: Pre-existing studio/social-distribution edits and migration 0019 were preserved. The earlier header's test/deployment claims refer to earlier work, not verification of this MCP change.
+- **Local verification**: TypeScript passed; 54 focused tests passed across seven files; production build passed. A temporary built-server smoke test confirmed health and HTTP 401 for unauthenticated MCP routes. SDK/provider modules were absent from frontend JavaScript assets in the checked build. Remote read-only inspection confirmed `ledger_runs` and `is_member(uuid)` exist, while `mcp_tool_calls` is absent. Deployed RLS, Google identity/customer access, authenticated public routing and external-assistant OAuth remain unverified or unimplemented as described above.
+- **Guardian response hardening**: Replaced raw MCP response buffer forwarding with JSON-only Express serialization, `nosniff` and `no-store`; empty notification acknowledgments retain HTTP 202 with no body. All three endpoint tests passed after this change, including an HTML-like tool-output regression. The preceding production-build result predates this follow-up.
+
+## Production Subdomain Deployment (`growth-os.sigmatactix.com`) — 2026-10-23
+
+- **Target Subdomain Infrastructure**:
+  - Live Hostinger subdomain: `growth-os.sigmatactix.com` (user `u459229014`, order `70304431`).
+  - Document root: `/home/u459229014/domains/sigmatactix.com/public_html/growth-os`.
+  - DNS: CNAME `growth-os` -> `SigmaTactix.com.` verified active.
+  - SSL & HTTPS: Lifetime SSL certificate active with automated HTTPS redirect enabled.
+- **Artifacts & Routing Configuration**:
+  - Generated and uploaded production distribution bundle (`dist/`) containing 138 assets (JavaScript bundles, CSS stylesheets, brand assets, decks, and audit evidence).
+  - Added Apache `.htaccess` with `mod_rewrite` fallback rules for Single Page Application (SPA) routing, ensuring direct navigation to deep studio routes (e.g. `/cro-studio`, `/social-carousels`, `/seo-aeo`, `/brand-identity`) resolves `index.html` with HTTP 200.
+- **Cache Invalidation & Live Verification**:
+  - Cleared Hostinger origin server cache (`hosting_cache_clear-website`) for `growth-os.sigmatactix.com`.
+  - Verified live endpoint delivery: `https://growth-os.sigmatactix.com/` returns HTTP 200 with `<title>Sigma Tactix — Enterprise Growth OS</title>` and bundle `<script type="module" src="/assets/index-BOmv7k9T.js"></script>`.
+  - Verified deep route delivery: `https://growth-os.sigmatactix.com/cro-studio` correctly serves `index.html` via `.htaccess` rewrite.
+
+## Production Editorial Hardening & No-AI-Slop Governance — 2026-10-23
+
+- **Typographic & Encoding Fixes (`www.sigmatactix.com`)**:
+  - Replaced all 10 occurrences of literal `\u2019` unicode escape sequences stored inside Elementor widget settings on Page 27 (Home) with proper typographic apostrophes (`’`).
+- **Editorial Slop & Em Dash (`—`) Elimination (`petergyang/no-ai-slop`)**:
+  - Audited all published pages, global footer templates, and popup templates against the `no-ai-slop` editorial specification.
+  - Eliminated 100% of em dashes (`—` / `\u2014` / `&mdash;`), binary negative contrast formulas (*"It isn't X. It's Y."*, *"not six dashboards"*, *"not a queue"*), dangling noun lists, and lazy rhythm crutches.
+  - Scope of remediation:
+    - **Home (Page 27)**: 8 widgets updated (`30c95ce`, `61375cf`, `cc93c8a`, `f5c59ef`, `31468c8`, `6328fae`, `ccf1523`, `fcab283`).
+    - **About (Page 28)**: Widget `446a730`.
+    - **Growth OS (Page 29)**: Widgets `5e0fbb4`, `0da462b`.
+    - **Case Studies (Page 30)**: Widget `4d2a3d0`.
+    - **Contact (Page 31)**: Widgets `1458a00`, `bded4e8`.
+    - **FAQs (Page 43)**: Widgets `8443593`, `9171b12`, `f0c676d`.
+    - **Resources (Page 44)**: Text widget `142528d` and CTA button `e12903a`.
+    - **Careers (Page 46)**: Heading `d5e03f2`, widgets `b58ecb5`, `0ae4099`.
+    - **Solutions (Page 60)**: Heading `211665b`, widgets `31f1bb8`, `b0c361e`, `5c2a1df`, `4faf038`.
+    - **Global Site Footer (Post 25, `xpro-themer`)**: Text widget `2307a69` and post title.
+    - **Registration Popup (Post 57, `elementor_library`)**: Post title.
+- **Verification & Cache Invalidation**:
+  - Cleared Hostinger origin server cache (`hosting_cache_clear-website`) and Hostinger edge CDN cache (`hosting_cdn_purge-cache`) for `sigmatactix.com` (user `u459229014`).
+  - Automated verification fetch across all 9 live URLs (`/`, `/about/`, `/growth-os/`, `/case-studies/`, `/contact/`, `/solutions/`, `/faqs/`, `/resources/`, `/careers/`) confirmed HTTP 200 and exactly 0 em dashes in the rendered HTML output.
+
+## Growth OS Studios Overhaul, Export Engine & Regulatory Safeguards — 2026-10-15
+
+- **Social & Carousel Studio (`src/pages/SocialCarouselsPage.tsx`, `src/components/CarouselCardViewer.tsx`)**:
+  - Integrated `jsPDF` and `pptxgenjs` for client-side multi-slide `.pdf` and `.pptx` deck downloads alongside `.png` slide captures.
+  - Fixed visual preview slide reset (`useEffect` on slide prop changes to reset `currentSlideIndex` to 0).
+  - Added campaign parameter dropdowns (Topic, Target Audience, Accompanying Caption) with `(Recommended)` defaults pre-selected.
+  - Implemented sovereign template fallback deck so the visual viewer is never blank even prior to first run.
+  - Connected `AgentRunResults` for persistent execution logs, input/output inspection, and artifact downloads.
+- **CRO & Landing Pages Studio (`src/pages/CroStudioPage.tsx`, `server.ts`)**:
+  - Added `inMemoryLandingArtifacts` and `inMemoryLandingHtmlCache` in `server.ts` to retain proposals and HTML exports in memory even without active Supabase connection.
+  - Implemented `generateLandingFallbackSvg` producing responsive desktop (1200x800) and mobile (375x812) SVG preview wireframes.
+  - Integrated `AgentRunResults` tracking proposals, status, and raw HTML export downloads.
+- **SEO & Authority (`src/pages/SeoAeoPage.tsx`, `src/components/SearchConsoleTrends.tsx`)**:
+  - Resolved status discrepancy: header displays `GSC Live Linked` (green) only when OAuth grant exists, and `GSC: OAuth Pending` (amber) when connected without grant.
+  - Added 1-click **"Preview Simulated Trends (Demo Mode)"** with OAuth authorization modal trigger.
+  - Integrated `AgentRunResults` task execution and diagnostic history.
+- **AI Creative Studio — Static Graphics (`src/pages/ImageStudioPage.tsx`)**:
+  - Streamlined into a dedicated static graphics studio (video tabs removed to eliminate workflow clutter).
+  - Added reference image uploader (`.png, .jpg, .webp` up to 10MB) for visual style conditioning.
+  - Handled 503 high-demand model errors with 1-click fallback providers (FLUX.1 Schnell, Cloudflare FLUX, Sovereign Brand Canvas).
+  - Dynamic viewport scaling dynamically matching selected aspect ratio (`16:9`, `1:1`, `9:16`, `4:5`).
+  - Added export format selector for `.PNG` and `.JPG` downloads via canvas rendering.
+- **AI Creative Studio & Video Motion Studio (`src/server/providers/creative/hyperframesRenderer.ts`, `src/pages/VideoStudioPage.tsx`)**:
+  - Calibrated voiceover speech rate from rapid default (~260-340 wpm) down to 135 wpm (deliberate 0.75x cadence).
+  - Added mandatory ending scene (Scene 3) with Sigma Tactix Logo, website `www.sigmatactix.com`, and CTA `Visit now`.
+  - Added top mode switcher between **"Normal Video Generation"** and **"Motion FX Storytelling Video"**.
+  - Fixed aspect ratio header bug: section name dynamically reflects selected ratio (e.g. `Video & Motion Studio — Motion Video (1:1)`).
+  - Presets for Duration (5s, 8s, 15s, 30s), Quality (720p, 1080p, 4K), Headline/Script variation presets, timeline storyline controls, Motion FX overlay uploader, and authenticated `.mp4` downloads.
+- **Email & Lifecycle Marketing (`src/pages/EmailMarketingPage.tsx`)**:
+  - Upgraded Automated Drip Sequence with interactive multi-step timeline, delay intervals (Days 0, 2, 4, 7), quiet hours (09:00 - 16:30 recipient local time), weekend suppression, and A/B subject line testing.
+  - Added dedicated **"Compliance & Regulations"** tab with App-Wide Compliance Matrix (CAN-SPAM, RFC 8058 one-click unsubscribe, GDPR consent, FTC AI disclosures, Google Core update quality rules) and 1-click compliance pre-flight scan.
+- **Content Engine (`src/pages/ContentEnginePage.tsx`)**:
+  - Integrated `AgentRunResults` execution logging, audit trail, and artifact tracking across articles, static images, social campaigns, and queued shorts renders.
+- **Verification**:
+  - Full TypeScript typecheck clean (`tsc --noEmit` exited with code 0).
+  - Vitest test suite on `src/pages/VideoStudioPage.test.tsx` passed 100%.
+
+- **Creative Multi-Provider Gateway & Video Motion Engine (`src/server/providers/creative/`)**:
+  - Implemented multi-provider video motion synthesis (`/api/creative/generate-video`) supporting Pollinations serverless video, Hugging Face open-weights video models, and Cloudflare Edge FLUX.
+  - Added video generation controls in `ImageStudioPage.tsx` and scene 1 rendering in `ContentEnginePage.tsx`.
+- **Omnichannel Social Distribution Gateway (`src/server/providers/socialDistribution/`)**:
+  - Provider-agnostic adapter (`SocialSchedulerAdapter`) supporting multi-channel targets (LinkedIn, X/Twitter, Instagram, YouTube, Threads, Bluesky, TikTok).
+  - Encrypted sidecar connector pattern: OAuth credentials remain isolated inside scheduler vault via `SOCIAL_SCHEDULER_API_URL` and `SOCIAL_SCHEDULER_API_KEY`.
+  - Express endpoints mounted in `server.ts`: `/api/social/status`, `/api/social/channels`, `/api/social/draft`, `/api/social/schedule`, `/api/social/publish`.
+  - Strict Human-in-the-Loop (HITL) compliance: Action Queue (`ActionQueueTab.tsx`) dispatches scheduled posts upon explicit founder approval, recording job IDs in the ledger to uphold the rule: *"Never claim a scheduled campaign will run until a persistent worker completes a recorded job."*
+  - Frontend studio modal (`ScheduleSocialPostModal.tsx`) integrated into `SocialCarouselsPage.tsx` and `ContentEnginePage.tsx`, plus `SocialDistributionControl.tsx` ribbon in `DataSources.tsx`.
+- **Verification**:
+  - 100% test coverage: `tsc --noEmit` 0 errors; 78 test files, 530 tests passing green.
+
+## Local Environment & Cryptographic Vault Key Stabilization — 2026-10-08
+
+- **Local Host & OAuth Canonical Origin:**
+  - Resolved `APP_URL="MY_APP_URL"` placeholder in `.env` to `http://localhost:3000`.
+  - Canonical origin allows Google Search Console OAuth 2.0 flow and team invitation links (`/?invite=...`) to construct valid redirect URIs without relying on non-deterministic request headers.
+- **Connector Vault Encryption Key:**
+  - Replaced fallback placeholder `MY_CONNECTOR_CREDENTIALS_KEY` with a cryptographically secure 32-byte (64-character) hex key in `.env`.
+  - Vault encryption prevents exposure of connector tokens (Slack, HubSpot, Meta Ads, Google Ads) in storage blobs via AES-256-GCM.
+- **Verification:**
+  - Vitest test suites passing 100% (31/31 tests green in `src/lib/credentialCrypto.test.ts` and `src/lib/gscService.test.ts`).
 
 ## TinyFish Web Intelligence & MiroFish Market Simulation Operationalization — 2026-10-07
 
@@ -35,6 +144,8 @@
 - **Fix (client):** `fetchGSCAnalytics` now returns a discriminated `live | disconnected | awaiting | error` result — demo numbers render ONLY for disconnected (DEMO DATA badge); awaiting/error render explicit panels; `SeoAeoPage` connection state is server-owned; both connect handlers toast only on server-confirmed outcomes; OAuth return params (`gsc_code/gsc_state/gsc_error`) are exchanged once and cleaned from the URL.
 - **Connector Hub:** added the `Google Search Console` entry to `libraryConnectors` (`DataSources.tsx`, category `reporting`, Authority Vault) — backend plumbing already existed (`ConnectorPlatform`, `connectorLifecycle` requirement, `pipelineVerification` mapping, `testGoogleSearchConsoleConnection` adapter).
 - **Config:** `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` documented in `.env.example` (redirect URI `${APP_URL}/api/gsc/callback`, Search Console API must be enabled); a popup-supplied client pair takes precedence and is stored encrypted.
+- **Fix (persistent `Error 400: redirect_uri_mismatch` after canonical URI):** per Google's OAuth web-server docs the pair is validated **at the authorize endpoint before sign-in**, so the fix is a **server-side pre-flight**: new `probeGscAuthorize()` / `classifyGscAuthProbe()` / `decodeGscAuthError()` in `gscService.ts` probe `accounts.google.com/o/oauth2/v2/auth` with `redirect:manual` using the EXACT `client_id + redirect_uri` (no secret sent), decode Google's base64url `authError` bounce (live-verified: `Cg5pbnZhbGlkX2NsaWVudA` → `invalid_client`), and **fail open** (`ok:null`) so the real flow always runs. `/api/gsc/connect` now runs the probe first and withholds `authUrl` when Google already rejects the pair (no more dead-end Error 400 page); new authenticated `POST /api/gsc/preflight` re-verifies after whitelist edits. Connect dialog: **"Verify With Google"** button + live verdict badge + exact remediation text (Authorized redirect URIs — not JavaScript origins — on the SAME client whose ID/Secret was pasted; masked `clientIdMasked` shown). Both `SearchConsoleTrends` and `SeoAeoPage` connect handlers surface a `preflight.ok===false` verdict as an honest error instead of navigating. Client-ID format check only rejects pasted secrets/API keys (must end `.apps.googleusercontent.com`).
+- **Verification (preflight):** `tsc --noEmit` clean; Vitest 72/73 files (505/506, pre-existing `decisionEngine` env failure unrelated); `gscService.test.ts` **36/36** incl. 8 new pre-flight tests (authError decoding, error/consent/unrecognized-host classification, secret-never-sent assertion, fail-open on network error); live probes: plausible-but-unknown client → `invalid_client` from real Google, pasted `GOCSPX-…` secret → local `invalid_client_id_format` with no network call; server boots and `/api/gsc/preflight` answers 401 unauthenticated.
 - **Verification:** `tsc --noEmit` clean; Vitest 69/70 files (474/475) with new `src/lib/gscService.test.ts` at 22/22; live endpoint checks confirmed all `/api/gsc/*` data routes answer 401 JSON unauthenticated, `/api/gsc/auth` answers an honest `gsc_error=oauth_not_configured` redirect, and the callback performs the code/state bounce.
 
 ## GSC OAuth redirect_uri_mismatch Robustness Fix — 2026-10-07

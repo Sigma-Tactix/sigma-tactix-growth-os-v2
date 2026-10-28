@@ -487,9 +487,7 @@ export default function PaidAdsPage() {
       if (/\.(csv|txt|md|json)$/i.test(file.name)) {
         sourceText = await file.text();
       } else if (/\.xlsx?$/i.test(file.name)) {
-        const XLSX = await import('xlsx');
-        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-        sourceText = workbook.SheetNames.map(sheet => XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])).join('\n');
+        throw new Error('Spreadsheet uploads are temporarily unavailable while the workbook parser is under security remediation. Upload CSV instead.');
       } else {
         const formData = new FormData();
         formData.append('file', file);
@@ -1087,7 +1085,7 @@ export default function PaidAdsPage() {
                 onClick={() => setIsUploadPlanModalOpen(true)}
                 icon={<Upload size={13} className="text-[#ff481b]" />}
               >
-                Upload Media Plan (.csv / .xlsx)
+                Upload Media Plan (.csv)
               </Button>
 
               <Button
@@ -2313,7 +2311,7 @@ export default function PaidAdsPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls,.pdf,.json"
+                    accept=".csv,.pdf,.json"
                     onChange={handleSimulatePlanUpload}
                     className="hidden"
                   />

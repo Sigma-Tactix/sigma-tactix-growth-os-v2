@@ -63,6 +63,53 @@ describe('Bounded Workflow Graph & DAG Execution Engine (Phase 2)', () => {
     expect(execution.nodeResults['node-specialist-audit'].status).toBe('succeeded');
   });
 
+  it('runs independent ready nodes concurrently, then releases their shared dependent', async () => {
+    let releaseIndependent!: () => void;
+    const independentGate = new Promise<void>((resolve) => { releaseIndependent = resolve; });
+    const started: string[] = [];
+    const nodes: WorkflowNodeDefinition[] = [
+      {
+        ...sampleNodes[0],
+        id: 'independent-a',
+        dependencies: [],
+        execute: async () => {
+          started.push('a');
+          await independentGate;
+          return { status: 'succeeded' };
+        },
+      },
+      {
+        ...sampleNodes[0],
+        id: 'independent-b',
+        dependencies: [],
+        execute: async () => {
+          started.push('b');
+          await independentGate;
+          return { status: 'succeeded' };
+        },
+      },
+      {
+        ...sampleNodes[1],
+        id: 'dependent',
+        dependencies: ['independent-a', 'independent-b'],
+        execute: async () => {
+          started.push('dependent');
+          return { status: 'succeeded' };
+        },
+      },
+    ];
+    const graph = new BoundedWorkflowGraph({ nodes, workspaceId: 'ws-sigmatactix' });
+    const executionPromise = graph.run();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(started).toEqual(['a', 'b']);
+    releaseIndependent();
+
+    const execution = await executionPromise;
+    expect(execution.status).toBe('succeeded');
+    expect(started).toEqual(['a', 'b', 'dependent']);
+  });
+
   it('blocks downstream nodes when an upstream dependency fails without inventing fake replacements', async () => {
     const failingNodes: WorkflowNodeDefinition[] = [
       {

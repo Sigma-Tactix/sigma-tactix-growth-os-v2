@@ -48,6 +48,7 @@ import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import { apiFetch } from '@/src/lib/api';
 import { getPipelineDisplayState, getPriorityConnectorRequirement } from '@/src/lib/connectorLifecycle';
 import { GoogleAdsMcpControl } from '@/src/components/connectors/GoogleAdsMcpControl';
+import { SocialDistributionControl } from '@/src/components/connectors/SocialDistributionControl';
 
 export interface ActiveConnection {
   id: string;
@@ -1292,6 +1293,10 @@ export default function DataSources() {
 
                 {(selectedCategory === 'all' || selectedCategory === 'ads' || selectedCategory === 'mcp') && (
                   <GoogleAdsMcpControl onSelectCustomer={openGoogleAdsCustomer} />
+                )}
+
+                {(selectedCategory === 'all' || selectedCategory === 'social' || selectedCategory === 'mcp') && (
+                  <SocialDistributionControl />
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

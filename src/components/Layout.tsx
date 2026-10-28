@@ -45,7 +45,8 @@ import {
   FileText,
   Wifi,
   Trophy,
-  Swords
+  Swords,
+  BrainCircuit,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -62,6 +63,7 @@ import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
+import { isVantaReleaseEnabled, resolveVantaNavigationTarget } from '@/src/lib/vantaFeatureFlag';
 
 interface NavSection {
   title: string;
@@ -74,6 +76,22 @@ interface NavSection {
   }[];
 }
 
+const developmentEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
+const vantaNavigationTarget = resolveVantaNavigationTarget({
+  releaseEnabled: isVantaReleaseEnabled(),
+  development: developmentEnv?.DEV === true,
+});
+
+const vantaNavigationItems: NavSection['items'] = vantaNavigationTarget
+  ? [{
+      label: 'Living System',
+      href: vantaNavigationTarget.href,
+      icon: BrainCircuit,
+      roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
+      badge: vantaNavigationTarget.badge,
+    }]
+  : [];
+
 const navSections: NavSection[] = [
   {
     title: 'Growth OS Overview',
@@ -81,6 +99,7 @@ const navSections: NavSection[] = [
       { label: 'Executive Dashboard', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'Growth Diagnostics', href: '/diagnostics', icon: ClipboardCheck, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Health Audit' },
       { label: 'Second Brain Vaults', href: '/vaults', icon: Database, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
+      ...vantaNavigationItems,
     ]
   },
   {
@@ -273,7 +292,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
                 {sectionItems.map((item) => {
-                  const isActive = location.pathname === item.href;
+                  const itemPathname = item.href.split('?')[0];
+                  const isActive = location.pathname === itemPathname;
                   return (
                     <NavLink
                       key={item.href}

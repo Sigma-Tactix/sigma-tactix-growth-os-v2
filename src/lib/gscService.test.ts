@@ -5,9 +5,14 @@ import {
   GSC_REDIRECT_PATH,
   buildGscAnalyticsPayload,
   buildGscAuthUrl,
+  classifyGscAuthProbe,
+  decodeGscAuthError,
   exchangeGscAuthCode,
+  looksSuspiciousGscClientId,
+  maskGscClientId,
   normalizeGscOrigin,
   normalizeGscSiteUrl,
+  probeGscAuthorize,
   readGscSettings,
   readGscTokens,
   resolveGscAppOrigin,
@@ -261,6 +266,35 @@ describe("canonical GSC redirect URI", () => {
     );
     expect(resolveGscRedirectUri()).toBe("");
   });
+
+  it("canonicalizes 127.0.0.1 to localhost (Google compares byte-for-byte)", () => {
+    expect(resolveGscRedirectUri("http://127.0.0.1:8787")).toBe(
+      `http://localhost:8787${GSC_REDIRECT_PATH}`,
+    );
+    process.env.APP_URL = "http://127.0.0.1:3000";
+    expect(resolveGscRedirectUri("http://localhost:3000")).toBe(
+      `http://localhost:3000${GSC_REDIRECT_PATH}`,
+    );
+  });
+
+  it("lowercases mixed-case hostnames before minting the URI", () => {
+    expect(normalizeGscOrigin("http://LocalHost:3000/")).toBe("http://localhost:3000");
+  });
+});
+
+describe("GSC OAuth client-ID shape check", () => {
+  it("accepts a full Web client ID", () => {
+    expect(
+      looksSuspiciousGscClientId("123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com"),
+    ).toBe(false);
+  });
+
+  it("flags truncated, whitespace-bearing, and non-Google values", () => {
+    expect(looksSuspiciousGscClientId("")).toBe(true);
+    expect(looksSuspiciousGscClientId("short-id")).toBe(true);
+    expect(looksSuspiciousGscClientId("123456789012-abc def.apps.googleusercontent.com")).toBe(true);
+    expect(looksSuspiciousGscClientId("not-a-google-client")).toBe(true);
+  });
 });
 
 describe("buildGscAnalyticsPayload", () => {
@@ -333,6 +367,113 @@ describe("buildGscAnalyticsPayload", () => {
     expect(payload.timeSeries).toHaveLength(1);
     expect(payload.timeSeries[0].date).toBe("2026-09-01");
     expect(payload.topQueries.map(q => q.query)).toEqual(["kept"]);
+  });
+});
+
+// Pre-flight seam for the persistent Error 400 redirect_uri_mismatch: the
+// server probes Google's authorize endpoint with the exact pair BEFORE the
+// browser navigates, decodes Google's base64url authError bounce, and never
+// blocks the real flow when the probe itself fails (fail-open ok:null).
+describe("GSC authorize pre-flight", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("decodes Google's protobuf-wrapped authError values", () => {
+    // Live-probed shape: 0x0a + length + ASCII ("invalid_client").
+    expect(decodeGscAuthError("Cg5pbnZhbGlkX2NsaWVudA")).toBe("invalid_client");
+    const mismatch = Buffer.concat([Buffer.from([0x0a, 0x14]), Buffer.from("redirect_uri_mismatch")]).toString("base64url");
+    expect(decodeGscAuthError(mismatch)).toBe("redirect_uri_mismatch");
+    // Falls back to the raw value when not base64url-wrapped.
+    expect(decodeGscAuthError("error=redirect_uri_mismatch")).toBe("redirect_uri_mismatch");
+    expect(decodeGscAuthError("")).toBeNull();
+    expect(decodeGscAuthError(null)).toBeNull();
+    expect(decodeGscAuthError("Cg5pbnZhbGlkX2NsaWVudA@not-base64!!")).toBe("invalid_client");
+  });
+
+  it("classifies the error bounce as a rejection with Google's exact code", () => {
+    const errorLocation = `https://accounts.google.com/signin/oauth/error?authError=${Buffer.concat([
+      Buffer.from([0x0a, 0x14]),
+      Buffer.from("redirect_uri_mismatch"),
+    ]).toString("base64url")}`;
+    const verdict = classifyGscAuthProbe({ status: 302, location: errorLocation });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.code).toBe("redirect_uri_mismatch");
+  });
+
+  it("treats a sign-in/consent redirect as acceptance of the pair", () => {
+    expect(
+      classifyGscAuthProbe({
+        status: 302,
+        location: "https://accounts.google.com/v3/signin/oauth/error-check?authFlowRequestedUri=x",
+      }).ok,
+    ).not.toBe(true); // error-check page is not plain sign-in
+    expect(classifyGscAuthProbe({ status: 302, location: "https://accounts.google.com/signin/oauth/consent?continue=x" }).ok).toBe(true);
+    expect(classifyGscAuthProbe({ status: 302, location: "https://accounts.google.com/v3/signin/challenge/pwd?continue=x" }).ok).toBe(true);
+  });
+
+  it("falls open on redirects to unrecognized hosts", () => {
+    const verdict = classifyGscAuthProbe({ status: 302, location: "https://phish.example.com/steal" });
+    expect(verdict.ok).toBeNull();
+    expect(verdict.code).toBe("unexpected_redirect");
+  });
+
+  it("classifies a directly-served error body instead of a redirect", () => {
+    const verdict = classifyGscAuthProbe({ status: 200, body: "<html>Error 400: redirect_uri_mismatch</html>" });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.code).toBe("redirect_uri_mismatch");
+    expect(classifyGscAuthProbe({ status: 200, body: '<form action="https://accounts.google.com/signin">' }).ok).toBe(true);
+    expect(classifyGscAuthProbe({ status: 429, body: "" }).ok).toBeNull();
+  });
+
+  it("masks a client id down to an identifiable prefix + suffix", () => {
+    const masked = maskGscClientId("1067897367455-abc123def456gh789ij012kl345mn67.apps.googleusercontent.com");
+    expect(masked.startsWith("10678973")).toBe(true);
+    expect(masked.endsWith(".apps.googleusercontent.com")).toBe(true);
+    expect(masked).not.toContain("abc123def456");
+    expect(maskGscClientId("short")).toBe("short");
+  });
+
+  it("rejects a non-Google client id locally without hitting the network", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const verdict = await probeGscAuthorize({ clientId: "not-a-client-id", redirectUri: "http://localhost:3000/api/gsc/callback" });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.code).toBe("invalid_client_id_format");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("probes with redirect:manual and classifies Google's 302 verdict", async () => {
+    const errorLocation = "https://accounts.google.com/signin/oauth/error?authError=Cg5pbnZhbGlkX2NsaWVudA";
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 302,
+      headers: { get: (h: string) => (h === "location" ? errorLocation : null) },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const verdict = await probeGscAuthorize({
+      clientId: "1234567890-abcdefghijklmnop.apps.googleusercontent.com",
+      redirectUri: "http://localhost:3000/api/gsc/callback",
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.code).toBe("invalid_client");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("client_id=1234567890-abcdefghijklmnop.apps.googleusercontent.com");
+    expect(String(url)).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fgsc%2Fcallback");
+    expect(init.redirect).toBe("manual");
+    // The secret must never be sent to the authorize endpoint.
+    expect(String(url)).not.toContain("client_secret");
+  });
+
+  it("fails open when Google is unreachable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ETIMEDOUT")));
+    const verdict = await probeGscAuthorize({
+      clientId: "1234567890-abcdefghijklmnop.apps.googleusercontent.com",
+      redirectUri: "http://localhost:3000/api/gsc/callback",
+    });
+    expect(verdict.ok).toBeNull();
+    expect(verdict.code).toBe("probe_failed");
+    expect(verdict.detail).toContain("ETIMEDOUT");
   });
 });
 

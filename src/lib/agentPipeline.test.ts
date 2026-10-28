@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { buildScopedBrainContext } from "./agentPolicies.js";
 import { GROWTH_OS_AGENT_TOOLS, GROWTH_OS_OPENAI_TOOLS, executeAgentToolCall } from "./agentTools.js";
 import type { SecondBrain } from "../types.js";
@@ -48,12 +48,46 @@ describe("Agentic OS Enhancements", () => {
   });
 
   it("executes get_connector_status tool call cleanly", async () => {
+    const verifiedBrain: SecondBrain = {
+      ...mockBrain,
+      connectors: [
+        {
+          id: "conn-meta",
+          platform: "Meta Ads",
+          status: "Connected",
+          verificationState: "verified",
+          verifiedAt: "2026-10-08T08:00:00.000Z",
+          connectedBy: "owner",
+        },
+        {
+          id: "conn-google",
+          platform: "Google Ads",
+          status: "Connected",
+          verificationState: "configured",
+          connectedBy: "owner",
+        },
+      ],
+    };
     const res = await executeAgentToolCall({
       name: "get_connector_status",
       args: {},
-      secondBrain: mockBrain,
+      secondBrain: verifiedBrain,
     });
-    expect(res.connectedPlatforms).toEqual(["Meta Ads", "Google Ads"]);
+    expect(res.connectedPlatforms).toEqual(["Meta Ads"]);
+    expect(res.connectors).toEqual([
+      expect.objectContaining({ platform: "Meta Ads", state: "verified" }),
+      expect.objectContaining({ platform: "Google Ads", state: "configured" }),
+    ]);
+  });
+
+  it("never invents connector status when the workspace has no verified connectors", async () => {
+    const res = await executeAgentToolCall({
+      name: "get_connector_status",
+      args: {},
+      secondBrain: { ...mockBrain, connectors: [] },
+    });
+    expect(res.connectedPlatforms).toEqual([]);
+    expect(res.connectors).toEqual([]);
   });
 
   it("exports valid OpenAI-compatible tools including sandboxed tools", () => {
@@ -91,12 +125,35 @@ describe("Agentic OS Enhancements", () => {
     expect(res.error).toContain("Path traversal");
   });
 
-  it("executes safe commands with run_sandboxed_command", async () => {
-    const res = await executeAgentToolCall({
-      name: "run_sandboxed_command",
-      args: { command: "echo 'hello from sandbox'" },
-    });
-    expect(res.stdout).toContain("hello from sandbox");
-    expect(res.success).toBe(true);
+  it("fails closed when the isolated command supervisor is unavailable", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("supervisor offline"));
+    try {
+      const res = await executeAgentToolCall({
+        name: "run_sandboxed_command",
+        args: { command: "echo 'must not run on host'" },
+      });
+      expect(res.success).toBe(false);
+      expect(res.error).toContain("isolated command supervisor");
+      expect(res.stdout).toBeUndefined();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("blocks private-network URLs before an agent HTTP request is sent", async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as typeof fetch;
+    try {
+      const res = await executeAgentToolCall({
+        name: "http_request",
+        args: { url: "http://127.0.0.1:3000/internal" },
+      });
+      expect(res.error).toMatch(/private|internal|localhost/i);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

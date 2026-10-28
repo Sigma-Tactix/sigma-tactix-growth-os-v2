@@ -102,7 +102,7 @@ function isPrivateOrReservedIp(ip: string): boolean {
 // rebinding means "looked safe once" isn't good enough on its own, but this
 // closes the straightforward case (an attacker just pointing a domain, or
 // using a raw IP/localhost, at an internal target).
-async function assertPublicHost(urlString: string): Promise<void> {
+export async function assertPublicHost(urlString: string): Promise<void> {
   const { hostname } = new URL(urlString);
   if (isIP(hostname)) {
     if (isPrivateOrReservedIp(hostname)) throw new Error(`Refusing to fetch a private/internal address: ${hostname}`);
@@ -120,6 +120,17 @@ async function assertPublicHost(urlString: string): Promise<void> {
       throw new Error(`Refusing to fetch ${hostname} — it resolves to a private/internal address (${address})`);
     }
   }
+}
+
+/**
+ * Normalizes an agent-supplied HTTP(S) URL and proves that its current DNS
+ * answers do not target loopback, link-local, private, or reserved networks.
+ * Callers that follow redirects must invoke this again for every hop.
+ */
+export async function assertPublicHttpUrl(rawUrl: string): Promise<string> {
+  const normalized = normalizeUrl(rawUrl);
+  await assertPublicHost(normalized);
+  return normalized;
 }
 
 export async function fetchSiteContent(rawUrl: string, timeoutMs = 12000): Promise<SiteSnapshot> {
@@ -315,4 +326,3 @@ export function createSyntheticSnapshot(domain: string): SiteSnapshot {
     synthetic: true,
   };
 }
-

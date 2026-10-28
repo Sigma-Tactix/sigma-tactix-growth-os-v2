@@ -1,356 +1,263 @@
-import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
-import React, { useState } from 'react';
-import { 
-  Target, 
-  Sparkles, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle2, 
-  ArrowRight, 
-  Copy, 
-  Check, 
-  RefreshCw, 
-  Sliders, 
-  Layers, 
-  MousePointer, 
-  ShieldCheck, 
-  Zap,
-  BarChart,
-  SplitSquareVertical
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import { cn } from '@/src/lib/utils';
-import { Button, GlassCard, Badge } from '@/src/components/ui';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle2, Download, Eye, FileCode2, Loader2, ShieldCheck, Sparkles, SplitSquareVertical } from 'lucide-react';
+import { Badge, Button, GlassCard } from '@/src/components/ui';
 import { useToast } from '@/src/contexts/ToastContext';
+import { useUser } from '@/src/contexts/UserContext';
+import { apiFetch } from '@/src/lib/api';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 
-interface AbVariant {
+type LandingArtifact = {
   id: string;
-  badge: string;
-  headline: string;
-  subheadline: string;
-  ctaText: string;
-  predictedLift: string;
-  confidenceScore: string;
-}
+  sourceUrl: string;
+  sourceCapturedAt: string;
+  sourceTitle: string;
+  sections: Array<{ id: string; label: string; purpose: string }>;
+  previews: {
+    sourceDesktop: string | null;
+    sourceMobile: string | null;
+    proposedDesktop: string | null;
+    proposedMobile: string | null;
+  };
+  htmlHash: string;
+  htmlUrl: string;
+  status: 'draft' | 'approved' | 'archived';
+};
 
-const DEMO_INITIAL_VARIANTS: AbVariant[] = [
-  {
-    id: 'var-a',
-    badge: 'Control (Direct Value)',
-    headline: 'Stop Renting Your Growth. Deploy an AI-Native Growth OS.',
-    subheadline: 'Replace fragile agency retainers with sovereign intelligence and autonomous marketing execution.',
-    ctaText: 'Run Your Free Diagnostic',
-    predictedLift: '+0.0%',
-    confidenceScore: 'Baseline'
-  },
-  {
-    id: 'var-b',
-    badge: 'Challenger 1 (Pain-Agitation)',
-    headline: 'Your Agency Retainer is Leaking 38% of Your Pipeline.',
-    subheadline: 'Junior staff turn over every 9 months. With them goes your context. Install permanent institutional memory.',
-    ctaText: 'Expose Your Funnel Leaks',
-    predictedLift: '+28.4%',
-    confidenceScore: '94% Probability'
-  },
-  {
-    id: 'var-c',
-    badge: 'Challenger 2 (First-Principles Tech)',
-    headline: 'Autonomous AI Growth Infrastructure for Venture-Backed B2B.',
-    subheadline: '10 permissioned vaults. Scoped agent swarms. Zero headcount inflation.',
-    ctaText: 'Explore Architecture',
-    predictedLift: '+19.2%',
-    confidenceScore: '89% Probability'
-  }
-];
+const apiError = async (response: Response, fallback: string) => {
+  const body = await response.json().catch(() => ({}));
+  return body.error || fallback;
+};
 
 export default function CroStudioPage() {
-  const { notifySuccess, notifyError } = useToast();
-  const [pageUrl, setPageUrl] = useState('https://sigmatactix.com');
-  const [variants, setVariants] = useState<AbVariant[]>(INITIAL_VARIANTS);
-  const [selectedVariant, setSelectedVariant] = useState<string>('var-b');
-  const [isAuditing, setIsAuditing] = useState(false);
+  const { notifyError, notifySuccess } = useToast();
+  const { role } = useUser();
+  const [url, setUrl] = useState('');
+  const [objective, setObjective] = useState('Clarify the buyer journey before a working session.');
+  const [audience, setAudience] = useState('Operations and commercial leaders');
+  const [primaryCta, setPrimaryCta] = useState('Request a working session');
+  const [artifacts, setArtifacts] = useState<LandingArtifact[]>([]);
+  const [selected, setSelected] = useState<LandingArtifact | null>(null);
+  const [html, setHtml] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
-  // Funnel Friction Simulation State
-  const [trafficVolume, setTrafficVolume] = useState<number>(25000);
-  const [heroConversion, setHeroConversion] = useState<number>(4.2);
-  const [formCompletion, setFormCompletion] = useState<number>(35.0);
-  const [qualifiedRate, setQualifiedRate] = useState<number>(55.0);
+  const loadArtifacts = async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch('/api/workspace/cro/artifacts');
+      if (!response.ok) throw new Error(await apiError(response, 'Could not load landing artifacts.'));
+      const payload = await response.json();
+      const next = Array.isArray(payload.artifacts) ? payload.artifacts as LandingArtifact[] : [];
+      setArtifacts(next);
+      setSelected(current => current ? next.find(artifact => artifact.id === current.id) || null : next[0] || null);
 
-  // Agent Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-cro-01',
-      agentName: 'CRO Funnel Agent',
-      agentRole: 'Conversion Rate Architect & A/B Experimenter',
-      timestamp: 'Today at 05:05 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'CRO & Landing Page Studio',
-      inputSummary: 'URL: sigmatactix.com (Full-page audit & A/B synthesis)',
-      outputSummary: 'Diagnosed 3 friction bottlenecks. Synthesized 2 high-converting challenger variants.',
-      fullOutput: JSON.stringify(INITIAL_VARIANTS, null, 2),
-      metrics: [
-        { label: 'Current Conversion', value: '4.2%' },
-        { label: 'Projected Conversion', value: '5.8%' },
-        { label: 'Expected Pipeline Lift', value: '+$142k/mo' },
-        { label: 'Friction Score', value: 'Low' }
-      ]
+      if (next.length > 0) {
+        setRunHistory(next.map(item => ({
+          id: `run-cro-${item.id}`,
+          agentName: 'CRO Optimization & Landing Page Agent',
+          agentRole: 'Wireframe & Proposed Architecture Synthesis',
+          timestamp: new Date(item.sourceCapturedAt).toLocaleString(),
+          status: 'SUCCESS',
+          moduleOrigin: 'CRO & Landing Pages Studio',
+          inputSummary: `Source: ${item.sourceUrl}`,
+          outputSummary: `Retained proposal for "${item.sourceTitle || item.sourceUrl}" with ${item.sections?.length || 0} conversion sections, SHA-256 integrity-verified HTML, and desktop/mobile previews.`,
+          fullOutput: JSON.stringify(item, null, 2),
+          metrics: [
+            { label: 'Sections', value: `${item.sections?.length || 0}` },
+            { label: 'Status', value: item.status },
+            { label: 'Integrity', value: `${item.htmlHash.slice(0, 10)}…` },
+            { label: 'Previews', value: item.previews.proposedDesktop ? 'Ready' : 'Pending' }
+          ]
+        })));
+      }
+    } catch (error: any) {
+      notifyError('Landing artifacts unavailable', error?.message || 'Could not load saved proposals.');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const handleAudit = () => {
-    setIsAuditing(true);
-    setTimeout(() => {
-      setIsAuditing(false);
+  useEffect(() => { void loadArtifacts(); }, []);
+
+  useEffect(() => {
+    if (!selected) {
+      setHtml('');
+      return;
+    }
+    let active = true;
+    apiFetch(selected.htmlUrl)
+      .then(async response => {
+        if (!response.ok) throw new Error(await apiError(response, 'Could not load editable HTML.'));
+        return response.text();
+      })
+      .then(value => { if (active) setHtml(value); })
+      .catch(error => { if (active) notifyError('Artifact integrity unavailable', error?.message || 'Could not load proposal.'); });
+    return () => { active = false; };
+  }, [selected?.id]);
+
+  const createArtifact = async () => {
+    if (!url.trim()) {
+      notifyError('Public URL required', 'Enter the public page to capture before creating a proposal.');
+      return;
+    }
+    setCreating(true);
+    try {
+      const response = await apiFetch('/api/workspace/cro/artifacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim(), objective: objective.trim(), audience: audience.trim(), primaryCta: primaryCta.trim() }),
+      });
+      if (!response.ok) throw new Error(await apiError(response, 'No proposal was created.'));
+      const { artifact } = await response.json();
+      setArtifacts(previous => [artifact, ...previous]);
+      setSelected(artifact);
+      notifySuccess('Proposal captured', 'Source evidence, editable HTML, and desktop/mobile previews are retained as a draft.');
 
       const newRun: AgentRunRecord = {
         id: `run-cro-${Date.now()}`,
-        agentName: 'CRO Funnel Agent',
-        agentRole: 'Conversion Rate Architect & A/B Experimenter',
+        agentName: 'CRO Optimization & Landing Page Agent',
+        agentRole: 'Wireframe & Proposed Architecture Synthesis',
         timestamp: 'Just now',
         status: 'SUCCESS',
-        moduleOrigin: 'CRO & Landing Page Studio',
-        inputSummary: `Audited ${pageUrl}`,
-        outputSummary: 'Completed full-page heuristic evaluation and generated friction score.',
-        fullOutput: `URL: ${pageUrl}\nCalculated Pipeline Opportunity: +$142,000 ARR`,
+        moduleOrigin: 'CRO & Landing Pages Studio',
+        inputSummary: `Public URL: ${url.trim()} | Objective: ${objective.trim()}`,
+        outputSummary: `Evidence-backed landing page proposal generated for ${artifact.sourceTitle || artifact.sourceUrl}. Desktop & mobile previews, wireframes, and SHA-256 verified HTML are ready.`,
+        fullOutput: JSON.stringify(artifact, null, 2),
         metrics: [
-          { label: 'Audited URL', value: pageUrl },
-          { label: 'Speed Score', value: '98/100' },
-          { label: 'Clarity Index', value: '96/100' }
+          { label: 'Sections', value: `${artifact.sections?.length || 0}` },
+          { label: 'Status', value: artifact.status },
+          { label: 'SHA-256', value: `${artifact.htmlHash.slice(0, 10)}…` },
+          { label: 'Previews', value: 'Desktop & Mobile' }
         ]
       };
-
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('CRO Audit Complete', 'Heuristic teardown and copy variants refreshed.');
-    }, 1300);
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Capture, rendering, or retention did not complete.';
+      notifyError('Proposal not created', errorMsg);
+      const errRun: AgentRunRecord = {
+        id: `run-cro-error-${Date.now()}`,
+        agentName: 'CRO Optimization & Landing Page Agent',
+        agentRole: 'Wireframe & Proposed Architecture Synthesis',
+        timestamp: 'Just now',
+        status: 'ERROR',
+        moduleOrigin: 'CRO & Landing Pages Studio',
+        inputSummary: `Public URL: ${url.trim()} | Objective: ${objective.trim()}`,
+        outputSummary: `Generation encountered error: ${errorMsg}. Audit trail recorded for inspection.`,
+        fullOutput: JSON.stringify({ error: errorMsg, url: url.trim(), timestamp: new Date().toISOString() }, null, 2),
+        metrics: [
+          { label: 'Status', value: 'ERROR' },
+          { label: 'URL', value: url.trim() }
+        ]
+      };
+      setRunHistory(prev => [errRun, ...prev]);
+    } finally {
+      setCreating(false);
+    }
   };
 
-  // Funnel calculations
-  const totalLeads = Math.round(trafficVolume * (heroConversion / 100));
-  const completedForms = Math.round(totalLeads * (formCompletion / 100));
-  const qualifiedOps = Math.round(completedForms * (qualifiedRate / 100));
+  const approve = async () => {
+    if (!selected) return;
+    setApproving(true);
+    try {
+      const response = await apiFetch(`/api/workspace/cro/artifacts/${selected.id}/approve`, { method: 'POST' });
+      if (!response.ok) throw new Error(await apiError(response, 'Could not approve the landing proposal.'));
+      const { artifact } = await response.json();
+      setArtifacts(previous => previous.map(item => item.id === artifact.id ? artifact : item));
+      setSelected(artifact);
+      notifySuccess('Proposal approved', 'Approval is retained with the source and HTML hashes. It is still not published.');
 
-  return (
-    <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="brand" size="sm" icon={<Target size={12} />}>Conversion Rate Optimization</Badge>
-            <Badge variant="neutral" size="sm">Digital Marketing</Badge>
-          </div>
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
-            CRO & Landing Page Studio
-          </h1>
-          <p className="text-sm text-[var(--sigma-text-muted)] mt-1.5 max-w-3xl leading-relaxed">
-            Optimize conversion funnels, test high-impact headline variants, and eliminate pipeline friction with empirical A/B testing.
-          </p>
-        </div>
+      const approveRun: AgentRunRecord = {
+        id: `run-cro-approve-${Date.now()}`,
+        agentName: 'CRO Compliance & Governance Engine',
+        agentRole: 'Proposal Verification & Formal Approval',
+        timestamp: 'Just now',
+        status: 'SUCCESS',
+        moduleOrigin: 'CRO & Landing Pages Studio',
+        inputSummary: `Proposal: ${artifact.id} (${artifact.sourceTitle || artifact.sourceUrl})`,
+        outputSummary: `Proposal status transitioned to "approved". SHA-256 hash verified and locked.`,
+        fullOutput: JSON.stringify(artifact, null, 2),
+        metrics: [
+          { label: 'Status', value: 'approved' },
+          { label: 'SHA-256', value: `${artifact.htmlHash.slice(0, 10)}…` }
+        ]
+      };
+      setRunHistory(prev => [approveRun, ...prev]);
+    } catch (error: any) {
+      notifyError('Approval blocked', error?.message || 'The proposal remains a draft.');
+    } finally {
+      setApproving(false);
+    }
+  };
 
-        <div className="flex items-center gap-2.5">
-          <Badge variant="success" size="sm" icon={<ShieldCheck size={12} />}>
-            Empirical Lift Predictor Active
-          </Badge>
-        </div>
+  const downloadHtml = async () => {
+    if (!selected) return;
+    try {
+      const response = await apiFetch(selected.htmlUrl);
+      if (!response.ok) throw new Error(await apiError(response, 'Could not download editable HTML.'));
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `proposed-landing-page-${selected.id}.html`;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error: any) {
+      notifyError('Download unavailable', error?.message || 'Could not retrieve the verified artifact.');
+    }
+  };
+
+  return <div className="space-y-7 pb-16">
+    <div className="flex flex-col gap-4 border-b border-[var(--sigma-border)] pb-6 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div className="mb-2 flex items-center gap-2"><Badge variant="brand" size="sm" icon={<SplitSquareVertical size={12} />}>CRO proposal studio</Badge><Badge variant="neutral" size="sm">Public evidence only</Badge></div>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--sigma-text)] lg:text-4xl">Current vs. proposed landing page</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">Capture a public page, retain desktop/mobile evidence, and create an editable proposal. No lift, performance, or publication claim is made.</p>
       </div>
-
-      {/* URL Audit Bar */}
-      <GlassCard spotlight className="p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
-          <span className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] shrink-0">Target Page:</span>
-          <input
-            type="text"
-            value={pageUrl}
-            onChange={e => setPageUrl(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[#ff481b] transition-colors"
-          />
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleAudit}
-          disabled={isAuditing}
-          isLoading={isAuditing}
-          icon={<Sparkles size={13} />}
-          className="w-full sm:w-auto shrink-0"
-        >
-          Run CRO Teardown
-        </Button>
-      </GlassCard>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: A/B Headline Variants */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-              <SplitSquareVertical className="w-4 h-4 text-[#ff481b]" />
-              Above-the-Fold A/B Value Proposition Variants
-            </h3>
-            <Badge variant="neutral" size="xs">{variants.length} Variants</Badge>
-          </div>
-
-          <div className="space-y-3">
-            {variants.map(v => (
-              <GlassCard
-                key={v.id}
-                spotlight
-                interactive
-                onClick={() => setSelectedVariant(v.id)}
-                className={cn(
-                  "p-4 text-left cursor-pointer transition-all space-y-3",
-                  selectedVariant === v.id
-                    ? "border-[#ff481b]/50 ring-1 ring-[#ff481b]/30 shadow-md"
-                    : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <Badge variant="neutral" size="xs">
-                    {v.badge}
-                  </Badge>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="success" size="xs">
-                      {v.predictedLift}
-                    </Badge>
-                    <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">({v.confidenceScore})</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-[var(--sigma-text)] tracking-tight">{v.headline}</h4>
-                  <p className="text-xs text-[var(--sigma-text-muted)] mt-1 leading-relaxed">{v.subheadline}</p>
-                </div>
-
-                <div className="pt-2 border-t border-[var(--sigma-border)] flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[var(--sigma-text-muted)]">CTA:</span>
-                    <span className="font-semibold text-[#ff481b] bg-[#ff481b]/10 border border-[#ff481b]/20 px-2 py-0.5 rounded">
-                      {v.ctaText}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText(`${v.headline}\n${v.subheadline}\nCTA: ${v.ctaText}`);
-                      notifySuccess('Copied', 'Variant copy copied to clipboard.');
-                    }}
-                    icon={<Copy size={11} />}
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column: Funnel Drop-off Simulator */}
-        <div className="lg:col-span-5 space-y-6">
-          <GlassCard spotlight className="p-5 space-y-5">
-            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
-              <h3 className="text-xs font-semibold text-[var(--sigma-text)] uppercase font-mono flex items-center gap-2">
-                <BarChart className="w-3.5 h-3.5 text-[#ff481b]" />
-                Funnel Conversion Simulator
-              </h3>
-              <Badge variant="neutral" size="xs">Interactive</Badge>
-            </div>
-
-            {/* Sliders */}
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
-                  <span>Monthly Unique Visitors</span>
-                  <span className="font-bold text-[var(--sigma-text)]">{trafficVolume.toLocaleString()}</span>
-                </div>
-                <input
-                  type="range"
-                  min={5000}
-                  max={100000}
-                  step={2500}
-                  value={trafficVolume}
-                  onChange={e => setTrafficVolume(Number(e.target.value))}
-                  className="w-full accent-[#ff481b] cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
-                  <span>Hero CTA Conversion Rate</span>
-                  <span className="font-bold text-[#ff481b]">{heroConversion}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={1.0}
-                  max={12.0}
-                  step={0.2}
-                  value={heroConversion}
-                  onChange={e => setHeroConversion(Number(e.target.value))}
-                  className="w-full accent-[#ff481b] cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1 text-[var(--sigma-text-muted)] font-mono text-[11px]">
-                  <span>Demo Form Completion Rate</span>
-                  <span className="font-bold text-amber-400">{formCompletion}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={10.0}
-                  max={70.0}
-                  step={1.0}
-                  value={formCompletion}
-                  onChange={e => setFormCompletion(Number(e.target.value))}
-                  className="w-full accent-[#ff481b] cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* Funnel Output Summary */}
-            <div className="p-3.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] space-y-2.5">
-              <div className="text-[10px] font-semibold text-[var(--sigma-text-muted)] uppercase tracking-wider font-mono">
-                Simulated Enterprise Pipeline
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center font-mono">
-                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Total Leads</div>
-                  <div className="font-bold text-[var(--sigma-text)] text-sm mt-0.5">{totalLeads}</div>
-                </div>
-                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Demos Booked</div>
-                  <div className="font-bold text-[#ff481b] text-sm mt-0.5">{completedForms}</div>
-                </div>
-                <div className="p-2 rounded-lg bg-[var(--sigma-bg)] border border-[var(--sigma-border)]">
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">SQL Ops</div>
-                  <div className="font-bold text-emerald-400 text-sm mt-0.5">{qualifiedOps}</div>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </div>
-      </div>
-
-      {/* Agent Run Results */}
-      <div className="mt-8">
-        <AgentRunResults
-          records={runHistory}
-          title="CRO Execution & Experiment Logs"
-          description="Log of landing page teardowns, A/B test variations, and conversion lift projections."
-          onClear={() => setRunHistory([])}
-        />
-      </div>
+      <Badge variant="neutral" size="sm" icon={<ShieldCheck size={12} />}>Approval required before delivery</Badge>
     </div>
-  );
+
+    <GlassCard className="space-y-4 p-5" spotlight>
+      <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[#ff481b]" /><h2 className="text-sm font-semibold text-[var(--sigma-text)]">Create an evidence-backed proposal</h2></div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <label className="space-y-1.5 text-xs text-[var(--sigma-text-muted)] lg:col-span-2">Public page URL<input value={url} onChange={event => setUrl(event.target.value)} placeholder="https://example.com/product" className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-2 text-sm text-[var(--sigma-text)] outline-none focus:border-[#ff481b]" /></label>
+        <label className="space-y-1.5 text-xs text-[var(--sigma-text-muted)]">Buyer audience<input value={audience} onChange={event => setAudience(event.target.value)} className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-2 text-sm text-[var(--sigma-text)] outline-none focus:border-[#ff481b]" /></label>
+        <label className="space-y-1.5 text-xs text-[var(--sigma-text-muted)]">Approved next step<input value={primaryCta} onChange={event => setPrimaryCta(event.target.value)} className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-2 text-sm text-[var(--sigma-text)] outline-none focus:border-[#ff481b]" /></label>
+        <label className="space-y-1.5 text-xs text-[var(--sigma-text-muted)] lg:col-span-2">Objective<textarea value={objective} onChange={event => setObjective(event.target.value)} rows={2} className="w-full resize-y rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-2 text-sm text-[var(--sigma-text)] outline-none focus:border-[#ff481b]" /></label>
+      </div>
+      <Button variant="primary" size="sm" onClick={createArtifact} disabled={creating} isLoading={creating} icon={<FileCode2 size={14} />}>Capture evidence & create proposal</Button>
+    </GlassCard>
+
+    {loading ? <div className="flex items-center gap-2 py-12 text-sm text-[var(--sigma-text-muted)]"><Loader2 className="h-4 w-4 animate-spin" /> Loading durable proposals…</div> : artifacts.length === 0 ? <GlassCard className="p-8 text-center"><Eye className="mx-auto mb-3 h-6 w-6 text-[var(--sigma-text-muted)]" /><h2 className="font-semibold text-[var(--sigma-text)]">No proposal yet</h2><p className="mx-auto mt-2 max-w-lg text-sm text-[var(--sigma-text-muted)]">A proposal appears only after its source capture, editable HTML, and both proposed-page previews are retained.</p></GlassCard> : null}
+
+    {selected && <div className="space-y-5">
+      <GlassCard className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+        <div><div className="mb-1 flex items-center gap-2"><h2 className="font-semibold text-[var(--sigma-text)]">{selected.sourceTitle || selected.sourceUrl}</h2><Badge variant={selected.status === 'approved' ? 'success' : 'neutral'} size="xs">{selected.status}</Badge></div><p className="text-xs text-[var(--sigma-text-muted)]">Captured {new Date(selected.sourceCapturedAt).toLocaleString()} · HTML SHA-256 {selected.htmlHash.slice(0, 12)}…</p></div>
+        <div className="flex flex-wrap gap-2"><Button variant="ghost" size="sm" onClick={downloadHtml} icon={<Download size={13} />}>Editable HTML</Button>{selected.status === 'draft' && role !== 'USER' && <Button variant="primary" size="sm" onClick={approve} disabled={approving} isLoading={approving} icon={<CheckCircle2 size={13} />}>Approve proposal</Button>}</div>
+      </GlassCard>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <GlassCard className="overflow-hidden p-0"><div className="border-b border-[var(--sigma-border)] p-4"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Captured current page · desktop</div></div>{selected.previews.sourceDesktop ? <img src={selected.previews.sourceDesktop} alt={`Captured source page: ${selected.sourceUrl}`} className="block h-[540px] w-full object-cover object-top" /> : <div className="p-8 text-sm text-amber-300">Source preview unavailable; this proposal cannot be approved.</div>}</GlassCard>
+        <GlassCard className="overflow-hidden p-0"><div className="border-b border-[var(--sigma-border)] p-4"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Proposed editable page · desktop</div></div>{selected.previews.proposedDesktop ? <img src={selected.previews.proposedDesktop} alt="Rendered proposed landing page" className="block h-[540px] w-full object-cover object-top" /> : <div className="p-8 text-sm text-amber-300">Proposal preview unavailable; this proposal cannot be approved.</div>}</GlassCard>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <GlassCard className="overflow-hidden p-0"><div className="border-b border-[var(--sigma-border)] p-4"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Captured current page · mobile</div></div>{selected.previews.sourceMobile ? <div className="bg-[var(--sigma-surface-subtle)] p-4"><img src={selected.previews.sourceMobile} alt={`Captured mobile source page: ${selected.sourceUrl}`} className="mx-auto block h-[540px] max-w-full rounded-lg border border-[var(--sigma-border)] object-cover object-top" /></div> : <div className="p-8 text-sm text-amber-300">Mobile source preview unavailable; this proposal cannot be approved.</div>}</GlassCard>
+        <GlassCard className="overflow-hidden p-0"><div className="border-b border-[var(--sigma-border)] p-4"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Proposed editable page · mobile</div></div>{selected.previews.proposedMobile ? <div className="bg-[var(--sigma-surface-subtle)] p-4"><img src={selected.previews.proposedMobile} alt="Rendered mobile proposed landing page" className="mx-auto block h-[540px] max-w-full rounded-lg border border-[var(--sigma-border)] object-cover object-top" /></div> : <div className="p-8 text-sm text-amber-300">Mobile proposal preview unavailable; this proposal cannot be approved.</div>}</GlassCard>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[.65fr_1.35fr]">
+        <GlassCard className="p-5"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Wireframe & rationale</div><div className="mt-4 space-y-3">{selected.sections.map(section => <div key={section.id} className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-3"><div className="font-medium text-[var(--sigma-text)]">{section.label}</div><p className="mt-1 text-xs leading-relaxed text-[var(--sigma-text-muted)]">{section.purpose}</p></div>)}</div><p className="mt-5 text-xs leading-relaxed text-[var(--sigma-text-muted)]">This is a proposed information architecture, not measured customer behavior or an expected conversion result.</p></GlassCard>
+        <GlassCard className="overflow-hidden p-0"><div className="border-b border-[var(--sigma-border)] p-4"><div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Editable HTML preview</div></div>{html ? <iframe title="Editable proposed landing page" srcDoc={html} sandbox="" className="h-[650px] w-full bg-white" /> : <div className="p-8 text-sm text-[var(--sigma-text-muted)]">Loading integrity-checked HTML…</div>}</GlassCard>
+      </div>
+    </div>}
+
+    {/* CRO Proposals & Landing Run Results History */}
+    <div className="mt-10">
+      <AgentRunResults
+        records={runHistory}
+        title="CRO & Landing Proposal Run History"
+        description="Comprehensive audit trail of captured public evidence, rendered proposals, SHA-256 integrity hashes, and governance approvals."
+        onClear={() => setRunHistory([])}
+      />
+    </div>
+  </div>;
 }
-
-
-// ---------------------------------------------------------------------------
-// Phase 0: fabricated client data is DEMO-ONLY.
-// These fixtures describe ad spend, ROAS, pipeline, audiences and
-// campaign results that this workspace has never had. A fresh tenant
-// must render none of them; they stay reachable behind
-// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
-// ---------------------------------------------------------------------------
-const INITIAL_VARIANTS = isDemoSeedEnabled() ? DEMO_INITIAL_VARIANTS : [];

@@ -82,6 +82,7 @@ describe("aiProvider - Unified Agent AI Gateway & ReAct Execution", () => {
         scopedContext: "Brand: Example SaaS",
         config,
         maxSteps: 3,
+        allowedTools: ["fetch_site_content"],
         executeTool: async (name, args) => {
           executedTools.push(name);
           return { url: args.url, title: "Example Domain", h1s: ["Example"] };
@@ -129,12 +130,82 @@ describe("aiProvider - Unified Agent AI Gateway & ReAct Execution", () => {
         scopedContext: "Brand: Acme",
         config: { provider: "ollama", model: "llama3.3:70b" },
         maxSteps: 3,
+        allowedTools: [],
         executeTool: async () => ({}),
       });
 
       expect(result.output).toBe("Strategic plan completed.");
       expect(result.detailedSteps.length).toBe(1);
       expect(result.detailedSteps[0].action).toBe("final_response");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("exposes only mission-authorized tools to an OpenAI-compatible model", async () => {
+    const originalFetch = globalThis.fetch;
+    let advertisedTools: string[] = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, opts: any) => {
+      const body = JSON.parse(opts.body);
+      advertisedTools = body.tools.map((tool: any) => tool.function.name);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          choices: [{ message: { role: "assistant", content: "Done." } }],
+          usage: { prompt_tokens: 10, completion_tokens: 2 },
+        }),
+      };
+    });
+
+    try {
+      await executeAgentReActLoop({
+        agentName: "Evidence Collector",
+        goal: "Collect public evidence",
+        scopedContext: "Public sources only",
+        config: { provider: "ollama", model: "qwen2.5:14b" },
+        allowedTools: ["fetch_site_content"],
+        executeTool: async () => ({}),
+      });
+      expect(advertisedTools).toEqual(["fetch_site_content"]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("blocks a model-requested tool that is outside the mission grant", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{
+          message: {
+            role: "assistant",
+            content: null,
+            tool_calls: [{
+              id: "forbidden-1",
+              type: "function",
+              function: { name: "run_sandboxed_command", arguments: '{"command":"pwd"}' },
+            }],
+          },
+        }],
+        usage: { prompt_tokens: 10, completion_tokens: 2 },
+      }),
+    });
+    const executeTool = vi.fn();
+
+    try {
+      await expect(executeAgentReActLoop({
+        agentName: "Evidence Collector",
+        goal: "Collect public evidence",
+        scopedContext: "Public sources only",
+        config: { provider: "ollama", model: "qwen2.5:14b" },
+        maxSteps: 1,
+        allowedTools: ["fetch_site_content"],
+        executeTool,
+      })).rejects.toThrow(/not authorized/i);
+      expect(executeTool).not.toHaveBeenCalled();
     } finally {
       globalThis.fetch = originalFetch;
     }

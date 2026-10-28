@@ -129,11 +129,11 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
                 <div className="sigma-subpanel flex flex-col p-4 sm:p-5">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--sigma-text)]"><FileText size={17} className="text-[var(--sigma-primary)]" /> Upload a client file</div>
                   <p className="mb-4 text-sm leading-6 text-[var(--sigma-text-muted)]">We will suggest profile fields from the document. You must review them before the workspace is created.</p>
-                  <input ref={fileInputRef} type="file" className="sr-only" accept=".pdf,.txt,.md,.csv,.json,.xls,.xlsx" onChange={(event) => handleFile(event.target.files?.[0])} />
+                  <input ref={fileInputRef} type="file" className="sr-only" accept=".pdf,.txt,.md,.csv,.json" onChange={(event) => handleFile(event.target.files?.[0])} />
                   <button type="button" className="mt-auto flex min-h-24 items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface)] px-4 py-5 text-sm font-semibold text-[var(--sigma-text)] hover:border-[var(--sigma-primary)] disabled:opacity-60" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
                     {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}{isAnalyzing ? 'Analyzing document…' : 'Choose file'}
                   </button>
-                  <p className="mt-3 text-xs text-[var(--sigma-text-muted)]">PDF, text, Markdown, CSV, JSON, XLS or XLSX. Max 15 MB.</p>
+                  <p className="mt-3 text-xs text-[var(--sigma-text-muted)]">PDF, text, Markdown, CSV, or JSON. Spreadsheet uploads are temporarily unavailable. Max 15 MB.</p>
                   {fileError && <p role="alert" className="mt-3 text-sm text-red-600">{fileError}</p>}
                 </div>
               </div>

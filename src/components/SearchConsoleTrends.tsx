@@ -29,6 +29,7 @@ import {
   GSCAnalyticsResponse,
   GSCTimeSeriesPoint,
   GSCConnectionStatus,
+  GSCPreflightResult,
   fetchGSCAnalytics,
   fetchGSCDiagnostics,
   getGSCConnectionStatus,
@@ -36,6 +37,7 @@ import {
   connectGSC,
   exchangeGSCCode,
   disconnectGSC,
+  preflightGSC,
   describeGscOAuthError
 } from '@/src/lib/searchConsoleApi';
 
@@ -153,6 +155,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
   // Connected-but-not-live explainer: 'awaiting' (OAuth grant / first sync
   // pending) or 'error' (fetch failed). Null for the LIVE and DEMO states.
   const [dataNote, setDataNote] = useState<{ kind: 'awaiting' | 'error'; message: string } | null>(null);
+  const [previewSimulated, setPreviewSimulated] = useState(false);
   const [queryView, setQueryView] = useState<'queries' | 'pages'>('queries');
 
   // GSC Connection Modal State
@@ -166,6 +169,10 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
   // redirect_uri_mismatch. Refreshed when the dialog opens and after connect.
   const [dialogRedirectUri, setDialogRedirectUri] = useState<string | null>(null);
   const [redirectUriCopied, setRedirectUriCopied] = useState(false);
+  // Server-side verdict from POST /api/gsc/preflight — Google's real answer
+  // for the exact client + redirect URI pair, obtained without navigating.
+  const [preflightResult, setPreflightResult] = useState<GSCPreflightResult | null>(null);
+  const [isPreflighting, setIsPreflighting] = useState(false);
 
   const isConnected = connection.connected;
   const paramsHandledRef = useRef(false);
@@ -274,7 +281,21 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
         redirectUri: result.redirectUri || prev.redirectUri,
       }));
       if (result.redirectUri) setDialogRedirectUri(result.redirectUri);
+      if (result.preflight?.ok === false) {
+        // Google already rejected this exact pair server-side — navigating
+        // would only reproduce its dead-end Error 400 page. Keep the dialog
+        // open (its Step 0 panel has the URI to whitelist) and show the
+        // server's diagnosis instead.
+        setPreflightResult({ ...result.preflight, redirectUri: result.redirectUri, clientIdMasked: result.clientIdMasked });
+        notifyError(
+          'Google Rejected This OAuth Setup',
+          result.error || 'The redirect URI is not whitelisted for this OAuth client. Copy the URI in Step 0 and add it under Google Cloud → Credentials → Authorized redirect URIs.'
+        );
+        setIsConnecting(false);
+        return;
+      }
       if (result.authUrl) {
+        if (result.preflight?.ok === true) setPreflightResult({ ...result.preflight, redirectUri: result.redirectUri, clientIdMasked: result.clientIdMasked });
         notifyInfo('Continue in Google', 'Redirecting to Google for the OAuth grant — approve Search Console access to finish.');
         window.location.href = result.authUrl;
         return;
@@ -305,6 +326,42 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       notifySuccess('Redirect URI Copied', 'Paste it verbatim into Google Cloud → Authorized redirect URIs.');
     } catch {
       notifyError('Copy Failed', 'Select the URI text and copy it manually.');
+    }
+  };
+
+  // Ask the server to test the EXACT pair against Google's authorize endpoint.
+  // Returns Google's real verdict without the browser navigating there — so
+  // after editing the whitelist in Google Cloud the user can confirm the fix
+  // in-app instead of risking another dead-end Error 400 page.
+  const handleVerifyWithGoogle = async () => {
+    setIsPreflighting(true);
+    try {
+      const result = await preflightGSC({ clientId: clientId.trim() || undefined });
+      setPreflightResult(result);
+      if (result.ok === true) {
+        // Even when Google accepts the pair, a suspicious client-ID shape is
+        // worth a warning (truncated paste / wrong client type = future 400).
+        if (result.clientIdSuspicious) {
+          notifyWarning(
+            'Client ID Looks Wrong',
+            `Google accepted the pair, but the tested Client ID (${result.clientIdMasked || 'unknown'}) does not look like a Google Web-application client ID. Double-check you pasted the full “…apps.googleusercontent.com” value from a Web client.`
+          );
+        } else {
+          notifySuccess(
+            'Google Accepts This Pair',
+            `Client ${result.clientIdMasked || ''} + ${result.redirectUri || ''} is whitelisted — you can connect now.`
+          );
+        }
+      } else if (result.ok === false) {
+        notifyError(
+          'Google Still Rejects This Pair',
+          `${result.code || 'authorization_error'}: ${result.detail || 'The redirect URI is not registered on this OAuth client.'} Add the URI shown above under client ${result.clientIdMasked || '(unknown)'} → Authorized redirect URIs (not Authorized JavaScript origins), save, then verify again.`
+        );
+      } else {
+        notifyWarning('Could Not Verify With Google', result.detail || 'The pre-flight was inconclusive — the connection flow will still report its own outcome.');
+      }
+    } finally {
+      setIsPreflighting(false);
     }
   };
 
@@ -342,9 +399,13 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
         return;
       }
       // Connected but not live ('awaiting' grant/first sync, or 'error'):
-      // render the explicit panel — NEVER demo numbers under a LIVE badge.
-      setData(null);
+      // render the explicit panel or simulated preview if enabled
       setDataNote({ kind: result.kind, message: result.message });
+      if (previewSimulated) {
+        setData(generateDemoGSCData(dateRange));
+      } else {
+        setData(null);
+      }
     } catch {
       setData(generateDemoGSCData(dateRange));
       setDataNote(null);
@@ -407,6 +468,15 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
           </h3>
           <p className="text-sm text-zinc-400 max-w-md mx-auto">{dataNote.message}</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                setPreviewSimulated(true);
+                setData(generateDemoGSCData(dateRange));
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 font-semibold rounded-xl text-sm border border-amber-400/30 cursor-pointer transition-all"
+            >
+              <Eye className="w-4 h-4" /> Preview Simulated Trends (Demo Mode)
+            </button>
             <button
               onClick={() => loadData()}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-200 font-semibold rounded-xl text-sm border border-white/10 cursor-pointer transition-all"
@@ -510,7 +580,12 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                   DEMO DATA
                 </span>
               )}
-              {isConnected && (
+              {isConnected && dataNote && previewSimulated && (
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold">
+                  SIMULATED PREVIEW (OAUTH PENDING)
+                </span>
+              )}
+              {isConnected && !dataNote && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 font-bold">
                   LIVE
                 </span>
@@ -570,6 +645,33 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
           )}
         </div>
       </div>
+
+      {/* Simulated Preview Alert Banner */}
+      {isConnected && dataNote && previewSimulated && (
+        <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-amber-300">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span><strong>Simulated Telemetry Preview:</strong> Showing demonstration trend curves for <code>{connection?.siteUrl || 'configured property'}</code> while awaiting Google OAuth authorization.</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
+              className="px-3 py-1 bg-amber-400 text-black font-semibold rounded-lg hover:bg-amber-300 text-xs transition-all cursor-pointer"
+            >
+              Authorize OAuth
+            </button>
+            <button
+              onClick={() => {
+                setPreviewSimulated(false);
+                setData(null);
+              }}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-lg text-xs cursor-pointer border border-white/10"
+            >
+              Show Status Card
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -793,6 +895,53 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                     </div>
                   ) : (
                     <p className="text-[11px] text-zinc-500">Loading the exact redirect URI from the server…</p>
+                  )}
+
+                  {/* Google's own verdict for this exact pair — tested
+                      server-side so a mismatch is caught here, never as a
+                      dead-end Error 400 page in the browser. */}
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <button
+                      onClick={handleVerifyWithGoogle}
+                      disabled={isPreflighting || (!(dialogRedirectUri || connection.redirectUri) && !clientId.trim())}
+                      className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-[11px] font-semibold text-emerald-300 cursor-pointer disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                    >
+                      {isPreflighting ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Verifying with Google…
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-3 h-3" />
+                          Verify With Google
+                        </>
+                      )}
+                    </button>
+                    {preflightResult && (
+                      <span
+                        className={cn(
+                          'text-[11px] font-semibold truncate',
+                          preflightResult.ok === true && 'text-emerald-400',
+                          preflightResult.ok === false && 'text-red-400',
+                          preflightResult.ok === null && 'text-amber-400'
+                        )}
+                      >
+                        {preflightResult.ok === true
+                          ? `Accepted for client ${preflightResult.clientIdMasked || ''} ✓`
+                          : preflightResult.ok === false
+                            ? `Rejected: ${(preflightResult.code || 'error').replace(/_/g, ' ')}`
+                            : 'Unverified (network)'}
+                      </span>
+                    )}
+                  </div>
+                  {preflightResult?.ok === false && (
+                    <p className="text-[11px] text-red-300/90 leading-relaxed">
+                      {preflightResult.detail} Fix: in Google Cloud → APIs &amp; Services → Credentials → client{' '}
+                      <span className="font-mono">{preflightResult.clientIdMasked || '(unknown)'}</span> → <strong className="text-red-200">Authorized redirect URIs</strong> (not
+                      JavaScript origins) → paste the URI above exactly → Save → Verify again. Confirm the URI lives on the{' '}
+                      <strong className="text-red-200">same client</strong> whose ID/Secret you entered below.
+                    </p>
                   )}
                 </div>
               </div>

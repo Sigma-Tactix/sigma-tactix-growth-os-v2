@@ -262,8 +262,8 @@ export function buildVantaTopology(
       id: `file-${file.id}`,
       label: file.name,
       kind: 'document',
-      status: file.status === 'Ready' ? 'active' : 'configured',
-      detail: file.status === 'Ready' ? 'Indexed or ready for retrieval' : 'Processing',
+      status: (file.status === 'Ready' || file.status === 'Indexed') ? 'active' : 'configured',
+      detail: (file.status === 'Ready' || file.status === 'Indexed') ? 'Semantically indexed and eligible for retrieval' : `Document state: ${file.status}`,
       route: '/vaults',
     });
   }

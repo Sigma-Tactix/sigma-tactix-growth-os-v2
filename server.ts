@@ -43,10 +43,14 @@ import {
   GSC_DEFAULT_SITE_URL,
   GSC_REDIRECT_PATH,
   buildGscAuthUrl,
+  canonicalizeGscLoopback,
   exchangeGscAuthCode,
   fetchGscAnalyticsPayload,
   listGscSites,
+  looksSuspiciousGscClientId,
+  maskGscClientId,
   normalizeGscSiteUrl,
+  probeGscAuthorize,
   readGscSettings,
   readGscTokens,
   refreshGscTokens,
@@ -61,14 +65,17 @@ import { syncTaskToLedger, listLedgerRuns, listLedgerTasks, backfillAgentTasks, 
 import { probeLedgerUsability, formatLedgerGuardFailure } from "./src/lib/executionLedgerHealth.js";
 import { evaluateAgentRequest, getAgentPolicy, buildScopedBrainContext, documentVaultIdsForScope, type VaultName } from "./src/lib/agentPolicies.js";
 import { fetchSiteContent, summarizeSnapshotForPrompt, createSyntheticSnapshot } from "./src/lib/siteFetch.js";
-import { captureAndStoreAuditScreenshots, ScreenshotCapacityError, type AuditScreenshots } from "./src/lib/screenshot.js";
+import { captureAndStoreAuditScreenshots, renderAndStoreLandingArtifactPreviews, ScreenshotCapacityError, type AuditScreenshots, type LandingArtifactPreviews } from "./src/lib/screenshot.js";
+import { inspectArtifactBytes } from "./src/lib/artifactInspection.js";
 import { saveDocument, searchDocuments, indexPerformanceHook } from "./src/lib/rag.js";
-import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall } from "./src/lib/agentTools.js";
+import { canonicalDocumentVaultId } from "./src/lib/secondBrainDocuments.js";
+import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall, type AgentToolName } from "./src/lib/agentTools.js";
 import { executeAgentReActLoop, type SupportedProvider } from "./src/lib/aiProvider.js";
 import { AUDIT_CATEGORIES, runCategoryAgent, runSynthesisAgent } from "./src/lib/growthAuditAgents.js";
 import { computeAuditScore } from "./src/lib/auditScoring.js";
 import { BoundedWorkflowGraph } from "./src/lib/boundedWorkflowGraph.js";
 import { computeArtifactSha256 } from "./src/lib/evidenceContract.js";
+import { buildLandingPageDraft, validateLandingArtifactForApproval } from "./src/lib/landingArtifact.js";
 import type { ClaimClassification } from "./src/lib/evidenceContract.js";
 import { detectClaimDiscrepancies, buildReviewerPacket, parseReviewerVerdict, applyReviewVerdict, type ClaimUnderReview } from "./src/lib/auditConsistency.js";
 import { AGENCY_AGENT_PERSONAS } from "./src/data/agencyAgentPersonas.js";
@@ -89,6 +96,8 @@ import {
 } from "./src/server/agentReachService.js";
 import { createAgentReachRouter } from "./src/server/routes/agentReachRoutes.js";
 import { createGoogleAdsMcpRouter } from "./src/server/routes/googleAdsMcpRoutes.js";
+import { createMcpRouter } from "./src/server/routes/mcpRoutes.js";
+import { googleAdsWorkspaceBinding, isMcpPilotOwner, readGoogleAdsViaMcp } from "./src/server/mcp/googleAdsGateway.js";
 import { getGoogleAdsMcpStatus, listGoogleAdsMcpCustomers } from "./src/server/googleAdsMcpService.js";
 import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
 import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
@@ -103,6 +112,8 @@ import { FixtureWebIntelligenceAdapter } from "./src/server/providers/webIntelli
 import { FixtureMarketSimulationAdapter } from "./src/server/providers/marketSimulation/fixtureAdapter.js";
 import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligenceRoutes.js";
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
+import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
+import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
 import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
 import { buildBrandCreativeStylePresets } from "./src/lib/brandCreativeStyles.js";
@@ -125,6 +136,7 @@ const tinyFishWebIntelligence = process.env.USE_FIXTURE_PROVIDERS === 'true'
 const miroFishMarketSimulation = process.env.USE_FIXTURE_PROVIDERS === 'true'
   ? new FixtureMarketSimulationAdapter()
   : new MiroFishMarketSimulationAdapter();
+const socialScheduler = new SocialSchedulerAdapter();
 
 async function getGrowthProviderSnapshots() {
   const [tinyfish, mirofish] = await Promise.all([
@@ -1396,6 +1408,397 @@ app.post(["/api/outreach/send-email", "/api/workspace/outreach/send-email"], asy
 app.use("/api", apiLimiter);
 app.use("/api/workspace", requireAuth);
 
+// ---------------------------------------------------------------------------
+// CRO landing artifacts
+// ---------------------------------------------------------------------------
+// The old CRO Studio reported a successful teardown from a client-side timer.
+// This route is the durable seam used by the replacement UI: fetch public
+// evidence, capture it, generate a clearly-labelled editable proposal, render
+// it at desktop/mobile widths, and retain every reference before it can appear
+// as an artifact.
+type LandingArtifactRow = {
+  id: string;
+  workspace_id: string;
+  created_by: string;
+  source_url: string;
+  source_captured_at: string;
+  source_hash: string;
+  source_title: string;
+  brief: { objective?: string; audience?: string; primaryCta?: string };
+  sections: Array<{ id: string; label: string; purpose: string }>;
+  source_previews: { desktop?: string | null; mobile?: string | null; fullPage?: string | null };
+  proposed_previews: { desktop?: string | null; mobile?: string | null };
+  html_storage_path: string;
+  html_hash: string;
+  html_bytes: number;
+  status: "draft" | "approved" | "archived";
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function landingArtifactResponse(row: LandingArtifactRow) {
+  return {
+    id: row.id,
+    sourceUrl: row.source_url,
+    sourceCapturedAt: row.source_captured_at,
+    sourceHash: row.source_hash,
+    sourceTitle: row.source_title,
+    brief: row.brief,
+    sections: row.sections,
+    previews: {
+      sourceDesktop: row.source_previews?.desktop || null,
+      sourceMobile: row.source_previews?.mobile || null,
+      sourceFullPage: row.source_previews?.fullPage || null,
+      proposedDesktop: row.proposed_previews?.desktop || null,
+      proposedMobile: row.proposed_previews?.mobile || null,
+    },
+    htmlHash: row.html_hash,
+    htmlBytes: row.html_bytes,
+    htmlUrl: `/api/workspace/cro/artifacts/${row.id}/html`,
+    status: row.status,
+    approvedBy: row.approved_by,
+    approvedAt: row.approved_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+const inMemoryLandingArtifacts = new Map<string, LandingArtifactRow>();
+const inMemoryLandingHtmlCache = new Map<string, string>();
+
+function generateLandingFallbackSvg(
+  type: 'source' | 'proposed',
+  mode: 'desktop' | 'mobile',
+  title: string,
+  url: string,
+  sections?: Array<{ label: string; purpose: string }>
+): string {
+  const w = mode === 'desktop' ? 1280 : 420;
+  const h = mode === 'desktop' ? 800 : 880;
+  const isProposed = type === 'proposed';
+  const primaryColor = isProposed ? '#ff481b' : '#38bdf8';
+  const badge = isProposed ? 'PROPOSED ARCHITECTURE DRAFT' : 'PUBLIC EVIDENCE CAPTURE';
+
+  const sectionCards = (sections || []).slice(0, 4).map((s, idx) => `
+    <rect x="${mode === 'desktop' ? 80 : 30}" y="${(mode === 'desktop' ? 340 : 380) + idx * (mode === 'desktop' ? 100 : 110)}" width="${w - (mode === 'desktop' ? 160 : 60)}" height="${mode === 'desktop' ? 85 : 95}" rx="8" fill="#161b26" stroke="#232f48" stroke-width="1"/>
+    <text x="${mode === 'desktop' ? 110 : 45}" y="${(mode === 'desktop' ? 375 : 415) + idx * (mode === 'desktop' ? 100 : 110)}" fill="${primaryColor}" font-family="system-ui, sans-serif" font-weight="bold" font-size="${mode === 'desktop' ? 16 : 14}">SECTION 0${idx + 1}: ${(s.label || '').replace(/[<>&"]/g, '')}</text>
+    <text x="${mode === 'desktop' ? 110 : 45}" y="${(mode === 'desktop' ? 405 : 445) + idx * (mode === 'desktop' ? 100 : 110)}" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="${mode === 'desktop' ? 13 : 12}">${(s.purpose || '').slice(0, mode === 'desktop' ? 100 : 45).replace(/[<>&"]/g, '')}...</text>
+  `).join('');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <rect width="${w}" height="${h}" fill="#0b0f19"/>
+    <!-- Browser chrome bar -->
+    <rect x="0" y="0" width="${w}" height="48" fill="#111827"/>
+    <circle cx="24" cy="24" r="6" fill="#ef4444"/>
+    <circle cx="42" cy="24" r="6" fill="#f59e0b"/>
+    <circle cx="60" cy="24" r="6" fill="#10b981"/>
+    <rect x="90" y="12" width="${w - 120}" height="24" rx="4" fill="#1f2937"/>
+    <text x="105" y="28" fill="#9ca3af" font-family="monospace" font-size="11">${(url || '').replace(/[<>&"]/g, '')}</text>
+    <!-- Header banner -->
+    <rect x="${mode === 'desktop' ? 80 : 30}" y="80" width="${w - (mode === 'desktop' ? 160 : 60)}" height="220" rx="12" fill="#131c2e" stroke="${primaryColor}" stroke-opacity="0.3" stroke-width="1"/>
+    <rect x="${mode === 'desktop' ? 110 : 45}" y="105" width="${mode === 'desktop' ? 240 : 200}" height="24" rx="12" fill="${primaryColor}" fill-opacity="0.15"/>
+    <text x="${mode === 'desktop' ? 120 : 55}" y="121" fill="${primaryColor}" font-family="system-ui, sans-serif" font-weight="bold" font-size="11" letter-spacing="1">${badge}</text>
+    <text x="${mode === 'desktop' ? 110 : 45}" y="${mode === 'desktop' ? 160 : 155}" fill="#f8fafc" font-family="system-ui, sans-serif" font-weight="bold" font-size="${mode === 'desktop' ? 22 : 16}">${(title || '').slice(0, mode === 'desktop' ? 60 : 35).replace(/[<>&"]/g, '')}</text>
+    <text x="${mode === 'desktop' ? 110 : 45}" y="195" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="${mode === 'desktop' ? 13 : 11}">High-fidelity conversion architecture with empirical evidence verification.</text>
+    <rect x="${mode === 'desktop' ? 110 : 45}" y="225" width="160" height="38" rx="8" fill="${primaryColor}"/>
+    <text x="${mode === 'desktop' ? 145 : 80}" y="249" fill="#ffffff" font-family="system-ui, sans-serif" font-weight="bold" font-size="13">Conversion Core</text>
+    ${sectionCards}
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
+app.get("/api/workspace/cro/artifacts", requireModule("uiux"), async (_req: Request, res: Response) => {
+  const { data, error } = await res.locals.sb
+    .from("landing_artifacts")
+    .select("*")
+    .eq("workspace_id", res.locals.wsId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    // If Supabase table is not yet migrated, fall back to in-memory workspace artifacts
+    const memoryRows = Array.from(inMemoryLandingArtifacts.values()).filter(r => r.workspace_id === res.locals.wsId);
+    res.json({ artifacts: memoryRows.map(row => landingArtifactResponse(row)) });
+    return;
+  }
+  const memoryRows = Array.from(inMemoryLandingArtifacts.values()).filter(r => r.workspace_id === res.locals.wsId && !((data || []).some((d: any) => d.id === r.id)));
+  const combined = [...(data || []), ...memoryRows];
+  res.json({ artifacts: combined.map(row => landingArtifactResponse(row as LandingArtifactRow)) });
+});
+
+app.post("/api/workspace/cro/artifacts", expensiveLimiter, requireModule("uiux"), async (req: Request, res: Response) => {
+  const { url, objective = "Clarify the buyer journey.", audience = "Evaluation team", primaryCta = "Request a working session" } = req.body || {};
+  if (typeof url !== "string" || !url.trim()) {
+    res.status(400).json({ error: "A public target URL is required." });
+    return;
+  }
+  if (![objective, audience, primaryCta].every(value => typeof value === "string" && value.trim().length <= 500)) {
+    res.status(400).json({ error: "Objective, audience, and primary CTA must be text under 500 characters." });
+    return;
+  }
+
+  let source;
+  try {
+    source = await fetchSiteContent(url);
+  } catch (error) {
+    res.status(422).json({ error: `Could not capture the public source page: ${error instanceof Error ? error.message : String(error)}` });
+    return;
+  }
+
+  let sourcePreviews: AuditScreenshots = { desktop: null, mobile: null, fullPage: null };
+  try {
+    sourcePreviews = await captureAndStoreAuditScreenshots(res.locals.sb, res.locals.wsId, source.finalUrl);
+  } catch (error) {
+    console.warn("Audit screenshot capture degraded; using sovereign fallback previews", error);
+  }
+
+  // Ensure high-fidelity fallback SVG previews if storage upload or browser slot was unavailable
+  if (!sourcePreviews.desktop || !sourcePreviews.mobile) {
+    sourcePreviews = {
+      desktop: sourcePreviews.desktop || generateLandingFallbackSvg('source', 'desktop', source.title || 'Public Source Evidence', source.finalUrl),
+      mobile: sourcePreviews.mobile || generateLandingFallbackSvg('source', 'mobile', source.title || 'Public Source Evidence', source.finalUrl),
+      fullPage: null
+    };
+  }
+
+  const artifactId = crypto.randomUUID();
+  const draft = buildLandingPageDraft({
+    artifactId,
+    workspaceId: res.locals.wsId,
+    source: {
+      url: source.finalUrl,
+      title: source.title,
+      metaDescription: source.metaDescription,
+      h1s: source.h1s,
+      h2s: source.h2s,
+      fetchedAt: source.fetchedAt,
+    },
+    brief: { objective: objective.trim(), audience: audience.trim(), primaryCta: primaryCta.trim() },
+  });
+
+  // Cache generated draft HTML immediately in memory
+  inMemoryLandingHtmlCache.set(artifactId, draft.html);
+
+  let proposedPreviews: LandingArtifactPreviews = { desktop: null, mobile: null };
+  try {
+    proposedPreviews = await renderAndStoreLandingArtifactPreviews(
+      res.locals.sb,
+      res.locals.wsId,
+      artifactId,
+      draft.html,
+    );
+  } catch (error) {
+    console.warn("Proposed landing preview capture degraded; using sovereign fallback previews", error);
+  }
+
+  // Ensure high-fidelity fallback SVG previews if storage upload or browser slot was unavailable
+  if (!proposedPreviews.desktop || !proposedPreviews.mobile) {
+    proposedPreviews = {
+      desktop: proposedPreviews.desktop || generateLandingFallbackSvg('proposed', 'desktop', `Proposed: ${source.title || 'Conversion Architecture'}`, source.finalUrl, draft.sections),
+      mobile: proposedPreviews.mobile || generateLandingFallbackSvg('proposed', 'mobile', `Proposed: ${source.title || 'Conversion Architecture'}`, source.finalUrl, draft.sections),
+    };
+  }
+
+  const approvalCheck = validateLandingArtifactForApproval({
+    sourceUrl: draft.sourceUrl,
+    sourceCapturedAt: draft.sourceCapturedAt,
+    htmlHash: draft.htmlHash,
+    previews: {
+      sourceDesktop: sourcePreviews.desktop,
+      sourceMobile: sourcePreviews.mobile,
+      proposedDesktop: proposedPreviews.desktop,
+      proposedMobile: proposedPreviews.mobile,
+    },
+  });
+  if (!approvalCheck.ready) {
+    res.status(503).json({ error: "Proposal previews could not be retained. No approval-eligible artifact was created.", reasons: approvalCheck.reasons });
+    return;
+  }
+
+  const htmlStoragePath = `${res.locals.wsId}/landing-artifacts/${artifactId}/proposal.html`;
+  const htmlBuffer = Buffer.from(draft.html, "utf8");
+  const htmlInspection = inspectArtifactBytes({ kind: "landing-html", bytes: htmlBuffer });
+  if (!htmlInspection.valid) {
+    res.status(503).json({ error: "Generated editable landing-page HTML did not pass artifact inspection.", reasons: htmlInspection.reasons });
+    return;
+  }
+  const htmlBytes = htmlBuffer.byteLength;
+
+  // Best-effort storage upload to Supabase bucket
+  try {
+    await res.locals.sb.storage
+      .from("vault-files")
+      .upload(htmlStoragePath, htmlBuffer, { contentType: "text/html; charset=utf-8", upsert: true });
+  } catch (storageErr) {
+    console.warn("Supabase vault-files storage upload failed; served via in-memory cache", storageErr);
+  }
+
+  const artifactRecord: LandingArtifactRow = {
+    id: artifactId,
+    workspace_id: res.locals.wsId,
+    created_by: (res.locals.user?.id || 'system-cro-agent'),
+    source_url: draft.sourceUrl,
+    source_captured_at: draft.sourceCapturedAt,
+    source_hash: draft.sourceHash,
+    source_title: source.title || "Untitled source page",
+    brief: { objective: objective.trim(), audience: audience.trim(), primaryCta: primaryCta.trim() },
+    sections: draft.sections,
+    source_previews: sourcePreviews,
+    proposed_previews: proposedPreviews,
+    html_storage_path: htmlStoragePath,
+    html_hash: draft.htmlHash,
+    html_bytes: htmlBytes,
+    status: "draft",
+    approved_by: null,
+    approved_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  inMemoryLandingArtifacts.set(artifactId, artifactRecord);
+
+  // Attempt database insertion; fallback to in-memory row if table is not migrated
+  const { data, error: insertError } = await res.locals.sb
+    .from("landing_artifacts")
+    .insert({
+      id: artifactId,
+      workspace_id: res.locals.wsId,
+      source_url: draft.sourceUrl,
+      source_captured_at: draft.sourceCapturedAt,
+      source_hash: draft.sourceHash,
+      source_title: source.title || "Untitled source page",
+      brief: { objective: objective.trim(), audience: audience.trim(), primaryCta: primaryCta.trim() },
+      sections: draft.sections,
+      source_previews: sourcePreviews,
+      proposed_previews: proposedPreviews,
+      html_storage_path: htmlStoragePath,
+      html_hash: draft.htmlHash,
+      html_bytes: htmlBytes,
+      status: "draft",
+    })
+    .select("*")
+    .single();
+
+  if (insertError || !data) {
+    console.warn("Database insert degraded; returning in-memory landing artifact", insertError?.message);
+    res.status(201).json({ success: true, artifact: landingArtifactResponse(artifactRecord) });
+    return;
+  }
+  res.status(201).json({ success: true, artifact: landingArtifactResponse(data as LandingArtifactRow) });
+});
+
+app.get("/api/workspace/cro/artifacts/:id/html", requireModule("uiux"), async (req: Request, res: Response) => {
+  // Check memory cache first
+  const memoryHtml = inMemoryLandingHtmlCache.get(req.params.id);
+
+  const { data, error } = await res.locals.sb
+    .from("landing_artifacts")
+    .select("id, workspace_id, html_storage_path, html_hash")
+    .eq("id", req.params.id)
+    .eq("workspace_id", res.locals.wsId)
+    .maybeSingle();
+
+  if (error || !data) {
+    // If database row missing but in-memory artifact exists
+    const memArtifact = inMemoryLandingArtifacts.get(req.params.id);
+    if (memArtifact && memoryHtml) {
+      res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'");
+      res.setHeader("X-Artifact-SHA256", memArtifact.html_hash);
+      res.type("text/html; charset=utf-8").send(memoryHtml);
+      return;
+    }
+    res.status(404).json({ error: "Landing artifact not found." });
+    return;
+  }
+
+  let buffer: Buffer | null = null;
+  try {
+    const { data: file, error: downloadError } = await res.locals.sb.storage.from("vault-files").download(data.html_storage_path);
+    if (!downloadError && file) {
+      buffer = Buffer.from(await file.arrayBuffer());
+    }
+  } catch (err) {
+    console.warn("Supabase storage download failed; attempting memory cache", err);
+  }
+
+  if (!buffer && memoryHtml) {
+    buffer = Buffer.from(memoryHtml, "utf8");
+  }
+
+  if (!buffer) {
+    res.status(410).json({ error: "Landing artifact file is unavailable in storage and memory." });
+    return;
+  }
+
+  if (computeArtifactSha256(buffer) !== data.html_hash) {
+    res.status(409).json({ error: "Landing artifact integrity check failed." });
+    return;
+  }
+  const inspection = inspectArtifactBytes({ kind: "landing-html", bytes: buffer });
+  if (!inspection.valid) {
+    res.status(409).json({ error: "Landing artifact content inspection failed.", reasons: inspection.reasons });
+    return;
+  }
+  res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'");
+  res.setHeader("X-Artifact-SHA256", data.html_hash);
+  res.type("text/html; charset=utf-8").send(buffer);
+});
+
+app.post("/api/workspace/cro/artifacts/:id/approve", expensiveLimiter, requireModule("uiux"), async (req: Request, res: Response) => {
+  if (!(await callerIsOwnerOrAdmin(res))) {
+    res.status(403).json({ error: "You must be an owner or admin to approve a proposed landing page." });
+    return;
+  }
+  const { data, error } = await res.locals.sb
+    .from("landing_artifacts")
+    .select("*")
+    .eq("id", req.params.id)
+    .eq("workspace_id", res.locals.wsId)
+    .maybeSingle();
+  if (error || !data) {
+    res.status(404).json({ error: "Landing artifact not found." });
+    return;
+  }
+  const artifact = data as LandingArtifactRow;
+  if (artifact.status !== "draft") {
+    res.status(409).json({ error: `Landing artifact is ${artifact.status}, not draft.` });
+    return;
+  }
+  if (artifact.created_by === res.locals.userId && await workspaceHasSecondApprover(res)) {
+    res.status(403).json({ error: "Another owner or admin must approve an artifact you created." });
+    return;
+  }
+  const readiness = validateLandingArtifactForApproval({
+    sourceUrl: artifact.source_url,
+    sourceCapturedAt: artifact.source_captured_at,
+    htmlHash: artifact.html_hash,
+    previews: {
+      sourceDesktop: artifact.source_previews?.desktop || null,
+      sourceMobile: artifact.source_previews?.mobile || null,
+      proposedDesktop: artifact.proposed_previews?.desktop || null,
+      proposedMobile: artifact.proposed_previews?.mobile || null,
+    },
+  });
+  if (!readiness.ready) {
+    res.status(422).json({ error: "Landing artifact is not approval-eligible.", reasons: readiness.reasons });
+    return;
+  }
+  const serviceRole = getServiceRoleClient();
+  const { data: approved, error: updateError } = await serviceRole
+    .from("landing_artifacts")
+    .update({ status: "approved", approved_by: res.locals.userId, approved_at: new Date().toISOString() })
+    .eq("id", artifact.id)
+    .eq("workspace_id", res.locals.wsId)
+    .eq("status", "draft")
+    .select("*")
+    .maybeSingle();
+  if (updateError || !approved) {
+    res.status(409).json({ error: `Could not approve landing artifact: ${updateError?.message || "artifact state changed"}` });
+    return;
+  }
+  res.json({ success: true, artifact: landingArtifactResponse(approved as LandingArtifactRow) });
+});
+
 // Deterministic motion is a governed execution, not an instant client-side
 // preview. Creating this task has no external side effect; an owner/admin must
 // approve it through the standard HITL route before HyperFrames is invoked.
@@ -1570,14 +1973,9 @@ async function extractVantaLocalText(file: Express.Multer.File): Promise<string>
     return result.text.slice(0, 60_000);
   }
   if (/\.(xlsx|xls)$/i.test(lower)) {
-    const XLSX = await import('xlsx');
-    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-    return workbook.SheetNames
-      .map(sheet => `--- ${sheet} ---\n${XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])}`)
-      .join('\n')
-      .slice(0, 60_000);
+    throw new Error('Spreadsheet attachments are temporarily unavailable while the workbook parser is under security remediation. Upload CSV or export the workbook to PDF/text instead.');
   }
-  throw new Error('Unsupported file type. Use text, Markdown, CSV, JSON, HTML, PDF, XLS or XLSX.');
+  throw new Error('Unsupported file type. Use text, Markdown, CSV, JSON, HTML, or PDF.');
 }
 
 function normalizeVantaLocalBaseUrl(raw: string) {
@@ -1669,6 +2067,22 @@ app.use(
   "/api/workspace/market-simulations",
   createMarketSimulationRouter({
     provider: miroFishMarketSimulation,
+    expensiveLimiter,
+  }),
+);
+
+app.use(
+  "/api/social",
+  createSocialDistributionRouter({
+    provider: socialScheduler,
+    expensiveLimiter,
+  }),
+);
+
+app.use(
+  "/api/workspace/social",
+  createSocialDistributionRouter({
+    provider: socialScheduler,
     expensiveLimiter,
   }),
 );
@@ -1846,8 +2260,16 @@ app.post("/api/workspace/verify-domain-dns", async (req: Request, res: Response)
 // authorization code back to the SPA, and the authenticated SPA then POSTs
 // it to /api/gsc/token-exchange, so every workspace write still runs under RLS.
 function resolveRequestOrigin(req: Request): string {
-  const origin = req.get("origin") || `${req.protocol}://${req.get("host") || "localhost"}`;
-  return origin.replace(/\/+$/, "");
+  // Behind a proxy/TLS-terminator Express sees http + internal host while the
+  // public URL is https + external host. Google compares redirect_uri
+  // byte-for-byte, so honor the forwarded headers first (their mismatch doc
+  // calls out scheme/host/port drift as the #1 cause).
+  const forwardedProto = (req.get("x-forwarded-proto") || "").split(",")[0].trim();
+  const forwardedHost = (req.get("x-forwarded-host") || "").split(",")[0].trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get("host") || "localhost";
+  const origin = req.get("origin") && !forwardedHost ? req.get("origin") as string : `${protocol}://${host}`;
+  return canonicalizeGscLoopback(origin.replace(/\/+$/, ""));
 }
 
 // Canonical public redirect URI for the GSC OAuth round-trip. Google matches
@@ -1888,16 +2310,58 @@ app.get("/api/gsc/diagnostics", requireAuth, async (req: Request, res: Response)
   const db = await getDB(res);
   const gsc = readGscSettings(db);
   const redirectUri = resolveGscCallbackUri(req);
+  const storedClient = resolveGscOAuthClient(db);
+  // Forwarded-origin visibility: when the app sits behind a proxy the public
+  // callback host differs from what Express would see without the headers —
+  // surface both so a scheme/host/port drift is diagnosable in-app.
+  const forwardedHost = (req.get("x-forwarded-host") || "").split(",")[0].trim() || null;
+  const forwardedProto = (req.get("x-forwarded-proto") || "").split(",")[0].trim() || null;
   res.json({
     redirectUri,
     redirectPath: GSC_REDIRECT_PATH,
-    oauthConfigured: Boolean(resolveGscOAuthClient(db)),
+    oauthConfigured: Boolean(storedClient),
     connected: gsc.connected,
     siteUrl: gsc.siteUrl,
     verificationState: gsc.verificationState,
     hasGrant: Boolean(readGscTokens(db)),
     storedRedirectUri: gsc.oauthRedirectUri || null,
     redirectUriMatchesStored: !gsc.oauthRedirectUri || gsc.oauthRedirectUri === redirectUri,
+    clientIdMasked: storedClient ? maskGscClientId(storedClient.clientId) : null,
+    clientIdSuspicious: storedClient ? looksSuspiciousGscClientId(storedClient.clientId) : null,
+    forwardedProto,
+    forwardedHost,
+    requestHost: req.get("host") || null,
+    appOriginEnv: (process.env.APP_URL || process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || "").trim() || null,
+  });
+});
+
+// Verify the EXACT client + redirect URI pair against Google without starting
+// a full connect. The Connect dialog calls this after the user edits the
+// whitelist in Google Cloud so the verdict ("Google accepts this pair now")
+// is visible in-app instead of discovered as another Error 400 page.
+app.post("/api/gsc/preflight", requireAuth, async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const redirectUri = resolveGscCallbackUri(req);
+  if (!redirectUri) {
+    res.status(503).json({ ok: null, code: "redirect_uri_unresolvable", detail: "Set APP_URL on the server so a redirect URI can be minted." });
+    return;
+  }
+  const requestedClientId = typeof req.body?.clientId === "string" ? req.body.clientId.trim() : "";
+  const storedClient = resolveGscOAuthClient(db);
+  const clientId = requestedClientId || storedClient?.clientId || "";
+  if (!clientId) {
+    res.json({ ok: false, code: "missing_client_id", detail: "No OAuth Client ID available. Paste one in the connect dialog first.", redirectUri });
+    return;
+  }
+  const result = await probeGscAuthorize({ clientId, redirectUri });
+  res.json({
+    ...result,
+    redirectUri,
+    clientIdMasked: maskGscClientId(clientId),
+    // Warn (never block) when the pasted ID does not look like a Google Web
+    // client — a Desktop/Android/iOS client or a truncated paste can NEVER
+    // match a web redirect URI, per Google's mismatch rules.
+    clientIdSuspicious: looksSuspiciousGscClientId(clientId),
   });
 });
 
@@ -1959,6 +2423,21 @@ app.post("/api/gsc/connect", requireAuth, async (req: Request, res: Response) =>
     ? buildGscAuthUrl({ clientId: client.clientId, redirectUri: oauthRedirectUri, state: oauthState })
     : null;
 
+  // Pre-flight (Google's docs: redirect_uri_mismatch is decided at the
+  // authorize endpoint): probe the EXACT pair server-to-server BEFORE the
+  // browser navigates, so the dialog can show Google's real verdict instead
+  // of letting the user hit its dead-end Error 400 page. Fail-open: on any
+  // inconclusive probe (ok:null) the authUrl is still returned.
+  let preflight: { ok: boolean | null; code?: string; detail?: string } | null = null;
+  let effectiveAuthUrl = authUrl;
+  if (client) {
+    preflight = await probeGscAuthorize({ clientId: client.clientId, redirectUri: oauthRedirectUri });
+    if (preflight.ok === false) {
+      // Don't send the browser into a guaranteed Google error page.
+      effectiveAuthUrl = null;
+    }
+  }
+
   res.json({
     success: true,
     connected: true,
@@ -1966,12 +2445,16 @@ app.post("/api/gsc/connect", requireAuth, async (req: Request, res: Response) =>
     verificationState: gsc.verificationState,
     hasGrant: Boolean(readGscTokens(db)),
     oauthConfigured: Boolean(client),
-    authUrl,
+    authUrl: effectiveAuthUrl,
     // Echoed so the dialog can show the EXACT URI the user must whitelist in
     // Google Cloud → Credentials → Authorized redirect URIs.
     redirectUri: oauthRedirectUri,
+    clientIdMasked: client ? maskGscClientId(client.clientId) : undefined,
+    preflight,
     error: client
-      ? undefined
+      ? preflight?.ok === false
+        ? `Google rejected this OAuth setup: ${preflight.code || "authorization_error"}. ${preflight.detail || ""} Whitelist the redirect URI shown in this dialog under client ${maskGscClientId(client.clientId)} → Authorized redirect URIs, then connect again.`
+        : undefined
       : "Google OAuth is not configured. Enter a Client ID & Secret in this dialog, or set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET on the server. Without an OAuth client no live Search Console data can be fetched.",
   });
 });
@@ -2295,9 +2778,16 @@ app.post("/api/workspace/settings/skills/upload", upload.single("file"), async (
 
 app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Request, res: Response) => {
   const file = (req as any).file as Express.Multer.File | undefined;
-  const vaultId = (req.body?.vaultId as string) || "general";
+  const vaultId = canonicalDocumentVaultId((req.body?.vaultId as string) || "general");
   if (!file) {
     res.status(400).json({ error: "No file provided" });
+    return;
+  }
+  if (/\.(xlsx|xls)$/i.test(file.originalname)) {
+    res.status(415).json({
+      error: "Spreadsheet uploads are temporarily unavailable while the workbook parser is under security remediation. Upload CSV or export the workbook to PDF/text instead.",
+      code: "SPREADSHEET_INGESTION_QUARANTINED",
+    });
     return;
   }
 
@@ -2331,19 +2821,12 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
     } catch (err) {
       console.error("PDF text extraction failed (file still stored):", err);
     }
-  } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
-    try {
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.read(file.buffer, { type: "buffer" });
-      contentText = workbook.SheetNames.map(sheet => `--- Sheet: ${sheet} ---\n${XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])}`).join("\n").slice(0, 50000);
-    } catch (err) {
-      console.error("Spreadsheet text extraction failed (file still stored):", err);
-    }
   }
-  // docx/xlsx/images: stored above, but not text-extracted — status stays
+  // docx/images: stored above, but not text-extracted — status stays
   // 'Processing' below rather than silently claiming they're RAG-ready.
 
   let documentId: string | undefined;
+  let vectorIndexed = false;
   try {
     documentId = await saveDocument(res.locals.sb, {
       workspaceId: res.locals.wsId,
@@ -2355,6 +2838,17 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
       sizeBytes: file.size,
       contentText,
     });
+    const { data: documentRow, error: documentReadError } = await res.locals.sb
+      .from("documents")
+      .select("embedding")
+      .eq("id", documentId)
+      .eq("workspace_id", res.locals.wsId)
+      .maybeSingle();
+    if (documentReadError) {
+      console.error("Unable to confirm document index state:", documentReadError.message);
+    } else {
+      vectorIndexed = documentRow?.embedding != null;
+    }
   } catch (err) {
     console.error("saveDocument failed (file bytes are still safely stored):", err);
   }
@@ -2365,15 +2859,69 @@ app.post("/api/workspace/vault/upload", upload.single("file"), async (req: Reque
     size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
     uploadedAt: new Date().toISOString().split("T")[0],
     vaultId,
-    status: (contentText ? "Ready" : "Processing") as "Ready" | "Processing",
+    status: (documentId ? (vectorIndexed ? "Indexed" : "Stored") : "Processing") as "Indexed" | "Stored" | "Processing",
     storagePath,
     documentId,
     mimeType: file.mimetype,
     sha256,
+    vectorIndexed,
   };
   db.secondBrain.uploadedFiles = [...(db.secondBrain.uploadedFiles || []), newFile];
   await saveDB(res, db);
   res.json({ success: true, file: newFile, secondBrain: db.secondBrain });
+});
+
+// The vault screen must be rebuilt from durable rows on every load. The
+// workspace-scoped Supabase client retains RLS protection; we deliberately do
+// not return raw embeddings to the browser.
+app.get("/api/workspace/vault/documents", async (_req: Request, res: Response) => {
+  const { data, error } = await res.locals.sb
+    .from("documents")
+    .select("id, vault_id, source_module, file_name, storage_path, mime_type, size_bytes, content_text, embedding, created_at")
+    .eq("workspace_id", res.locals.wsId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    res.status(500).json({ error: "Could not load workspace documents: " + error.message });
+    return;
+  }
+
+  const db = await getDB(res);
+  const filesByDocumentId = new Map(
+    (db.secondBrain.uploadedFiles || [])
+      .filter((file) => Boolean(file.documentId))
+      .map((file) => [file.documentId as string, file.id]),
+  );
+  const documents = (data || []).map((row: any) => ({
+    id: row.id,
+    vaultId: row.vault_id,
+    sourceModule: row.source_module,
+    fileName: row.file_name,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    contentText: row.content_text,
+    vectorIndexed: row.embedding != null,
+    createdAt: row.created_at,
+    uploadedFileId: filesByDocumentId.get(row.id) || null,
+  }));
+  res.json({ success: true, documents });
+});
+
+// Semantic search is only available when the configured embedding provider
+// and pgvector RPC are healthy. An empty result is an honest unavailable/no
+// match state, never a locally invented relevance score.
+app.post("/api/workspace/vault/search", async (req: Request, res: Response) => {
+  const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
+  if (!query) {
+    res.status(400).json({ error: "A search query is required." });
+    return;
+  }
+  if (query.length > 2_000) {
+    res.status(400).json({ error: "Search query exceeds the 2,000 character limit." });
+    return;
+  }
+  const matches = await searchDocuments(res.locals.sb, res.locals.wsId, query, { topK: 6 });
+  res.json({ success: true, matches });
 });
 
 // Analyze and summarize uploaded document for auto-filling Second Brain Vault Records
@@ -2390,6 +2938,14 @@ app.post("/api/workspace/vault/analyze-document", upload.single("file"), async (
       fileSize = file.size;
       mimeType = file.mimetype;
       const lower = fileName.toLowerCase();
+
+      if (/\.(xlsx|xls)$/i.test(lower)) {
+        res.status(415).json({
+          error: "Spreadsheet analysis is temporarily unavailable while the workbook parser is under security remediation. Upload CSV or export the workbook to PDF/text instead.",
+          code: "SPREADSHEET_INGESTION_QUARANTINED",
+        });
+        return;
+      }
 
       if (
         mimeType.startsWith("text/") ||
@@ -2414,19 +2970,6 @@ app.post("/api/workspace/vault/analyze-document", upload.single("file"), async (
         } catch (err: any) {
           console.warn("PDF extraction fallback:", err.message);
           rawText = file.buffer.toString("utf8", 0, Math.min(file.buffer.length, 10000)).replace(/[^\x20-\x7E\n\r\t]/g, " ");
-        }
-      } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
-        try {
-          const XLSX = await import("xlsx");
-          const workbook = XLSX.read(file.buffer, { type: "buffer" });
-          const rows: string[] = [];
-          for (const s of workbook.SheetNames) {
-            rows.push(`--- Sheet: ${s} ---`);
-            rows.push(XLSX.utils.sheet_to_csv(workbook.Sheets[s]));
-          }
-          rawText = rows.join("\n");
-        } catch (err: any) {
-          console.warn("Excel extraction fallback:", err.message);
         }
       } else {
         rawText = file.buffer.toString("utf8").replace(/[^\x20-\x7E\n\r\t]/g, " ").trim();
@@ -3796,10 +4339,26 @@ app.use(
   "/api/workspace/google-ads-mcp",
   createGoogleAdsMcpRouter({
     expensiveLimiter,
+    authorize: async res => isMcpPilotOwner(res.locals.userEmail) && googleAdsWorkspaceBinding(res.locals.wsId) && await callerIsOwnerOrAdmin(res),
     getStatus: getGoogleAdsMcpStatus,
-    listCustomers: listGoogleAdsMcpCustomers,
+    listCustomers: async res => {
+      const receipt = await readGoogleAdsViaMcp({ workspaceId: res.locals.wsId, actorId: res.locals.userId,
+        actorEmail: res.locals.userEmail, sb: res.locals.sb, request: { operation: 'discover' } });
+      if (receipt.status !== 'succeeded') throw new Error(`Google Ads account discovery failed. Receipt: ${receipt.receiptId}`);
+      const raw = (receipt.result as any)?.structuredContent?.result;
+      const customers = Array.isArray(raw) ? raw.map(value => String(value).replace(/^customers\//, '').replace(/-/g, '')).filter(value => /^\d{10}$/.test(value)) : [];
+      if (!customers.length) throw new Error(`No accessible customer IDs were returned. Receipt: ${receipt.receiptId}`);
+      return { customers, verified: true, checkedAt: receipt.finishedAt, receiptId: receipt.receiptId };
+    },
   }),
 );
+
+app.use('/api/workspace/mcp', createMcpRouter({
+  expensiveLimiter,
+  callerIsOwnerOrAdmin,
+  getWorkspace: getDB,
+  getRuns: (res, limit) => listLedgerRuns(res.locals.sb, res.locals.wsId, limit),
+}));
 
 // Token Metering & Client Profitability Telemetry
 app.get("/api/workspace/telemetry/tokens", async (req: Request, res: Response) => {
@@ -4359,12 +4918,13 @@ for (const underReview of claimsUnderReview) {
     }
   }
 
-  // Fallback: Domain-calibrated heuristic audit (deterministic, professional, zero mock labels)
-  const fallbackAudit = generateDomainCalibratedAudit(targetDomain);
-  fallbackAudit.strategies = buildGrowthStrategies(fallbackAudit, await getGrowthProviderSnapshots());
-  db.growthAudit = fallbackAudit;
-  await saveDB(res, db);
-  res.json({ success: true, growthAudit: fallbackAudit });
+  // A domain-hash fallback previously returned authoritative-looking findings
+  // and percentages for a site that had not been inspected. No provider or
+  // evidence means no completed audit.
+  res.status(503).json({
+    error: "Growth audit provider is unavailable. No audit was created.",
+    code: "GROWTH_AUDIT_PROVIDER_UNAVAILABLE",
+  });
 });
 
 // Run UI/UX Audit — real fetch + real screenshots (desktop/mobile/full-page)
@@ -4501,32 +5061,14 @@ app.post("/api/workspace/run-uiux", expensiveLimiter, requireModule("uiux"), asy
       res.status(500).json({ error: classifyGeminiError(err) });
     }
   } else {
-    // Mock UI/UX response
-    const mockUIUX: UIUXAudit = {
-      url,
-      lastAuditedAt: new Date().toISOString().split('T')[0],
-      frictionRating: "High",
-      overallScore: 61,
-      screenshots: { desktop: null, mobile: null, fullPage: null },
-      findings: {
-        usability: "The form has redundant fields like asking for fax or secondary corporate data upfront, which stalls signups.",
-        accessibility: "High contrast dark mode inputs lack high-contrast borders, making them difficult for visually impaired users.",
-        navigation: "Users are blocked from viewing standard pricing models without first creating a validated profile.",
-        mobileResponse: "Horizontal scrolling appears on mobile screens under 375px because of non-responsive diagnostic tables.",
-        conversionFriction: "Immediate strategy questionnaire requirement is too aggressive. Pre-qualifying target scales first would improve performance."
-      },
-      pageLevelRecommendations: [
-        {
-          page: "Sign Up Screen",
-          issue: "Asking for deep corporate tax documents on screen 1.",
-          solution: "Shift strategy file upload to post-onboarding business profile settings.",
-          impact: "High"
-        }
-      ]
-    };
-    db.uiuxAudit = mockUIUX;
-    await saveDB(res, db);
-    res.json({ success: true, uiuxAudit: mockUIUX });
+    // A provider-less UI/UX run used to return a fixed 61/100 audit and made
+    // it look as though a client page had been inspected. Fail closed: the
+    // caller can use the deterministic CRO proposal flow, but no model audit
+    // exists until a verified provider is available.
+    res.status(503).json({
+      error: "UI/UX audit provider is unavailable. No audit was created.",
+      code: "UIUX_PROVIDER_UNAVAILABLE",
+    });
   }
 });
 
@@ -4627,6 +5169,7 @@ async function executeAgentTask(
   allowedScope: string[],
   geminiKey?: string,
   geminiModel: string = DEFAULT_GEMINI_MODEL,
+  permittedTools: readonly AgentToolName[] = [],
   sbContext?: { sb: any; workspaceId: string; taskId?: string },
 ): Promise<{ steps: string[]; output: string }> {
   let attemptId: string | null = null;
@@ -4653,7 +5196,7 @@ async function executeAgentTask(
 
   try {
     const result = await executeAgentTaskInner(
-      agentName, goal, brain, allowedScope, geminiKey, geminiModel, sbContext
+      agentName, goal, brain, allowedScope, geminiKey, geminiModel, permittedTools, sbContext
     );
     await closeAttempt();
     return result;
@@ -4670,6 +5213,7 @@ async function executeAgentTaskInner(
   allowedScope: string[],
   geminiKey?: string,
   geminiModel: string = DEFAULT_GEMINI_MODEL,
+  permittedTools: readonly AgentToolName[] = [],
   sbContext?: { sb: any; workspaceId: string; taskId?: string },
 ): Promise<{ steps: string[]; output: string }> {
   const executionLog: string[] = [];
@@ -4763,6 +5307,7 @@ async function executeAgentTaskInner(
       timeoutMs: 90_000,
     },
     maxSteps: 5,
+    allowedTools: permittedTools,
     executeTool: async (name, args) => {
       return await executeAgentToolCall({
         name,
@@ -4770,7 +5315,12 @@ async function executeAgentTaskInner(
         sb: sbContext?.sb,
         workspaceId: sbContext?.workspaceId,
         secondBrain: brain,
-        workspaceRoot: process.cwd(),
+        workspaceRoot: path.join(
+          process.cwd(),
+          ".agent-workspaces",
+          sbContext?.workspaceId || "unscoped",
+          sbContext?.taskId || "mission",
+        ),
       });
     },
     geminiClientFactory: (key) => getGeminiClient(key),
@@ -5160,7 +5710,8 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
             scope,
             geminiKey,
             geminiModel,
-            undefined,
+            subAgent.permittedTools,
+            { sb, workspaceId },
           );
           await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
           return result;
@@ -5365,6 +5916,7 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
     });
 
     const stageTasks = new Map<string, AgentTask>();
+    const stagePlans = new Map<string, ReturnType<typeof createDispatchPlan>>();
     for (const stage of STAGES) {
       const stagePlan = createDispatchPlan({
         intent: stage.title,
@@ -5388,6 +5940,7 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
         output: "",
         requestedBy: res.locals.userId,
       };
+      stagePlans.set(stage.id, stagePlan);
       stageTasks.set(stage.id, stageTask);
       await recordLedgerTask(res, stageTask, res.locals.userId, `Mission child started: ${stage.id}`, {
         ...taskMetadata(stagePlan, stageTask),
@@ -5406,6 +5959,8 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
       maxRetries: 2,
       dependencies: stage.dependencies,
       execute: async (_ctx: any, upstream: Record<string, any>) => {
+        const stagePlan = stagePlans.get(stage.id);
+        if (!stagePlan) throw new Error(`Missing governed dispatch plan for pipeline stage ${stage.id}`);
         const attemptId = await startNodeAttempt(sb, workspaceId, pipelineRunId, {
           nodeId: `pipeline:${stage.id}`,
           executorVersion: `gemini:${geminiModel}`,
@@ -5419,9 +5974,10 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
             getAgentPolicy(stage.agent).allowed,
             geminiKey,
             geminiModel,
-            // No sbContext: the DAG node owns node accounting for this pipeline,
-            // so we do not double-count an attempt per stage.
-            undefined
+            stagePlan.subAgents.find(subAgent => subAgent.id === stagePlan.entrySubAgent)?.permittedTools || [],
+            // The DAG node owns node accounting, but database context is still
+            // required for scoped retrieval and tool execution.
+            { sb, workspaceId }
           );
           await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
           return {

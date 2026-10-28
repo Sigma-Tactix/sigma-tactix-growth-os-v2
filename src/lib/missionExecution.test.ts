@@ -38,6 +38,7 @@ describe('mission execution module', () => {
 
     expect(graph.nodes).toHaveLength(1);
     expect(graph.nodes[0].id).toBe('sub-agent:spend-efficiency-scorer');
+    expect(graph.nodes[0].permittedTools).toEqual(['search_second_brain', 'read_google_ads_mcp']);
     const result = await graph.nodes[0].execute({ workspaceId: 'ws-1', nodeId: graph.nodes[0].id }, {});
     expect((result as any).value).toEqual({ subAgent: 'spend-efficiency-scorer', workspace: 'ws-1' });
   });
@@ -95,6 +96,8 @@ describe('mission execution module', () => {
 
     expect(graph.nodes.length).toBe(3);
     expect(graph.nodes.map((node) => node.dependencies.length)).toEqual([0, 1, 1]);
+    expect(graph.nodes[2].dependencies).toEqual([graph.nodes[0].id]);
+    expect(graph.nodes.every((node) => node.permittedTools.length > 0)).toBe(true);
     const first = await graph.nodes[0].execute({ workspaceId: 'ws-1', nodeId: graph.nodes[0].id }, {});
     const second = await graph.nodes[1].execute(
       { workspaceId: 'ws-1', nodeId: graph.nodes[1].id },

@@ -20,6 +20,7 @@ import {
   Code2,
   FileText,
   AlertCircle,
+  AlertTriangle,
   Download,
   Database,
   Link2,
@@ -295,6 +296,8 @@ export default function SeoAeoPage() {
   const [gscStatus, setGscStatus] = useState<GSCConnectionStatus | null>(null);
   const [isConnectingGsc, setIsConnectingGsc] = useState(false);
   const isGscConnected = gscStatus?.connected === true;
+  const isGscLive = isGscConnected && gscStatus?.hasGrant === true;
+  const isGscAwaitingGrant = isGscConnected && !gscStatus?.hasGrant;
 
   useEffect(() => {
     let cancelled = false;
@@ -412,6 +415,16 @@ export default function SeoAeoPage() {
         oauthConfigured: result.oauthConfigured,
         redirectUri: result.redirectUri || prev?.redirectUri,
       }));
+      if (result.preflight?.ok === false) {
+        // Google already rejected this exact pair server-side — navigating
+        // would only reproduce its dead-end Error 400 page. Keep the modal
+        // open and surface the server's diagnosis instead.
+        notifyError(
+          'Google Rejected This OAuth Setup',
+          result.error || 'The redirect URI is not whitelisted for this OAuth client. Add it under Google Cloud → Credentials → Authorized redirect URIs, then connect again.'
+        );
+        return;
+      }
       setIsGscModalOpen(false);
       if (result.authUrl) {
         notifyInfo('Continue in Google', 'Redirecting to Google for the OAuth grant — approve Search Console access to finish.');
@@ -459,11 +472,20 @@ export default function SeoAeoPage() {
 
           <div className="flex items-center gap-3">
             <Button
-              variant={isGscConnected ? "secondary" : "outline"}
+              variant={isGscLive ? "secondary" : "outline"}
               onClick={() => setIsGscModalOpen(true)}
-              leftIcon={<Globe className="w-3.5 h-3.5 text-blue-400" />}
+              leftIcon={
+                isGscLive ? (
+                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                ) : isGscAwaitingGrant ? (
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                ) : (
+                  <Globe className="w-3.5 h-3.5 text-blue-400" />
+                )
+              }
+              className={isGscAwaitingGrant ? "border-amber-500/50 text-amber-300 hover:border-amber-400" : undefined}
             >
-              {isGscConnected ? 'GSC Linked' : 'Connect GSC'}
+              {isGscLive ? 'GSC Live Linked' : isGscAwaitingGrant ? 'GSC: OAuth Pending' : 'Connect GSC'}
             </Button>
 
             <Button

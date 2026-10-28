@@ -153,6 +153,13 @@ export async function fetchGSCAnalytics(
   return { kind: 'error', message };
 }
 
+export interface GscPreflight {
+  /** true = Google accepted the pair; false = rejected; null = could not verify. */
+  ok: boolean | null;
+  code?: string;
+  detail?: string;
+}
+
 export interface GSCConnectResult {
   success: boolean;
   connected?: boolean;
@@ -164,6 +171,15 @@ export interface GSCConnectResult {
   authUrl?: string | null;
   /** EXACT redirect URI Google must have whitelisted — display in the dialog. */
   redirectUri?: string;
+  /** Masked client ID whose Authorized redirect URIs must contain redirectUri. */
+  clientIdMasked?: string;
+  /**
+   * Server-side verdict for the exact client + redirect URI pair, tested
+   * against Google's authorize endpoint BEFORE the browser navigates there.
+   * When ok === false the client must NOT navigate to authUrl — Google would
+   * only show the same dead-end Error 400 page.
+   */
+  preflight?: GscPreflight | null;
   error?: string;
 }
 
@@ -211,6 +227,15 @@ export interface GSCDiagnostics {
   hasGrant: boolean;
   storedRedirectUri: string | null;
   redirectUriMatchesStored: boolean;
+  /** Masked ID of the stored OAuth client (whose whitelist must hold redirectUri). */
+  clientIdMasked?: string | null;
+  /** True when the stored ID does not look like a Google Web client — warn only. */
+  clientIdSuspicious?: boolean | null;
+  /** Proxy-visibility fields: scheme/host drift is the #1 mismatch cause. */
+  forwardedProto?: string | null;
+  forwardedHost?: string | null;
+  requestHost?: string | null;
+  appOriginEnv?: string | null;
 }
 
 /** Self-check for the OAuth setup — surfaces the canonical redirect URI. */
@@ -221,6 +246,34 @@ export async function fetchGSCDiagnostics(): Promise<GSCDiagnostics | null> {
     return (await res.json()) as GSCDiagnostics;
   } catch {
     return null;
+  }
+}
+
+export interface GSCPreflightResult extends GscPreflight {
+  redirectUri?: string;
+  clientIdMasked?: string;
+  /** True when the tested ID does not look like a Google Web client — warn only. */
+  clientIdSuspicious?: boolean;
+}
+
+/**
+ * Ask the server to verify the exact client_id + redirect_uri pair against
+ * Google's authorize endpoint — returns Google's real verdict without the
+ * browser ever navigating there (so no dead-end Error 400 page).
+ */
+export async function preflightGSC(input?: { clientId?: string }): Promise<GSCPreflightResult> {
+  try {
+    const res = await apiFetch('/api/gsc/preflight', {
+      method: 'POST',
+      body: JSON.stringify({ clientId: input?.clientId || undefined }),
+    });
+    const payload: unknown = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: null, code: 'preflight_unavailable', detail: readErrorMessage(payload, `Pre-flight failed (HTTP ${res.status}).`) };
+    }
+    return payload as GSCPreflightResult;
+  } catch {
+    return { ok: null, code: 'backend_unreachable', detail: 'Backend unreachable — could not verify the pair with Google.' };
   }
 }
 
@@ -269,7 +322,7 @@ export function describeGscOAuthError(code: string): string {
     case 'redirect_uri_unresolvable':
       return "The server could not determine its own public URL, so no OAuth redirect URI could be minted. Set APP_URL on the server (e.g. APP_URL=http://localhost:8787) and reconnect.";
     case 'redirect_uri_mismatch':
-      return 'Google rejected the redirect URI (redirect_uri_mismatch). Open the Connect dialog, copy the exact Redirect URI shown, add it under Google Cloud → APIs & Services → Credentials → your OAuth client → Authorized redirect URIs, then reconnect. The URI must match byte-for-byte (scheme, host, port and path).';
+      return 'Google rejected the redirect URI (redirect_uri_mismatch — URI must match byte-for-byte: scheme, host, port and path). Open the Connect dialog, copy the exact Redirect URI shown, and add it under Google Cloud → APIs & Services → Credentials → YOUR OAuth client (a Web-application client; a Desktop client can never match a web redirect URI) → Authorized redirect URIs (not Authorized JavaScript origins). Also confirm it is on the SAME client whose ID/Secret you entered, with no trailing slash and http/https matching, then reconnect.';
     case 'access_denied':
       return 'Authorization was declined on the Google consent screen. Grant Search Console access to continue.';
     default:
