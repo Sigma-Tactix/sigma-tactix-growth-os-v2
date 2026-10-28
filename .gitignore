@@ -68,3 +68,49 @@ first-frames/*.png
 output/*.mp4
 .creative-renders/
 .vexp/
+
+# --- local working / scratch + personal reference material (added 2026-10-28) ---
+hive/
+worktrees/
+tasks/
+docs/tasks/
+roster-backups/
+roster.json
+scripts/__pycache__/
+*.mobileconfig
+*.pptx
+*.xlsx
+Cabinet*
+ultron_jarvis_mode_ultron.png
+ultron_jarvis_mode_jarvis.png
+
+# personal reference docs kept local (exact filenames)
+A1\ Sigma\ Design\ System.txt
+AI\ Calling\ Agent\ for\ Roofers\ &\ Residential\ Solar\ Businesses.docx
+Business\ Growth\ OS\ vs\ Weam\ AI\ And\ All\ other\ open\ source\ projects_2026-08-24.md
+Corporate\ Tax\ Registration\ User\ Guide_EN\ -\ Updated\ version.pdf
+Enterprise\ AI\ Services.png
+Gemini_Generated_Image_tgbpl8tgbpl8tgbp.png
+Growth\ OS\ Merlin\ chat\ history.md
+NUBI_\ SIGMATACTIX\ BRAND\ GUIDELINES.docx
+Sigma\ Banner\ GBP\ A4.pdf
+Sigma\ Tactix\ Business\ Card\ NK.pdf
+Sigma\ Tactix\ -\ GCC\ Client\ Targeting\ &\ Pre-Pitch\ Analysis.docx
+SigmaTactixPreview.html
+Sigmatactix\ design\ MD\ Stitch\ -\ NEW.txt
+Sigmatactix-Smart-Analytics-main.zip
+eInvoicing\ Infographic\ -\ EN.pdf
+Chat\ with\ Merlin\ AI\ on\ Sigma\ Tactix\ Growth\ OS\ (8_24_2026\ 1：00：56\ PM).html
+
+# generated security inventory output (reports/)
+reports/security-inventory/
+
+# stray root-level files (real component lives in src/components/brand/)
+/SigmaTactixLogo.tsx
+/SigmaTactixPreview.html
+
+# agent tooling cache (vexp etc.)
+.rea-recon/
+
+# remaining personal reference (kept local)
+*Full Website Audit.pdf
