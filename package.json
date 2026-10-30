@@ -76,7 +76,7 @@
     "three-stdlib": "^2.36.1",
     "voice-glow": "^0.2.1",
     "xlsx": "^0.18.5",
-    "zod": "^4.5.4"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
