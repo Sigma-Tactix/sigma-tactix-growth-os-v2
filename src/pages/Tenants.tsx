@@ -165,9 +165,9 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
         }
         return {
           provider: sp.provider,
-          configured: sp.live,
+          configured: false,
           model: sp.defaultModel,
-          live: sp.live
+          live: false
         };
       });
       setProviders(mergedProviders);

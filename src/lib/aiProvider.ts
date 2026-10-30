@@ -11,7 +11,8 @@ export type SupportedProvider =
   | "anthropic"
   | "deepseek"
   | "qwen"
-  | "openrouter";
+  | "openrouter"
+  | "xai" | "glm" | "omniroute" | "opencode" | "opusmax";
 
 export interface AIProviderConfig {
   provider: SupportedProvider;
@@ -48,9 +49,18 @@ export interface ReActExecutionResult {
  * Resolves standard OpenAI-compatible base URLs for local or hosted providers
  */
 export function resolveProviderBaseUrl(provider: SupportedProvider, explicitBaseUrl?: string): string {
-  if (explicitBaseUrl?.trim()) return explicitBaseUrl.trim().replace(/\/$/, "");
+  if (explicitBaseUrl?.trim()) {
+    const base = explicitBaseUrl.trim().replace(/\/$/, "");
+    return provider === 'opusmax' && !base.endsWith('/v1') ? `${base}/v1` : base;
+  }
 
   switch (provider) {
+    case "anthropic": return "https://api.anthropic.com/v1";
+    case "xai": return "https://api.x.ai/v1";
+    case "glm": return "https://open.bigmodel.cn/api/paas/v4";
+    case "omniroute": return "https://api.omniroute.ai/v1";
+    case "opencode": return "https://api.opencode.ai/v1";
+    case "opusmax": return "https://api.opusmax.pro/v1";
     case "ollama":
       return (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, "");
     case "lmstudio":
@@ -148,7 +158,10 @@ async function executeOpenAICompatibleReActLoop(ctx: {
   const toolDefinitions = GROWTH_OS_OPENAI_TOOLS.filter(tool => allowedToolSet.has(tool.function.name));
 
   const baseUrl = resolveProviderBaseUrl(config.provider, config.baseUrl);
-  const apiKey = config.apiKey || (config.provider === "ollama" || config.provider === "lmstudio" ? "local" : process.env.OPENAI_API_KEY || "");
+  const apiKey = config.apiKey || (config.provider === "ollama" || config.provider === "lmstudio" ? "local" :
+    config.provider === "openai" ? process.env.OPENAI_API_KEY || "" : "");
+  if (!apiKey) throw new Error(`${config.provider} API key is not configured.`);
+  const anthropicWire = config.provider === 'anthropic' || (config.provider === 'opusmax' && /opusxmax\.vercel\.app/.test(new URL(baseUrl).hostname));
   const model = config.model;
 
   const systemPrompt = `You are the elite "${agentName}" autonomous agent inside Sigma Tactix Growth OS.
@@ -178,20 +191,40 @@ Operational Directives:
     const reqBody = {
       model,
       messages,
-      tools: toolDefinitions,
-      tool_choice: "auto",
-      temperature: 0.2,
+      ...(toolDefinitions.length ? { tools: toolDefinitions, tool_choice: "auto" } : {}),
+      ...(config.provider === 'openai' ? {} : { temperature: 0.2 }),
     };
 
     let res: Response;
     try {
-      res = await fetch(`${baseUrl}/chat/completions`, {
+      const convertedMessages = messages.filter(message => message.role !== 'system').map(message => {
+        if (message.role === 'tool') return { role: 'user', content: [{ type: 'tool_result', tool_use_id: message.tool_call_id, content: message.content }] };
+        if (message.tool_calls) return { role: 'assistant', content: [
+          ...(message.content ? [{ type: 'text', text: message.content }] : []),
+          ...message.tool_calls.map((call: any) => ({ type: 'tool_use', id: call.id, name: call.function.name, input: JSON.parse(call.function.arguments) })),
+        ] };
+        return { role: message.role, content: message.content };
+      });
+      const anthropicMessages: any[] = [];
+      for (const message of convertedMessages) {
+        const previous = anthropicMessages.at(-1);
+        if (previous?.role === 'user' && message.role === 'user' && Array.isArray(previous.content) && Array.isArray(message.content)) {
+          previous.content.push(...message.content);
+        } else anthropicMessages.push(message);
+      }
+      const wireBody = anthropicWire ? {
+        model, system: systemPrompt, max_tokens: 2048, messages: anthropicMessages,
+        ...(toolDefinitions.length ? { tools: toolDefinitions.map(tool => ({ name: tool.function.name, description: tool.function.description, input_schema: tool.function.parameters })) } : {}),
+      } : reqBody;
+      const endpoint = anthropicWire ? `${baseUrl.replace(/\/v1$/, '')}/v1/messages` : `${baseUrl}/chat/completions`;
+      res = await fetch(endpoint, {
         method: "POST",
+        redirect: 'error',
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          ...(anthropicWire ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' } : { Authorization: `Bearer ${apiKey}` }),
         },
-        body: JSON.stringify(reqBody),
+        body: JSON.stringify(wireBody),
         signal: AbortSignal.timeout(config.timeoutMs || 90_000),
       });
     } catch (err: any) {
@@ -204,6 +237,14 @@ Operational Directives:
     }
 
     const data = await res.json() as any;
+    if (anthropicWire) {
+      const blocks = data.content || [];
+      const calls = blocks.filter((block: any) => block.type === 'tool_use').map((block: any) => ({
+        id: block.id, type: 'function', function: { name: block.name, arguments: JSON.stringify(block.input) },
+      }));
+      data.choices = [{ message: { role: 'assistant', content: blocks.filter((block: any) => block.type === 'text').map((block: any) => block.text).join('\n'), ...(calls.length ? { tool_calls: calls } : {}) } }];
+      data.usage = { prompt_tokens: data.usage?.input_tokens || 0, completion_tokens: data.usage?.output_tokens || 0 };
+    }
     const choice = data.choices?.[0];
     const message = choice?.message;
 
