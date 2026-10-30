@@ -522,7 +522,7 @@ export default function AlignedExecutiveCharts({
                 />
               </div>
 
-              <div className="text-[9px] font-mono text-zinc-500 truncate">
+              <div className="text-[11px] font-mono text-zinc-500 truncate">
                 {item.note}
               </div>
             </div>

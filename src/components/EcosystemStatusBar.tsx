@@ -486,8 +486,8 @@ export default function EcosystemStatusBar({
             <div className="text-xs font-bold text-[var(--sigma-text)] flex items-center gap-2">
               <span>Ecosystem status</span>
               <span className={cn(
-                "text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase",
-                overallHealthPercent === null ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]" : issueCount === 0 ? "bg-green-500/20 text-green-700 dark:text-green-300" : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                "text-[11px] font-mono px-1.5 py-0.5 rounded font-bold uppercase",
+                overallHealthPercent === null ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]" : issueCount === 0 ? "bg-green-500/20 text-green-700 dark:text-emerald-accent" : "bg-amber-500/20 text-amber-700 dark:text-amber-accent"
               )}>
                 {overallHealthPercent === null ? 'Not checked' : demoMode ? `${overallHealthPercent}% demo` : `${overallHealthPercent}% up`}
               </span>
@@ -617,7 +617,7 @@ export default function EcosystemStatusBar({
                           </span>
                           <button
                             onClick={() => navigate(sub.route)}
-                            className="text-[9px] font-mono text-zinc-400 hover:text-accent flex items-center gap-1 hover:underline"
+                            className="text-[11px] font-mono text-zinc-400 hover:text-accent flex items-center gap-1 hover:underline"
                           >
                             <span>Open</span>
                             <ArrowRight size={10} />
@@ -672,7 +672,7 @@ export default function EcosystemStatusBar({
                                       >
                                         <button
                                           type="button"
-                                          className="text-[9px] font-bold px-2 py-0.5 rounded uppercase block bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 cursor-pointer transition-all animate-pulse"
+                                          className="text-[11px] font-bold px-2 py-0.5 rounded uppercase block bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 cursor-pointer transition-all animate-pulse"
                                           title="Hover for Quick Fix Assistant"
                                         >
                                           {el.status} ⚡
@@ -680,14 +680,14 @@ export default function EcosystemStatusBar({
                                       </QuickFixAssistant>
                                     ) : (
                                       <span className={cn(
-                                        "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase block",
-                                        isOperational ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"
+                                        "text-[11px] font-bold px-1.5 py-0.5 rounded uppercase block",
+                                        isOperational ? "bg-green-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
                                       )}>
                                         {el.status}
                                       </span>
                                     )}
                                     {el.latency && (
-                                      <span className="text-[9px] text-zinc-500 mt-0.5 block font-mono">
+                                      <span className="text-[11px] text-zinc-500 mt-0.5 block font-mono">
                                         {el.latency}
                                       </span>
                                     )}
@@ -699,7 +699,7 @@ export default function EcosystemStatusBar({
                                   <div className="mt-2.5 pt-2 border-t border-amber-500/20 space-y-2">
                                     <button
                                       onClick={() => setExpandedFixId(isExpandedFix ? null : el.id)}
-                                      className="flex items-center justify-between w-full text-[10px] font-bold text-amber-300 hover:text-amber-200 transition-colors"
+                                      className="flex items-center justify-between w-full text-[10px] font-bold text-amber-400 hover:text-amber-200 transition-colors"
                                     >
                                       <span className="flex items-center gap-1">
                                         <Wrench size={11} />
@@ -719,7 +719,7 @@ export default function EcosystemStatusBar({
                                           {el.howToFix.issueSummary}
                                         </div>
 
-                                        <ul className="space-y-1 text-zinc-300 font-mono text-[9px] list-disc list-inside">
+                                        <ul className="space-y-1 text-zinc-300 font-mono text-[11px] list-disc list-inside">
                                           {el.howToFix.actionableSteps.map((step, sIndex) => (
                                             <li key={sIndex} className="leading-tight">{step}</li>
                                           ))}
@@ -732,7 +732,7 @@ export default function EcosystemStatusBar({
                                                 navigate(el.howToFix.targetRoute);
                                               }
                                             }}
-                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[9px] font-mono text-zinc-300 hover:text-white flex items-center gap-1"
+                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[11px] font-mono text-zinc-300 hover:text-white flex items-center gap-1"
                                           >
                                             <span>Open Tool</span>
                                             <ExternalLink size={10} />
@@ -740,7 +740,7 @@ export default function EcosystemStatusBar({
 
                                           <button
                                             onClick={el.howToFix.quickFixAction}
-                                            className="px-2.5 py-1 bg-accent hover:opacity-90 text-background font-black text-[9px] font-mono rounded flex items-center gap-1 shadow-md transition-all amber-glow"
+                                            className="px-2.5 py-1 bg-accent hover:opacity-90 text-background font-black text-[11px] font-mono rounded flex items-center gap-1 shadow-md transition-all amber-glow"
                                           >
                                             <Zap size={10} />
                                             <span>{el.howToFix.quickFixLabel}</span>
@@ -782,3 +782,4 @@ export default function EcosystemStatusBar({
     </div>
   );
 }
+

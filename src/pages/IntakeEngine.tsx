@@ -311,7 +311,7 @@ export default function IntakeEngine() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2"
+                className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 space-y-2"
               >
                 <div className="flex items-center gap-2 font-semibold text-xs">
                   <CheckCircle2 size={15} className="text-emerald-400" />
@@ -357,3 +357,4 @@ export default function IntakeEngine() {
     </div>
   );
 }
+

@@ -95,7 +95,7 @@ const CustomIntakeTooltip = ({ active, payload, label }: any) => {
             </div>
           ))}
         </div>
-        <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[9px] font-mono text-zinc-400">
+        <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-zinc-400">
           <span>Routing:</span>
           <span className="text-secondary font-bold">10 Partitioned Vaults</span>
         </div>

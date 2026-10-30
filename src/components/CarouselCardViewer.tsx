@@ -652,7 +652,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '4:5'
-                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
+                  ? "bg-amber-400/20 text-amber-accent border border-amber-400/40 font-bold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -663,7 +663,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '1:1'
-                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
+                  ? "bg-amber-400/20 text-amber-accent border border-amber-400/40 font-bold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -680,7 +680,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'OBSIDIAN_AMBER'
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-semibold"
+                  ? "bg-amber-500/20 text-amber-accent border border-amber-500/40 font-semibold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -692,7 +692,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'CYBER_BLUEPRINT'
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-semibold"
+                  ? "bg-cyan-500/20 text-cyan-accent border border-cyan-500/40 font-semibold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -719,7 +719,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
             onClick={handleCopySlideText}
             className="sigma-button-secondary px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
-            {copiedSlide ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedSlide ? <Check className="w-3.5 h-3.5 text-emerald-accent" /> : <Copy className="w-3.5 h-3.5" />}
             {copiedSlide ? 'Copied' : 'Copy Slide'}
           </button>
 
@@ -734,7 +734,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={() => handleExportSlidePng(currentSlideIndex)}
             disabled={isExporting}
-            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
           >
             <Download className="w-3.5 h-3.5" />
             Slide PNG
@@ -753,7 +753,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={handleExportPptx}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
             title="Download editable PowerPoint PPTX deck"
           >
             <Presentation className="w-3.5 h-3.5 text-orange-400" />
@@ -879,7 +879,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 theme === 'CYBER_BLUEPRINT' && "bg-cyan-500/10 border-cyan-500/30 text-cyan-200",
                 theme === 'MONOLITH_GOLD' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-200"
               )}>
-                <div className="text-[9px] font-mono uppercase tracking-widest text-amber-400 font-bold mb-0.5">
+                <div className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold mb-0.5">
                   Strategic Takeaway
                 </div>
                 <div className="text-xs font-semibold text-white">
@@ -936,7 +936,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
             <div className="text-[11px] font-bold text-[var(--sigma-text)] line-clamp-1">
               {s.title}
             </div>
-            <div className="text-[9px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">
+            <div className="text-[11px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">
               {s.subtitle || s.takeaway || 'Content slide'}
             </div>
           </button>
@@ -945,3 +945,4 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     </div>
   );
 }
+

@@ -34,6 +34,14 @@ export type DecisionEngine = 'laya' | 'deterministic_policy';
  */
 export const MIN_AUTOMATION_CONFIDENCE = 0.9;
 
+/**
+ * Warm Laya calls were measured at 158-243 ms in this project. A 750 ms
+ * deadline leaves room for local contention while keeping the UI and IDE
+ * responsive. Cold-start is handled by preloading the sidecar, not by making
+ * every user wait several seconds.
+ */
+export const DEFAULT_LAYA_TIMEOUT_MS = 750;
+
 /** Upstream laya-serve amplification guards, mirrored so we fail locally. */
 export const LAYA_LIMITS = {
   maxQuestions: 64,
@@ -139,7 +147,7 @@ function runtimeOptions(options: DecisionRuntimeOptions = {}, env: DecisionEnvir
     baseUrl: (options.baseUrl ?? env.LAYA_BASE_URL ?? '').trim().replace(/\/$/, ''),
     apiKey: (options.apiKey ?? env.LAYA_API_KEY ?? '').trim(),
     model: (options.model ?? env.LAYA_MODEL ?? 'auto').trim(),
-    timeoutMs: options.timeoutMs ?? (Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 8_000),
+    timeoutMs: options.timeoutMs ?? (Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : DEFAULT_LAYA_TIMEOUT_MS),
     mode: options.mode ?? (env.LAYA_MODE === 'active' ? 'active' : 'shadow'),
     calibrated: options.calibrated ?? env.LAYA_CALIBRATED === 'true',
   };
@@ -232,6 +240,102 @@ export async function callLayaSystemOne(
     };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+export interface BoundedDecisionOption {
+  id: string;
+  description: string;
+}
+
+export interface BoundedChoiceInput {
+  question: string;
+  context?: string;
+  options: BoundedDecisionOption[];
+}
+
+export interface BoundedChoiceDecision {
+  selectedOption: string | null;
+  confidence: number;
+  probabilities: Record<string, number>;
+  engine: 'laya' | 'unavailable';
+  durationMs: number;
+  advisoryOnly: true;
+  requiresHITL: true;
+  detail: string;
+}
+
+/**
+ * Shared fast-decision seam for developer tooling such as Antigravity.
+ * Laya may choose only from caller-supplied options and the result is always
+ * advisory. It cannot approve execution, writes, spending, or publication.
+ */
+export async function recommendBoundedChoice(
+  input: BoundedChoiceInput,
+  options: DecisionRuntimeOptions = {},
+): Promise<BoundedChoiceDecision> {
+  const startedAt = Date.now();
+  const question = input.question.trim();
+  if (!question) throw new Error('question is required');
+  if (input.options.length < 2 || input.options.length > 20) {
+    throw new Error('between 2 and 20 decision options are required');
+  }
+
+  const criteria: Record<string, string> = {};
+  for (const option of input.options) {
+    const id = option.id.trim();
+    const description = option.description.trim();
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(id)) {
+      throw new Error(`invalid option id: ${id || '<empty>'}`);
+    }
+    if (!description) throw new Error(`description is required for option: ${id}`);
+    if (id in criteria) throw new Error(`duplicate option id: ${id}`);
+    criteria[id] = description;
+  }
+
+  const unavailable = (detail: string): BoundedChoiceDecision => ({
+    selectedOption: null,
+    confidence: 0,
+    probabilities: {},
+    engine: 'unavailable',
+    durationMs: Date.now() - startedAt,
+    advisoryOnly: true,
+    requiresHITL: true,
+    detail,
+  });
+
+  const config = runtimeOptions(options);
+  if (!config.baseUrl) return unavailable('Laya is not configured; no advisory recommendation was made.');
+
+  try {
+    const result = await callLayaSystemOne(
+      { question, context: input.context?.trim() || undefined },
+      {
+        recommendation: {
+          type: 'choice',
+          instructions: 'Recommend one supplied option. This is advisory only and never authorizes execution.',
+          criteria,
+        },
+      },
+      config,
+    );
+    const answer = result.answers.recommendation;
+    const selectedOption = String(answer?.value ?? '');
+    if (!(selectedOption in criteria)) {
+      return unavailable('Laya returned an option outside the supplied allowlist; no recommendation was accepted.');
+    }
+    return {
+      selectedOption,
+      confidence: answer?.confidence ?? 0,
+      probabilities: answer?.probabilities ?? {},
+      engine: 'laya',
+      durationMs: result.durationMs,
+      advisoryOnly: true,
+      requiresHITL: true,
+      detail: 'Laya recommended one allowlisted option. The operator or governing workflow remains authoritative.',
+    };
+  } catch {
+    return unavailable('Laya did not answer within the decision deadline; no recommendation was made.');
   }
 }
 

@@ -11,7 +11,7 @@ interface GoogleAdsMcpControlProps {
 function State({ ok, label }: { ok: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-[11px] font-mono text-[var(--sigma-text-soft)]">
-      {ok ? <CheckCircle2 size={13} className="text-emerald-500" /> : <XCircle size={13} className="text-amber-500" />}
+      {ok ? <CheckCircle2 size={13} className="text-emerald-accent" /> : <XCircle size={13} className="text-amber-accent" />}
       {label}
     </div>
   );
@@ -73,7 +73,7 @@ export function GoogleAdsMcpControl({ onSelectCustomer }: GoogleAdsMcpControlPro
           {status && <p className="text-[11px] text-[var(--sigma-text-soft)]">{status.detail}</p>}
           {status?.missingConfiguration.length ? (
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-              <div className="text-[10px] uppercase font-mono font-bold text-amber-600">Required server configuration</div>
+              <div className="text-[10px] uppercase font-mono font-bold text-amber-accent">Required server configuration</div>
               <ul className="mt-1.5 space-y-1 text-[11px] font-mono text-[var(--sigma-text-soft)]">
                 {status.missingConfiguration.map(item => <li key={item}>• {item}</li>)}
               </ul>
@@ -83,10 +83,10 @@ export function GoogleAdsMcpControl({ onSelectCustomer }: GoogleAdsMcpControlPro
 
           {customers.length > 0 && (
             <div className="space-y-2">
-              <div className="text-[10px] font-mono uppercase text-emerald-600 font-bold">Verified accessible customers</div>
+              <div className="text-[10px] font-mono uppercase text-emerald-accent font-bold">Verified accessible customers</div>
               <div className="flex flex-wrap gap-2">
                 {customers.map(customer => (
-                  <button key={customer} onClick={() => onSelectCustomer(customer)} className="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-xs font-mono cursor-pointer">
+                  <button key={customer} onClick={() => onSelectCustomer(customer)} className="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-accent text-xs font-mono cursor-pointer">
                     {customer} · configure pipeline
                   </button>
                 ))}
@@ -102,7 +102,7 @@ export function GoogleAdsMcpControl({ onSelectCustomer }: GoogleAdsMcpControlPro
           <Button variant="primary" size="sm" onClick={discoverCustomers} disabled={discovering || !status?.reachable} icon={<Search size={13} className={discovering ? 'animate-pulse' : ''} />}>
             Discover Accounts
           </Button>
-          <a href="https://developers.google.com/google-ads/api/docs/developer-toolkit/mcp-server" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 text-[11px] font-mono text-blue-600 hover:underline py-1">
+          <a href="https://developers.google.com/google-ads/api/docs/developer-toolkit/mcp-server" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 text-[11px] font-mono text-blue-accent hover:underline py-1">
             Setup requirements <ExternalLink size={11} />
           </a>
         </div>
@@ -110,3 +110,4 @@ export function GoogleAdsMcpControl({ onSelectCustomer }: GoogleAdsMcpControlPro
     </GlassCard>
   );
 }
+

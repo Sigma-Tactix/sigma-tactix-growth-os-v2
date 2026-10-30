@@ -159,7 +159,7 @@ export default function AgentSubAgentsList({
                     >
                       <button
                         type="button"
-                        className="text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-white/5 text-muted hover:text-white hover:bg-white/10 border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
+                        className="text-[11px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-white/5 text-muted hover:text-white hover:bg-white/10 border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
                         title="Hover for Quick Fix Assistant"
                       >
                         <span>IDLE</span>
@@ -168,7 +168,7 @@ export default function AgentSubAgentsList({
                     </QuickFixAssistant>
                   ) : (
                     <span className={cn(
-                      "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold",
+                      "text-[11px] font-mono uppercase px-2 py-0.5 rounded font-bold",
                       isRunning ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse" :
                       sub.status === 'COMPLETED' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
                       "bg-white/5 text-muted border border-white/10"

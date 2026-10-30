@@ -662,7 +662,7 @@ export default function AgentSimulationMode({
                 {Math.abs(deltaMetrics.latencyDeltaPct)}%
               </span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">Live: {deltaMetrics.liveLatency}ms</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">Live: {deltaMetrics.liveLatency}ms</div>
           </div>
 
           <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
@@ -677,7 +677,7 @@ export default function AgentSimulationMode({
                 {Math.abs(deltaMetrics.tokenDeltaPct)}%
               </span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">Live: {deltaMetrics.liveTokens.toLocaleString()}</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">Live: {deltaMetrics.liveTokens.toLocaleString()}</div>
           </div>
 
           <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
@@ -691,7 +691,7 @@ export default function AgentSimulationMode({
                 ({deltaMetrics.nodeDelta >= 0 ? `+${deltaMetrics.nodeDelta}` : deltaMetrics.nodeDelta})
               </span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">Total capacity: 15</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">Total capacity: 15</div>
           </div>
 
           <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
@@ -704,7 +704,7 @@ export default function AgentSimulationMode({
                 {deltaMetrics.simHitlGates > deltaMetrics.liveHitlGates ? '(+Hardened)' : '(Standard)'}
               </span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">Human sign-off checkpoints</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">Human sign-off checkpoints</div>
           </div>
 
           <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
@@ -712,7 +712,7 @@ export default function AgentSimulationMode({
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-sm font-bold text-green-400">{deltaMetrics.activeVaultsCount} Vaults</span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">Second Brain targets</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">Second Brain targets</div>
           </div>
 
           <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
@@ -725,7 +725,7 @@ export default function AgentSimulationMode({
                 {simulationRules.isStrictHITL ? 'ZERO-RISK' : simulationRules.isLeanMode ? 'LOW-RISK' : 'BALANCED'}
               </span>
             </div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">RBAC Verified</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">RBAC Verified</div>
           </div>
         </div>
       </div>
@@ -755,7 +755,7 @@ export default function AgentSimulationMode({
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className={cn("text-[9px] font-mono px-2 py-0.5 rounded font-bold border", preset.badgeColor)}>
+                    <span className={cn("text-[11px] font-mono px-2 py-0.5 rounded font-bold border", preset.badgeColor)}>
                       {preset.id}
                     </span>
                     {isSelected && (
@@ -976,7 +976,7 @@ export default function AgentSimulationMode({
                 <GitBranch size={15} className="text-accent" />
                 <h4 className="text-xs font-bold font-mono text-white uppercase tracking-wider flex items-center gap-2">
                   <span>Simulated DAG Topological Preview</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-accent/20 text-accent font-bold">
+                  <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-accent/20 text-accent font-bold">
                     Virtual State
                   </span>
                 </h4>
@@ -1176,7 +1176,7 @@ export default function AgentSimulationMode({
                 </div>
               </div>
 
-              <div className="text-[9px] text-zinc-500">
+              <div className="text-[11px] text-zinc-500">
                 Click any node to inspect simulated routing reason
               </div>
             </div>
@@ -1187,7 +1187,7 @@ export default function AgentSimulationMode({
             <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold border",
+                  "text-[11px] font-mono uppercase px-2 py-0.5 rounded font-bold border",
                   selectedNode.simStatus === 'PRUNED' ? "bg-rose-500/10 text-rose-300 border-rose-500/30" :
                   selectedNode.simStatus === 'HITL_GATED' ? "bg-amber-500/10 text-amber-300 border-amber-500/30" :
                   selectedNode.simStatus === 'ACCELERATED' ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" :
@@ -1211,15 +1211,15 @@ export default function AgentSimulationMode({
 
               <div className="grid grid-cols-3 gap-2 text-center font-mono">
                 <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5">
-                  <div className="text-[9px] text-muted">SIM LATENCY</div>
+                  <div className="text-[11px] text-muted">SIM LATENCY</div>
                   <div className="text-xs font-bold text-white mt-0.5">{selectedNode.simLatencyMs}ms</div>
                 </div>
                 <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5">
-                  <div className="text-[9px] text-muted">SIM TOKENS</div>
+                  <div className="text-[11px] text-muted">SIM TOKENS</div>
                   <div className="text-xs font-bold text-secondary mt-0.5">{selectedNode.simTokens}</div>
                 </div>
                 <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5">
-                  <div className="text-[9px] text-muted">TARGET VAULT</div>
+                  <div className="text-[11px] text-muted">TARGET VAULT</div>
                   <div className="text-xs font-bold text-green-400 mt-0.5 truncate">{selectedNode.vaultAffected || 'AI Workflow Vault'}</div>
                 </div>
               </div>
@@ -1270,19 +1270,19 @@ export default function AgentSimulationMode({
 
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="p-2.5 bg-black/30 rounded-xl border border-white/5">
-                    <div className="text-[9px] text-muted uppercase">Latency Delta</div>
+                    <div className="text-[11px] text-muted uppercase">Latency Delta</div>
                     <div className="text-sm font-bold text-green-400 mt-0.5">
                       {deltaMetrics.latencyDeltaPct <= 0 ? `${deltaMetrics.latencyDeltaPct}%` : `+${deltaMetrics.latencyDeltaPct}%`}
                     </div>
                   </div>
                   <div className="p-2.5 bg-black/30 rounded-xl border border-white/5">
-                    <div className="text-[9px] text-muted uppercase">Token Savings</div>
+                    <div className="text-[11px] text-muted uppercase">Token Savings</div>
                     <div className="text-sm font-bold text-secondary mt-0.5">
                       {deltaMetrics.tokenDeltaPct <= 0 ? `${deltaMetrics.tokenDeltaPct}%` : `+${deltaMetrics.tokenDeltaPct}%`}
                     </div>
                   </div>
                   <div className="p-2.5 bg-black/30 rounded-xl border border-white/5">
-                    <div className="text-[9px] text-muted uppercase">HITL Gates</div>
+                    <div className="text-[11px] text-muted uppercase">HITL Gates</div>
                     <div className="text-sm font-bold text-amber-400 mt-0.5">
                       {deltaMetrics.simHitlGates} Active
                     </div>

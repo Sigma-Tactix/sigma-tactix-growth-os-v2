@@ -124,7 +124,7 @@ export default function QuickFixAssistant({
                       {data.name}
                     </span>
                     {data.codename && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-zinc-300 font-bold">
+                      <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-zinc-300 font-bold">
                         {data.codename}
                       </span>
                     )}
@@ -143,10 +143,10 @@ export default function QuickFixAssistant({
               </div>
 
               <span className={cn(
-                "text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded border shrink-0",
+                "text-[11px] font-mono font-black uppercase px-2 py-0.5 rounded border shrink-0",
                 isCritical
-                  ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                  : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                  ? "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                  : "bg-amber-500/20 text-amber-400 border-amber-500/30"
               )}>
                 {data.severity}
               </span>
@@ -155,12 +155,12 @@ export default function QuickFixAssistant({
             {/* Root Cause & Summary */}
             <div className="space-y-2 mb-3">
               <div className="text-xs text-zinc-200 font-sans leading-snug">
-                <strong className={isCritical ? "text-rose-300" : "text-amber-300"}>Diagnosis: </strong>
+                <strong className={isCritical ? "text-rose-400" : "text-amber-400"}>Diagnosis: </strong>
                 {data.issueSummary}
               </div>
 
               <div className="bg-black/40 rounded-xl p-2.5 border border-white/5 text-[11px] font-mono text-zinc-400 leading-tight">
-                <span className="text-muted uppercase text-[9px] block mb-0.5">Root Cause Telemetry:</span>
+                <span className="text-muted uppercase text-[11px] block mb-0.5">Root Cause Telemetry:</span>
                 {data.rootCause}
               </div>
             </div>
@@ -175,8 +175,8 @@ export default function QuickFixAssistant({
                 {data.actionableSteps.map((step, idx) => (
                   <div key={idx} className="flex items-start gap-2 text-xs font-mono text-zinc-300">
                     <span className={cn(
-                      "w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5",
-                      isCritical ? "bg-rose-500/20 text-rose-300" : "bg-amber-500/20 text-amber-300"
+                      "w-4 h-4 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5",
+                      isCritical ? "bg-rose-500/20 text-rose-400" : "bg-amber-500/20 text-amber-400"
                     )}>
                       {idx + 1}
                     </span>
@@ -237,3 +237,4 @@ export default function QuickFixAssistant({
     </div>
   );
 }
+

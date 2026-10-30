@@ -65,12 +65,12 @@ export interface SovereignLeadItem {
 }
 
 const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; bg: string; border: string }> = {
-  NEW_INBOUND: { label: 'New / Inbound', color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+  NEW_INBOUND: { label: 'New / Inbound', color: 'text-sky-accent', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
   ENRICHED: { label: 'ICP Enriched', color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
-  OUTREACH_QUEUED: { label: 'Outreach Active', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  OUTREACH_QUEUED: { label: 'Outreach Active', color: 'text-amber-accent', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
   REPLIED_WARM: { label: 'Replied / Warm', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
   CALL_BOOKED: { label: 'Diagnostic Booked', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-  CLOSED_WON: { label: 'Won / Retainer Signed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
+  CLOSED_WON: { label: 'Won / Retainer Signed', color: 'text-emerald-accent', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
 };
 
 const STAGES: LeadStage[] = ['NEW_INBOUND', 'ENRICHED', 'OUTREACH_QUEUED', 'REPLIED_WARM', 'CALL_BOOKED', 'CLOSED_WON'];
@@ -486,7 +486,7 @@ export default function OutreachLeadsPage() {
           value={`$${wonARR.toFixed(1)}M`}
           delta={{ value: '+12.4%', trend: 'up' }}
           subtext="5 Closed Retainers Target"
-          icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
+          icon={<TrendingUp className="w-4 h-4 text-emerald-accent" />}
         />
 
         <MetricWidget
@@ -494,7 +494,7 @@ export default function OutreachLeadsPage() {
           value="18.4%"
           delta={{ value: '+4.2%', trend: 'up' }}
           subtext="Driven by empirical audit teardowns"
-          icon={<CheckCircle2 className="w-4 h-4 text-sky-400" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-sky-accent" />}
         />
       </div>
 
@@ -576,14 +576,14 @@ export default function OutreachLeadsPage() {
                                 setSelectedLeadForDocsId(lead.id);
                                 setActiveTab('DEAL_DOCUMENTS');
                               }}
-                              className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/10 hover:bg-[var(--sigma-vermilion)]/20 text-[var(--sigma-vermilion)] border border-[var(--sigma-vermilion)]/25 text-[9px] font-mono font-medium flex items-center gap-1 cursor-pointer transition-all"
+                              className="px-2 py-0.5 rounded bg-[var(--sigma-vermilion)]/10 hover:bg-[var(--sigma-vermilion)]/20 text-[var(--sigma-vermilion)] border border-[var(--sigma-vermilion)]/25 text-[11px] font-mono font-medium flex items-center gap-1 cursor-pointer transition-all"
                               title="Create Deal Documents & Agreements"
                             >
                               <FileText className="w-2.5 h-2.5" />
                               Docs
                             </button>
 
-                            <span className="text-[9px] font-mono text-[var(--sigma-muted)]">
+                            <span className="text-[11px] font-mono text-[var(--sigma-muted)]">
                               {lead.capturedAt}
                             </span>
 
@@ -1087,3 +1087,4 @@ export default function OutreachLeadsPage() {
     </div>
   );
 }
+

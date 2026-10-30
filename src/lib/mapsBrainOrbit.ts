@@ -27,7 +27,7 @@ export interface MapsBrainLink {
 }
 
 export interface MapsBrainGraph {
-  source: 'configured_system_graph';
+  source: 'configured_system_graph' | 'workspace_documents';
   nodes: MapsBrainNode[];
   links: MapsBrainLink[];
   coreNodeId: string;

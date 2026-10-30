@@ -28,13 +28,13 @@ function getEmbedClient(): GoogleGenAI {
 // Null (not throw) when no real key is set or the call fails — callers treat
 // a null embedding as "store the text, skip semantic search for this row",
 // same soft-degrade pattern used for every other Gemini call in this app.
-export async function embedText(text: string): Promise<number[] | null> {
-  if (!process.env.GEMINI_API_KEY || !text?.trim()) return null;
+export async function embedText(text: string, apiKey = process.env.GEMINI_API_KEY): Promise<number[] | null> {
+  if (!apiKey || !text?.trim()) return null;
   try {
-    const response = await getEmbedClient().models.embedContent({
+    const response = await (apiKey === process.env.GEMINI_API_KEY ? getEmbedClient() : new GoogleGenAI({ apiKey })).models.embedContent({
       model: EMBEDDING_MODEL,
       contents: [text.slice(0, 20000)], // keep well under the model's input ceiling
-      config: { outputDimensionality: EMBEDDING_DIM },
+      config: { outputDimensionality: EMBEDDING_DIM, httpOptions: { timeout: 4000 } },
     });
     const values = response.embeddings?.[0]?.values;
     return values && values.length === EMBEDDING_DIM ? values : null;
@@ -79,6 +79,7 @@ export async function saveDocument(sb: SupabaseClient, input: SaveDocumentInput)
 }
 
 export interface SearchDocumentsOptions {
+  apiKey?: string;
   vaultId?: string;
   // Restrict retrieval to these document vault_ids. Used by agent runs to keep
   // RAG inside the agent's authorized scope — see documentVaultIdsForScope()
@@ -107,7 +108,7 @@ export async function searchDocuments(
   queryText: string,
   opts: SearchDocumentsOptions = {},
 ): Promise<DocumentMatch[]> {
-  const queryEmbedding = await embedText(queryText);
+  const queryEmbedding = await embedText(queryText, opts.apiKey);
   if (!queryEmbedding) return [];
 
   // Two RPCs, chosen by which restriction the caller expressed. The array

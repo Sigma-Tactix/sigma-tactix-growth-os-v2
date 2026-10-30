@@ -1066,7 +1066,7 @@ export default function FullHarnessExplodedView() {
                                 {comp.label}
                               </div>
                               {comp.port && (
-                                <span className="px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-[9px] font-mono text-accent shrink-0">
+                                <span className="px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-[11px] font-mono text-accent shrink-0">
                                   {typeof comp.port === 'number' ? `:${comp.port}` : comp.port}
                                 </span>
                               )}
@@ -1079,7 +1079,7 @@ export default function FullHarnessExplodedView() {
                             {/* Production Grade Pill */}
                             <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                               {getOperationalBadge(comp.operationalStatus, comp.health)}
-                              <span className="text-[9px] font-mono text-zinc-500 group-hover:text-accent transition-colors">
+                              <span className="text-[11px] font-mono text-zinc-500 group-hover:text-accent transition-colors">
                                 Dossier ➔
                               </span>
                             </div>

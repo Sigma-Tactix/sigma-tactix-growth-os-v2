@@ -27,7 +27,7 @@ import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { ALL_AI_MODELS, ModelInfo, ModelProvider } from '@/src/lib/tokenCostEngine';
 import { AIKeyConfig } from '@/src/types';
-import { saveAIProviderKey, testModelInference, pingLocalLLM } from '@/src/lib/api';
+import { saveAIProviderKey, testModelInference, pingLocalLLM, checkOpusMaxKeyStatus, fetchProviderModels } from '@/src/lib/api';
 import { useToast } from '@/src/contexts/ToastContext';
 
 interface AIModelConfigTabProps {
@@ -84,6 +84,20 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
     costUsd: number;
   } | null>(null);
   const [inferenceError, setInferenceError] = useState<string | null>(null);
+
+  // OpusMax gateway key-verification state (/key-status, mirrors `npx opusmax-gateway status`)
+  const [opusmaxVerifying, setOpusmaxVerifying] = useState(false);
+  const [opusmaxKeyStatus, setOpusmaxKeyStatus] = useState<{
+    success: boolean;
+    active: boolean;
+    status: string | null;
+    name: string | null;
+    quotaBlocked: boolean;
+    expiresAt: string | null;
+    error?: string;
+  } | null>(null);
+  const [opusmaxDiscoveredModels, setOpusmaxDiscoveredModels] = useState<string[]>([]);
+  const [opusmaxFetchingModels, setOpusmaxFetchingModels] = useState(false);
 
   // Active Global Model override
   const [activeGlobalModel, setActiveGlobalModel] = useState<string>('gemini-3.8-flash-high');
@@ -172,7 +186,10 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
     setKeySaveMessage(null);
 
     try {
-      await saveAIProviderKey(selectedProvider, apiKeyInput, selectedModel);
+      await saveAIProviderKey(selectedProvider, apiKeyInput, selectedModel, {
+        baseUrl: customBaseUrl || undefined,
+        accountAuth: selectedProvider === 'openai-account',
+      });
       setKeySaveMessage({ type: 'success', text: `Credentials and model saved successfully for ${selectedProvider.toUpperCase()}` });
       notifySuccess(`Saved ${selectedProvider.toUpperCase()} credentials.`);
       setApiKeyInput('');
@@ -185,6 +202,44 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
     }
   };
 
+  // OpusMax gateway — verify the saved/entered key via the gateway's /key-status
+  const handleVerifyOpusMaxKey = async () => {
+    setOpusmaxVerifying(true);
+    setOpusmaxKeyStatus(null);
+    try {
+      const res = await checkOpusMaxKeyStatus(apiKeyInput.trim() || undefined, customBaseUrl || undefined);
+      setOpusmaxKeyStatus(res);
+      if (res.success && res.active) {
+        notifySuccess(`OpusMax key verified — ${res.status}${res.name ? ` (${res.name})` : ''}${res.expiresAt ? ` • expires ${new Date(res.expiresAt).toLocaleDateString()}` : ''}`);
+      } else {
+        notifyWarning(res.error || `OpusMax key check: ${res.status || 'inactive'}`);
+      }
+    } catch (err: any) {
+      setOpusmaxKeyStatus({ success: false, active: false, status: null, name: null, quotaBlocked: false, expiresAt: null, error: err.message });
+      notifyWarning(err.message || 'OpusMax key verification failed');
+    } finally {
+      setOpusmaxVerifying(false);
+    }
+  };
+
+  // OpusMax gateway — pull the live model list from {base}/v1/models
+  const handleFetchOpusMaxModels = async () => {
+    setOpusmaxFetchingModels(true);
+    try {
+      const models = await fetchProviderModels('opusmax', apiKeyInput.trim() || undefined);
+      if (models && models.length > 0) {
+        setOpusmaxDiscoveredModels(models);
+        notifySuccess(`Fetched ${models.length} live models from the OpusMax gateway.`);
+      } else {
+        notifyWarning('Gateway returned no live models — showing the built-in catalog fallback.');
+      }
+    } catch (err: any) {
+      notifyWarning(`Could not fetch live OpusMax models: ${err.message}`);
+    } finally {
+      setOpusmaxFetchingModels(false);
+    }
+  };
+
   // Test Model Handshake
   const handleTestInference = async () => {
     setTestingInference(true);
@@ -192,7 +247,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
     setInferenceError(null);
 
     try {
-      const res = await testModelInference(selectedProvider, selectedModel, testPrompt);
+      const res = await testModelInference(selectedProvider, selectedModel, testPrompt, customBaseUrl || undefined);
       setInferenceResult(res);
       notifySuccess(`Inference succeeded on ${res.model} in ${res.durationMs}ms`);
     } catch (err: any) {
@@ -492,6 +547,8 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
             { id: 'google', name: 'Google Cloud (Gemini)' },
             { id: 'anthropic', name: 'Anthropic (Claude)' },
             { id: 'openai', name: 'OpenAI (GPT & Astra)' },
+            { id: 'opusmax', name: 'OpusMax Pro Gateway' },
+            { id: 'openai-account', name: 'OpenAI Account (ChatGPT/Codex)' },
             { id: 'omniroute', name: 'Omniroute Gateway' },
             { id: 'opencode', name: 'Open Code' },
             { id: 'openrouter', name: 'OpenRouter Unified' },
@@ -511,6 +568,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                   setSelectedProvider(p.id as ModelProvider);
                   const matching = ALL_AI_MODELS.filter(m => m.provider === p.id);
                   if (matching.length > 0) setSelectedModel(matching[0].id);
+                  if (p.id === 'opusmax' && !customBaseUrl) setCustomBaseUrl('https://api.opusmax.pro');
                 }}
                 className={cn(
                   "p-3 rounded-2xl border cursor-pointer transition-all relative overflow-hidden flex flex-col justify-between",
@@ -565,7 +623,24 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 placeholder={`Enter ${selectedProvider} API key`}
                 className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
               />
-              <span className="text-[10px] text-zinc-500 font-mono">Leave blank to retain currently saved key.</span>
+              <span className="text-[10px] text-zinc-500 font-mono">
+                {selectedProvider === 'opusmax'
+                  ? 'OpusMax Pro accepts sk-ant-... Anthropic-format keys (OpenAI & Anthropic wire formats).'
+                  : selectedProvider === 'openai-account'
+                    ? 'Optional fallback — OpenAI account sign-in is the primary credential.'
+                    : 'Leave blank to retain currently saved key.'}
+              </span>
+
+              {selectedProvider === 'openai-account' && (
+                <button
+                  type="button"
+                  onClick={() => window.open('https://chatgpt.com', '_blank', 'noopener,noreferrer')}
+                  className="mt-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink size={11} /> Sign in with OpenAI Account (ChatGPT / Codex)
+                </button>
+              )}
+
             </div>
 
             <div className="space-y-1.5">
@@ -644,6 +719,73 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
               <span>{inferenceError}</span>
             </div>
           )}
+
+          {/* OpusMax gateway controls: live key verification + model discovery */}
+          {selectedProvider === 'opusmax' && (
+            <div className="space-y-4 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="text-xs font-mono text-zinc-400">
+                  <Server size={13} className="inline text-indigo-400 mr-1.5" />
+                  OpusMax Gateway (installed dep <span className="text-white">opusmax-gateway</span>) — Claude family • OpenAI + Anthropic wire formats • <span className="text-indigo-300">{customBaseUrl || 'https://api.opusmax.pro'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleFetchOpusMaxModels}
+                    disabled={opusmaxFetchingModels}
+                    className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-mono text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={cn(opusmaxFetchingModels && "animate-spin text-accent")} />
+                    {opusmaxFetchingModels ? "Fetching /v1/models…" : "Fetch Live Models"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerifyOpusMaxKey}
+                    disabled={opusmaxVerifying}
+                    className="px-3.5 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-200 font-mono text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <ShieldCheck size={12} />
+                    {opusmaxVerifying ? "Checking /key-status…" : "Verify OpusMax Key"}
+                  </button>
+                </div>
+              </div>
+
+              {opusmaxKeyStatus && (
+                <div className={cn(
+                  "p-3 rounded-xl text-[11px] font-mono flex items-center gap-2 border",
+                  opusmaxKeyStatus.active ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                )}>
+                  {opusmaxKeyStatus.active ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
+                  <span>
+                    {opusmaxKeyStatus.active
+                      ? `Key ${opusmaxKeyStatus.status || 'ACTIVE'}${opusmaxKeyStatus.name ? ` • account "${opusmaxKeyStatus.name}"` : ''}${opusmaxKeyStatus.quotaBlocked ? ' • QUOTA BLOCKED' : ''}${opusmaxKeyStatus.expiresAt ? ` • expires ${new Date(opusmaxKeyStatus.expiresAt).toLocaleDateString()}` : ''}`
+                      : (opusmaxKeyStatus.error || 'Key inactive or not found on the gateway')}
+                  </span>
+                </div>
+              )}
+
+              {opusmaxDiscoveredModels.length > 0 && (
+                <div className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-2">
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Live gateway models ({opusmaxDiscoveredModels.length})</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {opusmaxDiscoveredModels.map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSelectedModel(m)}
+                        className={cn(
+                          "px-2 py-0.5 rounded-md font-mono text-[11px] border transition-all cursor-pointer",
+                          selectedModel === m ? "bg-indigo-500/30 border-indigo-400 text-white" : "bg-white/[0.04] border-white/10 text-zinc-300 hover:border-white/30"
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </form>
       </div>
 
@@ -667,6 +809,8 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
               { id: 'ROUTERS', label: 'Smart Routers' },
               { id: 'anthropic', label: 'Anthropic (Fable 5.1)' },
               { id: 'openai', label: 'OpenAI (Astra)' },
+              { id: 'opusmax', label: 'OpusMax Pro' },
+              { id: 'openai-account', label: 'OpenAI Account' },
               { id: 'google', label: 'Google (Gemini 3.8)' },
               { id: 'qwen', label: 'Qwen 3' },
               { id: 'deepseek', label: 'DeepSeek' },
@@ -729,16 +873,16 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
 
                     <div className="flex items-center gap-1 shrink-0">
                       {model.isLocal && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-mono font-bold border border-emerald-500/30">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono font-bold border border-emerald-500/30">
                           LOCAL $0
                         </span>
                       )}
                       {model.isRouter && (
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[9px] font-mono font-bold border border-indigo-500/30">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-mono font-bold border border-indigo-500/30">
                           ROUTER
                         </span>
                       )}
-                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[9px] font-mono">
+                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] font-mono">
                         {model.contextWindow}
                       </span>
                     </div>
@@ -758,7 +902,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                     {model.useCases && model.useCases.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {model.useCases.map((uc, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 text-[9px] font-mono">
+                          <span key={i} className="px-2 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 text-[11px] font-mono">
                             {uc}
                           </span>
                         ))}
@@ -774,6 +918,15 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                       ${model.promptPer1M.toFixed(3)} / ${model.candidatePer1M.toFixed(3)}
                     </span>
                   </div>
+
+                  {model.effortLevels && model.effortLevels.length > 0 && (
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                      <span className="text-zinc-500 shrink-0">Effort Ladder:</span>
+                      <span className="text-cyan-300 truncate text-right">
+                        {model.effortLevels.join(' · ')}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <button

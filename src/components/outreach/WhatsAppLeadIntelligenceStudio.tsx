@@ -1073,7 +1073,7 @@ Hard Rules for WhatsApp Agent:
                         Claude Drafted Reply (`reply_draft`):
                       </span>
                       {qualificationResult.isArabic && (
-                        <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300 font-medium">
+                        <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[11px] text-emerald-300 font-medium">
                           Arabic Detected
                         </span>
                       )}
@@ -1258,7 +1258,7 @@ Hard Rules for WhatsApp Agent:
                     )}
                   >
                     <p>{msg.text}</p>
-                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400">
+                    <div className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
                       <span>{msg.timestamp}</span>
                       {msg.sender === 'user' && <Check size={11} className="text-sky-400" />}
                     </div>

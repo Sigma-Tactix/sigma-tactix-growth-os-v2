@@ -80,6 +80,10 @@ describe('VANTA server contract', () => {
     });
   });
 
+  it('identifies provider timeouts without exposing payloads', () => {
+    expect(describeVantaProviderError(new Error('The operation was aborted due to timeout'))).toContain('timed out');
+  });
+
   it('reports provider quota and model failures without exposing raw provider payloads', () => {
     expect(describeVantaProviderError(new Error('429 RESOURCE_EXHAUSTED: quota exceeded'))).toContain('quota or rate limit is exhausted');
     expect(describeVantaProviderError(new Error('404 model gemini-old not found'))).toContain('model is unavailable');

@@ -184,7 +184,7 @@ export default function AttributionRoiPage() {
           value={`$${overallBlendedCAC}`}
           delta={{ value: "18.4% lower", trend: "up" }}
           subtext="vs last-click estimate"
-          icon={<DollarSign className="w-4 h-4 text-emerald-400" />}
+          icon={<DollarSign className="w-4 h-4 text-emerald-accent" />}
         />
 
         <MetricWidget
@@ -199,7 +199,7 @@ export default function AttributionRoiPage() {
           label="Total Closed Deals"
           value={`${totalDeals} Enterprise Deals`}
           subtext="De-duplicated across all channels"
-          icon={<CheckCircle2 className="w-4 h-4 text-blue-400" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-blue-accent" />}
         />
 
         <MetricWidget
@@ -207,7 +207,7 @@ export default function AttributionRoiPage() {
           value="29% of Pipeline"
           delta={{ value: "High Intent", trend: "up" }}
           subtext="Originally misattributed to Brand Search"
-          icon={<Info className="w-4 h-4 text-amber-400" />}
+          icon={<Info className="w-4 h-4 text-amber-accent" />}
         />
       </div>
 
@@ -287,3 +287,4 @@ export default function AttributionRoiPage() {
 // VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
 // ---------------------------------------------------------------------------
 const CHANNEL_DATA = isDemoSeedEnabled() ? DEMO_CHANNEL_DATA : [];
+

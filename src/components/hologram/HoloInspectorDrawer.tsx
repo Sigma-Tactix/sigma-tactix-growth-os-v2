@@ -72,7 +72,7 @@ export default function HoloInspectorDrawer({
             {node.type}
           </span>
           {node.tier && (
-            <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-slate-900 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 text-cyan-300 border border-cyan-500/30">
               TIER: {node.tier.toUpperCase()}
             </span>
           )}
@@ -98,7 +98,7 @@ export default function HoloInspectorDrawer({
 
       {/* Cybernetic Telemetry Metrics Grid */}
       <div className="bg-[#02020a]/80 border border-cyan-500/25 rounded-lg p-3 mb-4 space-y-2">
-        <div className="flex items-center justify-between text-[9px] text-cyan-400 font-bold border-b border-cyan-500/15 pb-1">
+        <div className="flex items-center justify-between text-[11px] text-cyan-400 font-bold border-b border-cyan-500/15 pb-1">
           <span className="flex items-center gap-1">
             <Activity className="h-3 w-3" />
             TELEMETRY_STATS
@@ -143,7 +143,7 @@ export default function HoloInspectorDrawer({
         </div>
 
         {node.metrics && Object.entries(node.metrics).map(([key, val]) => (
-          <div key={key} className="flex items-center justify-between text-[9px] pt-1 border-t border-slate-800">
+          <div key={key} className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800">
             <span className="text-slate-400">{key.toUpperCase()}</span>
             <span className="text-cyan-300 font-semibold">{val}</span>
           </div>
@@ -153,7 +153,7 @@ export default function HoloInspectorDrawer({
       {/* Readiness / Dependencies Warning */}
       {status && (
         <div
-          className="border rounded-lg p-2.5 mb-4 text-[9px]"
+          className="border rounded-lg p-2.5 mb-4 text-[11px]"
           style={{
             borderColor: `${HEALTH_COLOR[status.health]}40`,
             backgroundColor: `${HEALTH_COLOR[status.health]}12`,

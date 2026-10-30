@@ -63,15 +63,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-[10px] font-black uppercase text-muted tracking-widest mb-3 font-mono">{label}</p>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-8">
-            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Total Spend</span>
+            <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">Total Spend</span>
             <span className="text-xs font-black silver-text">{formatCurrency(data.spend)}</span>
           </div>
           <div className="flex items-center justify-between gap-8">
-            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">New Leads</span>
+            <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">New Leads</span>
             <span className="text-xs font-black silver-text">{data.leads.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between gap-8 pt-2 border-t border-white/5">
-            <span className="text-[9px] text-accent font-black uppercase tracking-wider">Avg CAC</span>
+            <span className="text-[11px] text-accent font-black uppercase tracking-wider">Avg CAC</span>
             <span className="text-xs font-black amber-text">${data.cac.toFixed(2)}</span>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function AIExplorer() {
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute top-full right-0 mt-2 w-64 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-2 shadow-2xl z-50 backdrop-blur-xl"
                 >
-                  <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-500 border-b border-[var(--sigma-border)] mb-1">
+                  <div className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider text-zinc-500 border-b border-[var(--sigma-border)] mb-1">
                     Filter Period
                   </div>
                   {datePresets.map((p) => {
@@ -437,7 +437,7 @@ export default function AIExplorer() {
                          <td className="px-6 py-5 font-mono text-sm">${s.cac.toFixed(2)}</td>
                          <td className="px-6 py-5">
                             <span className={cn(
-                              "px-2 py-1 rounded text-[9px] font-bold border",
+                              "px-2 py-1 rounded text-[11px] font-bold border",
                               s.status === 'SCALING' ? "bg-secondary/10 text-secondary border-secondary/20" :
                               s.status === 'OPTIMIZED' ? "bg-green-500/10 text-green-400 border-green-500/20" :
                               "bg-amber-500/10 text-amber-400 border-amber-500/20"
@@ -456,3 +456,4 @@ export default function AIExplorer() {
     </div>
   );
 }
+

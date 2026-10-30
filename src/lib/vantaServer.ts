@@ -129,6 +129,9 @@ export interface VantaModelOutput {
 
 export function describeVantaProviderError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error || '');
+  if (/timeout|timed out|deadline|aborted/i.test(message)) {
+    return 'The Gemini reply timed out. No assistant response was stored. Retry a shorter question or verify the configured model.';
+  }
   if (/quota|resource_exhausted|rate.?limit|too many requests|\b429\b/i.test(message)) {
     return 'Gemini is temporarily unavailable because the configured project quota or rate limit is exhausted. Review the project quota in Google AI Studio, then retry.';
   }

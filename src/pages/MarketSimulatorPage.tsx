@@ -29,6 +29,7 @@ import {
   getMarketSimulationCapabilities,
   verifyMarketSimulation,
 } from '@/src/lib/api';
+import { actionQueueStore } from '@/src/lib/actionQueueStore';
 
 interface ScenarioPreset {
   id: string;
@@ -184,6 +185,20 @@ export default function MarketSimulatorPage() {
 
   const handleQueueExperiment = (expTitle: string) => {
     setQueuedExperiments(prev => [...prev, expTitle]);
+    actionQueueStore.addItem({
+      id: `act-sim-${Date.now().toString().slice(-4)}`,
+      moduleName: 'Market Rehearsal Engine',
+      moduleCategory: 'INTELLIGENCE',
+      moduleRoute: '/market-simulator',
+      title: `Simulated Experiment: ${expTitle}`,
+      summary: `Automated experiment candidate generated from MiroFish market rehearsal persona reactions.`,
+      status: 'PENDING_APPROVAL',
+      risk: 'MEDIUM',
+      enclaveName: 'Sigma Sovereign Core',
+      enclaveId: 'ws-default',
+      timestamp: 'Just now',
+      suggestedAction: 'Review Experiment & Launch Test',
+    });
     notifySuccess('Queued for Human Approval', `Added "${expTitle}" to Dashboard Action Queue with PENDING_APPROVAL.`);
   };
 
@@ -301,7 +316,7 @@ export default function MarketSimulatorPage() {
         <div className="border-b border-zinc-800/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Target className="w-5 h-5 text-amber-400" /> Scenario Configuration
+              <Target className="w-5 h-5 text-amber-accent" /> Scenario Configuration
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
               Specify the exact research hypothesis, target market question, and boundary assumptions.
@@ -380,7 +395,7 @@ export default function MarketSimulatorPage() {
       {isRunning && (
         <GlassCard elevation="raised" className="p-6 text-center space-y-4 border-amber-400/30">
           <div className="flex items-center justify-center gap-3">
-            <RefreshCw className="w-6 h-6 text-amber-400 animate-spin" />
+            <RefreshCw className="w-6 h-6 text-amber-accent animate-spin" />
             <span className="text-base font-semibold text-white">
               Running MiroFish Market Simulation (Round {simulationRound} of 10)
             </span>
@@ -519,3 +534,4 @@ export default function MarketSimulatorPage() {
     </div>
   );
 }
+

@@ -12,13 +12,14 @@ export interface VantaConversationSummary {
 }
 
 export interface VantaStreamHandlers {
+  onRetrieval?: (result: { count: number; method: string }) => void;
   onState?: (phase: string) => void;
   onDelta?: (text: string) => void;
   onMessage?: (message: VantaMessage & { memorySuggestion?: string; topologyEntityIds?: string[] }) => void;
 }
 
 export function shouldUseVantaWebResearch(content: string): boolean {
-  return /\b(search (?:the )?web|search online|web research|internet research|latest news|recent news|online sources?|web sources?|citations?)\b/i.test(content);
+  return /\b(search (?:the )?web|search online|web research|internet research|latest news|recent news|online sources?|web sources?)\b/i.test(content);
 }
 
 async function jsonOrThrow<T>(response: Response): Promise<T> {
@@ -28,7 +29,7 @@ async function jsonOrThrow<T>(response: Response): Promise<T> {
 }
 
 export async function getVantaStatus(): Promise<VantaProviderStatus> {
-  return jsonOrThrow(await apiFetch('/api/workspace/vanta/status'));
+  return jsonOrThrow(await apiFetch('/api/workspace/vanta/status', { signal: AbortSignal.timeout(10_000) }));
 }
 
 export async function verifyVantaTextProvider(): Promise<void> {
@@ -58,9 +59,10 @@ export async function verifyVantaVoiceProvider(): Promise<void> {
   await jsonOrThrow(await apiFetch('/api/workspace/vanta/voice/verify', { method: 'POST' }));
 }
 
-export async function createVantaConversation(title?: string): Promise<VantaConversationSummary> {
+export async function createVantaConversation(title?: string, signal?: AbortSignal): Promise<VantaConversationSummary> {
   const data = await jsonOrThrow<{ conversation: VantaConversationSummary }>(await apiFetch('/api/workspace/vanta/conversations', {
     method: 'POST', body: JSON.stringify(title ? { title } : {}),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000),
   }));
   return data.conversation;
 }
@@ -100,10 +102,11 @@ export async function streamVantaMessage(
   handlers: VantaStreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
+  const deadline = AbortSignal.timeout(75_000);
   const response = await apiFetch(`/api/workspace/vanta/conversations/${conversationId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content, localContextIds, useWeb: shouldUseVantaWebResearch(content) }),
-    signal,
+    signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
   });
   if (!response.ok || !response.body) {
     const data = await response.json().catch(() => ({}));
@@ -113,26 +116,34 @@ export async function streamVantaMessage(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const frames = buffer.split('\n\n');
-    buffer = frames.pop() || '';
-    for (const frame of frames) {
-      let event = 'message';
-      let data = '';
-      for (const line of frame.split('\n')) {
-        if (line.startsWith('event:')) event = line.slice(6).trim();
-        if (line.startsWith('data:')) data += line.slice(5).trim();
+  let receivedMessage = false;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() || '';
+      for (const frame of frames) {
+        let event = 'message';
+        let data = '';
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event:')) event = line.slice(6).trim();
+          if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (!data) continue;
+        const payload = JSON.parse(data);
+        if (event === 'retrieval') handlers.onRetrieval?.(payload);
+        if (event === 'state') handlers.onState?.(payload.phase);
+        if (event === 'text-delta') handlers.onDelta?.(payload.text);
+        if (event === 'message') { receivedMessage = true; handlers.onMessage?.(payload); }
+        if (event === 'error') throw new Error(payload.error || 'VANTA request failed.');
       }
-      if (!data) continue;
-      const payload = JSON.parse(data);
-      if (event === 'state') handlers.onState?.(payload.phase);
-      if (event === 'text-delta') handlers.onDelta?.(payload.text);
-      if (event === 'message') handlers.onMessage?.(payload);
-      if (event === 'error') throw new Error(payload.error || 'VANTA request failed.');
     }
+    if (!receivedMessage) throw new Error('VANTA connection ended before a reply was received. Please retry.');
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
 }
 

@@ -1,0 +1,9 @@
+# Global owners for all files in this repository
+* @sigmatactix
+
+# Critical Security & Server Configuration
+/server.ts @sigmatactix
+/src/server/ @sigmatactix
+/scripts/generateSecurityInventory.mjs @sigmatactix
+/.github/ @sigmatactix
+

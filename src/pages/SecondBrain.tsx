@@ -39,13 +39,13 @@ import { analyzeVaultDocument, apiFetch } from '@/src/lib/api';
 import { Button, GlassCard, Badge, Input } from '@/src/components/ui';
 
 export const VAULT_TAG_STYLES: Record<string, { label: string; badge: string }> = {
-  'executive-vault': { label: 'Executive Strategy', badge: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
-  'credentials-vault': { label: 'Credentials & Auth', badge: 'bg-rose-500/10 text-rose-300 border-rose-500/30' },
+  'executive-vault': { label: 'Executive Strategy', badge: 'bg-amber-500/10 text-amber-accent border-amber-500/30' },
+  'credentials-vault': { label: 'Credentials & Auth', badge: 'bg-rose-500/10 text-rose-accent border-rose-500/30' },
   'brand-vault': { label: 'Brand Voice', badge: 'bg-purple-500/10 text-purple-300 border-purple-500/30' },
-  'customer-vault': { label: 'Customer & ICP', badge: 'bg-sky-500/10 text-sky-300 border-sky-500/30' },
+  'customer-vault': { label: 'Customer & ICP', badge: 'bg-sky-500/10 text-sky-accent border-sky-500/30' },
   'marketing-vault': { label: 'Paid Marketing', badge: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30' },
-  'website-vault': { label: 'Website & CRO', badge: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' },
-  'authority-vault': { label: 'Authority & SEO', badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' },
+  'website-vault': { label: 'Website & CRO', badge: 'bg-cyan-500/10 text-cyan-accent border-cyan-500/30' },
+  'authority-vault': { label: 'Authority & SEO', badge: 'bg-emerald-500/10 text-emerald-accent border-emerald-500/30' },
   'operations-vault': { label: 'Operations & SOP', badge: 'bg-teal-500/10 text-teal-300 border-teal-500/30' },
   'ai-workflow-vault': { label: 'AI Workflow', badge: 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/30' },
   'audit-vault': { label: 'Growth Audit', badge: 'bg-orange-500/10 text-orange-300 border-orange-500/30' },
@@ -574,6 +574,7 @@ export default function SecondBrain() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <a href="/?view=second-brain" className="text-sm font-medium text-[var(--sigma-primary)] underline">Open 2D / 3D map</a>
           <Badge variant={documentLoadError ? 'danger' : 'neutral'} size="sm" dot>
             {isLoadingDocuments ? 'Loading document index' : documentLoadError ? 'Document index unavailable' : 'Document index loaded'}
           </Badge>
@@ -597,7 +598,7 @@ export default function SecondBrain() {
             variant="secondary"
             size="sm"
             onClick={handleDeduplicateVaults}
-            icon={<CopyCheck size={14} className="text-amber-400" />}
+            icon={<CopyCheck size={14} className="text-amber-accent" />}
             title="Explain the current durable deduplication limitation"
           >
             Clean Duplicates
@@ -637,7 +638,7 @@ export default function SecondBrain() {
         </div>
       </div>
       {documentLoadError && (
-        <div role="alert" className="text-xs text-rose-300 border border-rose-500/30 bg-rose-500/10 rounded-xl px-4 py-3">
+        <div role="alert" className="text-xs text-rose-accent border border-rose-500/30 bg-rose-500/10 rounded-xl px-4 py-3">
           Durable document records could not be loaded: {documentLoadError}
         </div>
       )}
@@ -807,7 +808,7 @@ export default function SecondBrain() {
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-mono font-semibold tabular-nums text-[var(--sigma-text-muted)]">{v.records.length} docs</span>
                   {isRestrictedForRole ? (
-                    <Lock size={12} className="text-rose-400" />
+                    <Lock size={12} className="text-rose-accent" />
                   ) : (
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   )}
@@ -895,8 +896,8 @@ export default function SecondBrain() {
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono shrink-0 border",
-                          rec.classification === 'RESTRICTED_C_LEVEL' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                          rec.classification === 'ENCRYPTED_SECRET' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
+                          rec.classification === 'RESTRICTED_C_LEVEL' ? "bg-amber-500/10 text-amber-accent border-amber-500/20" :
+                          rec.classification === 'ENCRYPTED_SECRET' ? "bg-rose-500/10 text-rose-accent border-rose-500/20" :
                           "bg-[var(--sigma-primary)]/10 text-[var(--sigma-primary)] border-[var(--sigma-primary)]/20"
                         )}>
                           {rec.classification === 'ENCRYPTED_SECRET' ? <Key size={14} /> : <FileText size={14} />}
@@ -922,7 +923,7 @@ export default function SecondBrain() {
 
                     <td className="px-5 py-3.5">
                       {rec.vectorIndexed ? (
-                        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-accent font-mono">
                           <CheckCircle2 size={12} />
                           <span>{rec.embeddingDimensions || 'Unknown'}-dim</span>
                         </div>
@@ -933,11 +934,11 @@ export default function SecondBrain() {
 
                     <td className="px-5 py-3.5">
                       {isAllowed ? (
-                        <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
+                        <span className="text-xs text-emerald-accent font-mono flex items-center gap-1">
                           <Check size={12} /> Granted
                         </span>
                       ) : (
-                        <span className="text-xs text-rose-400 font-mono flex items-center gap-1">
+                        <span className="text-xs text-rose-accent font-mono flex items-center gap-1">
                           <Lock size={12} /> Blocked
                         </span>
                       )}
@@ -1017,7 +1018,7 @@ export default function SecondBrain() {
                 <div className="grid grid-cols-2 gap-4 text-xs font-mono text-[var(--sigma-text-muted)] pt-3 border-t border-[var(--sigma-border)]">
                   <div>Author: <strong className="text-[var(--sigma-text)]">{selectedRecord.author}</strong></div>
                   <div>Category: <strong className="text-[var(--sigma-text)]">{selectedRecord.category}</strong></div>
-                  <div>Vector Index: <strong className="text-emerald-400">{selectedRecord.vectorIndexed ? `${selectedRecord.embeddingDimensions || 'Unknown'}-dim active` : 'Not indexed'}</strong></div>
+                  <div>Vector Index: <strong className="text-emerald-accent">{selectedRecord.vectorIndexed ? `${selectedRecord.embeddingDimensions || 'Unknown'}-dim active` : 'Not indexed'}</strong></div>
                   <div>Last Synced: <strong className="text-[var(--sigma-text)]">{selectedRecord.lastUpdated}</strong></div>
                 </div>
 

@@ -527,7 +527,7 @@ export default function Reports() {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full right-0 mt-2 w-72 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-2 shadow-2xl z-50 text-left space-y-1 backdrop-blur-xl"
                   >
-                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-[var(--sigma-border)]">
+                    <div className="px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-[var(--sigma-border)]">
                       Structured Executive Exports
                     </div>
 
@@ -536,10 +536,10 @@ export default function Reports() {
                       className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
-                        <FileSpreadsheet size={16} className="text-emerald-400" />
+                        <FileSpreadsheet size={16} className="text-emerald-accent" />
                         <div>
                           <div className="text-xs font-semibold text-[var(--sigma-text)] group-hover:text-[var(--sigma-vermilion)]">Campaign Attribution (CSV)</div>
-                          <div className="text-[10px] font-mono text-[var(--sigma-muted)]">Channels, Source, Medium & CPA</div>
+                          <div className="text-[11px] font-mono text-[var(--sigma-muted)]">Channels, Source, Medium & CPA</div>
                         </div>
                       </div>
                       <Download size={12} className="text-[var(--sigma-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -550,16 +550,16 @@ export default function Reports() {
                       className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
-                        <FileText size={16} className="text-rose-400" />
+                        <FileText size={16} className="text-rose-accent" />
                         <div>
                           <div className="text-xs font-semibold text-[var(--sigma-text)] group-hover:text-[var(--sigma-vermilion)]">Executive Summary (PDF)</div>
-                          <div className="text-[10px] font-mono text-[var(--sigma-muted)]">Branded report for stakeholders</div>
+                          <div className="text-[11px] font-mono text-[var(--sigma-muted)]">Branded report for stakeholders</div>
                         </div>
                       </div>
                       <Download size={12} className="text-[var(--sigma-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
 
-                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-t border-[var(--sigma-border)] mt-1">
+                    <div className="px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--sigma-muted)] border-b border-t border-[var(--sigma-border)] mt-1">
                       Visual Artifacts
                     </div>
 
@@ -601,12 +601,12 @@ export default function Reports() {
 
         {/* Feedback Banner */}
         {exportFeedback && (
-          <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-8 py-2.5 flex items-center justify-between text-xs font-mono text-emerald-400 animate-in fade-in">
+          <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-8 py-2.5 flex items-center justify-between text-xs font-mono text-emerald-accent animate-in fade-in">
             <div className="flex items-center gap-2">
               <Check size={14} />
               <span>{exportFeedback}</span>
             </div>
-            <button onClick={() => setExportFeedback(null)} className="text-emerald-400/60 hover:text-emerald-400">
+            <button onClick={() => setExportFeedback(null)} className="text-emerald-accent/60 hover:text-emerald-accent">
               <X size={12} />
             </button>
           </div>
@@ -677,7 +677,7 @@ export default function Reports() {
                     Visual Performance Dynamics
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500">Dual-Axis & Spend Allocation</span>
+                <span className="text-[11px] font-mono text-zinc-500">Dual-Axis & Spend Allocation</span>
               </div>
 
               <AlignedExecutiveCharts layoutMode={layoutMode} templateId={currentTemplate.id} />
@@ -694,7 +694,7 @@ export default function Reports() {
                     Omnichannel Campaign Attribution Table
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500">Relational Multi-Touch Matrix</span>
+                <span className="text-[11px] font-mono text-zinc-500">Relational Multi-Touch Matrix</span>
               </div>
 
               <ChannelAttributionTable 
@@ -720,7 +720,7 @@ export default function Reports() {
                     Audience Intelligence & Persona Segmentation
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500">Demographics + Second Brain Psychographics</span>
+                <span className="text-[11px] font-mono text-zinc-500">Demographics + Second Brain Psychographics</span>
               </div>
 
               <AudienceSegmentationView />
@@ -754,7 +754,7 @@ export default function Reports() {
               <GlassCard spotlight elevation="flat" className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge variant="brand" size="xs">Active Selection</Badge>
-                  <span className="text-[10px] font-mono text-[var(--sigma-muted)]">{selectedCampaign.channel}</span>
+                  <span className="text-[11px] font-mono text-[var(--sigma-muted)]">{selectedCampaign.channel}</span>
                 </div>
                 <div className="font-semibold text-xs text-[var(--sigma-text)] font-mono break-all">
                   {selectedCampaign.campaignName}
@@ -763,7 +763,7 @@ export default function Reports() {
                   <div>Channel: <strong className="text-[var(--sigma-text)] block">{selectedCampaign.channel}</strong></div>
                   <div>Medium: <strong className="text-[var(--sigma-text)] block">{selectedCampaign.medium}</strong></div>
                   <div>Spend: <strong className="text-[var(--sigma-text)] block">${selectedCampaign.spend.toLocaleString()}</strong></div>
-                  <div>ROAS: <strong className="text-emerald-500 block">{selectedCampaign.roas}x</strong></div>
+                  <div>ROAS: <strong className="text-emerald-accent block">{selectedCampaign.roas}x</strong></div>
                 </div>
               </GlassCard>
             )}
@@ -806,7 +806,7 @@ export default function Reports() {
                       </div>
                       <span className="text-xs text-[var(--sigma-muted)] group-hover:text-[var(--sigma-text)] transition-colors">{m}</span>
                     </label>
-                    <span className="text-[10px] font-mono text-[var(--sigma-muted)]">Auto</span>
+                    <span className="text-[11px] font-mono text-[var(--sigma-muted)]">Auto</span>
                   </div>
                 ))}
               </div>
@@ -899,7 +899,7 @@ export default function Reports() {
               <div className="p-3.5 bg-[var(--sigma-bg)]/80 rounded-xl border border-[var(--sigma-border)] space-y-2 text-xs font-mono">
                 <div className="flex items-center justify-between text-[var(--sigma-muted)]">
                   <span className="flex items-center gap-1.5">
-                    <ShieldCheck size={13} className="text-emerald-500" /> Security Token:
+                    <ShieldCheck size={13} className="text-emerald-accent" /> Security Token:
                   </span>
                   <span className="text-[var(--sigma-text)]">HMAC SHA-256 Encrypted</span>
                 </div>
@@ -919,7 +919,7 @@ export default function Reports() {
                     onClick={handleExportSummaryCSV}
                     variant="outline"
                     size="xs"
-                    icon={<FileSpreadsheet size={13} className="text-emerald-400" />}
+                    icon={<FileSpreadsheet size={13} className="text-emerald-accent" />}
                   >
                     Export CSV
                   </Button>
@@ -927,7 +927,7 @@ export default function Reports() {
                     onClick={handleExportSummaryPDF}
                     variant="outline"
                     size="xs"
-                    icon={<FileText size={13} className="text-rose-400" />}
+                    icon={<FileText size={13} className="text-rose-accent" />}
                   >
                     Export PDF
                   </Button>
@@ -952,7 +952,7 @@ export default function Reports() {
 function PropertySection({ label, children }: { label: string, children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-       <h5 className="text-[10px] font-black uppercase text-muted/60 tracking-wider font-mono">{label}</h5>
+       <h5 className="text-[11px] font-black uppercase text-muted/60 tracking-wider font-mono">{label}</h5>
        {children}
     </div>
   );

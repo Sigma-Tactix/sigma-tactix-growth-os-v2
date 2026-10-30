@@ -354,7 +354,7 @@ export default function VideoStudioPage() {
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant="vermilion">CREATION LAYER</Badge>
               <Badge variant="neutral">VIDEO &amp; MOTION FX</Badge>
-              <span className={`flex items-center gap-1 text-xs font-mono ${hyperframes?.active ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <span className={`flex items-center gap-1 text-xs font-mono ${hyperframes?.active ? 'text-emerald-accent' : 'text-amber-accent'}`}>
                 <ShieldCheck className="h-3.5 w-3.5" />
                 {hyperframes?.active ? 'Renderer Ready (0.75x Voiceover Active)' : 'Renderer Standby'}
               </span>
@@ -424,13 +424,13 @@ export default function VideoStudioPage() {
                   <div className="min-w-0 pr-2">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-xs text-slate-100 truncate">{model.name}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5 shrink-0">
+                      <span className="text-[11px] px-1.5 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5 shrink-0">
                         {model.provider}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{model.description}</p>
                   </div>
-                  <span className="text-[9px] font-semibold text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
+                  <span className="text-[11px] font-semibold text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
                     {model.badge}
                   </span>
                 </button>
@@ -761,4 +761,5 @@ export default function VideoStudioPage() {
     </div>
   );
 }
+
 

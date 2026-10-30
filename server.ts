@@ -3439,19 +3439,21 @@ app.use(
 // the admin UI copy, not hidden behind a fake "connected" state.
 // Complete multi-provider AI model catalog & orchestration across all providers + Local & Smart Routers
 const SUPPORTED_AI_PROVIDERS = [
-  "gemini", 
-  "google", 
-  "anthropic", 
-  "openai", 
-  "xai", 
-  "qwen", 
-  "deepseek", 
+  "gemini",
+  "google",
+  "anthropic",
+  "openai",
+  "xai",
+  "qwen",
+  "deepseek",
   "glm",
   "lmstudio",
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter"
+  "openrouter",
+  "opusmax",
+  "openai-account"
 ] as const;
 type AIProvider = typeof SUPPORTED_AI_PROVIDERS[number];
 
@@ -3467,7 +3469,9 @@ const UI_PRIMARY_PROVIDERS = [
   "ollama",
   "omniroute",
   "opencode",
-  "openrouter"
+  "openrouter",
+  "opusmax",
+  "openai-account"
 ] as const;
 
 async function resolveEffectiveProviderKey(res: Response, provider: string): Promise<string | undefined> {
@@ -3498,10 +3502,37 @@ async function resolveEffectiveProviderKey(res: Response, provider: string): Pro
     omniroute: process.env.OMNIROUTE_API_KEY,
     opencode: process.env.OPENCODE_API_KEY,
     openrouter: process.env.OPENROUTER_API_KEY,
+    opusmax: process.env.OPUSMAX_API_KEY,
+    "openai-account": process.env.OPENAI_ACCOUNT_TOKEN || process.env.OPENAI_API_KEY,
     lmstudio: "local-on-device",
     ollama: "local-on-device"
   };
   return envMap[provider];
+}
+
+// Stored (per-workspace) key + optional gateway base URL + auth mode for a provider.
+// opusmax saves an optional custom base URL; openai-account saves an account
+// sign-in token (accountAuth) with the raw API key as an optional fallback.
+async function resolveStoredProviderConfig(res: Response, provider: string): Promise<{
+  apiKey?: string;
+  baseUrl?: string;
+  accountAuth?: boolean;
+}> {
+  const db = await getDB(res);
+  const stored = (db as any).aiProviderKeys?.[provider];
+  if (!stored?.encrypted) {
+    return { baseUrl: stored?.baseUrl || undefined, accountAuth: stored?.accountAuth };
+  }
+  try {
+    const decrypted = decryptCredentials(stored.encrypted) as { apiKey?: string };
+    return {
+      apiKey: decrypted?.apiKey,
+      baseUrl: stored.baseUrl || undefined,
+      accountAuth: stored.accountAuth || undefined,
+    };
+  } catch {
+    return { baseUrl: stored.baseUrl || undefined, accountAuth: stored.accountAuth };
+  }
 }
 
 interface UniversalCompletionOptions {
@@ -3512,6 +3543,7 @@ interface UniversalCompletionOptions {
   apiKey?: string;
   temperature?: number;
   baseUrl?: string;
+  accountAuth?: boolean;
 }
 
 interface UniversalCompletionResult {
@@ -3526,7 +3558,7 @@ interface UniversalCompletionResult {
 
 async function executeUniversalAICompletion(options: UniversalCompletionOptions): Promise<UniversalCompletionResult> {
   const startTime = Date.now();
-  const { provider, model, systemPrompt, prompt, apiKey, baseUrl } = options;
+  const { provider, model, systemPrompt, prompt, apiKey, baseUrl, accountAuth } = options;
 
   // 1. Google / Gemini
   if (provider === 'google' || provider === 'gemini') {
@@ -3946,6 +3978,97 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     };
   }
 
+  // 13. OpusMax gateway (installed dep: opusmax-gateway@1.0.2)
+  //     Claude-family LLM gateway. Two hosts expose the same models:
+  //       • https://api.opusmax.pro        → OpenAI-compatible /v1/chat/completions (Bearer)
+  //       • https://opusxmax.vercel.app/api → Anthropic-compatible /v1/messages (x-api-key)
+  //     Keys: sk-ant-ox-... (validated by the gateway's /key-status endpoint).
+  if (provider === 'opusmax') {
+    const effectiveKey = apiKey || process.env.OPUSMAX_API_KEY;
+    if (!effectiveKey) throw new Error('OpusMax API key not configured (sk-ant-ox-… key from opusmax.pro; run `npx opusmax-gateway setup` locally to obtain one).');
+    const rawBase = (baseUrl || process.env.OPUSMAX_BASE_URL || 'https://api.opusmax.pro').replace(/\/$/, '');
+    const anthropicWire = /opusxmax\.vercel\.app/.test(rawBase);
+    const b = rawBase.replace(/\/v1$/, '');
+    // Namespaced alias cards (opusmax-opus/sonnet/haiku) resolve to the
+    // gateway's bare family aliases; every other model id is sent verbatim.
+    const omModel = (model || 'claude-opus-5-5').replace(/^opusmax-(opus|sonnet|haiku)$/, '$1');
+    let inferUrl: string;
+    let headers: Record<string, string>;
+    let body: string;
+    if (anthropicWire) {
+      inferUrl = `${b}/v1/messages`;
+      headers = { 'Content-Type': 'application/json', 'x-api-key': effectiveKey, 'anthropic-version': '2023-06-01' };
+      body = JSON.stringify({ model: omModel, max_tokens: 2048, ...(systemPrompt ? { system: systemPrompt } : {}), messages: [{ role: 'user', content: prompt }] });
+    } else {
+      inferUrl = `${b}/v1/chat/completions`;
+      headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` };
+      const msgs: any[] = [];
+      if (systemPrompt) msgs.push({ role: 'system', content: systemPrompt });
+      msgs.push({ role: 'user', content: prompt });
+      body = JSON.stringify({ model: omModel, messages: msgs, temperature: options.temperature ?? 0.7 });
+    }
+    const r = await fetch(inferUrl, { method: 'POST', headers, body });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(`OpusMax error (${r.status}): ${errText}`);
+    }
+    const data = await r.json() as any;
+    const text = anthropicWire
+      ? (data.content?.find((block: any) => block?.text)?.text || '').trim()
+      : (data.choices?.[0]?.message?.content || '');
+    const durationMs = Date.now() - startTime;
+    const promptTokens = (anthropicWire ? data.usage?.input_tokens : data.usage?.prompt_tokens) || estimateTokens(prompt);
+    const candidateTokens = (anthropicWire ? data.usage?.output_tokens : data.usage?.completion_tokens) || estimateTokens(text);
+    return {
+      text,
+      provider: 'opusmax',
+      model: omModel,
+      promptTokens,
+      candidateTokens,
+      totalTokens: promptTokens + candidateTokens,
+      durationMs
+    };
+  }
+
+  // 14. OpenAI account login (ChatGPT / Codex)
+  //     Primary auth: workspace-saved account token (or env OPENAI_ACCOUNT_TOKEN)
+  //     via OpenAI's project-style auth. The raw API key stays an optional fallback.
+  if (provider === 'openai-account') {
+    const effectiveKey = apiKey || process.env.OPENAI_ACCOUNT_TOKEN || process.env.OPENAI_API_KEY;
+    if (!effectiveKey) throw new Error('OpenAI account login not configured. Sign in with your OpenAI account, or add an optional API key.');
+    const targetUrl = baseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+    const messages = [];
+    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: 'user', content: prompt });
+    const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${effectiveKey}`,
+        ...(accountAuth ? { 'OpenAI-Auth-Method': 'account' } : {})
+      },
+      body: JSON.stringify({ model: model || 'gpt-5', messages, temperature: options.temperature ?? 0.7 })
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(`OpenAI account error (${r.status}): ${errText}`);
+    }
+    const data = await r.json() as any;
+    const text = data.choices?.[0]?.message?.content || '';
+    const durationMs = Date.now() - startTime;
+    const promptTokens = data.usage?.prompt_tokens || estimateTokens(prompt);
+    const candidateTokens = data.usage?.completion_tokens || estimateTokens(text);
+    return {
+      text,
+      provider: 'openai-account',
+      model: model || 'gpt-5',
+      promptTokens,
+      candidateTokens,
+      totalTokens: promptTokens + candidateTokens,
+      durationMs
+    };
+  }
+
   throw new Error(`Unsupported AI provider: ${provider}`);
 }
 
@@ -3959,6 +4082,8 @@ app.get("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => {
       provider,
       configured: !!keyData?.encrypted || (isGoogle && !!process.env.GEMINI_API_KEY),
       model: keyData?.model || (isGoogle ? DEFAULT_GEMINI_MODEL : ""),
+      baseUrl: keyData?.baseUrl || undefined,
+      accountAuth: keyData?.accountAuth || undefined,
       updatedAt: keyData?.updatedAt || null,
       live: isGoogle || !!keyData?.encrypted,
     };
@@ -3971,22 +4096,37 @@ app.post("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => 
     res.status(403).json({ error: "You must be an owner or admin to configure AI provider keys." });
     return;
   }
-  const { provider, apiKey, model } = req.body as { provider?: string; apiKey?: string; model?: string };
+  const { provider, apiKey, model, baseUrl, accountAuth } = req.body as {
+    provider?: string; apiKey?: string; model?: string; baseUrl?: string; accountAuth?: boolean;
+  };
   if (!provider || !SUPPORTED_AI_PROVIDERS.includes(provider as AIProvider)) {
     res.status(400).json({ error: `provider must be one of: ${SUPPORTED_AI_PROVIDERS.join(", ")}` });
     return;
   }
   const db = await getDB(res);
   (db as any).aiProviderKeys = (db as any).aiProviderKeys || {};
-  
+
   const existing = (db as any).aiProviderKeys[provider] || (provider === "google" ? (db as any).aiProviderKeys["gemini"] : undefined);
-  
+
   if (!apiKey || !apiKey.trim()) {
-    if (existing?.encrypted && model?.trim()) {
-      existing.model = model.trim();
+    if (existing?.encrypted && (model?.trim() || baseUrl?.trim())) {
+      if (model?.trim()) existing.model = model.trim();
+      if (baseUrl?.trim()) existing.baseUrl = baseUrl.trim().replace(/\/$/, "");
+      existing.accountAuth = !!accountAuth;
       existing.updatedAt = new Date().toISOString();
       await saveDB(res, db);
       res.json({ success: true, provider, configured: true, live: true });
+      return;
+    }
+    // OpenAI account login: the raw API key is optional — an account sign-in
+    // token is the primary credential; only model/baseUrl updates may come
+    // through with no key once one is stored.
+    if (provider === "openai-account" && existing?.accountAuth && existing?.encrypted) {
+      if (model?.trim()) existing.model = model.trim();
+      if (baseUrl?.trim()) existing.baseUrl = baseUrl.trim().replace(/\/$/, "");
+      existing.updatedAt = new Date().toISOString();
+      await saveDB(res, db);
+      res.json({ success: true, provider, configured: true, live: true, accountAuth: true });
       return;
     }
     res.status(400).json({ error: "apiKey is required" });
@@ -3996,10 +4136,12 @@ app.post("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => 
   (db as any).aiProviderKeys[provider] = {
     encrypted: encryptCredentials({ apiKey: apiKey.trim() }),
     model: model?.trim() || existing?.model || undefined,
+    baseUrl: baseUrl?.trim() ? baseUrl.trim().replace(/\/$/, "") : existing?.baseUrl || undefined,
+    accountAuth: !!accountAuth,
     updatedAt: new Date().toISOString(),
   };
   await saveDB(res, db);
-  res.json({ success: true, provider, configured: true, live: true });
+  res.json({ success: true, provider, configured: true, live: true, accountAuth: !!accountAuth });
 });
 
 // Fetch available models from provider API with graceful fallback to verified comprehensive catalog
@@ -4013,7 +4155,10 @@ app.post("/api/workspace/admin/ai-keys/:provider/models", async (req: Request, r
   const apiKey = bodyKey?.trim() || await resolveEffectiveProviderKey(res, provider);
 
   const fallbackCatalog = ALL_AI_MODELS
-    .filter(m => m.provider === provider || (provider === "google" && m.provider === "google") || (provider === "gemini" && m.provider === "google"))
+    .filter(m => m.provider === provider
+      || (provider === "google" && m.provider === "google")
+      || (provider === "gemini" && m.provider === "google")
+      || (provider === "openai-account" && (m.provider === "openai" || m.provider === "openai-account")))
     .map(m => m.id);
 
   if (!apiKey) {
@@ -4098,28 +4243,84 @@ app.post("/api/workspace/admin/ai-keys/:provider/models", async (req: Request, r
         }
       }
     }
+    if (provider === "opusmax") {
+      // The installed opusmax-gateway package lists models from {base}/v1/models
+      // with an x-api-key header (works on both the api.opusmax.pro and
+      // opusxmax.vercel.app/api hosts). Base URL may be overridden per-workspace.
+      const stored = await resolveStoredProviderConfig(res, "opusmax");
+      const base = (stored.baseUrl || process.env.OPUSMAX_BASE_URL || "https://api.opusmax.pro").replace(/\/$/, "").replace(/\/v1$/, "");
+      const r = await fetch(`${base}/v1/models`, { headers: { "x-api-key": apiKey } });
+      if (r.ok) {
+        const data = await r.json() as { data?: { id?: string; display_name?: string }[] };
+        const fetched = (data.data || []).map(m => m.id || "").filter(id => id);
+        if (fetched.length > 0) {
+          res.json({ success: true, models: fetched, live: true });
+          return;
+        }
+      }
+      res.json({ success: true, models: fallbackCatalog, fallback: true });
+      return;
+    }
+    if (provider === "openai-account") {
+      res.json({ success: true, models: fallbackCatalog, accountAuth: true });
+      return;
+    }
     res.json({ success: true, models: fallbackCatalog, fallback: true });
   } catch (err: any) {
     res.json({ success: true, models: fallbackCatalog, error: err.message, fallback: true });
   }
 });
 
+// OpusMax gateway key verification (mirrors opusmax-gateway's /key-status check).
+app.post("/api/workspace/admin/ai-keys/opusmax/key-status", async (req: Request, res: Response) => {
+  const { apiKey: bodyKey, baseUrl } = req.body as { apiKey?: string; baseUrl?: string };
+  const apiKey = bodyKey?.trim() || await resolveEffectiveProviderKey(res, "opusmax");
+  if (!apiKey) {
+    res.status(400).json({ success: false, error: "No OpusMax key to verify. Save one in the vault or set OPUSMAX_API_KEY." });
+    return;
+  }
+  const stored = await resolveStoredProviderConfig(res, "opusmax");
+  const base = (baseUrl?.trim() || stored.baseUrl || process.env.OPUSMAX_BASE_URL || "https://api.opusmax.pro").replace(/\/$/, "").replace(/\/v1$/, "");
+  try {
+    const r = await fetch(`${base}/key-status?key=${encodeURIComponent(apiKey)}`);
+    const json = await r.json().catch(() => ({})) as any;
+    if (!r.ok) {
+      res.json({ success: false, active: false, status: json?.status || null, error: json?.error?.message || `Key check failed (${r.status})` });
+      return;
+    }
+    res.json({
+      success: json.exists !== false,
+      active: json.exists !== false && !json.quotaBlocked && json.status !== "EXPIRED",
+      status: json.status || "ACTIVE",
+      name: json.name || null,
+      quotaBlocked: !!json.quotaBlocked,
+      expiresAt: json.expiresAt || null,
+    });
+  } catch (err: any) {
+    res.json({ success: false, active: false, error: err.message || "Could not reach the OpusMax gateway." });
+  }
+});
+
 // Live Model Inference Handshake Endpoint
 app.post("/api/workspace/admin/ai/test-inference", async (req: Request, res: Response) => {
-  const { provider, model, prompt } = req.body as { provider?: string; model?: string; prompt?: string };
+  const { provider, model, prompt, baseUrl } = req.body as { provider?: string; model?: string; prompt?: string; baseUrl?: string };
   if (!provider) {
     res.status(400).json({ error: "provider is required" });
     return;
   }
   const testPrompt = prompt?.trim() || "Generate a 1-sentence growth hook for Sigma Tactix sovereign AI growth infrastructure.";
   const resolvedKey = await resolveEffectiveProviderKey(res, provider);
-  
+  // Stored per-workspace gateway settings (optional base URL, account-login flag)
+  const storedConfig = await resolveStoredProviderConfig(res, provider).catch(() => ({}) as { baseUrl?: string; accountAuth?: boolean });
+
   try {
     const result = await executeUniversalAICompletion({
       provider,
       model: model || (provider === 'google' || provider === 'gemini' ? 'gemini-2.5-flash' : 'default'),
       prompt: testPrompt,
       apiKey: resolvedKey,
+      baseUrl: baseUrl || storedConfig.baseUrl || undefined,
+      accountAuth: storedConfig.accountAuth,
     });
 
     const costUsd = calculateTokenCost(result.model, result.promptTokens, result.candidateTokens);

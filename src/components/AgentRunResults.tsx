@@ -236,7 +236,7 @@ export default function AgentRunResults({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] font-mono text-zinc-500">{result.timestamp}</span>
-                        <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border", statusBadge.classes)}>
+                        <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border", statusBadge.classes)}>
                           {statusBadge.label}
                         </span>
                         {isOpen ? (

@@ -206,13 +206,13 @@ export default function HoloTelemetryHUD({
       </svg>
 
       {/* Live camera state */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[9px] text-cyan-400/50 pointer-events-none tracking-widest hidden sm:block">
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[11px] text-cyan-400/50 pointer-events-none tracking-widest hidden sm:block">
         {cameraReadout
           ? `-- [ AZIMUTH: ${cameraReadout.azimuth.toFixed(0)}° // ELEV: ${cameraReadout.elevation.toFixed(0)}° // RANGE: ${cameraReadout.distance.toFixed(1)}u ] --`
           : '-- [ CAMERA: INITIALISING ] --'}
       </div>
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[9px] text-cyan-400/40 pointer-events-none hidden sm:flex">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[11px] text-cyan-400/40 pointer-events-none hidden sm:flex">
         <span className="tracking-widest">
           + + PERSPECTIVE // {moduleCount} PLANETS // {summary.vaultsFilled}/{summary.vaultsTotal} VAULTS + +
         </span>
@@ -235,7 +235,7 @@ export default function HoloTelemetryHUD({
           title={isFullscreen ? 'Exit full screen' : 'Expand Growth Matrix to full screen'}
           aria-label={isFullscreen ? 'Exit full screen' : 'Expand Growth Matrix to full screen'}
           aria-pressed={isFullscreen}
-          className="px-2.5 py-1.5 rounded bg-gradient-to-r from-[#FF481B] to-[#E03A10] hover:from-[#FF6A44] hover:to-[#FF481B] text-white font-bold text-[9px] flex items-center gap-1.5 shadow-[0_0_12px_rgba(255,72,27,0.35)] transition cursor-pointer"
+          className="px-2.5 py-1.5 rounded bg-gradient-to-r from-[#FF481B] to-[#E03A10] hover:from-[#FF6A44] hover:to-[#FF481B] text-white font-bold text-[11px] flex items-center gap-1.5 shadow-[0_0_12px_rgba(255,72,27,0.35)] transition cursor-pointer"
         >
           {isFullscreen ? <Minimize2 className="h-3 w-3" aria-hidden /> : <Maximize2 className="h-3 w-3" aria-hidden />}
           <span>{isFullscreen ? 'EXIT' : 'EXPAND'}</span>
@@ -337,7 +337,7 @@ export default function HoloTelemetryHUD({
               onClick={() => onFilterChange(f.id)}
               aria-pressed={activeFilter === f.id}
               aria-label={`Filter: ${f.label}`}
-              className={`px-2 py-1 rounded text-[9px] font-bold tracking-wider transition cursor-pointer ${
+              className={`px-2 py-1 rounded text-[11px] font-bold tracking-wider transition cursor-pointer ${
                 activeFilter === f.id
                   ? 'bg-[#FF481B] text-black shadow-[0_0_10px_#FF481B]'
                   : 'bg-slate-900/80 text-[#FFB088]/80 border border-[#FF481B]/25 hover:border-[#FF481B] hover:text-[#FFD6C2]'
@@ -359,7 +359,7 @@ export default function HoloTelemetryHUD({
           </div>
           {selectedNodeHealth && (
             <span
-              className="text-[9px] px-1.5 py-0.5 rounded border font-bold"
+              className="text-[11px] px-1.5 py-0.5 rounded border font-bold"
               style={{
                 color: HEALTH_COLOR[selectedNodeHealth],
                 borderColor: `${HEALTH_COLOR[selectedNodeHealth]}66`,
@@ -476,7 +476,7 @@ export default function HoloTelemetryHUD({
                   key={p.id}
                   type="button"
                   onClick={() => onCameraPresetChange(p.id as HoloCameraPreset)}
-                  className={`px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                  className={`px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
                     cameraPreset === p.id
                       ? 'bg-[#FF481B] text-black shadow-[0_0_8px_#FF481B]'
                       : 'bg-slate-900/80 text-[#FFB088]/80 hover:bg-[#FF481B]/20 hover:text-[#FFD6C2]'
@@ -498,7 +498,7 @@ export default function HoloTelemetryHUD({
             title={orbitMotion ? 'Pause orbital motion' : 'Resume orbital motion'}
             aria-label={orbitMotion ? 'Pause orbital motion' : 'Resume orbital motion'}
             aria-pressed={orbitMotion}
-            className={`px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition cursor-pointer ${
+            className={`px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
               orbitMotion
                 ? 'bg-[#FF481B] text-black shadow-[0_0_8px_#FF481B]'
                 : 'bg-slate-900/80 text-[#FFB088]/80 border border-[#FF481B]/25 hover:text-[#FFD6C2]'
@@ -529,7 +529,7 @@ export default function HoloTelemetryHUD({
           <button
             type="button"
             onClick={onResetView}
-            className="px-2.5 py-1.5 rounded bg-slate-900/80 hover:bg-[#FF481B]/20 text-[#FFB088] hover:text-white border border-[#FF481B]/25 font-bold text-[9px] flex items-center gap-1.5 transition cursor-pointer"
+            className="px-2.5 py-1.5 rounded bg-slate-900/80 hover:bg-[#FF481B]/20 text-[#FFB088] hover:text-white border border-[#FF481B]/25 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
             title="Reset to default framing"
             aria-label="Reset camera view"
           >

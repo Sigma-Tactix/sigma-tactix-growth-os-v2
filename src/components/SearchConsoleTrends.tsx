@@ -576,17 +576,17 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               Google Search Console Trends
               {!isConnected && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold">
                   DEMO DATA
                 </span>
               )}
               {isConnected && dataNote && previewSimulated && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold">
                   SIMULATED PREVIEW (OAUTH PENDING)
                 </span>
               )}
               {isConnected && !dataNote && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 font-bold">
                   LIVE
                 </span>
               )}

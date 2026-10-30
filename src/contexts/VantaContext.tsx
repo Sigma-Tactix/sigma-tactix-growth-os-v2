@@ -29,6 +29,7 @@ import type { WorkspaceData } from '@/src/types';
 interface LocalContextItem { id: string; name: string; size: number }
 
 interface VantaContextValue {
+  retrieval: { count: number; method: string } | null;
   state: ReturnType<typeof createVantaState>;
   messages: Array<VantaMessage & { memorySuggestion?: string; topologyEntityIds?: string[] }>;
   conversations: VantaConversationSummary[];
@@ -74,6 +75,8 @@ function pcmToAudioBuffer(context: AudioContext, base64: string, sampleRate = 24
 
 export function VantaProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(vantaReducer, undefined, () => createVantaState());
+  const [retrieval, setRetrieval] = useState<{ count: number; method: string } | null>(null);
+  const sendingRef = useRef(false);
   const [messages, setMessages] = useState<VantaContextValue['messages']>([]);
   const [conversations, setConversations] = useState<VantaConversationSummary[]>([]);
   const [workspaceData, setWorkspaceData] = useState<WorkspaceData | null>(null);
@@ -120,6 +123,9 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    requestAbortRef.current?.abort();
+    setRetrieval(null);
+    dispatch({ type: 'RESET' });
     setConversationId(null);
     setMessages([]);
     setConversations([]);
@@ -153,9 +159,10 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     try { speechSourceRef.current?.stop(); } catch { /* already stopped */ }
   }, []);
 
-  const ensureConversation = useCallback(async () => {
+  const ensureConversation = useCallback(async (signal: AbortSignal) => {
     if (conversationId) return conversationId;
-    const conversation = await createVantaConversation();
+    const conversation = await createVantaConversation(undefined, signal);
+    signal.throwIfAborted();
     setConversationId(conversation.id);
     setConversations(previous => [conversation, ...previous]);
     return conversation.id;
@@ -206,13 +213,19 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
 
   const send = useCallback(async (content: string, speakReply = false) => {
     const prompt = content.trim();
-    if (!prompt) return;
+    if (!prompt || sendingRef.current) return;
     if (!state.provider.verified) {
       notifyError('VANTA is not verified', 'An owner or admin must verify the configured provider before conversation is enabled.');
       return;
     }
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
     try {
-      const id = await ensureConversation();
+      sendingRef.current = true;
+      setRetrieval(null);
+      dispatch({ type: 'PROMPT_ACCEPTED' });
+      const id = await ensureConversation(controller.signal);
+      controller.signal.throwIfAborted();
       const optimistic: VantaMessage = {
         id: `local-${Date.now()}`,
         conversationId: id,
@@ -224,9 +237,9 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
       setMessages(previous => [...previous, optimistic]);
       setTranscriptOpen(true);
       speakAfterResponseRef.current = speakReply;
-      dispatch({ type: 'PROMPT_ACCEPTED' });
-      requestAbortRef.current = new AbortController();
+
       await streamVantaMessage(id, prompt, localContexts.map(item => item.id), {
+        onRetrieval: setRetrieval,
         onState: phase => {
           if (phase === 'error') dispatch({ type: 'FAILED', message: 'VANTA request failed.' });
         },
@@ -236,7 +249,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'RESPONSE_READY', hasProposal: Boolean(message.proposal) });
           if (speakAfterResponseRef.current) void playText(message.content);
         },
-      }, requestAbortRef.current.signal);
+      }, controller.signal);
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         dispatch({ type: 'WARNING', message: 'Request cancelled.' });
@@ -245,6 +258,8 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
       const message = error instanceof Error ? error.message : 'VANTA request failed.';
       dispatch({ type: 'FAILED', message });
       notifyError('VANTA request failed', message);
+    } finally {
+      sendingRef.current = false;
     }
   }, [ensureConversation, localContexts, notifyError, playText, state.provider.verified]);
 
@@ -381,6 +396,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<VantaContextValue>(() => ({
     state,
+    retrieval,
     messages,
     conversations,
     conversationId,
@@ -414,7 +430,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
       speechSourceRef.current = null;
       dispatch({ type: 'RESET' });
     },
-  }), [approveMemory, attachFiles, conversationId, conversations, deleteCurrentConversation, dockOpen, fullTopology, loadConversation, localContexts, messages, playText, refreshStatus, selectedNodeId, send, setConversationShared, startListening, state, stopListening, topology, topologyExpanded, transcriptOpen]);
+  }), [approveMemory, attachFiles, conversationId, conversations, deleteCurrentConversation, dockOpen, fullTopology, loadConversation, localContexts, messages, playText, refreshStatus, selectedNodeId, send, setConversationShared, startListening, state, retrieval, stopListening, topology, topologyExpanded, transcriptOpen]);
 
   return <VantaContext.Provider value={value}>{children}</VantaContext.Provider>;
 }

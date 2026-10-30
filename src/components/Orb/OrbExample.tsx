@@ -109,7 +109,7 @@ export default function OrbExample() {
       <Orb zoom={zoom} satellites={mockSatellites} className="w-full h-full" />
 
       {/* Legend & Stats */}
-      <div className="absolute bottom-3 left-4 right-4 z-20 flex items-center justify-between pointer-events-none text-[9px] text-slate-400">
+      <div className="absolute bottom-3 left-4 right-4 z-20 flex items-center justify-between pointer-events-none text-[11px] text-slate-400">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#FF481B]" />

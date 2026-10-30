@@ -89,7 +89,7 @@ export default function VantaHeaderIndicator() {
       </span>
 
       {messages.length > 0 && (
-        <span className="rounded bg-black/40 px-1 py-0.2 text-[9px] text-zinc-400 font-normal">
+        <span className="rounded bg-black/40 px-1 py-0.2 text-[11px] text-zinc-400 font-normal">
           {messages.length}
         </span>
       )}

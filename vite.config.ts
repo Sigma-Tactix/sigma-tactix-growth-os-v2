@@ -18,7 +18,15 @@ export default defineConfig(({mode}) => {
     },
     // @ts-ignore
     test: {
-      exclude: ['**/node_modules/**', '**/.kilo/**', '**/dist/**'],
+      exclude: [
+        '**/node_modules/**',
+        '**/.kilo/**',
+        '**/dist/**',
+        '**/worktrees/**',
+        '**/hive/**',
+        '**/.agent/**',
+        '**/tools/**',
+      ],
     },
   };
 });

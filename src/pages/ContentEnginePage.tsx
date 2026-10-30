@@ -1307,7 +1307,7 @@ The future belongs to founders who own their intelligence engine rather than ren
                       )}
                     >
                       <img src={rec.url} alt="History" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] font-mono text-white font-bold">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[11px] font-mono text-white font-bold">
                         {rec.ratio}
                       </div>
                     </button>

@@ -119,7 +119,7 @@ export default function AudienceSegmentationView({ className }: { className?: st
                         <td className="py-2.5 font-bold text-white flex items-center gap-2">
                           <span>{item.range}</span>
                           {item.shareOfConversions > 30 && (
-                            <span className="px-1.5 py-0.2 rounded bg-accent/20 text-accent text-[9px] font-bold">
+                            <span className="px-1.5 py-0.2 rounded bg-accent/20 text-accent text-[11px] font-bold">
                               Primary
                             </span>
                           )}
@@ -424,7 +424,7 @@ export default function AudienceSegmentationView({ className }: { className?: st
                     <div className="flex items-center justify-between">
                       <span className="text-white font-bold">{b.cluster}</span>
                       <span className={cn(
-                        "px-2 py-0.5 rounded text-[9px] font-bold uppercase",
+                        "px-2 py-0.5 rounded text-[11px] font-bold uppercase",
                         b.conversionLikelihood === 'Very High' ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" :
                         b.conversionLikelihood === 'High' ? "bg-accent/15 text-accent border border-accent/30" :
                         "bg-white/10 text-zinc-300"

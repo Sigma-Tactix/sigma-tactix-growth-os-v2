@@ -153,7 +153,7 @@ export default function Orb({
             <span>{hoveredSat.definition.label}</span>
           </div>
           {hoveredSat.definition.subLabel && (
-            <div className="text-[9px] text-slate-400 mt-0.5">{hoveredSat.definition.subLabel}</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">{hoveredSat.definition.subLabel}</div>
           )}
         </div>
       )}

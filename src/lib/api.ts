@@ -52,11 +52,18 @@ export async function getAIProviderKeys(): Promise<AIKeyConfig[]> {
 export async function saveAIProviderKey(
   provider: string,
   apiKey: string,
-  model?: string
-): Promise<{ success: boolean; configured: boolean; live: boolean }> {
+  model?: string,
+  extras?: { baseUrl?: string; accountAuth?: boolean }
+): Promise<{ success: boolean; configured: boolean; live: boolean; accountAuth?: boolean }> {
   const res = await apiFetch('/api/workspace/admin/ai-keys', {
     method: 'POST',
-    body: JSON.stringify({ provider, apiKey, model }),
+    body: JSON.stringify({
+      provider,
+      apiKey,
+      model,
+      baseUrl: extras?.baseUrl?.trim() || undefined,
+      accountAuth: extras?.accountAuth,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -88,7 +95,7 @@ export async function deleteAIProviderKey(provider: string): Promise<{ success: 
   return res.json();
 }
 
-export async function testModelInference(provider: string, model: string, prompt?: string): Promise<{
+export async function testModelInference(provider: string, model: string, prompt?: string, baseUrl?: string): Promise<{
   success: boolean;
   text: string;
   provider: string;
@@ -101,11 +108,32 @@ export async function testModelInference(provider: string, model: string, prompt
 }> {
   const res = await apiFetch('/api/workspace/admin/ai/test-inference', {
     method: 'POST',
-    body: JSON.stringify({ provider, model, prompt }),
+    body: JSON.stringify({ provider, model, prompt, baseUrl: baseUrl?.trim() || undefined }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || `Inference test failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// OpusMax gateway key verification (mirrors `opusmax-gateway`'s /key-status check)
+export async function checkOpusMaxKeyStatus(apiKey?: string, baseUrl?: string): Promise<{
+  success: boolean;
+  active: boolean;
+  status: string | null;
+  name: string | null;
+  quotaBlocked: boolean;
+  expiresAt: string | null;
+  error?: string;
+}> {
+  const res = await apiFetch('/api/workspace/admin/ai-keys/opusmax/key-status', {
+    method: 'POST',
+    body: JSON.stringify({ apiKey, baseUrl }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `OpusMax key check failed: ${res.statusText}`);
   }
   return res.json();
 }

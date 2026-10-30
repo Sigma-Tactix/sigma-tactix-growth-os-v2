@@ -214,7 +214,7 @@ export default function AgentLogsViewer({
                       {log.agentCodename}
                     </span>
                     <span className={cn(
-                      "px-1.5 py-0.5 rounded text-[9px] uppercase font-bold",
+                      "px-1.5 py-0.5 rounded text-[11px] uppercase font-bold",
                       log.level === 'GATE' ? "bg-amber-500/20 text-amber-300" :
                       log.level === 'WARN' ? "bg-rose-500/20 text-rose-300" :
                       log.level === 'REFLECTION' ? "bg-purple-500/20 text-purple-300" :

@@ -29,7 +29,7 @@ export default function LivingSystemSidebarWidget({ isSidebarOpen }: { isSidebar
       <div className="flex items-center justify-between gap-2 border-t border-white/[0.07] px-3 py-2.5">
         <button type="button" onClick={() => setDockOpen(true)} className="min-w-0 text-left">
           <span className="block text-xs font-bold text-white">Ask the Sigma brain</span>
-          <span className="block truncate text-[9px] font-mono text-zinc-500">{state.provider.label} · {topology.nodes.length} visible entit{topology.nodes.length === 1 ? 'y' : 'ies'}</span>
+          <span className="block truncate text-[11px] font-mono text-zinc-500">{state.provider.label} · {topology.nodes.length} visible entit{topology.nodes.length === 1 ? 'y' : 'ies'}</span>
         </button>
         <button type="button" onClick={() => navigate('/living-system')} className="rounded-lg border border-white/10 p-2 text-zinc-500 hover:border-orange-400/30 hover:text-orange-200" aria-label="Open full VANTA experience"><Maximize2 size={13} /></button>
       </div>

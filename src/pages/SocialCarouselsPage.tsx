@@ -515,7 +515,7 @@ export default function SocialCarouselsPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-[var(--sigma-text-soft)]">Campaign Topic</label>
-                <span className="text-[10px] text-amber-500 font-semibold flex items-center gap-1">★ Recommended Default</span>
+                <span className="text-[10px] text-amber-accent font-semibold flex items-center gap-1">★ Recommended Default</span>
               </div>
               <select
                 value={selectedTopicId}
@@ -544,7 +544,7 @@ export default function SocialCarouselsPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-[var(--sigma-text-soft)]">Target Audience</label>
-                <span className="text-[10px] text-amber-500 font-semibold flex items-center gap-1">★ Pre-selected</span>
+                <span className="text-[10px] text-amber-accent font-semibold flex items-center gap-1">★ Pre-selected</span>
               </div>
               <select
                 value={selectedAudienceId}
@@ -609,7 +609,7 @@ export default function SocialCarouselsPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[11px] font-medium text-[var(--sigma-text-soft)]">Caption Preset</label>
-                <span className="text-[10px] text-amber-500 font-semibold">★ Recommended</span>
+                <span className="text-[10px] text-amber-accent font-semibold">★ Recommended</span>
               </div>
               <select
                 value={selectedCaptionId}
@@ -675,10 +675,10 @@ export default function SocialCarouselsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
-                <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-accent dark:text-emerald-accent flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> {repurposedMeta.slides?.length || 0} Slides
                 </span>
-                <span className="px-2 py-0.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-sky-600 dark:text-sky-400">
+                <span className="px-2 py-0.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-sky-accent dark:text-sky-accent">
                   {repurposedMeta.tweetThread?.length || 0} Tweets
                 </span>
               </div>
@@ -690,7 +690,7 @@ export default function SocialCarouselsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-                  <Twitter className="w-4 h-4 text-sky-500" />
+                  <Twitter className="w-4 h-4 text-sky-accent" />
                   X / Twitter Thread ({threadTweets.length} Tweets)
                 </h3>
                 <button
@@ -711,7 +711,7 @@ export default function SocialCarouselsPage() {
                 ) : threadTweets.map((tweet, idx) => (
                   <GlassCard key={idx} elevation="flat" className="p-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-[var(--sigma-text-muted)]">
-                      <span className="font-semibold text-sky-600 dark:text-sky-400">Tweet {tweet.tweetNumber} of {threadTweets.length}</span>
+                      <span className="font-semibold text-sky-accent dark:text-sky-accent">Tweet {tweet.tweetNumber} of {threadTweets.length}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[11px]">{tweet.charCount} / 280</span>
                         <button
@@ -719,7 +719,7 @@ export default function SocialCarouselsPage() {
                           className="sigma-icon-button !min-h-8 !min-w-8"
                           aria-label={`Copy tweet ${tweet.tweetNumber}`}
                         >
-                          {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-accent" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
@@ -764,13 +764,13 @@ export default function SocialCarouselsPage() {
                   {slides.map((slide, idx) => (
                     <GlassCard key={idx} elevation="flat" className="p-4 space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-amber-400">Slide {slide.slideNumber}: {slide.badge}</span>
+                        <span className="font-bold text-amber-accent">Slide {slide.slideNumber}: {slide.badge}</span>
                         <button
                           onClick={() => handleCopyText(`${slide.title}\n${slide.subtitle}\n\n${slide.contentPoints.join('\n')}\n\nTakeaway: ${slide.takeaway}`, idx)}
                           className="sigma-icon-button !min-h-8 !min-w-8"
                           aria-label={`Copy slide ${slide.slideNumber}`}
                         >
-                          {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-accent" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                       <div className="font-semibold text-sm text-[var(--sigma-text)]">{slide.title}</div>
@@ -938,3 +938,4 @@ export default function SocialCarouselsPage() {
 // ---------------------------------------------------------------------------
 const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
 const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];
+

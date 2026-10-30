@@ -1,4 +1,3 @@
-import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -36,201 +35,32 @@ import { useToast } from '@/src/contexts/ToastContext';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type ActionQueueItemStatus = 'PENDING_APPROVAL' | 'RUNNING' | 'COMPLETED' | 'ALERT';
-export type ActionQueueCategory = 'ALL' | 'APPROVALS' | 'DEMAND' | 'CAPTURE' | 'INTELLIGENCE' | 'CREATIVE' | 'INFRASTRUCTURE';
+import {
+  ActionQueueItem,
+  ActionQueueItemStatus,
+  ActionQueueCategory,
+  DEMO_INITIAL_QUEUE_ITEMS,
+  getInitialActionQueueItems,
+  useActionQueue,
+} from '@/src/lib/actionQueueStore';
 
-export interface ActionQueueItem {
-  id: string;
-  moduleName: string;
-  moduleCategory: 'DEMAND' | 'CAPTURE' | 'INTELLIGENCE' | 'CREATIVE' | 'INFRASTRUCTURE';
-  moduleRoute: string;
-  moduleIcon: any;
-  title: string;
-  summary: string;
-  details?: string;
-  status: ActionQueueItemStatus;
-  risk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  enclaveName: string;
-  enclaveId: string;
-  timestamp: string;
-  duration?: string;
-  runPayload?: Record<string, any>;
-  suggestedAction?: string;
-  layaTriage?: {
-    risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-    confidence: number;
-    requires_hitl: boolean;
-    reasoning: string;
-    engine: string;
-    probabilities?: Record<string, number>;
-  };
-}
-
-const DEMO_INITIAL_QUEUE_ITEMS: ActionQueueItem[] = [
-  {
-    id: 'act-001',
-    moduleName: 'Agent Reach Router',
-    moduleCategory: 'INTELLIGENCE',
-    moduleRoute: '/agent-reach',
-    moduleIcon: Globe,
-    title: 'Competitor B2B Threat Intelligence Scan Completed',
-    summary: 'Analyzed 15 channels (LinkedIn, X, Reddit, Bilibili) across 3 competitor domains. Extracted 4 counter-positioning angles.',
-    details: 'Primary attack vector identified: Competitor pricing jump (+35%) leaving high mid-market churn vulnerability.',
-    status: 'COMPLETED',
-    risk: 'LOW',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '3 mins ago',
-    duration: '4.2s',
-    suggestedAction: 'Generate SDR Battlecard',
-  },
-  {
-    id: 'act-002',
-    moduleName: 'Performance Ads & ROAS',
-    moduleCategory: 'DEMAND',
-    moduleRoute: '/paid-ads',
-    moduleIcon: Megaphone,
-    title: 'Autonomous Budget Re-Allocation Proposal',
-    summary: 'Re-distribute $4,500 from underperforming Meta lookalikes (1.4x ROAS) to high-intent Google Search & LinkedIn Retargeting (4.8x ROAS).',
-    details: 'Pacing model forecasts +$24,800 incremental pipeline over the next 14 days with zero net ad spend increase.',
-    status: 'PENDING_APPROVAL',
-    risk: 'HIGH',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '12 mins ago',
-    suggestedAction: 'Approve & Push to Ad Managers',
-  },
-  {
-    id: 'act-003',
-    moduleName: 'Cold Outreach & ABM',
-    moduleCategory: 'CAPTURE',
-    moduleRoute: '/outreach',
-    moduleIcon: Mail,
-    title: 'SDR Battlecard Sequence Enriched & Queued',
-    summary: '84 Tier-1 Enterprise VP Marketing leads enriched via Apollo & LinkedIn Sales Navigator with personalized pain hooks.',
-    details: 'Warm-up cadence initialized. Daily volume throttle: 25 sends/mailbox to maintain 99.4% inbox placement.',
-    status: 'RUNNING',
-    risk: 'MEDIUM',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '28 mins ago',
-    duration: 'In progress',
-    suggestedAction: 'Review Prospect List',
-  },
-  {
-    id: 'act-004',
-    moduleName: 'SEO & AEO Authority',
-    moduleCategory: 'DEMAND',
-    moduleRoute: '/seo-aeo',
-    moduleIcon: Cpu,
-    title: 'AI Answer Engine Visibility Shift Detected',
-    summary: 'Perplexity and SearchGPT citations for core keyword cluster dropped 12%. Suggested citation schema update ready.',
-    details: 'Adding JSON-LD structured author credentials and high-citation statistical citations restores answer engine ranking.',
-    status: 'ALERT',
-    risk: 'MEDIUM',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '45 mins ago',
-    suggestedAction: 'Inject Citation Schema',
-  },
-  {
-    id: 'act-005',
-    moduleName: 'Editorial Content Engine',
-    moduleCategory: 'DEMAND',
-    moduleRoute: '/content',
-    moduleIcon: FileText,
-    title: 'Long-Form Thought Leadership Article Ready for Sign-Off',
-    summary: '“Why Fractional CMOs Are Moving to Sovereign Agent Swarms”: 2,400 words, SEO-optimized, backed by Second Brain Vaults.',
-    details: 'Derivative assets generated: 1 LinkedIn Carousel PDF, 5 X Thread posts, and 1 newsletter summary.',
-    status: 'PENDING_APPROVAL',
-    risk: 'MEDIUM',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '1 hour ago',
-    suggestedAction: 'Publish to CMS & Social',
-    runPayload: {
-      socialPost: {
-        content: '“Why Fractional CMOs Are Moving to Sovereign Agent Swarms”: 2,400 words, SEO-optimized, backed by Second Brain Vaults.',
-        channels: ['chan-li-01', 'chan-tw-01'],
-        scheduledFor: new Date(Date.now() + 3600000).toISOString(),
-      },
-    },
-  },
-  {
-    id: 'act-006',
-    moduleName: 'Video & Motion Studio',
-    moduleCategory: 'CREATIVE',
-    moduleRoute: '/video-studio',
-    moduleIcon: Video,
-    title: 'Remotion 60s Kinetic Explainer Render Finished',
-    summary: 'Multi-slide typography motion reel rendered at 4K 60fps with synchronized voice-over audio and dynamic waveform.',
-    details: 'Output format: MP4 (H.264), optimized for LinkedIn vertical feed and YouTube Shorts.',
-    status: 'COMPLETED',
-    risk: 'LOW',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '2 hours ago',
-    duration: '38s',
-    suggestedAction: 'Download Master Asset',
-  },
-  {
-    id: 'act-007',
-    moduleName: 'Inbound Leads & WhatsApp',
-    moduleCategory: 'CAPTURE',
-    moduleRoute: '/intake',
-    moduleIcon: Zap,
-    title: 'Sub-60s SLA Inbound Triage Fired',
-    summary: 'Enterprise lead (ACV: $75,000) submitted audit form; AI Sales Agent qualified BANT criteria and booked demo via WhatsApp in 48 seconds.',
-    details: 'Meeting synced to Google Calendar. Executive Brief dossier pushed to Slack #growth-leads.',
-    status: 'COMPLETED',
-    risk: 'LOW',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '3 hours ago',
-    duration: '48s',
-    suggestedAction: 'View Lead Dossier',
-  },
-  {
-    id: 'act-008',
-    moduleName: 'Connectors & Data Pipelines',
-    moduleCategory: 'INFRASTRUCTURE',
-    moduleRoute: '/connectors',
-    moduleIcon: Database,
-    title: 'Meta Ads Token Expiration Imminent',
-    summary: 'OAuth access token for Meta Ads pipeline expires in 48 hours. Auto-refresh webhook failed due to 2FA policy.',
-    details: 'Reconnect connector before midnight UTC to prevent gap in blended CAC attribution modeling.',
-    status: 'ALERT',
-    risk: 'HIGH',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '4 hours ago',
-    suggestedAction: 'Re-authenticate Connector',
-  },
-  {
-    id: 'act-009',
-    moduleName: 'Growth Diagnostics',
-    moduleCategory: 'INTELLIGENCE',
-    moduleRoute: '/diagnostics',
-    moduleIcon: ShieldCheck,
-    title: 'Comprehensive 8-Category Growth Audit Synthesized',
-    summary: 'Full crawl of target domain completed across UX, Performance, SEO, Positioning, Offers, and AI Visibility. Score: 81/100.',
-    details: '90-day actionable execution roadmap updated with 12 high-priority milestones.',
-    status: 'COMPLETED',
-    risk: 'LOW',
-    enclaveName: 'Sigma Sovereign Core',
-    enclaveId: 'ws-default',
-    timestamp: '5 hours ago',
-    duration: '14.8s',
-    suggestedAction: 'Review 90-Day Roadmap',
-  }
-];
+export type { ActionQueueItem, ActionQueueItemStatus, ActionQueueCategory };
+export { DEMO_INITIAL_QUEUE_ITEMS };
+export const INITIAL_QUEUE_ITEMS = getInitialActionQueueItems();
 
 export default function ActionQueueTab() {
   const { currentWorkspace, workspaces } = useWorkspace();
   const { notifySuccess, notifyInfo, notifyWarning, notifyError } = useToast();
   const navigate = useNavigate();
 
-  const [items, setItems] = useState<ActionQueueItem[]>(INITIAL_QUEUE_ITEMS);
+  const {
+    items,
+    setItems,
+    addItem,
+    approveItem,
+    dismissItem,
+    stats,
+  } = useActionQueue();
   const [selectedCategory, setSelectedCategory] = useState<ActionQueueCategory>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | ActionQueueItemStatus>('ALL');
   const [operatingMode, setOperatingMode] = useState<'IN_HOUSE' | 'PORTFOLIO'>('IN_HOUSE');
@@ -310,15 +140,6 @@ export default function ActionQueueTab() {
     });
   }, [items, selectedCategory, statusFilter, operatingMode, currentWorkspace.id, searchQuery]);
 
-  // Statistics
-  const stats = useMemo(() => {
-    const pendingCount = items.filter(i => i.status === 'PENDING_APPROVAL').length;
-    const runningCount = items.filter(i => i.status === 'RUNNING').length;
-    const alertCount = items.filter(i => i.status === 'ALERT').length;
-    const completedCount = items.filter(i => i.status === 'COMPLETED').length;
-    return { pendingCount, runningCount, alertCount, completedCount };
-  }, [items]);
-
   const handleApprove = async (id: string, title: string) => {
     const item = items.find(i => i.id === id);
     let executionNote = 'Operator approved execution. Changes dispatched to destination module.';
@@ -355,17 +176,12 @@ export default function ActionQueueTab() {
       }
     }
 
-    setItems(prev => prev.map(i => {
-      if (i.id === id) {
-        return { ...i, status: 'COMPLETED', details: executionNote };
-      }
-      return i;
-    }));
+    approveItem(id, executionNote);
     notifySuccess(`Approved: ${title}`, executionNote);
   };
 
   const handleDismiss = (id: string, title: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    dismissItem(id);
     notifyInfo(`Dismissed: ${title}`);
   };
 
@@ -670,7 +486,7 @@ export default function ActionQueueTab() {
       }
     };
 
-    setItems(prev => [newItem, ...prev]);
+    addItem(newItem);
     setRoutingModalOpen(false);
     setRouteInputText('');
     setRoutingResult(null);
@@ -983,7 +799,7 @@ export default function ActionQueueTab() {
                         {/* Risk Level Badge */}
                         <span
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider',
+                            'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider',
                             item.risk === 'CRITICAL' && 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
                             item.risk === 'HIGH' && 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
                             item.risk === 'MEDIUM' && 'bg-blue-500/20 text-blue-300 border border-blue-500/40',
@@ -996,7 +812,7 @@ export default function ActionQueueTab() {
                         {/* Decision-engine result pill */}
                         {item.layaTriage && (
                           <span
-                            className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/35 px-2 py-0.5 text-[9px] font-mono font-bold text-violet-300"
+                            className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/35 px-2 py-0.5 text-[11px] font-mono font-bold text-violet-300"
                             title={`Engine: ${item.layaTriage.engine} | Requires HITL: ${item.layaTriage.requires_hitl}`}
                           >
                             <Sparkles size={9} className="text-violet-400" />
@@ -1017,7 +833,7 @@ export default function ActionQueueTab() {
                         )}
 
                         {operatingMode === 'PORTFOLIO' && (
-                          <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.2 text-[9px] font-mono text-indigo-300 font-bold">
+                          <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.2 text-[11px] font-mono text-indigo-300 font-bold">
                             {item.enclaveName}
                           </span>
                         )}
@@ -1025,7 +841,7 @@ export default function ActionQueueTab() {
                         {/* Status Badge */}
                         <span
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider ml-auto',
+                            'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider ml-auto',
                             isPending && 'bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse',
                             isAlert && 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
                             isRunning && 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 animate-pulse',
@@ -1219,7 +1035,7 @@ export default function ActionQueueTab() {
                       </div>
                       <span
                         className={cn(
-                          'rounded-full px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider',
+                          'rounded-full px-2.5 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider',
                           (routingResult.priority || 'NORMAL') === 'URGENT'
                             ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                             : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
@@ -1258,13 +1074,3 @@ export default function ActionQueueTab() {
     </div>
   );
 }
-
-
-// ---------------------------------------------------------------------------
-// Phase 0: fabricated client data is DEMO-ONLY.
-// These fixtures describe ad spend, ROAS, pipeline, audiences and
-// campaign results that this workspace has never had. A fresh tenant
-// must render none of them; they stay reachable behind
-// VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
-// ---------------------------------------------------------------------------
-const INITIAL_QUEUE_ITEMS = isDemoSeedEnabled() ? DEMO_INITIAL_QUEUE_ITEMS : [];

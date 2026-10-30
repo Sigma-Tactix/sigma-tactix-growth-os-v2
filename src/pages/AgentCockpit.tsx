@@ -1221,7 +1221,7 @@ export default function AgentCockpit() {
 
                       {/* Console Trace Log */}
                       <div className="bg-black/70 p-3 rounded-xl border border-white/10 font-mono text-[11px] text-zinc-400 space-y-1 max-h-36 overflow-y-auto">
-                        <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Raw Trace Stream</div>
+                        <div className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Raw Trace Stream</div>
                         {liveSimRun.traceLog.map((log, i) => (
                           <div key={i} className="text-zinc-300">{log}</div>
                         ))}
@@ -1384,9 +1384,9 @@ export default function AgentCockpit() {
                 size="xs"
                 onClick={handleBatchPauseToggle}
                 icon={agents.filter(a => selectedAgentIds.includes(a.id)).every(a => a.status === 'PAUSED') ? (
-                  <PlayCircle size={13} className="text-emerald-400" />
+                  <PlayCircle size={13} className="text-emerald-accent" />
                 ) : (
-                  <PauseCircle size={13} className="text-amber-400" />
+                  <PauseCircle size={13} className="text-amber-accent" />
                 )}
               >
                 {agents.filter(a => selectedAgentIds.includes(a.id)).every(a => a.status === 'PAUSED') ? 'Resume' : 'Pause'}
@@ -1397,7 +1397,7 @@ export default function AgentCockpit() {
                 size="xs"
                 onClick={handleBatchSync}
                 disabled={isBatchSyncing}
-                icon={<RefreshCw size={13} className={cn("text-sky-400", isBatchSyncing && "animate-spin")} />}
+                icon={<RefreshCw size={13} className={cn("text-sky-accent", isBatchSyncing && "animate-spin")} />}
               >
                 {isBatchSyncing ? 'Syncing...' : 'Sync Knowledge'}
               </Button>
@@ -1416,7 +1416,7 @@ export default function AgentCockpit() {
                 size="xs"
                 onClick={handleBatchBenchmark}
                 className="hidden sm:flex"
-                icon={<Zap size={13} className="text-amber-400" />}
+                icon={<Zap size={13} className="text-amber-accent" />}
               >
                 Benchmark
               </Button>
@@ -1445,3 +1445,4 @@ export default function AgentCockpit() {
     </div>
   );
 }
+
