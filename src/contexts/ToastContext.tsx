@@ -311,7 +311,7 @@ function ToastCard({
           <div className="flex items-center gap-2 mb-1">
             {toast.category && (
               <span className={cn(
-                "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-black border tracking-wider",
+                "text-[11px] font-mono uppercase px-2 py-0.5 rounded font-black border tracking-wider",
                 getCategoryBadge()
               )}>
                 {toast.category === 'BACKUP' ? 'Second Brain Backup' :

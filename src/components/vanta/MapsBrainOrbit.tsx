@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import {
   Copy,
   ExternalLink,
@@ -25,10 +25,13 @@ import {
 import {
   buildMapsBrainGraph,
   MAPS_BRAIN_VIEWS,
+  type MapsBrainGraph,
   type MapsBrainKind,
   type MapsBrainNode,
   type MapsBrainView,
 } from '@/src/lib/mapsBrainOrbit';
+
+const SecondBrainOrbit3D = lazy(() => import('./SecondBrainOrbit3D'));
 
 const KIND_LABEL: Record<MapsBrainKind, string> = {
   root: 'Core',
@@ -74,7 +77,7 @@ function NodeGlyph({ node, point, selected }: { node: MapsBrainNode; point: Maps
       </>
     );
   }
-  if (node.kind === 'skill') {
+  if (node.kind === 'skill' || node.kind === 'memory') {
     return <rect x={point.x - size} y={point.y - size} width={size * 2} height={size * 2} rx="0.7" fill={color} transform={`rotate(45 ${point.x} ${point.y})`} />;
   }
   if (node.kind === 'routine') {
@@ -118,16 +121,17 @@ function formatDay(day: string) {
     : day;
 }
 
-export default function MapsBrainOrbit() {
+export default function MapsBrainOrbit({ graph: suppliedGraph }: { graph?: MapsBrainGraph } = {}) {
   const shellRef = useRef<HTMLDivElement>(null);
   const lastFrameRef = useRef(0);
-  const [view, setView] = useState<MapsBrainView>('rings');
+  const [view, setView] = useState<MapsBrainView>(suppliedGraph ? 'areas' : 'rings');
   const [query, setQuery] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | MapsBrainKind>('all');
   const [areaFilter, setAreaFilter] = useState('all');
   const [showNames, setShowNames] = useState(false);
   const [motion, setMotion] = useState(() => typeof window === 'undefined' || !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   const [rotation, setRotation] = useState(0);
+  const [sceneRevision, setSceneRevision] = useState(0);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [copiedNodeId, setCopiedNodeId] = useState<string | null>(null);
@@ -136,13 +140,14 @@ export default function MapsBrainOrbit() {
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches);
 
   const graph = useMemo(() => {
+    if (suppliedGraph) return suppliedGraph;
     const { nodes, dependencies } = getLivingSystemGraph();
     return buildMapsBrainGraph(nodes, dependencies);
-  }, []);
+  }, [suppliedGraph]);
   const areas = useMemo(() => areaSummary(graph), [graph]);
 
   useEffect(() => {
-    if (!motion || view !== 'orbit') return;
+    if (!motion || view !== 'orbit' || suppliedGraph) return;
     let frame = 0;
     const animate = (now: number) => {
       if (now - lastFrameRef.current >= 33) {
@@ -154,7 +159,7 @@ export default function MapsBrainOrbit() {
     lastFrameRef.current = performance.now();
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, [motion, view]);
+  }, [motion, view, suppliedGraph]);
 
   useEffect(() => {
     const update = () => setIsFullscreen(document.fullscreenElement === shellRef.current);
@@ -223,7 +228,7 @@ export default function MapsBrainOrbit() {
     setCamera({ cx: point.x, cy: point.y, zoom: 1.85 });
   };
 
-  const fitView = () => setCamera(FIT_CAMERA);
+  const fitView = () => { setCamera(FIT_CAMERA); setSceneRevision(value => value + 1); };
   const reset = () => {
     setQuery('');
     setKindFilter('all');
@@ -268,7 +273,7 @@ export default function MapsBrainOrbit() {
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Brain map view">
             {MAPS_BRAIN_VIEWS.map(option => (
-              <button key={option.id} type="button" role="tab" aria-selected={view === option.id} onClick={() => selectView(option.id)} className={`shrink-0 border-b px-2 py-1 text-[9px] uppercase tracking-[0.16em] transition ${view === option.id ? 'border-orange-400 text-orange-200' : 'border-transparent text-zinc-600 hover:text-zinc-300'}`}>
+              <button key={option.id} type="button" role="tab" aria-selected={view === option.id} onClick={() => selectView(option.id)} className={`shrink-0 border-b px-2 py-1 text-[11px] uppercase tracking-[0.16em] transition ${view === option.id ? 'border-orange-400 text-orange-200' : 'border-transparent text-zinc-600 hover:text-zinc-300'}`}>
                 {option.label}
               </button>
             ))}
@@ -278,12 +283,12 @@ export default function MapsBrainOrbit() {
               <label>
                 <span className="sr-only">Search system map</span>
                 <Search size={11} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input value={query} onChange={event => setQuery(event.target.value)} placeholder="label, path, note" className="w-full border border-white/[0.08] bg-black/20 py-1 pl-6 pr-2 text-[9px] text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-orange-400/50" />
+                <input value={query} onChange={event => setQuery(event.target.value)} placeholder="label, path, note" className="w-full border border-white/[0.08] bg-black/20 py-1 pl-6 pr-2 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-orange-400/50" />
               </label>
               {searchResults.length > 0 && (
                 <div className="absolute right-0 top-[calc(100%+5px)] w-64 border border-white/[0.1] bg-[#090b0e]/98 p-1 shadow-2xl">
                   {searchResults.map(node => (
-                    <button key={node.id} type="button" onClick={() => { flyTo(node.id); setQuery(''); }} className="flex w-full items-center justify-between gap-3 px-2 py-1.5 text-left text-[9px] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100">
+                    <button key={node.id} type="button" onClick={() => { flyTo(node.id); setQuery(''); }} className="flex w-full items-center justify-between gap-3 px-2 py-1.5 text-left text-[11px] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100">
                       <span className="truncate">{node.label}</span><span className="shrink-0 text-[7px] uppercase text-zinc-700">{KIND_LABEL[node.kind]}</span>
                     </button>
                   ))}
@@ -319,7 +324,7 @@ export default function MapsBrainOrbit() {
         </div>
       </header>
 
-      <svg viewBox={viewBox} className="absolute inset-0 z-10 h-full w-full" role="img" aria-label={`${view} view of the configured system map`}>
+      {view === 'orbit' && suppliedGraph ? <div className="absolute inset-x-0 bottom-8 top-36"><Suspense fallback={<p role="status">Loading 3D orbit…</p>}><SecondBrainOrbit3D key={sceneRevision} graph={graph} matchingIds={matchingIds} selectedId={selectedNodeId} onSelect={setSelectedNodeId} motion={motion} showNames={showNames} /></Suspense></div> : <svg viewBox={viewBox} className="absolute inset-0 z-10 h-full w-full" role="img" aria-label={`${view} view of the ${suppliedGraph ? 'workspace document' : 'configured system'} map`}>
         <defs>
           <radialGradient id="mapsCoreGlow"><stop offset="0%" stopColor="#FFCCB1" /><stop offset="32%" stopColor="#FF6B2C" /><stop offset="100%" stopColor="#FF481B" stopOpacity="0" /></radialGradient>
           <filter id="mapsSelectedGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -397,10 +402,10 @@ export default function MapsBrainOrbit() {
         })}
 
         <CoreOrb motion={motion && view === 'orbit'} />
-        <text x={MAPS_FRAME.cx} y="618" textAnchor="middle" fill="rgba(255,255,255,.20)" fontSize="6.5" letterSpacing="1.4">SAME GOVERNED GRAPH · SIX STRUCTURAL PROJECTIONS</text>
-      </svg>
+        <text x={MAPS_FRAME.cx} y="618" textAnchor="middle" fill="rgba(255,255,255,.20)" fontSize="6.5" letterSpacing="1.4">{suppliedGraph ? 'WORKSPACE DOCUMENTS · SAME CATEGORIES IN 2D & 3D' : 'SAME GOVERNED GRAPH · SIX STRUCTURAL PROJECTIONS'}</text>
+      </svg>}
 
-      <div className="pointer-events-none absolute bottom-4 left-4 z-20 hidden text-[8px] uppercase tracking-[0.17em] text-zinc-700 sm:block">Configured graph · no runtime activity implied</div>
+      <div className="pointer-events-none absolute bottom-4 left-4 z-20 hidden text-[8px] uppercase tracking-[0.17em] text-zinc-700 sm:block">{suppliedGraph ? 'Workspace index · no agent activity implied' : 'Configured graph · no runtime activity implied'}</div>
 
       {selectedNode && (
         <aside className="absolute bottom-4 right-4 z-30 w-[min(300px,calc(100%-2rem))] border border-white/[0.11] bg-[#090b0e]/96 p-3 shadow-2xl backdrop-blur-xl" aria-label="Selected map node">
@@ -410,9 +415,9 @@ export default function MapsBrainOrbit() {
           </div>
           {selectedNode.note && <p className="mt-2 line-clamp-3 text-[10px] leading-relaxed text-zinc-500">{selectedNode.note}</p>}
           {selectedNode.path && <p className="mt-2 truncate border-l border-white/[0.08] pl-2 text-[8px] text-zinc-600">{selectedNode.path}</p>}
-          <div className="mt-3 flex items-center justify-between border-t border-white/[0.08] pt-2 text-[9px]"><span className="text-zinc-600">Configured relationships</span><span className="text-zinc-300">{selectedNode.degree}</span></div>
+          <div className="mt-3 flex items-center justify-between border-t border-white/[0.08] pt-2 text-[11px]"><span className="text-zinc-600">Configured relationships</span><span className="text-zinc-300">{selectedNode.degree}</span></div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <button type="button" onClick={() => flyTo(selectedNode.id)} className="inline-flex items-center gap-1 border border-white/[0.08] px-2 py-1 text-[8px] uppercase tracking-wider text-zinc-400 hover:text-white"><LocateFixed size={9} /> Fly to</button>
+            {!(view === 'orbit' && suppliedGraph) && <button type="button" onClick={() => flyTo(selectedNode.id)} className="inline-flex items-center gap-1 border border-white/[0.08] px-2 py-1 text-[8px] uppercase tracking-wider text-zinc-400 hover:text-white"><LocateFixed size={9} /> Fly to</button>}
             {selectedNode.path && <button type="button" onClick={() => void copyPath(selectedNode)} className="inline-flex items-center gap-1 border border-white/[0.08] px-2 py-1 text-[8px] uppercase tracking-wider text-zinc-400 hover:text-white"><Copy size={9} /> {copiedNodeId === selectedNode.id ? 'Copied' : 'Copy path'}</button>}
             {selectedNode.path && <a href={selectedNode.path} className="inline-flex items-center gap-1 border border-orange-400/20 px-2 py-1 text-[8px] uppercase tracking-wider text-orange-300 hover:text-orange-200"><ExternalLink size={9} /> Open</a>}
           </div>

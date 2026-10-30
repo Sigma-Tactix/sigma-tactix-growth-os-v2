@@ -45,7 +45,7 @@ export default function VantaTranscriptDrawer({ embedded = false }: { embedded?:
               <div className="mt-3 space-y-1.5 border-t border-white/10 pt-3">
                 {message.evidence.map(evidence => (
                   <a key={evidence.id} href={evidence.href || undefined} target={evidence.href ? '_blank' : undefined} rel="noreferrer" className={`flex items-start justify-between gap-2 rounded-xl border border-white/5 bg-black/25 p-2 text-xs ${evidence.href ? 'hover:border-orange-400/30' : 'cursor-default'}`}>
-                    <span><span className="mr-2 rounded bg-white/5 px-1.5 py-0.5 text-[9px] uppercase text-orange-200">{SOURCE_LABELS[evidence.sourceType]}</span><span className="text-zinc-300">{evidence.title}</span></span>
+                    <span><span className="mr-2 rounded bg-white/5 px-1.5 py-0.5 text-[11px] uppercase text-orange-200">{SOURCE_LABELS[evidence.sourceType]}</span><span className="text-zinc-300">{evidence.title}</span></span>
                     {evidence.href && <ExternalLink size={12} className="mt-0.5 shrink-0 text-zinc-500" />}
                   </a>
                 ))}

@@ -788,7 +788,7 @@ ${currentPrompt.subAgents.map(sa => `### ${sa.name} (${sa.codename})\n- **Design
                     <span className="font-mono text-xs font-black text-accent tracking-wider">
                       {agent.codename}
                     </span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/40 text-zinc-400 border border-white/5">
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-black/40 text-zinc-400 border border-white/5">
                       {agent.subAgents.length} Sub-Agents
                     </span>
                   </div>
@@ -972,7 +972,7 @@ ${currentPrompt.subAgents.map(sa => `### ${sa.name} (${sa.codename})\n- **Design
                 <div key={sub.id} className="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white">{sub.name}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accent font-mono text-[9px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accent font-mono text-[11px] font-bold">
                       {sub.codename}
                     </span>
                   </div>
@@ -980,7 +980,7 @@ ${currentPrompt.subAgents.map(sa => `### ${sa.name} (${sa.codename})\n- **Design
                     {sub.designatedTask}
                   </p>
                   <div className="pt-2 border-t border-white/5">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase block">Directive:</span>
+                    <span className="text-[11px] font-mono text-zinc-500 uppercase block">Directive:</span>
                     <span className="text-[10px] font-mono text-zinc-300 italic line-clamp-2">
                       "{sub.specializedPrompt}"
                     </span>

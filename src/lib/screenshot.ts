@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { inspectArtifactBytes } from "./artifactInspection";
 
 // Real screenshot capture for the UI/UX Audit Lab — replaces the hardcoded
 // Unsplash stock photos that findings cards used to show regardless of what
@@ -20,10 +21,21 @@ export interface AuditScreenshots {
   fullPage: string | null;
 }
 
+/** The two renderings a proposed landing artifact must retain before approval. */
+export interface LandingArtifactPreviews {
+  desktop: string | null;
+  mobile: string | null;
+}
+
 interface CapturedBuffers {
   desktop: Buffer | null;
   mobile: Buffer | null;
   fullPage: Buffer | null;
+}
+
+interface LandingArtifactPreviewBuffers {
+  desktop: Buffer | null;
+  mobile: Buffer | null;
 }
 
 // Bounded concurrency. Each Chromium instance is roughly 400 MB resident, and
@@ -103,6 +115,40 @@ async function captureBuffers(url: string, timeoutMs: number): Promise<CapturedB
   }
 }
 
+/**
+ * Render generated, trusted proposal HTML at the same desktop/mobile sizes
+ * used for source capture. This is intentionally separate from URL capture:
+ * a preview is proof that the stored artifact rendered, not a screenshot of
+ * an arbitrary remote page.
+ */
+async function renderLandingArtifactBuffers(html: string, timeoutMs: number): Promise<LandingArtifactPreviewBuffers> {
+  return withBrowserSlot(async () => {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const result: LandingArtifactPreviewBuffers = { desktop: null, mobile: null };
+      const desktopCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      try {
+        const page = await desktopCtx.newPage();
+        await page.setContent(html, { waitUntil: "networkidle", timeout: timeoutMs });
+        result.desktop = await page.screenshot({ type: "jpeg", quality: 75, fullPage: true });
+      } finally {
+        await desktopCtx.close();
+      }
+      const mobileCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      try {
+        const page = await mobileCtx.newPage();
+        await page.setContent(html, { waitUntil: "networkidle", timeout: timeoutMs });
+        result.mobile = await page.screenshot({ type: "jpeg", quality: 75, fullPage: true });
+      } finally {
+        await mobileCtx.close();
+      }
+      return result;
+    } finally {
+      await browser.close();
+    }
+  });
+}
+
 // Signed-URL lifetime. Long, because the URL is persisted alongside the audit
 // and the audit is a durable record the client revisits; re-running the audit
 // regenerates all three. The tradeoff is deliberate and low-stakes: a leaked
@@ -132,6 +178,10 @@ export async function captureAndStoreAuditScreenshots(
   for (const kind of ["desktop", "mobile", "fullPage"] as const) {
     const buf = buffers[kind];
     if (!buf) continue;
+    if (!inspectArtifactBytes({ kind: "jpeg-preview", bytes: buf }).valid) {
+      console.error(`Refusing invalid ${kind} audit screenshot bytes.`);
+      continue;
+    }
     const path = `${workspaceId}/uiux-audits/${stamp}-${kind}.jpg`;
     try {
       const { error: uploadErr } = await sb.storage
@@ -149,5 +199,44 @@ export async function captureAndStoreAuditScreenshots(
     }
   }
 
+  return result;
+}
+
+/**
+ * Persist previews for a generated landing-page artifact. Preview persistence
+ * is part of artifact creation: if either rendition cannot be stored, callers
+ * receive null and the artifact contract refuses approval.
+ */
+export async function renderAndStoreLandingArtifactPreviews(
+  sb: SupabaseClient,
+  workspaceId: string,
+  artifactId: string,
+  html: string,
+  timeoutMs = 20000,
+): Promise<LandingArtifactPreviews> {
+  const buffers = await renderLandingArtifactBuffers(html, timeoutMs);
+  const result: LandingArtifactPreviews = { desktop: null, mobile: null };
+  for (const kind of ["desktop", "mobile"] as const) {
+    const buffer = buffers[kind];
+    if (!buffer) continue;
+    if (!inspectArtifactBytes({ kind: "jpeg-preview", bytes: buffer }).valid) {
+      console.error(`Refusing invalid proposed ${kind} landing preview bytes.`);
+      continue;
+    }
+    const storagePath = `${workspaceId}/landing-artifacts/${artifactId}/proposed-${kind}.jpg`;
+    try {
+      const { error: uploadError } = await sb.storage
+        .from("vault-files")
+        .upload(storagePath, buffer, { contentType: "image/jpeg", upsert: true });
+      if (uploadError) throw uploadError;
+      const { data, error: signError } = await sb.storage
+        .from("vault-files")
+        .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+      if (signError) throw signError;
+      result[kind] = data?.signedUrl ?? null;
+    } catch (error) {
+      console.error(`Failed to persist proposed ${kind} landing preview:`, error);
+    }
+  }
   return result;
 }

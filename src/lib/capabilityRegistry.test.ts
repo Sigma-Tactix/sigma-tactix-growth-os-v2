@@ -24,7 +24,7 @@ describe('Growth OS capability registry', () => {
     expect(registry.capabilities).toContainEqual(expect.objectContaining({
       id: 'mcp-growth-1',
       kind: 'mcp',
-      state: 'enabled',
+      state: 'declared',
       configured: false,
       reachable: false,
       verified: false,
@@ -68,7 +68,7 @@ describe('Growth OS capability registry', () => {
       detail: 'API key is configured; no provider request has been verified in this process.',
     }]);
     expect(registry.capabilities.find(item => item.id === 'provider-tinyfish')).toMatchObject({
-      state: 'configured', configured: true, reachable: false, verified: false,
+      state: 'authenticated', configured: true, reachable: false, verified: false,
     });
   });
 });

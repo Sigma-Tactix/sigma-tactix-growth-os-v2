@@ -66,7 +66,7 @@ export default function VantaTopologyPanel() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-bold text-zinc-200">{node.label}</span>
-                  <div className="mt-0.5 flex gap-2 text-[9px] font-mono uppercase tracking-wider text-zinc-500"><span>{node.kind}</span><span>·</span><span>{node.status.replace('_', ' ')}</span></div>
+                  <div className="mt-0.5 flex gap-2 text-[11px] font-mono uppercase tracking-wider text-zinc-500"><span>{node.kind}</span><span>·</span><span>{node.status.replace('_', ' ')}</span></div>
                 </div>
                 <ChevronRight size={13} className="text-zinc-600" />
               </div>

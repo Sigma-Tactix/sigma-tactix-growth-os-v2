@@ -1,7 +1,8 @@
 import type { WorkspaceData } from '../types';
 import type { DecisionRuntimeStatus } from './decisionEngine';
 
-export type CapabilityState = 'declared' | 'enabled' | 'configured' | 'reachable' | 'verified' | 'failed';
+/** A catalogue toggle is deliberately not a capability state. */
+export type CapabilityState = 'declared' | 'installed' | 'authenticated' | 'reachable' | 'verified' | 'degraded' | 'unavailable';
 export type CapabilityKind = 'mcp' | 'connector' | 'provider';
 
 export interface GrowthCapabilityStatus {
@@ -37,12 +38,14 @@ export interface ExternalProviderCapability {
 function connectorCapability(connector: WorkspaceData['secondBrain']['connectors'][number]): GrowthCapabilityStatus {
   const verification = connector.verificationState;
   const verified = verification === 'verified' && connector.status === 'Connected';
-  const failed = verification === 'failed' || verification === 'unsupported';
-  const configured = verified || verification === 'configured' || failed || Boolean(connector.credentials?.encrypted);
-  const state: CapabilityState = failed ? 'failed' : verified ? 'verified' : configured ? 'configured' : 'declared';
+  const unavailable = verification === 'unsupported';
+  const degraded = verification === 'failed';
+  const configured = verified || verification === 'configured' || degraded || unavailable || Boolean(connector.credentials?.encrypted);
+  const authenticated = !verified && !degraded && !unavailable && Boolean(connector.credentials?.encrypted);
+  const state: CapabilityState = unavailable ? 'unavailable' : degraded ? 'degraded' : verified ? 'verified' : authenticated ? 'authenticated' : 'declared';
   const evidence = verified
     ? [`Provider handshake succeeded${connector.verifiedAt ? ` at ${connector.verifiedAt}` : ''}.`]
-    : failed
+    : unavailable || degraded
       ? [connector.verificationError || 'Provider verification failed or is unsupported.']
       : configured
         ? ['Credentials or configuration exist, but no current provider verification is recorded.']
@@ -72,7 +75,7 @@ function layaCapability(status: DecisionRuntimeStatus): GrowthCapabilityStatus {
     name: 'Laya Decision Core',
     kind: 'provider',
     moduleKey: 'decision',
-    state: failed ? 'failed' : verified ? 'verified' : status.reachable ? 'reachable' : status.configured ? 'configured' : 'declared',
+    state: failed ? 'degraded' : verified ? 'verified' : status.reachable ? 'reachable' : status.configured ? 'installed' : 'declared',
     declared: true,
     enabled: status.configured,
     configured: status.configured,
@@ -98,7 +101,10 @@ export function buildCapabilityRegistry(
       name: mcp.name,
       kind: 'mcp' as const,
       moduleKey: mcp.moduleKey || 'unassigned',
-      state: mcp.enabled ? 'enabled' as const : 'declared' as const,
+      // An enabled catalogue row cannot prove a local process, authentication,
+      // or a successful call, so it remains declared until a transport is
+      // registered and verified.
+      state: 'declared' as const,
       declared: true as const,
       enabled: mcp.enabled,
       configured: false,
@@ -112,7 +118,7 @@ export function buildCapabilityRegistry(
     ...(workspace.secondBrain?.connectors ?? []).map(connectorCapability),
     {
       id: 'provider-tinyfish', name: 'TinyFish Web Intelligence', kind: 'provider', moduleKey: 'web-intelligence',
-      state: tinyfish?.verified ? 'verified' : tinyfish?.configured ? 'configured' : 'declared',
+      state: tinyfish?.verified ? 'verified' : tinyfish?.configured ? 'authenticated' : 'declared',
       declared: true, enabled: Boolean(tinyfish?.configured), configured: Boolean(tinyfish?.configured),
       reachable: Boolean(tinyfish?.verified), verified: Boolean(tinyfish?.verified),
       automationEligible: false,
@@ -120,7 +126,7 @@ export function buildCapabilityRegistry(
     },
     {
       id: 'provider-mirofish', name: 'MiroFish Market Simulation', kind: 'provider', moduleKey: 'market-simulation',
-      state: mirofish?.verified ? 'verified' : mirofish?.configured ? 'configured' : 'declared',
+      state: mirofish?.verified ? 'verified' : mirofish?.configured ? 'authenticated' : 'unavailable',
       declared: true, enabled: Boolean(mirofish?.configured), configured: Boolean(mirofish?.configured),
       reachable: Boolean(mirofish?.verified), verified: Boolean(mirofish?.verified),
       automationEligible: false,
@@ -131,11 +137,12 @@ export function buildCapabilityRegistry(
 
   const summary: Record<CapabilityState, number> = {
     declared: 0,
-    enabled: 0,
-    configured: 0,
+    installed: 0,
+    authenticated: 0,
     reachable: 0,
     verified: 0,
-    failed: 0,
+    degraded: 0,
+    unavailable: 0,
   };
   for (const capability of capabilities) summary[capability.state] += 1;
   return { generatedAt: now, capabilities, summary };

@@ -219,7 +219,7 @@ export default function VantaPreviewLab() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold tracking-wider text-white uppercase">VANTA</h1>
-              <span className="rounded-full bg-gradient-to-r from-[var(--sigma-vermilion)] to-orange-500 px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
+              <span className="rounded-full bg-gradient-to-r from-[var(--sigma-vermilion)] to-orange-500 px-2 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
                 Visual Lab
               </span>
             </div>
@@ -427,7 +427,7 @@ export default function VantaPreviewLab() {
                 <div className="p-3.5 border-b border-orange-500/30 bg-orange-500/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <span
-                      className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded"
+                      className="text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded"
                       style={{ backgroundColor: `${selectedFile.vaultColor}25`, color: selectedFile.vaultColor }}
                     >
                       {selectedFile.vault}
@@ -481,7 +481,7 @@ export default function VantaPreviewLab() {
                             >
                               <div className="min-w-0 flex-1 pr-2">
                                 <span className="block truncate font-medium text-[11px]">{file.name}</span>
-                                <span className="text-[9px] font-mono text-zinc-500">{file.size}</span>
+                                <span className="text-[11px] font-mono text-zinc-500">{file.size}</span>
                               </div>
                               <ChevronRight size={12} className="text-zinc-600 flex-shrink-0" />
                             </button>
@@ -676,7 +676,7 @@ export default function VantaPreviewLab() {
                         <span className="block text-xs font-medium text-white truncate">{agent.name}</span>
                         <span className="text-[10px] text-zinc-500">{agent.role}</span>
                       </div>
-                      <span className="text-[9px] font-mono uppercase text-zinc-500">{botState}</span>
+                      <span className="text-[11px] font-mono uppercase text-zinc-500">{botState}</span>
                     </div>
                   );
                 })}

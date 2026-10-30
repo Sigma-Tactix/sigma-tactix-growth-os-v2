@@ -14,28 +14,28 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 const variantStyles: Record<BadgeVariant, { container: string; dot: string }> = {
   brand: {
-    container: 'bg-[#ff481b]/10 text-[#ff481b] border-[#ff481b]/25',
-    dot: 'bg-[#ff481b]',
+    container: 'bg-[var(--sigma-primary-subtle)] text-[var(--sigma-accent)] border-[var(--sigma-primary)]/25',
+    dot: 'bg-[var(--sigma-primary)]',
   },
   vermilion: {
-    container: 'bg-[#ff481b]/10 text-[#ff481b] border-[#ff481b]/25',
-    dot: 'bg-[#ff481b]',
+    container: 'bg-[var(--sigma-primary-subtle)] text-[var(--sigma-accent)] border-[var(--sigma-primary)]/25',
+    dot: 'bg-[var(--sigma-primary)]',
   },
   success: {
-    container: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-    dot: 'bg-emerald-400',
+    container: 'bg-emerald-500/10 text-emerald-accent border-emerald-500/25',
+    dot: 'bg-[var(--sigma-accent-emerald)]',
   },
   warning: {
-    container: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
-    dot: 'bg-amber-400',
+    container: 'bg-amber-500/10 text-amber-accent border-amber-500/25',
+    dot: 'bg-[var(--sigma-accent-amber)]',
   },
   danger: {
-    container: 'bg-rose-500/10 text-rose-400 border-rose-500/25',
-    dot: 'bg-rose-400',
+    container: 'bg-rose-500/10 text-rose-accent border-rose-500/25',
+    dot: 'bg-[var(--sigma-accent-rose)]',
   },
   info: {
-    container: 'bg-sky-500/10 text-sky-400 border-sky-500/25',
-    dot: 'bg-sky-400',
+    container: 'bg-sky-500/10 text-cyan-accent border-sky-500/25',
+    dot: 'bg-[var(--sigma-accent-cyan)]',
   },
   neutral: {
     container: 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-soft)] border-[var(--sigma-border)]',

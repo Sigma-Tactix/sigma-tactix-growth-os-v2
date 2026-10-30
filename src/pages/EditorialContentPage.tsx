@@ -396,7 +396,7 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
                   onClick={handleCopy}
                   variant="outline"
                   size="xs"
-                  icon={copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  icon={copied ? <Check className="w-3.5 h-3.5 text-emerald-accent" /> : <Copy className="w-3.5 h-3.5" />}
                 >
                   {copied ? 'Copied' : 'Copy Markdown'}
                 </Button>
@@ -429,14 +429,14 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
                       className="w-14 h-9 object-cover rounded-lg border border-amber-500/30 shrink-0" 
                     />
                   ) : (
-                    <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 shrink-0">
+                    <div className="p-2 rounded-lg bg-amber-500/20 text-amber-accent shrink-0">
                       <Globe className="w-4 h-4" />
                     </div>
                   )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-white text-xs line-clamp-1">{repurposedMeta.sourceTitle || 'External Source'}</span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-400/20 text-amber-300 shrink-0">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-400/20 text-amber-accent shrink-0">
                         {repurposedMeta.sourceUrl.includes('youtube') ? 'YouTube Video Ingestion' : 'Web Ingestion'}
                       </span>
                     </div>
@@ -486,7 +486,7 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
             {/* Quality Footer */}
             <div className="mt-4 pt-4 border-t border-[var(--sigma-border)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--sigma-muted)]">
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-emerald-500">
+                <span className="flex items-center gap-1.5 text-emerald-accent">
                   <CheckCircle2 className="w-4 h-4" /> 0 AI Clichés Detected
                 </span>
                 <span className="flex items-center gap-1.5 text-[var(--sigma-text)]">
@@ -657,3 +657,4 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
     </div>
   );
 }
+

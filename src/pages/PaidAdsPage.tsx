@@ -487,9 +487,7 @@ export default function PaidAdsPage() {
       if (/\.(csv|txt|md|json)$/i.test(file.name)) {
         sourceText = await file.text();
       } else if (/\.xlsx?$/i.test(file.name)) {
-        const XLSX = await import('xlsx');
-        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-        sourceText = workbook.SheetNames.map(sheet => XLSX.utils.sheet_to_csv(workbook.Sheets[sheet])).join('\n');
+        throw new Error('Spreadsheet uploads are temporarily unavailable while the workbook parser is under security remediation. Upload CSV instead.');
       } else {
         const formData = new FormData();
         formData.append('file', file);
@@ -781,7 +779,7 @@ export default function PaidAdsPage() {
             variant="secondary"
             size="sm"
             onClick={() => notifyInfo('Safety Gate Verified', 'Vortex-02 is strictly bound by the $1,000/day autonomous shift cap. Excess shifts route to Admin HITL queue.')}
-            icon={<ShieldCheck size={13} className="text-emerald-400" />}
+            icon={<ShieldCheck size={13} className="text-emerald-accent" />}
           >
             HITL Cap: $1,000/day
           </Button>
@@ -809,7 +807,7 @@ export default function PaidAdsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white font-heading">Client Brief & Strategic Growth Context</h3>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px]">
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
                   Verified Context Active
                 </span>
               </div>
@@ -852,12 +850,12 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <Building2 size={14} /> Client Business Brief
                     </span>
-                    <span className="text-[10px] text-zinc-500 uppercase">Profile</span>
+                    <span className="text-[11px] text-zinc-500 uppercase">Profile</span>
                   </div>
                   {isEditingBrief ? (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <label className="text-[10px] text-zinc-400 uppercase font-mono">Business Overview</label>
+                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Business Overview</label>
                         <textarea
                           rows={2}
                           value={clientBrief.businessOverview}
@@ -866,7 +864,7 @@ export default function PaidAdsPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-zinc-400 uppercase font-mono">Current Market Position</label>
+                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Current Market Position</label>
                         <input
                           type="text"
                           value={clientBrief.currentPosition}
@@ -878,15 +876,15 @@ export default function PaidAdsPage() {
                   ) : (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <div className="text-[10px] text-zinc-500 font-mono uppercase">Overview & Value Prop</div>
+                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Overview & Value Prop</div>
                         <p className="text-zinc-200 mt-0.5 leading-relaxed text-[11px]">{clientBrief.businessOverview}</p>
                       </div>
                       <div>
-                        <div className="text-[10px] text-zinc-500 font-mono uppercase">Competitive Position</div>
+                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Competitive Position</div>
                         <p className="text-zinc-400 mt-0.5 text-[11px]">{clientBrief.currentPosition}</p>
                       </div>
                       <div>
-                        <div className="text-[10px] text-zinc-500 font-mono uppercase">Active Marketing Footprint</div>
+                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Active Marketing Footprint</div>
                         <p className="text-zinc-400 mt-0.5 text-[11px]">{clientBrief.marketingActivities}</p>
                       </div>
                     </div>
@@ -899,14 +897,14 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <DollarSign size={14} /> Budget & Targets
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
                       Pacing: 100%
                     </span>
                   </div>
                   {isEditingBrief ? (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <label className="text-[10px] text-zinc-400 uppercase font-mono">Monthly Budget Ceiling ($)</label>
+                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Monthly Budget Ceiling ($)</label>
                         <input
                           type="number"
                           value={clientBrief.targetBudget}
@@ -916,7 +914,7 @@ export default function PaidAdsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] text-zinc-400 uppercase font-mono">Target CAC ($)</label>
+                          <label className="text-[11px] text-zinc-400 uppercase font-mono">Target CAC ($)</label>
                           <input
                             type="number"
                             value={clientBrief.targetCac}
@@ -930,11 +928,11 @@ export default function PaidAdsPage() {
                     <div className="space-y-2 text-xs">
                       <div className="grid grid-cols-2 gap-2 p-2.5 bg-zinc-900/60 rounded-lg font-mono">
                         <div>
-                          <span className="text-[10px] text-zinc-500 uppercase">Monthly Budget</span>
+                          <span className="text-[11px] text-zinc-500 uppercase">Monthly Budget</span>
                           <div className="text-base font-bold text-white mt-0.5">${clientBrief.targetBudget.toLocaleString()}</div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-zinc-500 uppercase">Target CAC</span>
+                          <span className="text-[11px] text-zinc-500 uppercase">Target CAC</span>
                           <div className="text-base font-bold text-amber-400 mt-0.5">${clientBrief.targetCac}</div>
                         </div>
                       </div>
@@ -951,11 +949,11 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <Target size={14} /> Ideal Customer Profile (ICP)
                     </span>
-                    <span className="text-[10px] text-zinc-500 font-mono">B2B Core</span>
+                    <span className="text-[11px] text-zinc-500 font-mono">B2B Core</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-mono">ICP Criteria & Firmographics</label>
+                      <label className="text-[11px] text-zinc-400 uppercase font-mono">ICP Criteria & Firmographics</label>
                       <textarea
                         rows={3}
                         value={clientBrief.icpProfile}
@@ -966,13 +964,13 @@ export default function PaidAdsPage() {
                   ) : (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <div className="text-[10px] text-zinc-500 font-mono uppercase">Target Firmographics</div>
+                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Target Firmographics</div>
                         <p className="text-zinc-200 mt-0.5 leading-relaxed text-[11px]">{clientBrief.icpProfile}</p>
                       </div>
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] font-mono text-zinc-300">Stripe Stack</span>
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] font-mono text-zinc-300">Series A-C</span>
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] font-mono text-zinc-300">$5M-$50M ARR</span>
+                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">Stripe Stack</span>
+                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">Series A-C</span>
+                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">$5M-$50M ARR</span>
                       </div>
                     </div>
                   )}
@@ -984,13 +982,13 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <FileText size={14} /> RFP & Commercial Tenders
                     </span>
-                    <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-mono">
+                    <span className="text-[11px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-mono">
                       2 Tenders
                     </span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-mono">Active RFPs & Procurement Requirements</label>
+                      <label className="text-[11px] text-zinc-400 uppercase font-mono">Active RFPs & Procurement Requirements</label>
                       <textarea
                         rows={3}
                         value={clientBrief.rfpStatus}
@@ -1001,7 +999,7 @@ export default function PaidAdsPage() {
                   ) : (
                     <div className="space-y-2 text-xs">
                       <p className="text-zinc-200 leading-relaxed text-[11px]">{clientBrief.rfpStatus}</p>
-                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[10px] font-mono text-blue-300">
+                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[11px] font-mono text-blue-300">
                         Sovereign Vault requirements satisfied for both proposals.
                       </div>
                     </div>
@@ -1014,11 +1012,11 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <BarChart3 size={14} /> Historical Performance Context & Headwinds
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono">Q3 Grounded</span>
+                    <span className="text-[11px] text-emerald-400 font-mono">Q3 Grounded</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-mono">Performance Context & Dynamics</label>
+                      <label className="text-[11px] text-zinc-400 uppercase font-mono">Performance Context & Dynamics</label>
                       <textarea
                         rows={3}
                         value={clientBrief.historicalContext}
@@ -1031,15 +1029,15 @@ export default function PaidAdsPage() {
                       <p className="text-zinc-200 leading-relaxed text-[11px]">{clientBrief.historicalContext}</p>
                       <div className="grid grid-cols-3 gap-3 p-2 bg-zinc-900/60 rounded-lg font-mono text-center">
                         <div>
-                          <div className="text-[10px] text-zinc-500">Q3 BLENDED CAC</div>
+                          <div className="text-[11px] text-zinc-500">Q3 BLENDED CAC</div>
                           <div className="text-sm font-bold text-white mt-0.5">$48.20</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-zinc-500">Q3 BLENDED ROAS</div>
+                          <div className="text-[11px] text-zinc-500">Q3 BLENDED ROAS</div>
                           <div className="text-sm font-bold text-emerald-400 mt-0.5">5.12x</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-zinc-500">LTV : CAC RATIO</div>
+                          <div className="text-[11px] text-zinc-500">LTV : CAC RATIO</div>
                           <div className="text-sm font-bold text-amber-400 mt-0.5">4.2 : 1</div>
                         </div>
                       </div>
@@ -1087,7 +1085,7 @@ export default function PaidAdsPage() {
                 onClick={() => setIsUploadPlanModalOpen(true)}
                 icon={<Upload size={13} className="text-[#ff481b]" />}
               >
-                Upload Media Plan (.csv / .xlsx)
+                Upload Media Plan (.csv)
               </Button>
 
               <Button
@@ -1136,16 +1134,16 @@ export default function PaidAdsPage() {
 
                 <div className="grid grid-cols-3 gap-3 p-3 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)] text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Flight Budget:</span>
+                    <span className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Flight Budget:</span>
                     <div className="text-[var(--sigma-text)] font-semibold mt-0.5">${plan.totalBudget.toLocaleString()}</div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Target CAC:</span>
-                    <div className="text-amber-400 font-semibold mt-0.5">${plan.targetBlendedCac}</div>
+                    <span className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Target CAC:</span>
+                    <div className="text-amber-accent font-semibold mt-0.5">${plan.targetBlendedCac}</div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--sigma-text-muted)] uppercase">Target ROAS:</span>
-                    <div className="text-emerald-400 font-semibold mt-0.5">{plan.targetBlendedRoas}x</div>
+                    <span className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Target ROAS:</span>
+                    <div className="text-emerald-accent font-semibold mt-0.5">{plan.targetBlendedRoas}x</div>
                   </div>
                 </div>
 
@@ -1164,7 +1162,7 @@ export default function PaidAdsPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded font-mono text-[10px] font-bold">
+                  <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded font-mono text-[11px] font-bold">
                     EVIDENCE-BACKED TEMPLATES
                   </span>
                   <span className="text-zinc-500 text-xs">•</span>
@@ -1205,7 +1203,7 @@ export default function PaidAdsPage() {
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[11px] font-bold">
                           {tpl.industry}
                         </span>
                         <span className="text-xs font-mono text-zinc-400">
@@ -1219,22 +1217,22 @@ export default function PaidAdsPage() {
                       {/* Benchmarks Strip */}
                       <div className="grid grid-cols-3 gap-2 p-2.5 bg-black/40 rounded-xl border border-white/5 text-xs font-mono text-center">
                         <div>
-                          <span className="text-[10px] text-zinc-500">AVG CPC</span>
+                          <span className="text-[11px] text-zinc-500">AVG CPC</span>
                           <div className="font-bold text-white mt-0.5">{tpl.benchmarks.avgCpc}</div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-zinc-500">AVG CVR</span>
+                          <span className="text-[11px] text-zinc-500">AVG CVR</span>
                           <div className="font-bold text-emerald-400 mt-0.5">{tpl.benchmarks.avgCvr}</div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-zinc-500">TARGET ROAS</span>
+                          <span className="text-[11px] text-zinc-500">TARGET ROAS</span>
                           <div className="font-bold text-amber-400 mt-0.5">{tpl.targetBlendedRoas}x</div>
                         </div>
                       </div>
 
                       {/* Channel Allocation Breakdown with KPIs */}
                       <div className="space-y-2 pt-1">
-                        <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold">Channel Mix & Target KPIs:</div>
+                        <div className="text-[11px] font-mono text-zinc-400 uppercase font-bold">Channel Mix & Target KPIs:</div>
                         <div className="space-y-1.5">
                           {tpl.channelMix.map(cm => (
                             <div key={cm.channel} className="p-2 bg-black/30 rounded-lg border border-white/5 space-y-1">
@@ -1245,7 +1243,7 @@ export default function PaidAdsPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[11px] text-zinc-400 font-bold">{cm.weight}% Share</span>
-                                  <span className="text-[10px] text-emerald-400">CPA: {cm.cpa}</span>
+                                  <span className="text-[11px] text-emerald-400">CPA: {cm.cpa}</span>
                                 </div>
                               </div>
                               <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
@@ -1329,7 +1327,7 @@ export default function PaidAdsPage() {
               <form onSubmit={handleCreateCustomAudience} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] font-mono uppercase text-zinc-400">Audience Name</label>
+                    <label className="text-[11px] font-mono uppercase text-zinc-400">Audience Name</label>
                     <input
                       type="text"
                       value={customAudienceName}
@@ -1340,7 +1338,7 @@ export default function PaidAdsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono uppercase text-zinc-400">Persona & Title Target</label>
+                    <label className="text-[11px] font-mono uppercase text-zinc-400">Persona & Title Target</label>
                     <input
                       type="text"
                       value={customPersona}
@@ -1351,7 +1349,7 @@ export default function PaidAdsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono uppercase text-zinc-400">Total Addressable Market (TAM)</label>
+                    <label className="text-[11px] font-mono uppercase text-zinc-400">Total Addressable Market (TAM)</label>
                     <input
                       type="text"
                       value={customTam}
@@ -1365,7 +1363,7 @@ export default function PaidAdsPage() {
 
                 {/* Objective Selector (Demand Gen vs High Growth vs Executive ABM) */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono uppercase text-zinc-400">Stage Objective (Dictates Channel Combination)</label>
+                  <label className="text-[11px] font-mono uppercase text-zinc-400">Stage Objective (Dictates Channel Combination)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { id: 'DEMAND_GEN', label: 'Demand Gen & Awareness', desc: 'Discovery video & social (YouTube, Meta Video, LinkedIn Thought Leader)' },
@@ -1393,7 +1391,7 @@ export default function PaidAdsPage() {
                         )}
                       >
                         <div className="font-bold text-xs text-white">{obj.label}</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">{obj.desc}</div>
+                        <div className="text-[11px] text-zinc-500 mt-0.5">{obj.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -1401,7 +1399,7 @@ export default function PaidAdsPage() {
 
                 {/* Custom Channel Selector Checkboxes */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono uppercase text-zinc-400">Custom Channels (Select Digital Media Mix)</label>
+                  <label className="text-[11px] font-mono uppercase text-zinc-400">Custom Channels (Select Digital Media Mix)</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       'Google Search (High-Intent RSA)',
@@ -1433,7 +1431,7 @@ export default function PaidAdsPage() {
                           )}
                         >
                           <span className="text-[11px] truncate mr-1">{ch}</span>
-                          <span className={cn("text-[10px] px-1 rounded", isSelected ? "text-amber-400 font-bold" : "text-zinc-600")}>
+                          <span className={cn("text-[11px] px-1 rounded", isSelected ? "text-amber-400 font-bold" : "text-zinc-600")}>
                             {isSelected ? '✓' : '+'}
                           </span>
                         </button>
@@ -1460,7 +1458,7 @@ export default function PaidAdsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-mono uppercase text-zinc-400">Trigger Signals (Comma Separated)</label>
+                    <label className="text-[11px] font-mono uppercase text-zinc-400">Trigger Signals (Comma Separated)</label>
                     <input
                       type="text"
                       value={customSignals}
@@ -1502,10 +1500,10 @@ export default function PaidAdsPage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 font-mono text-[10px]">
+                    <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 font-mono text-[11px]">
                       TAM: {aud.tamEstimate}
                     </span>
-                    <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                    <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
                       <span>Intent Intensity:</span>
                       <span>{aud.intentScore}%</span>
                     </div>
@@ -1516,7 +1514,7 @@ export default function PaidAdsPage() {
 
                   {/* Intent Signals */}
                   <div className="space-y-1.5 pt-2 border-t border-white/5">
-                    <div className="text-[10px] font-mono text-muted uppercase font-bold">Detected Intent Signals:</div>
+                    <div className="text-[11px] font-mono text-muted uppercase font-bold">Detected Intent Signals:</div>
                     {aud.intentSignals.map((sig, i) => (
                       <div key={i} className="text-[11px] font-mono text-zinc-300 flex items-start gap-1.5">
                         <CheckCircle2 size={12} className="text-accent shrink-0 mt-0.5" />
@@ -1528,7 +1526,7 @@ export default function PaidAdsPage() {
 
                 {/* Primary Channels to Engage this Audience */}
                 <div className="pt-4 border-t border-white/5 space-y-2">
-                  <div className="text-[10px] font-mono text-muted uppercase font-bold">Recommended Channels & Affinity:</div>
+                  <div className="text-[11px] font-mono text-muted uppercase font-bold">Recommended Channels & Affinity:</div>
                   <div className="space-y-1.5">
                     {aud.primaryChannels.map((ch) => (
                       <div key={ch.channel} className="flex items-center justify-between text-xs font-mono">
@@ -1581,7 +1579,7 @@ export default function PaidAdsPage() {
                   Auto-Apply Researched Recommendations
                 </button>
                 <div className="text-right pl-3 border-l border-white/10">
-                  <div className="text-[10px] font-mono text-muted uppercase">Flight Spend:</div>
+                  <div className="text-[11px] font-mono text-muted uppercase">Flight Spend:</div>
                   <div className="text-xl font-black text-white font-mono">${flightBudget.toLocaleString()}</div>
                 </div>
               </div>
@@ -1627,7 +1625,7 @@ export default function PaidAdsPage() {
                       <div className="h-full rounded-full" style={{ width: `${ch.weight}%`, backgroundColor: ch.color }} />
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-1">
                       <span>Projected Reach: {Math.round((allocatedDollars * 18.5)).toLocaleString()} buyers</span>
                       <span>Target CPA: $38 - $55</span>
                       <span>Expected ROAS: 4.8x</span>
@@ -1815,7 +1813,7 @@ export default function PaidAdsPage() {
               <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-black/50 text-[10px] uppercase tracking-wider text-muted border-b border-white/10 font-bold">
+                    <thead className="bg-black/50 text-[11px] uppercase tracking-wider text-muted border-b border-white/10 font-bold">
                       <tr>
                         <th className="px-4 py-3.5">Campaign & Type</th>
                         <th className="px-4 py-3.5">Network</th>
@@ -1834,25 +1832,25 @@ export default function PaidAdsPage() {
                         <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3.5">
                             <div className="font-bold text-white text-xs truncate max-w-[180px]">{row.campaignName}</div>
-                            <span className="text-[10px] text-accent font-mono">{row.campaignType}</span>
+                            <span className="text-[11px] text-accent font-mono">{row.campaignType}</span>
                           </td>
                           <td className="px-4 py-3.5 text-zinc-300">{row.channel}</td>
                           <td className="px-4 py-3.5 font-bold text-white">${row.spend.toLocaleString()}</td>
                           <td className="px-4 py-3.5 text-zinc-300">{row.impressions.toLocaleString()}</td>
                           <td className="px-4 py-3.5">
                             <div className="text-white">{row.clicks.toLocaleString()}</div>
-                            <div className="text-[10px] text-emerald-400">{row.ctr}%</div>
+                            <div className="text-[11px] text-emerald-400">{row.ctr}%</div>
                           </td>
                           <td className="px-4 py-3.5 text-zinc-300">${row.cpc.toFixed(2)}</td>
                           <td className="px-4 py-3.5">
                             <div className="text-white font-bold">{row.conversions.toLocaleString()}</div>
-                            <div className="text-[10px] text-amber-400">${row.cpa.toFixed(2)}</div>
+                            <div className="text-[11px] text-amber-400">${row.cpa.toFixed(2)}</div>
                           </td>
                           <td className="px-4 py-3.5 font-bold text-emerald-400">${row.revenue.toLocaleString()}</td>
                           <td className="px-4 py-3.5 font-black text-white">{row.roas.toFixed(2)}x</td>
                           <td className="px-4 py-3.5">
                             <div className="text-white font-bold">{row.sqls} SQLs</div>
-                            <div className="text-[10px] text-secondary">${(row.pipelineValue / 1000).toFixed(0)}k pipeline</div>
+                            <div className="text-[11px] text-secondary">${(row.pipelineValue / 1000).toFixed(0)}k pipeline</div>
                           </td>
                         </tr>
                       ))}
@@ -2003,7 +2001,7 @@ export default function PaidAdsPage() {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 size={12} /> Valid GA4 Syntax
                 </span>
                 <button
@@ -2018,7 +2016,7 @@ export default function PaidAdsPage() {
 
             {/* Individual Parameter Badges */}
             <div className="space-y-2 pt-2 border-t border-white/5">
-              <div className="text-[10px] font-mono text-muted uppercase font-bold">Attribution Breakdown:</div>
+              <div className="text-[11px] font-mono text-muted uppercase font-bold">Attribution Breakdown:</div>
               <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between p-2 rounded-lg bg-black/40">
                   <span className="text-zinc-400">utm_source:</span>
@@ -2104,7 +2102,7 @@ export default function PaidAdsPage() {
 
             <div className="p-4 bg-black/80 border border-zinc-800 rounded-xl space-y-2 font-sans">
               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[10px]">Sponsored</span>
+                <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[11px]">Sponsored</span>
                 <span>https://sigmatactix.com/growth-os</span>
               </div>
               <div className="text-blue-400 text-base font-medium hover:underline cursor-pointer">
@@ -2313,7 +2311,7 @@ export default function PaidAdsPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls,.pdf,.json"
+                    accept=".csv,.pdf,.json"
                     onChange={handleSimulatePlanUpload}
                     className="hidden"
                   />
@@ -2379,3 +2377,4 @@ export default function PaidAdsPage() {
 const INITIAL_MEDIA_PLANS = isDemoSeedEnabled() ? DEMO_INITIAL_MEDIA_PLANS : [];
 const INITIAL_AUDIENCES = isDemoSeedEnabled() ? DEMO_INITIAL_AUDIENCES : [];
 const CAMPAIGN_METRICS_DATA = isDemoSeedEnabled() ? DEMO_CAMPAIGN_METRICS_DATA : [];
+

@@ -9,6 +9,8 @@ import {
   CATEGORY_OWNERS,
   LAYA_LIMITS,
   MIN_AUTOMATION_CONFIDENCE,
+  DEFAULT_LAYA_TIMEOUT_MS,
+  recommendBoundedChoice,
   type LayaQuestion,
 } from './decisionEngine';
 
@@ -17,6 +19,55 @@ afterEach(() => {
 });
 
 describe('provider-neutral decision runtime', () => {
+  it('uses a sub-second default deadline so a slow sidecar cannot stall decisions', () => {
+    expect(DEFAULT_LAYA_TIMEOUT_MS).toBeLessThanOrEqual(750);
+  });
+
+  it('returns a bounded advisory recommendation for Antigravity without authorizing work', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      answers: {
+        recommendation: {
+          choice: 'fix_existing',
+          answer_confidence: 0.82,
+          probabilities: { fix_existing: 0.82, rebuild: 0.18 },
+        },
+      },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })));
+
+    await expect(recommendBoundedChoice({
+      question: 'How should Antigravity handle the decision engine?',
+      context: 'The tenant path already has a governed adapter.',
+      options: [
+        { id: 'fix_existing', description: 'Repair the shared adapter.' },
+        { id: 'rebuild', description: 'Create a separate decision stack.' },
+      ],
+    }, { baseUrl: 'http://127.0.0.1:8000' })).resolves.toMatchObject({
+      selectedOption: 'fix_existing',
+      confidence: 0.82,
+      engine: 'laya',
+      advisoryOnly: true,
+      requiresHITL: true,
+    });
+  });
+
+  it('fails closed when Laya returns an option outside the supplied allowlist', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      answers: { recommendation: { choice: 'invented_option', answer_confidence: 0.99 } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })));
+
+    await expect(recommendBoundedChoice({
+      question: 'Choose the next implementation step.',
+      options: [
+        { id: 'repair', description: 'Repair the existing path.' },
+        { id: 'defer', description: 'Defer the change.' },
+      ],
+    }, { baseUrl: 'http://127.0.0.1:8000' })).resolves.toMatchObject({
+      selectedOption: null,
+      engine: 'unavailable',
+      advisoryOnly: true,
+    });
+  });
+
   it('reports Laya as unconfigured without claiming it is live', async () => {
     await expect(getDecisionRuntimeStatus({ env: {} })).resolves.toMatchObject({
       provider: 'laya',

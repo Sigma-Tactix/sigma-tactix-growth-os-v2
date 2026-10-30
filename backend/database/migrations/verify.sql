@@ -283,3 +283,14 @@ LEFT JOIN information_schema.columns c
  AND c.table_name = 'ledger_runs'
  AND c.column_name = expected.column_name
 ORDER BY expected.column_name;
+
+\echo '== 24. Landing artifacts: table, RLS, member read/insert policies, and anon denial =='
+SELECT CASE
+         WHEN to_regclass('public.landing_artifacts') IS NULL THEN 'FAIL - apply 0019_landing_artifacts'
+         WHEN NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.landing_artifacts'::regclass) THEN 'FAIL - RLS disabled'
+         WHEN (SELECT COUNT(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = 'landing_artifacts') < 2 THEN 'FAIL - policies missing'
+         WHEN has_table_privilege('anon', 'public.landing_artifacts', 'SELECT')
+           OR has_table_privilege('anon', 'public.landing_artifacts', 'INSERT')
+           OR has_table_privilege('anon', 'public.landing_artifacts', 'UPDATE') THEN 'FAIL - anon has grants'
+         ELSE 'OK'
+       END AS status;

@@ -30,8 +30,8 @@ confidence        = 1 − normalised entropy   (how peaked the distribution is)
 answer_confidence = probability of the reported answer
 ```
 
-They are **not interchangeable**, and a threshold carried over from the old Jev
-engine does **not** transfer. The adapter gates on `answer_confidence`.
+They are **not interchangeable**, and a threshold from another model does **not**
+transfer. The adapter gates on `answer_confidence`.
 
 ### Upstream's own calibration warning
 
@@ -113,13 +113,14 @@ Already present in `.env`; no new secrets required.
 | `LAYA_MODEL` | `auto` | `english` / `multilingual` / `typed-decisions` |
 | `LAYA_MODE` | `shadow` | `shadow` (policy authoritative) or `active` |
 | `LAYA_CALIBRATED` | `false` | Operator claim, only honoured after a probe |
-| `LAYA_TIMEOUT_MS` | `8000` | Per-request timeout |
+| `LAYA_TIMEOUT_MS` | `750` | Fast per-request deadline; override only from measured runtime evidence |
 
 Start the runtime:
 
 ```bash
 npm run setup:laya      # pip install "laya[serve]"
-npm run laya:serve      # LAYA_PRELOAD=0 laya-serve --port 8000
+npm run laya:serve      # loads .env and preloads the checkpoint for fast warm decisions
+npm run laya:decide -- --question "Choose a path" --option "a=Repair" --option "b=Rebuild"
 ```
 
 **SSRF note.** `LAYA_BASE_URL` deliberately bypasses `assertPublicHost()`.
@@ -166,7 +167,6 @@ the promotion evidence.
 | Concern | Source |
 | --- | --- |
 | Agent hierarchy, tiers, sub-agents | `docs/AGENT_ARCHITECTURE.md` |
-| Prior Jev engine (superseded) | `src/lib/jevDecisionEngine.ts` |
 | Trace + calibration | `src/lib/decisionTrace.ts`, `decisionCalibration.ts` |
 | Runtime config | `.env`, `.env.example`, `package.json` |
 | Original integration plan | `docs/plans/tinyfish-mirofish-integration-plan.md` |

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { GROWTH_OS_AGENT_TOOLS, GROWTH_OS_OPENAI_TOOLS, OpenAIToolDefinition } from "./agentTools.js";
+import { GROWTH_OS_AGENT_TOOLS, GROWTH_OS_OPENAI_TOOLS, OpenAIToolDefinition, type AgentToolName } from "./agentTools.js";
 import { calculateTokenCost, estimateTokens, ALL_AI_MODELS } from "./tokenCostEngine.js";
 
 export type SupportedProvider =
@@ -77,6 +77,7 @@ export async function executeAgentReActLoop(params: {
   scopedContext: string;
   config: AIProviderConfig;
   maxSteps?: number;
+  allowedTools?: readonly AgentToolName[];
   executeTool: (name: string, args: Record<string, any>) => Promise<any>;
   geminiClientFactory?: (key?: string) => GoogleGenAI;
 }): Promise<ReActExecutionResult> {
@@ -87,6 +88,7 @@ export async function executeAgentReActLoop(params: {
     config,
     maxSteps = 5,
     executeTool,
+    allowedTools = [],
     geminiClientFactory,
   } = params;
 
@@ -104,6 +106,7 @@ export async function executeAgentReActLoop(params: {
       config,
       maxSteps,
       executeTool,
+      allowedTools,
       geminiClientFactory,
       startedAt,
       detailedSteps,
@@ -118,6 +121,7 @@ export async function executeAgentReActLoop(params: {
     config,
     maxSteps,
     executeTool,
+    allowedTools,
     startedAt,
     detailedSteps,
     logSteps,
@@ -134,11 +138,14 @@ async function executeOpenAICompatibleReActLoop(ctx: {
   config: AIProviderConfig;
   maxSteps: number;
   executeTool: (name: string, args: Record<string, any>) => Promise<any>;
+  allowedTools: readonly AgentToolName[];
   startedAt: number;
   detailedSteps: ReActStep[];
   logSteps: string[];
 }): Promise<ReActExecutionResult> {
-  const { agentName, goal, scopedContext, config, maxSteps, executeTool, startedAt, detailedSteps, logSteps } = ctx;
+  const { agentName, goal, scopedContext, config, maxSteps, executeTool, allowedTools, startedAt, detailedSteps, logSteps } = ctx;
+  const allowedToolSet = new Set<string>(allowedTools);
+  const toolDefinitions = GROWTH_OS_OPENAI_TOOLS.filter(tool => allowedToolSet.has(tool.function.name));
 
   const baseUrl = resolveProviderBaseUrl(config.provider, config.baseUrl);
   const apiKey = config.apiKey || (config.provider === "ollama" || config.provider === "lmstudio" ? "local" : process.env.OPENAI_API_KEY || "");
@@ -171,7 +178,7 @@ Operational Directives:
     const reqBody = {
       model,
       messages,
-      tools: GROWTH_OS_OPENAI_TOOLS,
+      tools: toolDefinitions,
       tool_choice: "auto",
       temperature: 0.2,
     };
@@ -215,6 +222,9 @@ Operational Directives:
     if (message.tool_calls && message.tool_calls.length > 0) {
       for (const call of message.tool_calls) {
         const fnName = call.function?.name;
+        if (!fnName || !allowedToolSet.has(fnName)) {
+          throw new Error(`Tool "${fnName || "unknown"}" is not authorized for this mission.`);
+        }
         let fnArgs: Record<string, any> = {};
         try {
           fnArgs = JSON.parse(call.function?.arguments || "{}");
@@ -296,12 +306,15 @@ async function executeGeminiReActLoop(ctx: {
   config: AIProviderConfig;
   maxSteps: number;
   executeTool: (name: string, args: Record<string, any>) => Promise<any>;
+  allowedTools: readonly AgentToolName[];
   geminiClientFactory?: (key?: string) => GoogleGenAI;
   startedAt: number;
   detailedSteps: ReActStep[];
   logSteps: string[];
 }): Promise<ReActExecutionResult> {
-  const { agentName, goal, scopedContext, config, maxSteps, executeTool, geminiClientFactory, startedAt, detailedSteps, logSteps } = ctx;
+  const { agentName, goal, scopedContext, config, maxSteps, executeTool, allowedTools, geminiClientFactory, startedAt, detailedSteps, logSteps } = ctx;
+  const allowedToolSet = new Set<string>(allowedTools);
+  const functionDeclarations = GROWTH_OS_AGENT_TOOLS.filter(tool => allowedToolSet.has(tool.name || ""));
 
   const client = geminiClientFactory ? geminiClientFactory(config.apiKey) : new GoogleGenAI({ apiKey: config.apiKey || process.env.GEMINI_API_KEY || "MOCK_KEY" });
   const model = config.model;
@@ -336,7 +349,7 @@ Operational Directives:
       contents,
       config: {
         systemInstruction,
-        tools: [{ functionDeclarations: GROWTH_OS_AGENT_TOOLS }],
+        ...(functionDeclarations.length > 0 ? { tools: [{ functionDeclarations }] } : {}),
         temperature: 0.2,
         abortSignal: AbortSignal.timeout(config.timeoutMs || 90_000),
       },
@@ -360,6 +373,9 @@ Operational Directives:
       const responseParts: any[] = [];
       for (const fc of functionCalls) {
         const fnName = fc.name;
+        if (!fnName || !allowedToolSet.has(fnName)) {
+          throw new Error(`Tool "${fnName || "unknown"}" is not authorized for this mission.`);
+        }
         const fnArgs = (fc.args as Record<string, any>) || {};
 
         logSteps.push(`Step ${step}: Agent called tool "${fnName}" with args: ${JSON.stringify(fnArgs).slice(0, 150)}`);

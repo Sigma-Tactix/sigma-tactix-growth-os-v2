@@ -239,7 +239,7 @@ export default function GrowthDiagnostics() {
           { label: 'Approve work', done: pendingCount > 0, active: pendingCount > 0 },
         ].map((step, index) => (
           <div key={step.label} className={`flex items-center gap-2 px-3 py-3 text-xs sm:px-5 ${index > 0 ? 'border-l border-[var(--sigma-border)]' : ''}`}>
-            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${step.done ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : step.active ? 'border-[var(--sigma-primary)] bg-[var(--sigma-primary-subtle)] text-[var(--sigma-primary)]' : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)]'}`}>
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${step.done ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-accent' : step.active ? 'border-[var(--sigma-primary)] bg-[var(--sigma-primary-subtle)] text-[var(--sigma-primary)]' : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)]'}`}>
               {step.done ? <Check size={13} /> : index + 1}
             </span>
             <span className={step.active || step.done ? 'font-medium text-[var(--sigma-text)]' : 'text-[var(--sigma-text-muted)]'}>{step.label}</span>
@@ -293,7 +293,7 @@ export default function GrowthDiagnostics() {
 
       {audit && !selectedStrategy && !isRunning && (
         <section className="rounded-2xl border border-amber-500/25 bg-amber-500/5 px-6 py-10 text-center" aria-live="polite">
-          <Target className="mx-auto text-amber-400" size={30} />
+          <Target className="mx-auto text-amber-accent" size={30} />
           <h2 className="mt-4 text-lg font-semibold text-[var(--sigma-text)]">The diagnostic returned no strategy evidence</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
             No findings, recommendations, or roadmap tasks were available to build a defensible strategy. Run a fresh diagnostic rather than generating unsupported output.
@@ -329,7 +329,7 @@ export default function GrowthDiagnostics() {
                 </div>
               )}
               {audit.score !== null && audit.score !== undefined && !audit.scoringChecks && (
-                <div className="mt-2 text-[11px] text-amber-300/90">
+                <div className="mt-2 text-[11px] text-amber-accent/90">
                   Legacy score — stored before the published rubric existed. Not verified; recompute the audit.
                 </div>
               )}

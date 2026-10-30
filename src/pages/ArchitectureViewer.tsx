@@ -410,12 +410,12 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-mono font-black text-[var(--sigma-text-muted)]">{state.step || `0${idx + 1}`}</span>
+                  <span className="text-[11px] font-mono font-black text-[var(--sigma-text-muted)]">{state.step || `0${idx + 1}`}</span>
                   <span className={cn(
                     "text-[8px] font-mono uppercase px-1.5 py-0.5 rounded font-medium",
-                    state.type === 'start' ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" :
-                    state.type === 'success' ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" :
-                    state.type === 'decision' ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" :
+                    state.type === 'start' ? "bg-blue-500/10 text-blue-accent dark:text-blue-accent border border-blue-500/20" :
+                    state.type === 'success' ? "bg-emerald-500/10 text-emerald-accent dark:text-emerald-accent border border-emerald-500/20" :
+                    state.type === 'decision' ? "bg-amber-500/10 text-amber-accent dark:text-amber-accent border border-amber-500/20" :
                     "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
                   )}>
                     {state.tag || state.type}
@@ -440,7 +440,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-[var(--sigma-border)]">
         {/* Waiting / Human Gates */}
         <div className="space-y-3">
-          <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-2">
+          <div className="text-[10px] font-mono text-amber-accent dark:text-amber-accent uppercase tracking-widest flex items-center gap-2">
             <Lock size={12} /> Human & Input Waits
           </div>
           <div className="space-y-2">
@@ -452,7 +452,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-amber-900 dark:text-amber-200">{s.label}</span>
-                  <span className="text-[9px] font-mono text-amber-700 dark:text-amber-400/90">{s.sublabel}</span>
+                  <span className="text-[11px] font-mono text-amber-700 dark:text-amber-accent/90">{s.sublabel}</span>
                 </div>
               </div>
             ))}
@@ -461,7 +461,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
 
         {/* Recovery / Retries */}
         <div className="space-y-3">
-          <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+          <div className="text-[10px] font-mono text-cyan-accent dark:text-cyan-accent uppercase tracking-widest flex items-center gap-2">
             <RotateCcw size={12} /> Recovery & Controller
           </div>
           <div className="space-y-2">
@@ -473,7 +473,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-cyan-900 dark:text-cyan-200">{s.label}</span>
-                  <span className="text-[9px] font-mono text-cyan-700 dark:text-cyan-400/90">{s.sublabel}</span>
+                  <span className="text-[11px] font-mono text-cyan-accent dark:text-cyan-accent/90">{s.sublabel}</span>
                 </div>
               </div>
             ))}
@@ -482,7 +482,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
 
         {/* Terminal Exits */}
         <div className="space-y-3">
-          <div className="text-[10px] font-mono text-rose-600 dark:text-rose-400 uppercase tracking-widest flex items-center gap-2">
+          <div className="text-[10px] font-mono text-rose-accent dark:text-rose-accent uppercase tracking-widest flex items-center gap-2">
             <AlertTriangle size={12} /> Terminal Outcomes
           </div>
           <div className="space-y-2">
@@ -494,7 +494,7 @@ function LifecycleCanvas({ diagram, activeView, selectedNode, onSelectNode, simu
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-rose-900 dark:text-rose-200">{s.label}</span>
-                  <span className="text-[9px] font-mono text-rose-700 dark:text-rose-400/90">{s.sublabel}</span>
+                  <span className="text-[11px] font-mono text-rose-700 dark:text-rose-accent/90">{s.sublabel}</span>
                 </div>
               </div>
             ))}
@@ -575,7 +575,7 @@ function SequenceCanvas({ diagram, activeView, selectedNode, onSelectNode, simul
             className="p-3 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl text-center cursor-pointer hover:border-[var(--sigma-border-strong)] hover:shadow-sm transition-all"
           >
             <div className="text-xs font-bold text-[var(--sigma-text)] truncate">{p.label}</div>
-            <div className="text-[9px] font-mono text-[var(--sigma-text-muted)] truncate">{p.sublabel}</div>
+            <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] truncate">{p.sublabel}</div>
           </div>
         ))}
       </div>
@@ -590,8 +590,8 @@ function SequenceCanvas({ diagram, activeView, selectedNode, onSelectNode, simul
               className={cn(
                 "p-3 rounded-lg border flex items-center justify-between text-xs transition-all font-mono",
                 isSimActive ? "bg-[var(--sigma-vermilion)]/15 border-[var(--sigma-vermilion)] text-[var(--sigma-vermilion)] shadow-md" :
-                m.variant === 'security' ? "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-300" :
-                m.variant === 'return' ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-700 dark:text-cyan-300" :
+                m.variant === 'security' ? "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-accent" :
+                m.variant === 'return' ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-accent dark:text-cyan-accent" :
                 m.variant === 'dashed' ? "bg-[var(--sigma-surface-subtle)] border-dashed border-[var(--sigma-border-strong)] text-[var(--sigma-text-muted)]" :
                 "bg-[var(--sigma-surface)] border-[var(--sigma-border)] text-[var(--sigma-text)]"
               )}
@@ -603,7 +603,7 @@ function SequenceCanvas({ diagram, activeView, selectedNode, onSelectNode, simul
                 <span className="font-bold text-[var(--sigma-text)]">{m.to}:</span>
                 <span className="text-[var(--sigma-text-soft)]">{m.label}</span>
               </div>
-              <span className="text-[9px] font-mono text-[var(--sigma-text-muted)] uppercase">
+              <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] uppercase">
                 {m.variant || 'default'}
               </span>
             </div>
@@ -692,7 +692,7 @@ function ArchitectureCanvas({ diagram, activeView, selectedNode, onSelectNode, s
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[8px] font-mono uppercase text-[var(--sigma-text-muted)]">{comp.type}</span>
                 {comp.tag && (
-                  <span className="text-[9px] font-mono text-[var(--sigma-vermilion)] font-bold">{comp.tag}</span>
+                  <span className="text-[11px] font-mono text-[var(--sigma-vermilion)] font-bold">{comp.tag}</span>
                 )}
               </div>
               <div className="font-bold text-sm text-[var(--sigma-text)] tracking-tight">{comp.label}</div>
@@ -704,3 +704,4 @@ function ArchitectureCanvas({ diagram, activeView, selectedNode, onSelectNode, s
     </div>
   );
 }
+

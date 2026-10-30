@@ -10,9 +10,13 @@ import {
   Maximize2,
   Palette,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  FileDown,
+  Presentation
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { jsPDF } from 'jspdf';
+import pptxgen from 'pptxgenjs';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import { CarouselSlide } from '@/src/data/marketingModulesData';
@@ -32,7 +36,7 @@ export default function CarouselCardViewer({
   channel = 'LinkedIn',
   onSlideChange
 }: CarouselCardViewerProps) {
-  const { notifySuccess, notifyInfo } = useToast();
+  const { notifySuccess, notifyInfo, notifyError } = useToast();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<'4:5' | '1:1'>('4:5');
   const [theme, setTheme] = useState<'OBSIDIAN_AMBER' | 'CYBER_BLUEPRINT' | 'MONOLITH_GOLD'>('OBSIDIAN_AMBER');
@@ -41,7 +45,19 @@ export default function CarouselCardViewer({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const totalSlides = slides.length;
-  const currentSlide = slides[currentSlideIndex] || slides[0];
+  const currentSlide = slides[currentSlideIndex] || slides[0] || {
+    slideNumber: 1,
+    badge: 'STRATEGIC AUDIT',
+    title: topic,
+    subtitle: 'Autonomous Growth Architecture',
+    contentPoints: ['Continuous pipeline qualification', 'Zero-knowledge-loss Second Brain', 'Human-in-the-loop governance'],
+    takeaway: 'Client-owned systems compound. Rented retainers evaporate.'
+  };
+
+  useEffect(() => {
+    // Whenever slides update, immediately reset to slide 0 so new slides are displayed
+    setCurrentSlideIndex(0);
+  }, [slides]);
 
   useEffect(() => {
     if (onSlideChange) {
@@ -297,6 +313,188 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     }
   };
 
+  const generateSlideCanvas = (slideToExport: CarouselSlide, overrideRatio: '4:5' | '1:1' = aspectRatio): HTMLCanvasElement => {
+    const width = 1080;
+    const height = overrideRatio === '4:5' ? 1350 : 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+    // Background
+    if (theme === 'OBSIDIAN_AMBER') {
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, '#09090b');
+      grad.addColorStop(0.5, '#121114');
+      grad.addColorStop(1, '#050507');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      const radialGrad = ctx.createRadialGradient(width * 0.8, height * 0.2, 10, width * 0.8, height * 0.2, 600);
+      radialGrad.addColorStop(0, 'rgba(245, 158, 11, 0.12)');
+      radialGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = radialGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.25)';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+    } else if (theme === 'CYBER_BLUEPRINT') {
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, '#040914');
+      grad.addColorStop(0.5, '#071226');
+      grad.addColorStop(1, '#02050b');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, '#18181b');
+      grad.addColorStop(0.5, '#121114');
+      grad.addColorStop(1, '#09090b');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+    }
+
+    // Top Bar
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText(`${brandName}  //  GROWTH OS`, 70, 95);
+
+    const slideNumText = `SLIDE ${String(slideToExport.slideNumber).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText(slideNumText, width - ctx.measureText(slideNumText).width - 70, 95);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(70, 125);
+    ctx.lineTo(width - 70, 125);
+    ctx.stroke();
+
+    // Badge
+    let currentY = 190;
+    if (slideToExport.badge) {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+      const badgeWidth = ctx.measureText(slideToExport.badge.toUpperCase()).width + 40;
+      ctx.fillRect(70, currentY - 26, badgeWidth, 38);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(70, currentY - 26, badgeWidth, 38);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(slideToExport.badge.toUpperCase(), 90, currentY);
+      currentY += 60;
+    }
+
+    // Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 54px sans-serif';
+    const words = slideToExport.title.split(' ');
+    let line = '';
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > width - 160 && n > 0) {
+        ctx.fillText(line, 70, currentY);
+        line = words[n] + ' ';
+        currentY += 64;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, 70, currentY);
+    currentY += 40;
+
+    // Subtitle
+    if (slideToExport.subtitle) {
+      ctx.fillStyle = '#d4d4d8';
+      ctx.font = 'normal 26px sans-serif';
+      const subWords = slideToExport.subtitle.split(' ');
+      let subLine = '';
+      for (let n = 0; n < subWords.length; n++) {
+        const testLine = subLine + subWords[n] + ' ';
+        if (ctx.measureText(testLine).width > width - 160 && n > 0) {
+          ctx.fillText(subLine, 70, currentY);
+          subLine = subWords[n] + ' ';
+          currentY += 36;
+        } else {
+          subLine = testLine;
+        }
+      }
+      ctx.fillText(subLine, 70, currentY);
+      currentY += 50;
+    }
+
+    // Content Points
+    if (slideToExport.contentPoints && slideToExport.contentPoints.length > 0) {
+      currentY += 10;
+      slideToExport.contentPoints.forEach((point) => {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.fillRect(70, currentY - 20, width - 140, 72);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.strokeRect(70, currentY - 20, width - 140, 72);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(105, currentY + 16, 7, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = '#f4f4f5';
+        ctx.font = '500 24px sans-serif';
+        ctx.fillText(point, 135, currentY + 24);
+
+        currentY += 92;
+      });
+    }
+
+    // Key Takeaway
+    if (slideToExport.takeaway) {
+      const boxY = height - 260;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+      ctx.fillRect(70, boxY, width - 140, 100);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(70, boxY, width - 140, 100);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('CORE TAKEAWAY', 95, boxY + 36);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(slideToExport.takeaway, 95, boxY + 70);
+    }
+
+    // Footer
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.beginPath();
+    ctx.moveTo(70, height - 110);
+    ctx.lineTo(width - 70, height - 110);
+    ctx.stroke();
+
+    ctx.fillStyle = '#71717a';
+    ctx.font = 'normal 18px monospace';
+    ctx.fillText(`sigmatactix.com  •  Autonomous Growth Engine`, 70, height - 65);
+
+    const swipeText = slideToExport.slideNumber === totalSlides ? 'End of Deck 🏁' : 'Swipe next ➔';
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText(swipeText, width - ctx.measureText(swipeText).width - 70, height - 65);
+
+    return canvas;
+  };
+
   const handleExportAllSlides = () => {
     setIsExporting(true);
     notifyInfo('Exporting Full Deck', `Rendering all ${totalSlides} slides as PNGs...`);
@@ -313,6 +511,135 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     }, totalSlides * 650);
   };
 
+  // Multi-slide PDF Export
+  const handleExportPdf = () => {
+    if (slides.length === 0) {
+      notifyError('No Slides Available', 'Generate slides before exporting to PDF.');
+      return;
+    }
+
+    setIsExporting(true);
+    notifyInfo('Compiling PDF Deck', `Building ${slides.length}-page high-resolution PDF deck...`);
+
+    try {
+      const width = 1080;
+      const height = aspectRatio === '4:5' ? 1350 : 1080;
+      const pdf = new jsPDF({
+        orientation: aspectRatio === '4:5' ? 'portrait' : 'landscape',
+        unit: 'px',
+        format: [width, height]
+      });
+
+      slides.forEach((slide, idx) => {
+        const canvas = generateSlideCanvas(slide, aspectRatio);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (idx > 0) {
+          pdf.addPage([width, height], aspectRatio === '4:5' ? 'portrait' : 'landscape');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+      });
+
+      const safeName = (topic || 'growth-os-carousel').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 36);
+      pdf.save(`sigmatactix-${safeName}.pdf`);
+      notifySuccess('PDF Deck Downloaded', `Successfully compiled ${slides.length}-slide PDF document.`);
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      notifyError('PDF Export Failed', err.message || 'Could not compile PDF document.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Multi-slide PPTX Presentation Export
+  const handleExportPptx = async () => {
+    if (slides.length === 0) {
+      notifyError('No Slides Available', 'Generate slides before exporting to PPTX.');
+      return;
+    }
+
+    setIsExporting(true);
+    notifyInfo('Generating PowerPoint Deck', `Creating editable ${slides.length}-slide PPTX presentation...`);
+
+    try {
+      const pres = new pptxgen();
+      pres.layout = 'LAYOUT_16x9';
+
+      slides.forEach((slide) => {
+        const s = pres.addSlide();
+        s.background = { color: '09090B' };
+
+        // Brand top header
+        s.addText(`${brandName}  //  GROWTH OS`, {
+          x: 0.8, y: 0.6, w: 6.0, h: 0.35,
+          fontSize: 12, fontFace: 'Courier New', color: 'F59E0B', bold: true
+        });
+
+        s.addText(`SLIDE ${String(slide.slideNumber).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`, {
+          x: 8.5, y: 0.6, w: 4.0, h: 0.35,
+          fontSize: 11, fontFace: 'Courier New', color: '71717A', align: 'right'
+        });
+
+        // Badge
+        if (slide.badge) {
+          s.addText(slide.badge.toUpperCase(), {
+            x: 0.8, y: 1.1, w: 4.5, h: 0.35,
+            fontSize: 10, fontFace: 'Courier New', color: 'F59E0B', bold: true
+          });
+        }
+
+        // Title
+        s.addText(slide.title, {
+          x: 0.8, y: 1.5, w: 11.5, h: 0.9,
+          fontSize: 24, fontFace: 'Helvetica', color: 'FFFFFF', bold: true
+        });
+
+        // Subtitle
+        if (slide.subtitle) {
+          s.addText(slide.subtitle, {
+            x: 0.8, y: 2.4, w: 11.5, h: 0.5,
+            fontSize: 13, fontFace: 'Helvetica', color: 'D4D4D8'
+          });
+        }
+
+        // Bullet Points
+        if (slide.contentPoints && slide.contentPoints.length > 0) {
+          const bulletLines = slide.contentPoints.map(p => ({
+            text: p,
+            options: { fontSize: 13, color: 'E4E4E7', breakLine: true, bullet: true }
+          }));
+          s.addText(bulletLines, {
+            x: 0.8, y: 3.1, w: 11.5, h: 2.2,
+            fontFace: 'Helvetica', lineSpacing: 22
+          });
+        }
+
+        // Key Takeaway
+        if (slide.takeaway) {
+          s.addText(`STRATEGIC TAKEAWAY: ${slide.takeaway}`, {
+            x: 0.8, y: 5.5, w: 11.5, h: 0.6,
+            fontSize: 12, fontFace: 'Helvetica', color: 'FEF3C7', bold: true,
+            fill: { color: '18181B' }, line: { color: 'F59E0B', width: 1 }
+          });
+        }
+
+        // Footer
+        s.addText('sigmatactix.com • Autonomous Growth Engine', {
+          x: 0.8, y: 6.6, w: 8.0, h: 0.3,
+          fontSize: 10, fontFace: 'Courier New', color: '71717A'
+        });
+      });
+
+      const safeName = (topic || 'growth-os-carousel').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 36);
+      await pres.writeFile({ fileName: `sigmatactix-${safeName}.pptx` });
+      notifySuccess('PPTX Export Complete', `Multi-slide presentation saved as ${safeName}.pptx`);
+    } catch (err: any) {
+      console.error('PPTX export error:', err);
+      notifyError('PPTX Export Failed', err.message || 'Could not compile PowerPoint presentation.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Toolbar: Aspect Ratio, Theme, and Bulk Actions */}
@@ -325,7 +652,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '4:5'
-                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
+                  ? "bg-amber-400/20 text-amber-accent border border-amber-400/40 font-bold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -336,7 +663,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2.5 py-1 text-xs font-mono rounded-md transition-all cursor-pointer",
                 aspectRatio === '1:1'
-                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/40 font-bold"
+                  ? "bg-amber-400/20 text-amber-accent border border-amber-400/40 font-bold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -353,7 +680,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'OBSIDIAN_AMBER'
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-semibold"
+                  ? "bg-amber-500/20 text-amber-accent border border-amber-500/40 font-semibold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -365,7 +692,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
               className={cn(
                 "px-2 py-1 text-xs rounded-md transition-all cursor-pointer flex items-center gap-1.5",
                 theme === 'CYBER_BLUEPRINT'
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-semibold"
+                  ? "bg-cyan-500/20 text-cyan-accent border border-cyan-500/40 font-semibold"
                   : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
@@ -390,36 +717,56 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopySlideText}
-            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            className="sigma-button-secondary px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
-            {copiedSlide ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {copiedSlide ? 'Copied' : 'Copy Slide Text'}
+            {copiedSlide ? <Check className="w-3.5 h-3.5 text-emerald-accent" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedSlide ? 'Copied' : 'Copy Slide'}
           </button>
 
           <button
             onClick={handleCopyAllSlides}
-            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            className="sigma-button-secondary px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5" />
-            Copy All Slides
+            Copy All
           </button>
 
           <button
             onClick={() => handleExportSlidePng(currentSlideIndex)}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
           >
             <Download className="w-3.5 h-3.5" />
-            Export Slide PNG
+            Slide PNG
+          </button>
+
+          <button
+            onClick={handleExportPdf}
+            disabled={isExporting}
+            className="px-3 py-1.5 bg-gradient-to-r from-red-500/20 to-orange-500/20 hover:from-red-500/30 hover:to-orange-500/30 text-red-300 border border-red-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Download multi-slide PDF document"
+          >
+            <FileDown className="w-3.5 h-3.5 text-red-400" />
+            Download PDF
+          </button>
+
+          <button
+            onClick={handleExportPptx}
+            disabled={isExporting}
+            className="px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Download editable PowerPoint PPTX deck"
+          >
+            <Presentation className="w-3.5 h-3.5 text-orange-400" />
+            Download PPTX
           </button>
 
           <button
             onClick={handleExportAllSlides}
             disabled={isExporting}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/20"
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/20"
           >
             <Download className="w-3.5 h-3.5 fill-black" />
-            Export Full Deck
+            Export All PNGs
           </button>
         </div>
       </div>
@@ -532,7 +879,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
                 theme === 'CYBER_BLUEPRINT' && "bg-cyan-500/10 border-cyan-500/30 text-cyan-200",
                 theme === 'MONOLITH_GOLD' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-200"
               )}>
-                <div className="text-[9px] font-mono uppercase tracking-widest text-amber-400 font-bold mb-0.5">
+                <div className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold mb-0.5">
                   Strategic Takeaway
                 </div>
                 <div className="text-xs font-semibold text-white">
@@ -589,7 +936,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
             <div className="text-[11px] font-bold text-[var(--sigma-text)] line-clamp-1">
               {s.title}
             </div>
-            <div className="text-[9px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">
+            <div className="text-[11px] text-[var(--sigma-text-muted)] line-clamp-1 mt-0.5">
               {s.subtitle || s.takeaway || 'Content slide'}
             </div>
           </button>
@@ -598,3 +945,4 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     </div>
   );
 }
+

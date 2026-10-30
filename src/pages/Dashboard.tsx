@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -52,7 +52,10 @@ import IntakeMetricsChart from '@/src/components/IntakeMetricsChart';
 import { apiFetch } from '@/src/lib/api';
 import { classifyChannelMedia, isPriorityMarketingPlatform, isVerifiedPipeline } from '@/src/lib/connectorLifecycle';
 import ActionQueueTab from '@/src/components/dashboard/ActionQueueTab';
+import { useActionQueue } from '@/src/lib/actionQueueStore';
 import { Button, GlassCard, Badge, MetricWidget, Tabs } from '@/src/components/ui';
+
+const SecondBrainWorkspace = lazy(() => import('@/src/components/vanta/SecondBrainWorkspace'));
 
 const now = new Date();
 const rawData = [
@@ -81,9 +84,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             {formatCurrency(payload[0].value)}
           </p>
         </div>
-        <div className="mt-2 pt-2 border-t border-[var(--sigma-border)] text-[10px] text-[var(--sigma-text-muted)] flex items-center justify-between">
+        <div className="mt-2 pt-2 border-t border-[var(--sigma-border)] text-[11px] text-[var(--sigma-text-muted)] flex items-center justify-between">
           <span>Attributed Velocity</span>
-          <span className="text-emerald-400 font-mono font-medium">Optimal</span>
+          <span className="text-emerald-accent font-mono font-medium">Optimal</span>
         </div>
       </div>
     );
@@ -94,7 +97,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function Dashboard() {
   const { role } = useUser();
   const { currentWorkspace } = useWorkspace();
-  const [activeDashboardTab, setActiveDashboardTab] = useState<'OVERVIEW' | 'ACTION_QUEUE'>('OVERVIEW');
+  const { pendingCount: actionQueuePendingCount } = useActionQueue();
+  const [activeDashboardTab, setActiveDashboardTab] = useState<'OVERVIEW' | 'ACTION_QUEUE' | 'SECOND_BRAIN'>(() => new URLSearchParams(window.location.search).get('view') === 'second-brain' ? 'SECOND_BRAIN' : 'OVERVIEW');
   const [isEditMode, setIsEditMode] = useState(false);
   const [visibleWidgets, setVisibleWidgets] = useState({
     spend: true,
@@ -325,13 +329,19 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 pb-12" id="dashboard-content">
+    <div className="space-y-8 pb-16" id="dashboard-content">
       {/* Primary Dashboard Navigation Tabs */}
       <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4 no-export">
         <Tabs
           tabs={[
             { id: 'OVERVIEW', label: 'Topline Overview', icon: <BarChart3 size={14} /> },
-            { id: 'ACTION_QUEUE', label: 'Action Queue', badge: '2 Pending', icon: <Zap size={14} /> }
+            { id: 'SECOND_BRAIN', label: 'VANTA & Second Brain', icon: <Layers size={14} /> },
+            {
+              id: 'ACTION_QUEUE',
+              label: 'Action Queue',
+              badge: actionQueuePendingCount > 0 ? `${actionQueuePendingCount} Pending` : undefined,
+              icon: <Zap size={14} />
+            }
           ]}
           activeTab={activeDashboardTab}
           onChange={(tabId) => setActiveDashboardTab(tabId as any)}
@@ -340,7 +350,9 @@ export default function Dashboard() {
         />
       </div>
 
-      {activeDashboardTab === 'ACTION_QUEUE' ? (
+      {activeDashboardTab === 'SECOND_BRAIN' ? (
+        <Suspense fallback={<p role="status">Loading Second Brain…</p>}><SecondBrainWorkspace /></Suspense>
+      ) : activeDashboardTab === 'ACTION_QUEUE' ? (
         <ActionQueueTab />
       ) : (
         <>
@@ -409,7 +421,7 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: 8 }}
                       className="absolute top-full right-0 mt-2 w-72 glass-panel border border-[var(--sigma-border)] rounded-xl p-2 shadow-2xl z-50 overflow-hidden"
                     >
-                      <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)] mb-1">
+                      <div className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)] mb-1">
                         Industry Formats & ICP Profiles
                       </div>
                       {INDUSTRY_REPORT_FORMATS.map((formatOption) => {
@@ -494,7 +506,7 @@ export default function Dashboard() {
                          exit={{ opacity: 0, y: 8 }}
                          className="absolute top-full right-0 mt-2 w-56 glass-panel border border-[var(--sigma-border)] rounded-xl p-2 shadow-2xl z-50"
                        >
-                         <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)] mb-1">
+                         <div className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)] mb-1">
                            Preset Date Ranges
                          </div>
                          {datePresets.map((p) => {
@@ -576,9 +588,9 @@ export default function Dashboard() {
               <div className={cn(
                 "p-2.5 rounded-xl border shrink-0",
                 hasLiveMetrics 
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-accent" 
                   : hasVerifiedConnectors 
-                  ? "bg-sky-500/10 border-sky-500/30 text-sky-400" 
+                  ? "bg-sky-500/10 border-sky-500/30 text-sky-accent" 
                   : "bg-[var(--sigma-primary-subtle)] border-[var(--sigma-primary)]/30 text-[var(--sigma-primary)]"
               )}>
                 {hasVerifiedConnectors ? <CheckCircle size={18} /> : <BarChart3 size={18} />}
@@ -814,7 +826,7 @@ export default function Dashboard() {
                    </div>
                    <div>
                       <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Sync Health</div>
-                      <div className="text-base font-bold font-mono text-emerald-400 flex items-center gap-1.5">
+                      <div className="text-base font-bold font-mono text-emerald-accent flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400" />
                         {hasLiveMetrics ? 'Live Feed' : 'Benchmark'}
                       </div>
@@ -882,7 +894,7 @@ export default function Dashboard() {
                              <div className="text-sm font-bold font-mono tabular-nums text-[var(--sigma-text)]">{seg.roas}</div>
                           </td>
                           <td className="px-5 py-4 text-center font-mono text-xs text-[var(--sigma-text-soft)]">
-                            <div>{seg.cpc} <span className="text-[10px] text-[var(--sigma-text-muted)]">CPC</span></div>
+                            <div>{seg.cpc} <span className="text-[11px] text-[var(--sigma-text-muted)]">CPC</span></div>
                             <div className="text-[11px] text-[var(--sigma-text-muted)]">{seg.cpa} CPA</div>
                           </td>
                           <td className="px-5 py-4 text-center font-mono text-xs text-[var(--sigma-text-soft)]">

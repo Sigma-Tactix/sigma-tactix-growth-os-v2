@@ -5,7 +5,7 @@ export interface VaultRecord {
   category: string;
   summary: string;
   content: string;
-  classification: 'RESTRICTED_C_LEVEL' | 'ENCRYPTED_SECRET' | 'STRATEGIC_CORE' | 'OPERATIONAL_PUBLIC' | 'AUDIT_DIAGNOSTIC';
+  classification: 'RESTRICTED_C_LEVEL' | 'ENCRYPTED_SECRET' | 'STRATEGIC_CORE' | 'OPERATIONAL_PUBLIC' | 'AUDIT_DIAGNOSTIC' | 'UNCLASSIFIED';
   allowedRoles: string[];
   vectorIndexed: boolean;
   embeddingDimensions?: number;

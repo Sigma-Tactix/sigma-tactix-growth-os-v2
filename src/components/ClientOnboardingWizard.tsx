@@ -129,11 +129,11 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
                 <div className="sigma-subpanel flex flex-col p-4 sm:p-5">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--sigma-text)]"><FileText size={17} className="text-[var(--sigma-primary)]" /> Upload a client file</div>
                   <p className="mb-4 text-sm leading-6 text-[var(--sigma-text-muted)]">We will suggest profile fields from the document. You must review them before the workspace is created.</p>
-                  <input ref={fileInputRef} type="file" className="sr-only" accept=".pdf,.txt,.md,.csv,.json,.xls,.xlsx" onChange={(event) => handleFile(event.target.files?.[0])} />
+                  <input ref={fileInputRef} type="file" className="sr-only" accept=".pdf,.txt,.md,.csv,.json" onChange={(event) => handleFile(event.target.files?.[0])} />
                   <button type="button" className="mt-auto flex min-h-24 items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface)] px-4 py-5 text-sm font-semibold text-[var(--sigma-text)] hover:border-[var(--sigma-primary)] disabled:opacity-60" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
                     {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}{isAnalyzing ? 'Analyzing document…' : 'Choose file'}
                   </button>
-                  <p className="mt-3 text-xs text-[var(--sigma-text-muted)]">PDF, text, Markdown, CSV, JSON, XLS or XLSX. Max 15 MB.</p>
+                  <p className="mt-3 text-xs text-[var(--sigma-text-muted)]">PDF, text, Markdown, CSV, or JSON. Spreadsheet uploads are temporarily unavailable. Max 15 MB.</p>
                   {fileError && <p role="alert" className="mt-3 text-sm text-red-600">{fileError}</p>}
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
 function ReviewField({ field, label, value, source, onChange, onReview, multiline = false, required = false }: { field: OnboardingField; label: string; value: string; source?: ClientOnboardingDraft['sources'][OnboardingField]; onChange: (value: string) => void; onReview: (field: OnboardingField, accept: boolean) => void; multiline?: boolean; required?: boolean }) {
   const suggested = source?.status === 'suggested';
   return <div className={`rounded-xl ${suggested ? 'border border-amber-500/40 bg-amber-500/5 p-3' : ''}`}>
-    <div className="mb-1.5 flex items-center justify-between gap-2"><label className="text-xs font-semibold text-[var(--sigma-text-soft)]">{label}{required ? ' *' : ''}</label>{source && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${suggested ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]'}`}>{suggested ? 'File suggestion · review' : source.kind === 'file' ? 'File · confirmed' : 'Entered manually'}</span>}</div>
+    <div className="mb-1.5 flex items-center justify-between gap-2"><label className="text-xs font-semibold text-[var(--sigma-text-soft)]">{label}{required ? ' *' : ''}</label>{source && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${suggested ? 'bg-amber-500/15 text-amber-700 dark:text-amber-accent' : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]'}`}>{suggested ? 'File suggestion · review' : source.kind === 'file' ? 'File · confirmed' : 'Entered manually'}</span>}</div>
     {multiline ? <textarea className={`${fieldClass} min-h-24 resize-y`} value={value} onChange={(event) => onChange(event.target.value)} /> : <input className={fieldClass} value={value} onChange={(event) => onChange(event.target.value)} />}
     {suggested && <div className="mt-2 flex gap-2"><button type="button" className="rounded-lg bg-[var(--sigma-primary)] px-3 py-1.5 text-xs font-semibold text-white" onClick={() => onReview(field, true)}>Confirm</button><button type="button" className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--sigma-text)]" onClick={() => onReview(field, false)}>Clear</button></div>}
   </div>;
@@ -206,3 +206,4 @@ function ReviewField({ field, label, value, source, onChange, onReview, multilin
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return <div className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr]"><dt className="text-xs font-semibold text-[var(--sigma-text-muted)]">{label}</dt><dd className="min-w-0 break-words text-sm text-[var(--sigma-text)]">{value}</dd></div>;
 }
+

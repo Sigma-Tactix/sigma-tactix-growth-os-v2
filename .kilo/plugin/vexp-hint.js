@@ -1,5 +1,5 @@
 // vexp-hint: per-prompt orientation + idle verification (fail-open). Managed by vexp.
-const VEXP_BIN = "/Users/mac/.antigravity-ide/extensions/vexp.vexp-vscode-3.3.2-darwin-arm64/binaries/vexp-core-darwin-arm64/vexp-core";
+const VEXP_BIN = "/Users/mac/.antigravity-ide/extensions/vexp.vexp-vscode-3.3.8-darwin-arm64/binaries/vexp-core-darwin-arm64/vexp-core";
 const VEXP_AGENT = "kilo";
 export const VexpHint = async ({ directory, client }) => {
   const fs = await import("node:fs");

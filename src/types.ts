@@ -119,11 +119,12 @@ export interface SecondBrain {
     size: string;
     uploadedAt: string;
     vaultId: string;
-    status: 'Ready' | 'Processing';
+    status: 'Ready' | 'Processing' | 'Stored' | 'Indexed';
     storagePath?: string;
     documentId?: string;
     mimeType?: string;
     sha256?: string;
+    vectorIndexed?: boolean;
   }>;
   connectors: Connector[];
   internalStack: Array<{
@@ -611,6 +612,10 @@ export interface AIKeyConfig {
   model: string;
   updatedAt?: string | null;
   live: boolean;
+  /** Optional gateway/proxy override host saved with the key (e.g. https://api.opusmax.pro). */
+  baseUrl?: string;
+  /** True when the provider is connected via account sign-in (OAuth) rather than a raw API key. */
+  accountAuth?: boolean;
 }
 
 export interface ClientWorkspace {

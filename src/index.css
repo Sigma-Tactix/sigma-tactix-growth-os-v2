@@ -8,9 +8,16 @@
   --color-surface: var(--sigma-surface);
   --color-surface-dim: var(--sigma-surface-subtle);
   --color-surface-bright: var(--sigma-surface-raised);
-  --color-primary: #ff481b;
-  --color-primary-hover: #e03a10;
-  --color-accent: #ff481b;
+  --color-primary: var(--sigma-primary);
+  --color-primary-hover: var(--sigma-primary-hover);
+  --color-accent: var(--sigma-accent);
+  /* Theme-aware status accents: WCAG AA (4.5:1) on both light surfaces and the dark VANTA/console fixed surfaces */
+  --color-amber-accent: var(--sigma-accent-amber);
+  --color-emerald-accent: var(--sigma-accent-emerald);
+  --color-cyan-accent: var(--sigma-accent-cyan);
+  --color-blue-accent: var(--sigma-accent-blue);
+  --color-rose-accent: var(--sigma-accent-rose);
+  --color-sky-accent: var(--sigma-accent-cyan);
   --color-border: var(--sigma-border);
   --color-border-strong: var(--sigma-border-strong);
   --color-foreground: var(--sigma-text);
@@ -29,9 +36,24 @@
   --sigma-text-soft: #383a42;
   --sigma-text-muted: #6c727f;
   --sigma-muted: #6c727f;
-  --sigma-primary: #ff481b;
-  --sigma-primary-subtle: rgba(255, 72, 27, 0.09);
+  --sigma-primary: #d83812;
+  --sigma-primary-subtle: rgba(216, 56, 18, 0.09);
+  --sigma-primary-hover: #c0360c;
   --sigma-vermilion: #d83812;
+  /*
+   * Accent + status tokens. `--sigma-primary` is the brand fill in the light theme
+   * but is intentionally deepened to #d83812 so it also clears WCAG AA (4.5:1)
+   * as text/links on white and on #f1f3f5. `--sigma-accent` aliases it; the
+   * status accents are the darker tonal variants that stay AA-legible on light
+   * surfaces (and, where brighter, on fixed-dark VANTA surfaces).
+   */
+  --sigma-accent: #d83812;
+  --sigma-accent-amber: #b45309;
+  --sigma-accent-emerald: #047857;
+  --sigma-accent-cyan: #0e7490;
+  --sigma-accent-blue: #1d4ed8;
+  --sigma-accent-rose: #be123c;
+  --sigma-on-primary: #ffffff;
   --sigma-border: rgba(0, 0, 0, 0.08);
   --sigma-border-strong: rgba(0, 0, 0, 0.16);
   --sigma-input: #ffffff;
@@ -63,7 +85,16 @@
   --sigma-muted: #a1a1aa;
   --sigma-primary: #ff5a32;
   --sigma-primary-subtle: rgba(255, 90, 50, 0.14);
+  --sigma-primary-hover: #ff704d;
   --sigma-vermilion: #ff704d;
+  /* WCAG AA status accents on dark surfaces (brighter tonal variants) */
+  --sigma-accent: #ff5a32;
+  --sigma-accent-amber: #fbbf24;
+  --sigma-accent-emerald: #34d399;
+  --sigma-accent-cyan: #22d3ee;
+  --sigma-accent-blue: #60a5fa;
+  --sigma-accent-rose: #fb7185;
+  --sigma-on-primary: #09090b;
   --sigma-border: rgba(255, 255, 255, 0.08);
   --sigma-border-strong: rgba(255, 255, 255, 0.15);
   --sigma-input: #121215;
@@ -103,6 +134,21 @@
   button, input, textarea, select { font: inherit; }
   button, [role="button"] { touch-action: manipulation; }
   :focus-visible { outline: 2px solid #ff481b; outline-offset: 2px; }
+}
+
+/*
+ * Touch-target minimums (WCAG 2.5.8): on coarse pointers, extend the hit area of
+ * compact buttons (h-7/h-8.5) to a 44px minimum via a pseudo-element, so the
+ * visual size and layout are unchanged on touch devices.
+ */
+@media (pointer: coarse) {
+  .btn-xs, .btn-sm { position: relative; }
+  .btn-xs::after, .btn-sm::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: inherit;
+  }
 }
 
 /* Base application styling */

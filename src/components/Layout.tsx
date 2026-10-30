@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -45,7 +45,8 @@ import {
   FileText,
   Wifi,
   Trophy,
-  Swords
+  Swords,
+  BrainCircuit,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -62,6 +63,7 @@ import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
+import { isVantaReleaseEnabled, resolveVantaNavigationTarget } from '@/src/lib/vantaFeatureFlag';
 
 interface NavSection {
   title: string;
@@ -74,6 +76,22 @@ interface NavSection {
   }[];
 }
 
+const developmentEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
+const vantaNavigationTarget = resolveVantaNavigationTarget({
+  releaseEnabled: isVantaReleaseEnabled(),
+  development: developmentEnv?.DEV === true,
+});
+
+const vantaNavigationItems: NavSection['items'] = vantaNavigationTarget
+  ? [{
+      label: 'Living System',
+      href: vantaNavigationTarget.href,
+      icon: BrainCircuit,
+      roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
+      badge: vantaNavigationTarget.badge,
+    }]
+  : [];
+
 const navSections: NavSection[] = [
   {
     title: 'Growth OS Overview',
@@ -81,6 +99,7 @@ const navSections: NavSection[] = [
       { label: 'Executive Dashboard', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
       { label: 'Growth Diagnostics', href: '/diagnostics', icon: ClipboardCheck, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Health Audit' },
       { label: 'Second Brain Vaults', href: '/vaults', icon: Database, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
+      ...vantaNavigationItems,
     ]
   },
   {
@@ -136,12 +155,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
   const [isPlaybookDropdownOpen, setIsPlaybookDropdownOpen] = useState(false);
+  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
+  const roleMenuRef = useRef<HTMLDivElement>(null);
 
   const handleQuickSearchSelect = (href: string) => {
     navigate(href);
     setSearchQuery('');
     setIsSearchFocused(false);
   };
+
+  // Close the role menu on outside-click and Escape (it is a click-toggle, not hover)
+  useEffect(() => {
+    if (!isRoleMenuOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (roleMenuRef.current && !roleMenuRef.current.contains(e.target as Node)) {
+        setIsRoleMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsRoleMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isRoleMenuOpen]);
 
   const allNavItems = navSections.flatMap(s => s.items);
   const searchResults = searchQuery.trim() 
@@ -195,51 +235,57 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Quick Stats Pill */}
           {isSidebarOpen && (
             <div className="space-y-2">
-              <div 
+              <button
+                type="button"
                 onClick={() => navigate('/vaults')}
-                className="px-3 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer shadow-xs"
+                aria-label="Second Brain Core: open workspace evidence"
+                className="px-3 py-2 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer shadow-xs text-left w-full"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden="true" />
                   <div className="truncate">
                     <div className="text-xs font-semibold text-[var(--sigma-text)] truncate">Second Brain Core</div>
-                    <div className="text-[10px] text-[var(--sigma-text-muted)] truncate">Open workspace evidence</div>
+                    <div className="text-[11px] text-[var(--sigma-text-muted)] truncate">Open workspace evidence</div>
                   </div>
                 </div>
                 <ChevronRight size={14} className="text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)] transition-transform group-hover:translate-x-0.5" />
-              </div>
+              </button>
 
               {/* Ecosystem Live Status Trigger Bar */}
-              <div 
+              <button
+                type="button"
                 onClick={() => {
                   setIsEcosystemStatusOpen(true);
                   setIsEcosystemStatusDocked(true);
                 }}
+                aria-pressed={isEcosystemStatusOpen && isEcosystemStatusDocked}
+                aria-label="Open ecosystem status evidence"
                 className={cn(
+                  "w-full px-3 py-2 rounded-xl flex items-center justify-between group transition-all cursor-pointer border text-xs shadow-xs",
                   "px-3 py-2 rounded-xl flex items-center justify-between group transition-all cursor-pointer border text-xs shadow-xs",
                   isEcosystemStatusOpen && isEcosystemStatusDocked
-                    ? "bg-[#ff481b] text-white border-[#ff481b] font-semibold"
+                    ? "bg-[var(--sigma-primary)] text-white border-[var(--sigma-primary)] font-semibold"
                     : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] text-[var(--sigma-text)]"
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Activity size={14} className={cn("shrink-0", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[#ff481b]")} />
+                  <Activity size={14} className={cn("shrink-0", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-primary)]")} />
                   <div className="truncate">
                     <div className="font-semibold truncate flex items-center gap-1.5">
                       <span>Ecosystem Status</span>
                       <span className={cn(
-                        "text-[9px] px-1.5 py-0.2 rounded font-medium",
-                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
+                        "text-[11px] px-1.5 py-0.2 rounded font-medium",
+                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
                       )}>STATUS</span>
                     </div>
                     <div className={cn(
-                      "text-[10px] truncate",
+                      "text-[11px] truncate",
                       isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white/80" : "text-[var(--sigma-text-muted)]"
                     )}>Runtime evidence and checks</div>
                   </div>
                 </div>
                 <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
-              </div>
+              </button>
             </div>
           )}
 
@@ -251,7 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 setIsEcosystemStatusDocked(true);
               }}
               title="Review ecosystem status evidence"
-              className="relative p-2.5 mx-auto bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] rounded-xl flex items-center justify-center text-[#ff481b] transition-all group cursor-pointer"
+              className="relative p-2.5 mx-auto bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] rounded-xl flex items-center justify-center text-[var(--sigma-primary)] transition-all group cursor-pointer"
             >
               <Activity size={16} />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -268,12 +314,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             return (
               <div key={sIdx} className="space-y-1">
                 {isSidebarOpen && (
-                  <div className="px-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)] font-semibold mb-1 opacity-70">
+                  <div className="px-3 text-[11px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)] font-semibold mb-1 opacity-70">
                     {section.title}
                   </div>
                 )}
                 {sectionItems.map((item) => {
-                  const isActive = location.pathname === item.href;
+                  const itemPathname = item.href.split('?')[0];
+                  const isActive = location.pathname === itemPathname;
                   return (
                     <NavLink
                       key={item.href}
@@ -287,9 +334,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {isActive && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#ff481b] shrink-0" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--sigma-primary)] shrink-0" />
                         )}
-                        <item.icon size={16} className={cn("shrink-0 transition-colors", isActive ? "text-[#ff481b]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]" )}/>
+                        <item.icon size={16} className={cn("shrink-0 transition-colors", isActive ? "text-[var(--sigma-primary)]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]" )}/>
                         {isSidebarOpen && (
                           <span className="font-medium whitespace-nowrap truncate tracking-tight">
                             {item.label}
@@ -299,8 +346,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       {isSidebarOpen && item.badge && (
                         <span className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded-md font-medium tracking-tight",
-                          isActive ? "bg-[#ff481b]/15 text-[#ff481b]" : "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
+                          "text-[11px] px-1.5 py-0.5 rounded-md font-medium tracking-tight",
+                          isActive ? "bg-[var(--sigma-primary)]/15 text-[var(--sigma-primary)]" : "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
                         )}>
                           {item.badge}
                         </span>
@@ -308,7 +355,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       {/* Active Indicator for collapsed mode */}
                       {isActive && !isSidebarOpen && (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#ff481b] rounded-l-full" />
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--sigma-primary)] rounded-l-full" />
                       )}
                     </NavLink>
                   );
@@ -330,7 +377,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                  className={cn("transition-transform duration-300", isSidebarOpen && "rotate-180")}
                />
             </div>
-            {isSidebarOpen && <span className="font-bold text-[10px] uppercase tracking-widest text-zinc-400 group-hover:text-white">Collapse Sidebar</span>}
+            {isSidebarOpen && <span className="font-bold text-[11px] uppercase tracking-widest text-zinc-400 group-hover:text-white">Collapse Sidebar</span>}
           </button>
         </div>
       </aside>
@@ -359,7 +406,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Quick Search */}
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-xs 2xl:max-w-md relative">
              <div className="w-full relative group">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[#ff481b] transition-colors" size={15} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[var(--sigma-primary)] transition-colors" size={15} />
                 <input 
                   type="text" 
                   value={searchQuery}
@@ -367,10 +414,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                   placeholder="Search features, vaults, diagnostics..."
-                  className="w-full h-9 pl-9 pr-12 bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] border border-[var(--sigma-border)] rounded-xl text-xs font-sans focus:outline-none focus:border-[#ff481b] focus:ring-2 focus:ring-[#ff481b]/15 transition-all"
+                  className="w-full h-9 pl-9 pr-12 bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] border border-[var(--sigma-border)] rounded-xl text-xs font-sans focus:outline-none focus:border-[var(--sigma-primary)] focus:ring-2 focus:ring-[var(--sigma-primary)]/15 transition-all"
                 />
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--sigma-text-muted)] bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-md shadow-2xs">
+                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--sigma-text-muted)] bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-md shadow-2xs">
                     ⌘K
                   </kbd>
                 </div>
@@ -386,10 +433,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                      className="sigma-menu-item w-full flex items-center justify-between p-2 text-left text-xs cursor-pointer"
                    >
                      <div className="flex items-center gap-2">
-                       <res.icon size={14} className="text-[#ff481b]" />
+                       <res.icon size={14} className="text-[var(--sigma-primary)]" />
                        <span className="font-semibold">{res.label}</span>
                      </div>
-                     <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{res.href}</span>
+                     <span className="text-[11px] font-mono text-[var(--sigma-text-muted)]">{res.href}</span>
                    </button>
                  ))}
                </div>
@@ -404,9 +451,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                title="Active Sovereign Client Enclave"
              >
                <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-               <Building size={13} className="text-[#ff481b]" />
+               <Building size={13} className="text-[var(--sigma-primary)]" />
                <span className="sigma-text font-semibold max-w-[130px] truncate">{currentWorkspace.name}</span>
-               <span className="px-1.5 py-0.2 rounded bg-[#ff481b]/15 text-[10px] uppercase font-bold text-[#ff481b] border border-[#ff481b]/30">
+               <span className="px-1.5 py-0.2 rounded bg-[var(--sigma-primary)]/15 text-[11px] uppercase font-bold text-[var(--sigma-primary)] border border-[var(--sigma-primary)]/30">
                  {currentWorkspace.tier}
                </span>
                <ChevronDown size={12} className="text-[var(--sigma-text-muted)] transition-colors" />
@@ -421,9 +468,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                    exit={{ opacity: 0, y: 5 }}
                    className="sigma-menu absolute top-full left-0 mt-2 w-72 p-2 z-50 space-y-1 shadow-xl"
                  >
-                  <div className="px-3 py-2 border-b sigma-divider flex items-center justify-between text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] font-bold">
+                  <div className="px-3 py-2 border-b sigma-divider flex items-center justify-between text-[11px] font-mono uppercase text-[var(--sigma-text-muted)] font-bold">
                      <span>Client Enclaves ({workspaces.length})</span>
-                     <span className="text-emerald-400">Isolated</span>
+                     <span className="text-emerald-accent">Isolated</span>
                    </div>
 
                    <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
@@ -437,7 +484,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                          className={cn(
                            "sigma-menu-item w-full flex items-center justify-between p-2.5 text-left text-xs cursor-pointer",
                            currentWorkspace.id === ws.id
-                             ? "bg-[#ff481b]/10 border border-[#ff481b]/30 text-[#ff481b] font-semibold"
+                             ? "bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/30 text-[var(--sigma-primary)] font-semibold"
                              : ""
                          )}
                        >
@@ -446,9 +493,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                              {currentWorkspace.id === ws.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
                              <span className="truncate">{ws.name}</span>
                            </div>
-                           <div className="text-[10px] text-[var(--sigma-text-muted)]">{ws.domain}</div>
+                           <div className="text-[11px] text-[var(--sigma-text-muted)]">{ws.domain}</div>
                          </div>
-                         <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--sigma-surface-subtle)] text-[#ff481b] border border-[var(--sigma-border)] shrink-0">
+                         <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--sigma-surface-subtle)] text-[var(--sigma-primary)] border border-[var(--sigma-border)] shrink-0">
                            {ws.tier}
                          </span>
                        </button>
@@ -461,7 +508,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                          setIsWorkspaceDropdownOpen(false);
                          setIsOnboardingOpen(true);
                        }}
-                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#ff481b]/10 hover:bg-[#ff481b] text-[#ff481b] hover:text-white border border-[#ff481b]/30 rounded-xl text-xs font-semibold uppercase transition-all cursor-pointer"
+                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-[var(--sigma-primary)]/10 hover:bg-[var(--sigma-primary)] text-[var(--sigma-primary)] hover:text-white border border-[var(--sigma-primary)]/30 rounded-xl text-xs font-semibold uppercase transition-all cursor-pointer"
                      >
                        <Plus size={13} />
                        <span>Onboard New Client</span>
@@ -540,51 +587,66 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer",
                 isEcosystemStatusOpen && isEcosystemStatusDocked
-                  ? "bg-[#ff481b] text-white border-[#ff481b] font-semibold shadow-xs"
+                  ? "bg-[var(--sigma-primary)] text-white border-[var(--sigma-primary)] font-semibold shadow-xs"
                   : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)]"
               )}
             >
-              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[#ff481b]"} />
+              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-primary)]"} />
               <span className="hidden 2xl:inline">Ecosystem</span>
               <span className={cn(
-                "px-1.5 py-0.2 rounded text-[10px] font-bold font-mono",
-                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-zinc-500/15 text-zinc-300"
+                "px-1.5 py-0.2 rounded text-[11px] font-bold font-mono",
+                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
               )}>STATUS</span>
             </button>
 
             <div className="hidden xl:block"><ThemeToggle /></div>
             <div className="hidden h-5 w-px sigma-divider border-l mx-0.5 sm:block" />
             
-            {/* Role Switcher */}
-            <div className="relative hidden group/role 2xl:block">
-               <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-xs font-medium text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer">
-                  <ShieldCheck size={14} className="text-[#ff481b]" />
+            {/* Role Switcher — click-toggle (was hover-only, which fails WCAG 2.1.1) */}
+            <div ref={roleMenuRef} className="relative hidden 2xl:block">
+               <button
+                type="button"
+                onClick={() => setIsRoleMenuOpen(open => !open)}
+                aria-haspopup="menu"
+                aria-expanded={isRoleMenuOpen}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl text-xs font-medium text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)] transition-all cursor-pointer"
+              >
+                  <ShieldCheck size={14} className="text-[var(--sigma-primary)]" />
                   <span>{role}</span>
+                  <ChevronDown size={12} className={cn('transition-transform', isRoleMenuOpen && 'rotate-180')} />
                </button>
-               <div className="absolute top-full right-0 mt-2 w-44 sigma-menu p-1.5 hidden group-hover/role:block shadow-xl z-[100]">
+               {isRoleMenuOpen && (
+                <div role="menu" className="absolute top-full right-0 mt-2 w-44 sigma-menu p-1.5 shadow-xl z-[100]">
                   {(['ADMIN', 'SUB_ADMIN', 'USER'] as UserRole[]).map((r) => (
-                    <button 
+                    <button
                       key={r}
-                      onClick={() => setRole(r)}
+                      role="menuitemradio"
+                      aria-checked={role === r}
+                      onClick={() => { setRole(r); setIsRoleMenuOpen(false); }}
                       className={cn(
                         "w-full text-left px-3 py-2 rounded-lg text-xs transition-all cursor-pointer",
-                        role === r ? "bg-[#ff481b]/15 text-[#ff481b] font-semibold" : "text-[var(--sigma-text-soft)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)]"
+                        role === r ? "bg-[var(--sigma-primary)]/15 text-[var(--sigma-primary)] font-semibold" : "text-[var(--sigma-text-soft)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)]"
                       )}
                     >
                       {r}
                     </button>
                   ))}
-               </div>
+                </div>
+               )}
             </div>
 
             {/* Notifications Button */}
             <div className="relative">
-              <button 
+              <button
+                type="button"
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                aria-haspopup="true"
+                aria-expanded={isNotificationsOpen}
+                aria-label="System notifications"
                 className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] relative p-2 rounded-xl hover:bg-[var(--sigma-surface-subtle)] transition-all cursor-pointer"
               >
-                <Bell size={17} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff481b] rounded-full border-2 border-[var(--sigma-surface)]" />
+                <Bell size={17} aria-hidden="true" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--sigma-primary)] rounded-full border-2 border-[var(--sigma-surface)]" />
               </button>
 
               {/* Notifications Dropdown */}
@@ -592,40 +654,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className="absolute top-full right-0 mt-2 w-80 sigma-menu p-4 shadow-xl z-50 space-y-3">
                   <div className="flex items-center justify-between border-b sigma-divider pb-2">
                     <span className="text-xs font-semibold text-[var(--sigma-text)]">System Alerts</span>
-                    <span className="text-[10px] font-mono font-bold text-[#ff481b] bg-[#ff481b]/10 px-1.5 py-0.5 rounded">3 New</span>
+                    <span className="text-[11px] font-mono font-bold text-[var(--sigma-primary)] bg-[var(--sigma-primary)]/10 px-1.5 py-0.5 rounded">3 New</span>
                   </div>
                   <div className="space-y-2 text-xs">
-                    <div 
+                    <button
+                      type="button"
                       onClick={() => { navigate('/agents'); setIsNotificationsOpen(false); }}
-                      className="p-2.5 rounded-xl bg-[#ff481b]/10 border border-[#ff481b]/20 cursor-pointer hover:bg-[#ff481b]/15 transition-all"
+                      className="w-full p-2.5 rounded-xl bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 cursor-pointer hover:bg-[var(--sigma-primary)]/15 transition-all text-left"
                     >
                       <div className="font-semibold text-[var(--sigma-text)]">HITL Approval Required</div>
                       <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Performance Re-allocator proposed $6,200 shift</div>
-                    </div>
-                    <div 
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => { navigate('/diagnostics'); setIsNotificationsOpen(false); }}
-                      className="p-2.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] cursor-pointer hover:bg-[var(--sigma-surface-raised)] transition-all"
+                      className="w-full p-2.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] cursor-pointer hover:bg-[var(--sigma-surface-raised)] transition-all text-left"
                     >
                       <div className="font-semibold text-[var(--sigma-text)]">Growth Diagnostic Completed</div>
                       <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Overall Growth Score: 78/100</div>
-                    </div>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
             {/* User Avatar */}
-            <div 
+            <button
+              type="button"
               onClick={() => navigate('/tenants')}
-              className="w-8 h-8 rounded-full border border-[var(--sigma-border-strong)] p-0.5 hover:border-[#ff481b] transition-all cursor-pointer"
-              title="Tenant Control"
+              className="w-8 h-8 rounded-full border border-[var(--sigma-border-strong)] p-0.5 hover:border-[var(--sigma-primary)] transition-all cursor-pointer"
+              aria-label="Tenant Control: manage workspaces and access"
             >
-              <img 
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                alt="Avatar"
+              <img
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                alt=""
                 className="w-full h-full object-cover rounded-full"
               />
-            </div>
+            </button>
           </div>
         </header>
 
@@ -667,3 +732,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

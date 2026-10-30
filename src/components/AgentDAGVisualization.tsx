@@ -459,7 +459,7 @@ export default function AgentDAGVisualization({
               </div>
             </div>
 
-            <div className="text-[9px] text-zinc-500">
+            <div className="text-[11px] text-zinc-500">
               Click any node to inspect upstream & downstream dependencies
             </div>
           </div>
@@ -470,7 +470,7 @@ export default function AgentDAGVisualization({
           <div className="border-b border-white/10 pb-3">
             <div className="flex items-center justify-between">
               <span className={cn(
-                "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold",
+                "text-[11px] font-mono uppercase px-2 py-0.5 rounded font-bold",
                 selectedNode.type === 'orchestrator' ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" :
                 selectedNode.type === 'agent' ? "bg-accent/20 text-accent border border-accent/30" :
                 selectedNode.type === 'subagent' ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" :
@@ -480,7 +480,7 @@ export default function AgentDAGVisualization({
               </span>
 
               <span className={cn(
-                "text-[9px] font-mono uppercase px-2 py-0.5 rounded font-bold",
+                "text-[11px] font-mono uppercase px-2 py-0.5 rounded font-bold",
                 selectedNode.status === 'ACTIVE' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
                 selectedNode.status === 'WARNING' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                 "bg-white/5 text-muted border border-white/10"
@@ -515,15 +515,15 @@ export default function AgentDAGVisualization({
             {/* Telemetry metrics */}
             <div className="grid grid-cols-3 gap-2 pt-1">
               <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-[9px] text-muted">COMPLETED</div>
+                <div className="text-[11px] text-muted">COMPLETED</div>
                 <div className="text-xs font-bold text-white mt-0.5">{selectedNode.tasksCompleted ?? 140}</div>
               </div>
               <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-[9px] text-muted">ACCURACY</div>
+                <div className="text-[11px] text-muted">ACCURACY</div>
                 <div className="text-xs font-bold text-accent mt-0.5">{selectedNode.accuracy ?? '99.4%'}</div>
               </div>
               <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-[9px] text-muted">LATENCY</div>
+                <div className="text-[11px] text-muted">LATENCY</div>
                 <div className="text-xs font-bold text-green-400 mt-0.5">{selectedNode.latency ?? '18ms'}</div>
               </div>
             </div>
@@ -531,7 +531,7 @@ export default function AgentDAGVisualization({
             {/* Target Vault */}
             {selectedNode.vaultAffected && (
               <div className="p-2.5 rounded-xl bg-green-500/5 border border-green-500/20 text-xs">
-                <span className="text-[9px] font-mono text-green-400 uppercase font-bold block mb-1">Enforced Target Vault:</span>
+                <span className="text-[11px] font-mono text-green-400 uppercase font-bold block mb-1">Enforced Target Vault:</span>
                 <div className="flex items-center gap-2 text-white font-bold">
                   <Database size={13} className="text-green-400" />
                   <span>{selectedNode.vaultAffected}</span>

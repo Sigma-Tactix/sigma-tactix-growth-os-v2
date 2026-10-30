@@ -308,7 +308,7 @@ export default function CompetitorResearchPage() {
       {/* Tabs */}
       <Tabs<TabType>
         tabs={[
-          { id: 'WEB_INTELLIGENCE', label: 'Live Web Intelligence (TinyFish)', icon: <Globe className="w-3.5 h-3.5 text-sky-400" /> },
+          { id: 'WEB_INTELLIGENCE', label: 'Live Web Intelligence (TinyFish)', icon: <Globe className="w-3.5 h-3.5 text-sky-accent" /> },
           { id: 'CREATIVE_MATRIX', label: 'Creative Comparisons Matrix', icon: <Swords className="w-3.5 h-3.5" /> },
           { id: 'PROFILES', label: 'Competitor Profiles & Tech Stacks', icon: <BarChart3 className="w-3.5 h-3.5" /> },
           { id: 'COUNTER_ATTACK', label: 'Counter-Attack Strategy Playbook', icon: <Target className="w-3.5 h-3.5" /> }
@@ -324,7 +324,7 @@ export default function CompetitorResearchPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-sky-400" />
+                  <Globe className="w-5 h-5 text-sky-accent" />
                   Live Web Intelligence Search & Snapshot Engine
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
@@ -681,3 +681,4 @@ export default function CompetitorResearchPage() {
     </div>
   );
 }
+

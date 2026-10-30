@@ -13,12 +13,14 @@ export type ModelProvider =
   | 'qwen' 
   | 'deepseek' 
   | 'glm' 
-  | 'lmstudio' 
-  | 'ollama' 
+  | 'lmstudio'
+  | 'ollama'
   | 'laya'
-  | 'omniroute' 
-  | 'opencode' 
-  | 'openrouter';
+  | 'omniroute'
+  | 'opencode'
+  | 'openrouter'
+  | 'opusmax'
+  | 'openai-account';
 
 export interface ModelInfo {
   id: string;
@@ -36,6 +38,10 @@ export interface ModelInfo {
   oneClickAgentTarget?: string;
   isLocal?: boolean;
   isRouter?: boolean;
+  /** Numeric context ceiling for cost simulators & context sliders (contextWindow stays the display string). */
+  contextTokens?: number;
+  /** Supported reasoning-effort ladder, e.g. OpusMax Claude-family models. */
+  effortLevels?: string[];
 }
 
 // Complete multi-provider AI model catalog with verified token unit pricing per 1M tokens (USD) as of September 2026
@@ -688,6 +694,141 @@ export const ALL_AI_MODELS: ModelInfo[] = [
     latencyGrade: 'INSTANT',
     useCases: ['Continuous telemetry parsing', 'Health checks', 'Background monitors'],
     oneClickAgentTarget: 'agent-ops'
+  },
+
+  // ==========================================
+  // 10. OpusMax — Claude-family LLM gateway
+  //     Live remote gateway (opusmax-gateway@1.0.2, `npx opusmax-gateway`).
+  //     Base URL: https://api.opusmax.pro (OpenAI-compat /v1) or
+  //     https://opusxmax.vercel.app/api (Anthropic wire). Keys: sk-ant-ox-...
+  //     Model IDs below are the gateway's exact /v1/models ids. The live
+  //     listing is fetched on connect (Admin > AI Model Config > Fetch Models);
+  //     per-token fields are tier estimates for cost simulators only.
+  //     `[1m]` appended to a model id requests the 1M context budget.
+  // ==========================================
+  ...([
+    // [id, displayName, contextTokens, ctxLabel, prompt$/1M, out$/1M, effort, role, target]
+    ['claude-fable-5-1', 'Claude Fable 5.1', 1_000_000, '1M', 3.0, 15.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Flagship Claude Fable reasoning — highest-stakes strategy & governance', 'agent-orchestrator'],
+    ['claude-fable-5', 'Claude Fable 5.0', 1_000_000, '1M', 3.0, 15.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Frontier Fable long-horizon reasoning with 1M context', 'agent-diagnostic'],
+    ['claude-opus-5-5', 'Claude Opus 5.5', 1_000_000, '1M', 5.0, 25.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Current frontier Opus — deep code architecture & synthesis', 'agent-orchestrator'],
+    ['claude-opus-5', 'Claude Opus 5.0', 1_000_000, '1M', 5.0, 25.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Prior-gen Opus at 1M — stable fallback for audited pipelines', 'agent-competitor'],
+    ['claude-sonnet-5-5', 'Claude Sonnet 5.5', 1_000_000, '1M', 3.0, 12.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'BALANCED' as const, 'Balanced 1M-context Claude for long agent loops', 'agent-content'],
+    ['claude-sonnet-5', 'Claude Sonnet 5.0', 1_000_000, '1M', 3.0, 12.0, ['low', 'medium', 'high'], 'BALANCED' as const, 'Prior-gen Sonnet at 1M — campaign & content pipelines', 'agent-content'],
+    ['claude-opus-4-8', 'Claude Opus 4.8', 1_000_000, '1M', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Deep Opus 4.8 analysis — teardowns & regulatory work', 'agent-competitor'],
+    ['claude-opus-4-7', 'Claude Opus 4.7', 1_000_000, '1M', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Opus 4.7 reasoning tier for complex multi-step analysis', 'agent-diagnostic'],
+    ['claude-opus-4-6', 'Claude Opus 4.6', 1_000_000, '1M', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Opus 4.6 tier — enterprise-grade long-context reasoning', 'agent-diagnostic'],
+    ['claude-sonnet-4-6', 'Claude Sonnet 4.6', 1_000_000, '1M', 3.0, 12.0, ['low', 'medium', 'high'], 'BALANCED' as const, 'Sonnet 4.6 at 1M — workhorse for volume content', 'agent-outreach'],
+    ['claude-opus-4-5', 'Claude Opus 4.5', 200_000, '200K', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh', 'max'], 'THINKING' as const, 'Opus 4.5 — deep reasoning at standard context', 'agent-competitor'],
+    ['claude-sonnet-4-5-20250929', 'Claude Sonnet 4.5 (2025-09-29)', 200_000, '200K', 3.0, 15.0, ['low', 'medium', 'high'], 'BALANCED' as const, 'Dated Sonnet 4.5 snapshot — reproducible audited runs', 'agent-ops'],
+    ['claude-haiku-4-5-20251001', 'Claude Haiku 4.5 (2025-10-01)', 200_000, '200K', 1.0, 5.0, ['low', 'medium'], 'INSTANT' as const, 'Dated Haiku 4.5 snapshot — high-volume triage', 'agent-outreach'],
+    ['claude-opus-4-1-20250805', 'Claude Opus 4.1 (2025-08-05)', 200_000, '200K', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh'], 'THINKING' as const, 'Opus 4.1 snapshot — legacy pipeline compatibility', 'agent-ops'],
+    ['claude-opus-4-20250514', 'Claude Opus 4 (2025-05-14)', 200_000, '200K', 15.0, 75.0, ['low', 'medium', 'high', 'xhigh'], 'THINKING' as const, 'Original Opus 4 snapshot — regression baselines', 'agent-ops'],
+    ['claude-sonnet-4-20250514', 'Claude Sonnet 4 (2025-05-14)', 200_000, '200K', 3.0, 15.0, ['low', 'medium', 'high'], 'BALANCED' as const, 'Original Sonnet 4 snapshot — stable fallback', 'agent-ops'],
+    ['claude-haiku-5-5', 'Claude Haiku 5.5', 200_000, '200K', 1.0, 5.0, ['low', 'medium'], 'INSTANT' as const, 'Fastest Claude tier — cron-scale monitoring & lead scoring', 'agent-outreach'],
+  ] as const)
+    .map(
+      ([id, name, contextTokens, ctx, p, c, effort, grade, role, target]): ModelInfo => ({
+        id,
+        provider: 'opusmax',
+        providerName: 'OpusMax Gateway',
+        name: `OpusMax — ${name}`,
+        contextWindow: `${ctx} tokens`,
+        contextTokens,
+        promptPer1M: p,
+        candidatePer1M: c,
+        description: `${role} (OpusMax Claude gateway; append [1m] to the model id for a 1M budget; sk-ant-ox-... keys).`,
+        recommendedRole: role,
+        status: 'GA',
+        latencyGrade: grade,
+        effortLevels: effort as unknown as string[],
+        useCases: ['Claude-family access via OpusMax gateway', 'OpenAI + Anthropic wire formats', 'Gateway-side key & quota checks'],
+        oneClickAgentTarget: target,
+        isRouter: true,
+      })
+    ),
+
+  // Family aliases the gateway resolves to the latest model of that tier.
+  // The gateway's own aliases are bare 'opus'/'sonnet'/'haiku' — the server
+  // strips the 'opusmax-' prefix before sending the id (see server.ts opusmax
+  // branch). IDs stay namespaced here so the token-cost engine's substring
+  // matching can never cross-wire them to the direct Anthropic models above.
+  {
+    id: 'opusmax-opus',
+    provider: 'opusmax',
+    providerName: 'OpusMax Gateway',
+    name: 'OpusMax — opus (latest alias)',
+    contextWindow: '200K tokens (append [1m] for 1M)',
+    contextTokens: 200_000,
+    promptPer1M: 15.00,
+    candidatePer1M: 75.00,
+    description: 'Alias routing to the newest Opus tier on the gateway. Append [1m] to opt into the 1M context budget.',
+    recommendedRole: 'Pinning workflows to "always the latest Opus" without hard-coding a version',
+    status: 'GA',
+    latencyGrade: 'THINKING',
+    effortLevels: ['low', 'medium', 'high', 'xhigh', 'max'],
+    useCases: ['Latest-Opus-by-default agent runs', '1M-context long work (add [1m])'],
+    oneClickAgentTarget: 'agent-orchestrator',
+    isRouter: true
+  },
+  {
+    id: 'opusmax-sonnet',
+    provider: 'opusmax',
+    providerName: 'OpusMax Gateway',
+    name: 'OpusMax — sonnet (latest alias)',
+    contextWindow: '1M tokens (append [1m])',
+    contextTokens: 1_000_000,
+    promptPer1M: 3.00,
+    candidatePer1M: 12.00,
+    description: 'Alias routing to the newest Sonnet tier on the gateway. Append [1m] to opt into the 1M context budget.',
+    recommendedRole: 'Cost-effective "always the latest Sonnet" for high-volume agent loops',
+    status: 'GA',
+    latencyGrade: 'BALANCED',
+    effortLevels: ['low', 'medium', 'high', 'xhigh', 'max'],
+    useCases: ['Latest-Sonnet-by-default pipelines', '1M-context content runs (add [1m])'],
+    oneClickAgentTarget: 'agent-content',
+    isRouter: true
+  },
+  {
+    id: 'opusmax-haiku',
+    provider: 'opusmax',
+    providerName: 'OpusMax Gateway',
+    name: 'OpusMax — haiku (latest alias)',
+    contextWindow: '200K tokens (append [1m] for 1M)',
+    contextTokens: 200_000,
+    promptPer1M: 1.00,
+    candidatePer1M: 5.00,
+    description: 'Alias routing to the newest Haiku tier on the gateway for the fastest, cheapest responses. Append [1m] to opt into 1M context.',
+    recommendedRole: 'Fastest-possible triage, scoring and cron-scale monitoring',
+    status: 'GA',
+    latencyGrade: 'INSTANT',
+    effortLevels: ['low', 'medium'],
+    useCases: ['Latest-Haiku-by-default triage', 'Background monitors'],
+    oneClickAgentTarget: 'agent-outreach',
+    isRouter: true
+  },
+
+  // ==========================================
+  // 11. OpenAI account login (ChatGPT / Codex)
+  //     Authenticated via OpenAI OAuth sign-in; the raw API key
+  //     remains an optional fallback. No per-token cost is visible
+  //     to the workspace (covered by the account subscription).
+  // ==========================================
+  {
+    id: 'openai-account',
+    provider: 'openai-account',
+    providerName: 'OpenAI (ChatGPT / Codex account)',
+    name: 'OpenAI Account Login (ChatGPT / Codex)',
+    contextWindow: '192K tokens',
+    contextTokens: 192_000,
+    promptPer1M: 0.00,
+    candidatePer1M: 0.00,
+    description: 'Connect ChatGPT / Codex models through OpenAI account sign-in (OAuth) instead of a raw API key. Subscription usage is covered by the OpenAI account; the API key stays an optional fallback for automation.',
+    recommendedRole: 'Subscription-backed Agent Runs & Codex Tool Execution',
+    status: 'GA',
+    latencyGrade: 'BALANCED',
+    effortLevels: ['low', 'medium', 'high'],
+    useCases: ['Codex agent runs', 'ChatGPT model access without API billing', 'Subscription-priced automation'],
+    oneClickAgentTarget: 'agent-orchestrator'
   }
 ];
 

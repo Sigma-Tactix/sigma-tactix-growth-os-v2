@@ -137,8 +137,8 @@ export function taskMetadata(plan: DispatchPlan, task: Pick<AgentTask, 'parentTa
 
 /**
  * Materializes the selected registered sub-agents behind the existing DAG
- * seam. Nodes form a bounded sequential chain so each node can consume the
- * prior node's result without inventing an unbounded planner.
+ * seam. The entry node establishes shared evidence; independent specialists
+ * then fan out from that evidence under their own grants.
  */
 export function materializeDispatchGraph<T>(
   plan: DispatchPlan,
@@ -150,13 +150,13 @@ export function materializeDispatchGraph<T>(
   const nodes: WorkflowNodeDefinition[] = plan.executionSubAgentIds.map((subAgentId, index) => {
     const subAgent = getSubAgent(subAgentId);
     const nodeId = `sub-agent:${subAgent.id}`;
-    const dependencies = index === 0 ? [] : [`sub-agent:${plan.executionSubAgentIds[index - 1]}`];
+    const dependencies = index === 0 ? [] : [`sub-agent:${plan.executionSubAgentIds[0]}`];
     return {
       id: nodeId,
       title: subAgent.purpose,
       inputSchema: subAgent.inputContract,
       outputSchema: subAgent.outputContract,
-      permittedTools: [],
+      permittedTools: subAgent.permittedTools,
       timeoutMs: subAgent.timeoutMs,
       maxRetries: 0,
       dependencies,

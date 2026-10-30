@@ -66,7 +66,7 @@ export default function SigmaTactixLogo({
     xs: { mark: 22, width: 108, height: 28, sub: 'text-[7px]' },
     sm: { mark: 28, width: 132, height: 34, sub: 'text-[8px]' },
     md: { mark: 34, width: 164, height: 40, sub: 'text-[8px]' },
-    lg: { mark: 42, width: 198, height: 48, sub: 'text-[9px]' },
+    lg: { mark: 42, width: 198, height: 48, sub: 'text-[11px]' },
     xl: { mark: 54, width: 242, height: 58, sub: 'text-[10px]' },
   };
   const currentSize = typeof size === 'number' ? sizeMap.md : (sizeMap[size] || sizeMap.md);

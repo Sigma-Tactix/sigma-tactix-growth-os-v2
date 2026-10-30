@@ -49,6 +49,8 @@ export interface BoundedWorkflowGraphConfig {
   workspaceId: string;
   checkpoint?: Record<string, WorkflowNodeResult>;
   maxTotalTokens?: number;
+  /** Hard ceiling for independent node execution within this process. */
+  maxConcurrentNodes?: number;
 }
 
 export interface WorkflowExecutionSummary {
@@ -64,12 +66,14 @@ export class BoundedWorkflowGraph {
   private workspaceId: string;
   private checkpoint: Record<string, WorkflowNodeResult>;
   private maxTotalTokens?: number;
+  private maxConcurrentNodes: number;
   private discoveredFindings: Map<string, Finding> = new Map();
 
   constructor(config: BoundedWorkflowGraphConfig) {
     this.workspaceId = config.workspaceId;
     this.checkpoint = config.checkpoint || {};
     this.maxTotalTokens = config.maxTotalTokens;
+    this.maxConcurrentNodes = Math.max(1, Math.floor(config.maxConcurrentNodes ?? 4));
 
     for (const node of config.nodes) {
       this.nodes.set(node.id, node);
@@ -122,6 +126,8 @@ export class BoundedWorkflowGraph {
     const completedNodeIds: string[] = [];
     let totalTokens = 0;
     const sortedNodeIds = this.getTopologicalOrder();
+    const pendingNodeIds = new Set<string>();
+    let hasFailure = false;
 
     // Populate existing findings from checkpoint
     for (const result of Object.values(nodeResults)) {
@@ -133,143 +139,92 @@ export class BoundedWorkflowGraph {
     }
 
     for (const nodeId of sortedNodeIds) {
-      const node = this.nodes.get(nodeId)!;
+      if (nodeResults[nodeId]?.status === 'succeeded') completedNodeIds.push(nodeId);
+      else pendingNodeIds.add(nodeId);
+    }
 
-      // 1. Check if node was already successfully completed in checkpoint (idempotent resume)
-      if (nodeResults[nodeId]?.status === 'succeeded') {
-        completedNodeIds.push(nodeId);
-        continue;
-      }
-
-      // 2. Validate all upstream dependencies
-      let blockedReason: string | undefined;
-      for (const depId of node.dependencies) {
-        const depResult = nodeResults[depId];
-        if (!depResult || depResult.status !== 'succeeded') {
-          blockedReason = `Blocked by failed or missing dependency: ${depId}`;
-          break;
-        }
-      }
-
-      if (blockedReason) {
-        nodeResults[nodeId] = {
-          status: 'blocked',
-          error: blockedReason,
-        };
-        return {
-          status: 'failed',
-          completedNodeIds,
-          nodeResults,
-          totalTokensUsed: totalTokens,
-          error: blockedReason,
-        };
-      }
-
-      // 3. Check cumulative budget cap
-      if (this.maxTotalTokens && totalTokens >= this.maxTotalTokens) {
-        const err = `Budget cap exceeded: ${totalTokens} >= ${this.maxTotalTokens} tokens`;
-        nodeResults[nodeId] = {
-          status: 'blocked',
-          error: err,
-        };
-        return {
-          status: 'blocked',
-          completedNodeIds,
-          nodeResults,
-          totalTokensUsed: totalTokens,
-          error: err,
-        };
-      }
-
-      // 4. Execute node with bounded retries
+    const executeNode = async (node: WorkflowNodeDefinition): Promise<WorkflowNodeResult> => {
       let attempts = 0;
       const maxAttempts = 1 + (node.maxRetries || 0);
       let lastResult: WorkflowNodeResult | undefined;
-
       while (attempts < maxAttempts) {
         attempts++;
         try {
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Node ${nodeId} timed out after ${node.timeoutMs}ms`)), node.timeoutMs)
+            setTimeout(() => reject(new Error(`Node ${node.id} timed out after ${node.timeoutMs}ms`)), node.timeoutMs),
           );
-
-          const execPromise = node.execute(
-            { workspaceId: this.workspaceId, nodeId },
-            nodeResults
-          );
-
-          lastResult = await Promise.race([execPromise, timeoutPromise]);
-
-          if (lastResult.status === 'succeeded') {
-            break;
-          }
+          lastResult = await Promise.race([
+            node.execute({ workspaceId: this.workspaceId, nodeId: node.id }, nodeResults),
+            timeoutPromise,
+          ]);
+          if (lastResult.status === 'succeeded') break;
         } catch (err) {
-          lastResult = {
-            status: 'failed',
-            error: err instanceof Error ? err.message : String(err),
-          };
+          lastResult = { status: 'failed', error: err instanceof Error ? err.message : String(err) };
         }
       }
+      return lastResult || { status: 'failed', error: 'Unknown execution outcome' };
+    };
 
-      if (!lastResult) {
-        lastResult = { status: 'failed', error: 'Unknown execution outcome' };
+    while (pendingNodeIds.size > 0) {
+      if (this.maxTotalTokens && totalTokens >= this.maxTotalTokens) {
+        const error = `Budget cap exceeded: ${totalTokens} >= ${this.maxTotalTokens} tokens`;
+        for (const nodeId of pendingNodeIds) nodeResults[nodeId] = { status: 'blocked', error };
+        return { status: 'blocked', completedNodeIds, nodeResults, totalTokensUsed: totalTokens, error };
       }
 
-      // Accumulate tokens
-      if (lastResult.tokenUsage) {
-        totalTokens += lastResult.tokenUsage;
-        if (this.maxTotalTokens && totalTokens > this.maxTotalTokens) {
-          nodeResults[nodeId] = lastResult;
-          return {
-            status: 'blocked',
-            completedNodeIds,
-            nodeResults,
-            totalTokensUsed: totalTokens,
-            error: `Budget cap exceeded: ${totalTokens} > ${this.maxTotalTokens} tokens`,
-          };
+      // Never schedule a node after an upstream failure. This loop propagates
+      // blocking through every downstream generation while unrelated branches
+      // remain eligible to finish in parallel.
+      let blockedAny = false;
+      for (const nodeId of sortedNodeIds) {
+        if (!pendingNodeIds.has(nodeId)) continue;
+        const node = this.nodes.get(nodeId)!;
+        const failedDependency = node.dependencies.find((dependencyId) => {
+          const dependency = nodeResults[dependencyId];
+          return dependency && dependency.status !== 'succeeded';
+        });
+        if (failedDependency) {
+          nodeResults[nodeId] = { status: 'blocked', error: `Blocked by failed or missing dependency: ${failedDependency}` };
+          pendingNodeIds.delete(nodeId);
+          blockedAny = true;
+          hasFailure = true;
         }
       }
+      if (blockedAny) continue;
 
-      // Track findings with dedupe keys
-      if (lastResult.findings) {
-        for (const f of lastResult.findings) {
-          this.discoveredFindings.set(f.id, f);
-        }
+      const ready = sortedNodeIds
+        .filter((nodeId) => pendingNodeIds.has(nodeId))
+        .filter((nodeId) => this.nodes.get(nodeId)!.dependencies.every((dependencyId) => nodeResults[dependencyId]?.status === 'succeeded'));
+      if (ready.length === 0) {
+        const error = 'Workflow has no runnable nodes; dependencies are missing or unresolved.';
+        for (const nodeId of pendingNodeIds) nodeResults[nodeId] = { status: 'blocked', error };
+        return { status: 'failed', completedNodeIds, nodeResults, totalTokensUsed: totalTokens, error };
       }
 
-      nodeResults[nodeId] = lastResult;
+      const batch = ready.slice(0, this.maxConcurrentNodes);
+      const outcomes = await Promise.all(batch.map(async (nodeId) => ({ nodeId, result: await executeNode(this.nodes.get(nodeId)!) })));
+      for (const { nodeId, result } of outcomes) {
+        pendingNodeIds.delete(nodeId);
+        nodeResults[nodeId] = result;
+        totalTokens += result.tokenUsage || 0;
+        for (const finding of result.findings || []) this.discoveredFindings.set(finding.id, finding);
+        if (result.status === 'succeeded') completedNodeIds.push(nodeId);
+        else hasFailure = true;
+      }
 
-      if (lastResult.status === 'succeeded') {
-        completedNodeIds.push(nodeId);
-      } else {
-        // Mark remaining downstream nodes that depend on this failed node as blocked
-        for (const remainingId of sortedNodeIds) {
-          if (!nodeResults[remainingId]) {
-            const remainingNode = this.nodes.get(remainingId);
-            if (remainingNode?.dependencies.includes(nodeId)) {
-              nodeResults[remainingId] = {
-                status: 'blocked',
-                error: `Blocked by failed or missing dependency: ${nodeId}`,
-              };
-            }
-          }
-        }
-
-        return {
-          status: 'failed',
-          completedNodeIds,
-          nodeResults,
-          totalTokensUsed: totalTokens,
-          error: lastResult.error || `Node ${nodeId} execution failed`,
-        };
+      if (this.maxTotalTokens && totalTokens > this.maxTotalTokens) {
+        const error = `Budget cap exceeded: ${totalTokens} > ${this.maxTotalTokens} tokens`;
+        for (const nodeId of pendingNodeIds) nodeResults[nodeId] = { status: 'blocked', error };
+        return { status: 'blocked', completedNodeIds, nodeResults, totalTokensUsed: totalTokens, error };
       }
     }
 
     return {
-      status: 'succeeded',
+      status: hasFailure ? 'failed' : 'succeeded',
       completedNodeIds,
       nodeResults,
       totalTokensUsed: totalTokens,
+      error: hasFailure ? 'One or more workflow nodes failed or were blocked.' : undefined,
     };
   }
 

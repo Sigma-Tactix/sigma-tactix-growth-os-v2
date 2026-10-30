@@ -465,7 +465,7 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className={cn(
-                          "px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase",
+                          "px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase",
                           log.category === 'CONFIG_CHANGE' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                           log.category === 'REPORT_GENERATION' ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" :
                           log.category === 'SECURITY' ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
@@ -484,7 +484,7 @@ export default function TenantAuditLogSystem({ tenants }: TenantAuditLogSystemPr
                       <div className="text-xs font-mono text-zinc-300 font-medium">
                         {log.actor.name}
                       </div>
-                      <div className="text-[9px] font-mono text-zinc-500 uppercase">
+                      <div className="text-[11px] font-mono text-zinc-500 uppercase">
                         {log.actor.type.replace('_', ' ')}
                       </div>
                     </td>

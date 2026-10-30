@@ -48,6 +48,7 @@ import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import { apiFetch } from '@/src/lib/api';
 import { getPipelineDisplayState, getPriorityConnectorRequirement } from '@/src/lib/connectorLifecycle';
 import { GoogleAdsMcpControl } from '@/src/components/connectors/GoogleAdsMcpControl';
+import { SocialDistributionControl } from '@/src/components/connectors/SocialDistributionControl';
 
 export interface ActiveConnection {
   id: string;
@@ -922,7 +923,7 @@ export default function DataSources() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono flex items-center gap-2.5"
+            className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-accent text-xs font-mono flex items-center gap-2.5"
           >
             <CheckCircle2 size={15} className="shrink-0" />
             <span>{configuredSuccessMsg}</span>
@@ -931,7 +932,7 @@ export default function DataSources() {
       </AnimatePresence>
 
       {workspaceAccessError && (
-        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2.5">
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-accent text-xs flex items-center gap-2.5">
           <AlertTriangle size={15} className="shrink-0" />
           <span>{workspaceAccessError}</span>
         </div>
@@ -1070,11 +1071,11 @@ export default function DataSources() {
                            <span className="text-[var(--sigma-text-soft)] font-mono text-[10px] truncate max-w-[150px]">{conn.protocol}</span>
                          </div>
                          <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                           <span className="text-emerald-400 font-mono flex items-center gap-1">
+                           <span className="text-emerald-accent font-mono flex items-center gap-1">
                              <ShieldCheck size={12} />
                              <span>Ingested Telemetry</span>
                            </span>
-                           <span className="text-emerald-400 font-mono font-bold">{conn.totalEventsIngested || 0} Events Verified</span>
+                           <span className="text-emerald-accent font-mono font-bold">{conn.totalEventsIngested || 0} Events Verified</span>
                          </div>
                        </div>
 
@@ -1148,7 +1149,7 @@ export default function DataSources() {
                          <Button 
                            variant="ghost"
                            size="xs"
-                           className="text-rose-400 hover:text-rose-300"
+                           className="text-rose-accent hover:text-rose-accent"
                            onClick={() => handleDeleteConnection(conn.id, conn.name)}
                            icon={<Trash2 size={11} />}
                            title="Disconnect pipeline"
@@ -1225,7 +1226,7 @@ export default function DataSources() {
                              <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                  <span className="text-xs font-mono text-emerald-500 font-bold">{conn.latencyMs}ms</span>
+                                  <span className="text-xs font-mono text-emerald-accent font-bold">{conn.latencyMs}ms</span>
                                 </div>
                              </td>
                              <td className="px-6 py-4 text-right">
@@ -1292,6 +1293,10 @@ export default function DataSources() {
 
                 {(selectedCategory === 'all' || selectedCategory === 'ads' || selectedCategory === 'mcp') && (
                   <GoogleAdsMcpControl onSelectCustomer={openGoogleAdsCustomer} />
+                )}
+
+                {(selectedCategory === 'all' || selectedCategory === 'social' || selectedCategory === 'mcp') && (
+                  <SocialDistributionControl />
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1518,7 +1523,7 @@ export default function DataSources() {
                     />
 
                     {parsedSaKey ? (
-                      <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-500">
+                      <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[11px] font-mono text-emerald-accent">
                         <CheckCircle2 size={14} className="shrink-0" />
                         <span className="truncate">Service Account Verified: {parsedSaKey.client_email}</span>
                       </div>
@@ -1549,7 +1554,7 @@ export default function DataSources() {
                 <div className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)] space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-mono text-[var(--sigma-text)] font-bold flex items-center gap-2">
-                      <Shield size={14} className="text-emerald-500" />
+                      <Shield size={14} className="text-emerald-accent" />
                       Handshake Integrity Verification
                     </div>
                     <button
@@ -1566,7 +1571,7 @@ export default function DataSources() {
                   {pingResult ? (
                     <div className={cn(
                       "p-3 border rounded-lg text-[11px] font-mono flex items-center gap-2",
-                      pingResult.success ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                      pingResult.success ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-accent" : "bg-rose-500/10 border-rose-500/20 text-rose-accent"
                     )}>
                       {pingResult.success ? <CheckCircle2 size={15} className="shrink-0" /> : <AlertTriangle size={15} className="shrink-0" />}
                       <span>{pingResult.message}</span>
@@ -1619,7 +1624,7 @@ export default function DataSources() {
                   <div>
                     <h3 className="text-base font-bold silver-text flex items-center gap-2">
                       Webhook & Stream Ingestion Console
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-bold uppercase">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold uppercase">
                         Live Ingress
                       </span>
                     </h3>
@@ -1741,7 +1746,7 @@ export default function DataSources() {
                     value={webhookPayloadJson}
                     onChange={(e) => setWebhookPayloadJson(e.target.value)}
                     rows={9}
-                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-[11px] font-mono text-emerald-500 focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
+                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-3 text-[11px] font-mono text-emerald-accent focus:outline-none focus:ring-1 focus:ring-accent leading-relaxed"
                     spellCheck={false}
                   />
                 </div>
@@ -1766,12 +1771,12 @@ export default function DataSources() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                        <span className="text-xs font-mono font-bold text-emerald-500 uppercase tracking-wide">
+                        <CheckCircle2 size={16} className="text-emerald-accent shrink-0" />
+                        <span className="text-xs font-mono font-bold text-emerald-accent uppercase tracking-wide">
                           HTTP {webhookReceipt.httpStatus} OK • Ingestion Confirmed
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-600 bg-emerald-500/20 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-mono text-emerald-accent bg-emerald-500/20 px-2 py-0.5 rounded">
                         {webhookReceipt.ingestedAt}
                       </span>
                     </div>
@@ -1783,7 +1788,7 @@ export default function DataSources() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted">Payload Hash:</span>
-                        <span className="text-emerald-500 select-all font-mono text-[10px] truncate max-w-[280px]">
+                        <span className="text-emerald-accent select-all font-mono text-[10px] truncate max-w-[280px]">
                           {webhookReceipt.payloadHash}
                         </span>
                       </div>
@@ -1793,7 +1798,7 @@ export default function DataSources() {
                       </div>
                     </div>
 
-                    <div className="text-[10px] font-mono text-emerald-600 bg-[var(--sigma-surface-subtle)] p-2.5 rounded-lg border border-emerald-500/20">
+                    <div className="text-[10px] font-mono text-emerald-accent bg-[var(--sigma-surface-subtle)] p-2.5 rounded-lg border border-emerald-500/20">
                       ✓ Telemetry payload parsed, HMAC signature verified, and committed into Second Brain memory for automated multi-agent analysis.
                     </div>
                   </motion.div>
@@ -1834,7 +1839,7 @@ export default function DataSources() {
                   <div>
                     <h3 className="text-base font-bold silver-text flex items-center gap-2">
                       Assign AI Agents
-                      <span className="px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 text-[9px] font-mono font-bold uppercase">
+                      <span className="px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 text-[11px] font-mono font-bold uppercase">
                         Access Control
                       </span>
                     </h3>
@@ -1890,7 +1895,7 @@ export default function DataSources() {
                             <div className="text-[11px] text-[var(--sigma-text-muted)] font-sans">{agent.role}</div>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-mono uppercase bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]">
                           {agent.category}
                         </span>
                       </div>
@@ -1928,3 +1933,4 @@ export default function DataSources() {
     </div>
   );
 }
+

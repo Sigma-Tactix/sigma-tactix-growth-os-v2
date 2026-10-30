@@ -66,9 +66,9 @@ export function MetricWidget({
                 className={cn(
                   'inline-flex items-center gap-0.5 font-semibold font-mono rounded px-1.5 py-0.5',
                   delta.trend === 'up'
-                    ? 'text-emerald-400 bg-emerald-500/10'
+                    ? 'text-emerald-accent bg-emerald-500/10'
                     : delta.trend === 'down'
-                    ? 'text-rose-400 bg-rose-500/10'
+                    ? 'text-rose-accent bg-rose-500/10'
                     : 'text-[var(--sigma-text-muted)] bg-[var(--sigma-surface-subtle)]'
                 )}
               >

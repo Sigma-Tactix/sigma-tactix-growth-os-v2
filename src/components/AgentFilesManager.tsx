@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileCode, 
   FileText, 
@@ -49,6 +49,8 @@ export default function AgentFilesManager({ agent, onUpdateAgent }: AgentFilesMa
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<AgentConfigFile | null>(null);
+  const [pendingDiscardId, setPendingDiscardId] = useState<string | null>(null);
+  const pendingDiscardTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Upload modal state
   const [dragActive, setDragActive] = useState(false);
@@ -378,14 +380,38 @@ export default function AgentFilesManager({ agent, onUpdateAgent }: AgentFilesMa
           <div className="space-y-1 max-h-[560px] overflow-y-auto pr-1">
             {filteredFiles.map(file => {
               const isSelected = file.id === activeFile?.id;
+              const discardArmed = hasUnsavedChanges && pendingDiscardId === file.id;
+              const selectFile = () => {
+                setPendingDiscardId(null);
+                if (pendingDiscardTimer.current) clearTimeout(pendingDiscardTimer.current);
+                setSelectedFileId(file.id);
+              };
+              const cancelDiscard = () => {
+                setPendingDiscardId(null);
+                if (pendingDiscardTimer.current) clearTimeout(pendingDiscardTimer.current);
+              };
               return (
                 <div
                   key={file.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     if (hasUnsavedChanges) {
-                      if (!confirm(`You have unsaved changes in ${activeFile?.name}. Discard and switch?`)) return;
+                      // Inline two-step: arm the discard instead of blocking on a native confirm
+                      setPendingDiscardId(file.id);
+                      if (pendingDiscardTimer.current) clearTimeout(pendingDiscardTimer.current);
+                      pendingDiscardTimer.current = setTimeout(() => {
+                        setPendingDiscardId(null);
+                      }, 5000);
+                      return;
                     }
                     setSelectedFileId(file.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+                      e.preventDefault();
+                      e.currentTarget.click();
+                    }
                   }}
                   className={cn(
                     "p-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2 group",
@@ -428,6 +454,31 @@ export default function AgentFilesManager({ agent, onUpdateAgent }: AgentFilesMa
                       </div>
                       <p className="text-[10px] text-zinc-400 truncate mt-0.5 font-mono">{file.description}</p>
                     </div>
+                    {discardArmed && (
+                      <div
+                        role="alert"
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-2 flex items-center gap-2 text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5"
+                      >
+                        <span className="truncate">Unsaved changes in {activeFile?.name}. Discard?</span>
+                        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={selectFile}
+                            className="px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-bold cursor-pointer"
+                          >
+                            Discard
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelDiscard}
+                            className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-zinc-300 font-bold cursor-pointer"
+                          >
+                            Keep
+                          </button>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions on file row */}

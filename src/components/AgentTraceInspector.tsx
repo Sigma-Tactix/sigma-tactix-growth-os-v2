@@ -32,9 +32,9 @@ interface AgentTraceInspectorProps {
 type TraceFilter = 'ALL' | 'triage' | 'route' | 'safety';
 
 const OPERATION_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  triage: { label: 'Risk Triage', color: 'text-amber-400', icon: <AlertTriangle size={13} /> },
-  route: { label: 'Module Route', color: 'text-sky-400', icon: <GitBranch size={13} /> },
-  safety: { label: 'Safety Gate', color: 'text-emerald-400', icon: <Shield size={13} /> },
+  triage: { label: 'Risk Triage', color: 'text-amber-accent', icon: <AlertTriangle size={13} /> },
+  route: { label: 'Module Route', color: 'text-sky-accent', icon: <GitBranch size={13} /> },
+  safety: { label: 'Safety Gate', color: 'text-emerald-accent', icon: <Shield size={13} /> },
 };
 
 function ConfidenceBar({ value }: { value: number }) {
@@ -64,9 +64,9 @@ function ConfidenceBar({ value }: { value: number }) {
 function RedactionNotice() {
   return (
     <div className="flex items-start gap-2 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-      <ShieldCheck size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+      <ShieldCheck size={14} className="text-emerald-accent mt-0.5 shrink-0" />
       <div className="text-[11px] text-[var(--sigma-text-soft)] leading-relaxed">
-        <strong className="text-emerald-400 font-semibold">Governed Trace View</strong> — Raw prompts, customer
+        <strong className="text-emerald-accent font-semibold">Governed Trace View</strong> — Raw prompts, customer
         inputs, credentials, and tool payloads are never transmitted to the browser. Inputs are represented by
         SHA-256 content hashes. Only structured decision outcomes, confidence scores, and timing data are displayed.
       </div>
@@ -203,7 +203,7 @@ function TraceCard({ trace, isExpanded, onToggle }: {
                       </div>
                       <div>
                         <div className="text-[var(--sigma-text-muted)] mb-0.5">Agreement</div>
-                        <div className={trace.policy_override ? 'text-amber-400' : 'text-emerald-400'}>
+                        <div className={trace.policy_override ? 'text-amber-accent' : 'text-emerald-accent'}>
                           {trace.policy_override ? 'Divergent — policy overrode shadow' : 'Convergent'}
                         </div>
                       </div>
@@ -295,15 +295,15 @@ export default function AgentTraceInspector({ agentId, agentName, agentCodename 
         </div>
         <div className="p-3 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
           <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Avg Confidence</div>
-          <div className="text-lg font-bold text-emerald-400 mt-0.5 font-mono">{traceStats.avgConfidence}%</div>
+          <div className="text-lg font-bold text-emerald-accent mt-0.5 font-mono">{traceStats.avgConfidence}%</div>
         </div>
         <div className="p-3 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
           <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">HITL Required</div>
-          <div className="text-lg font-bold text-amber-400 mt-0.5 font-mono">{traceStats.hitlCount}</div>
+          <div className="text-lg font-bold text-amber-accent mt-0.5 font-mono">{traceStats.hitlCount}</div>
         </div>
         <div className="p-3 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
           <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Avg Latency</div>
-          <div className="text-lg font-bold text-sky-400 mt-0.5 font-mono">{traceStats.avgLatency}ms</div>
+          <div className="text-lg font-bold text-sky-accent mt-0.5 font-mono">{traceStats.avgLatency}ms</div>
         </div>
       </div>
 
@@ -342,9 +342,9 @@ export default function AgentTraceInspector({ agentId, agentName, agentCodename 
       {/* Error State */}
       {error && (
         <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
-          <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+          <AlertTriangle size={15} className="text-amber-accent shrink-0 mt-0.5" />
           <div className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">
-            <strong className="text-amber-400">Trace Backend Notice</strong>
+            <strong className="text-amber-accent">Trace Backend Notice</strong>
             <p className="mt-1">{error}</p>
           </div>
         </div>
@@ -396,3 +396,4 @@ export default function AgentTraceInspector({ agentId, agentName, agentCodename 
     </div>
   );
 }
+

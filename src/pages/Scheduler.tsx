@@ -211,7 +211,7 @@ export default function Scheduler() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/30 text-[10px] uppercase font-mono tracking-widest text-zinc-500 border-b border-[var(--sigma-border)]">
+                <thead className="bg-black/30 text-[11px] uppercase font-mono tracking-widest text-zinc-500 border-b border-[var(--sigma-border)]">
                   <tr>
                     <th className="px-6 py-4">Report Name</th>
                     <th className="px-6 py-4 text-center">Format</th>
@@ -251,7 +251,7 @@ export default function Scheduler() {
                           <button 
                             onClick={() => handleDeleteSchedule(s.id)}
                             title="Delete Schedule"
-                            className="p-2 hover:bg-rose-500/20 hover:text-rose-400 rounded-lg text-zinc-400 transition-colors"
+                            className="p-2 hover:bg-rose-500/20 hover:text-rose-accent rounded-lg text-zinc-400 transition-colors"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -282,7 +282,7 @@ export default function Scheduler() {
                       <div className="text-[11px] text-zinc-500">{h.desc}</div>
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono text-zinc-500">{h.time}</div>
+                  <div className="text-[11px] font-mono text-zinc-500">{h.time}</div>
                 </div>
               ))}
             </div>
@@ -324,7 +324,7 @@ export default function Scheduler() {
             </div>
 
             <div className="pt-4 border-t border-[var(--sigma-border)]">
-              <div className="flex justify-between items-end mb-2 text-[10px] font-mono text-zinc-500 uppercase">
+              <div className="flex justify-between items-end mb-2 text-[11px] font-mono text-zinc-500 uppercase">
                 <span>Recorded Queue Depth</span>
                 <span className="text-zinc-300">{history.filter(h => h.status === 'queued').length} Queued</span>
               </div>
@@ -430,3 +430,4 @@ export default function Scheduler() {
     </div>
   );
 }
+

@@ -435,7 +435,7 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                         {skill.name}
                       </span>
                       <span className={cn(
-                        "text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-bold",
+                        "text-[11px] font-mono uppercase px-1.5 py-0.5 rounded font-bold",
                         skill.clearanceLevel === 'AUTONOMOUS' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
                         skill.clearanceLevel === 'RESTRICTED_HITL' ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                         "bg-rose-500/10 text-rose-400 border border-rose-500/20"
@@ -443,12 +443,12 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                         {skill.clearanceLevel}
                       </span>
                       {skill.parametersSchema && (
-                        <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1 rounded flex items-center gap-0.5" title="Has Parameter Schema">
+                        <span className="text-[11px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1 rounded flex items-center gap-0.5" title="Has Parameter Schema">
                           <Code size={10} /> Schema
                         </span>
                       )}
                       {skill.executionCode && (
-                        <span className="text-[9px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1 rounded flex items-center gap-0.5" title="Has Execution Code">
+                        <span className="text-[11px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1 rounded flex items-center gap-0.5" title="Has Execution Code">
                           <FileCode size={10} /> Code
                         </span>
                       )}
@@ -460,7 +460,7 @@ export default function AgentSkillsManager({ agent, onUpdateSkills }: AgentSkill
                       {skill.lastUpdated && (
                         <>
                           <span className="text-zinc-500">•</span>
-                          <span className="text-zinc-500 text-[9px]">Upd: {skill.lastUpdated}</span>
+                          <span className="text-zinc-500 text-[11px]">Upd: {skill.lastUpdated}</span>
                         </>
                       )}
                     </div>

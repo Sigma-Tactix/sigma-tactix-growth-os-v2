@@ -3,10 +3,9 @@ import { BrainCircuit, Eye, EyeOff, Gauge, MessageSquareText, Orbit, ShieldCheck
 import { useLocation } from 'react-router-dom';
 import VantaOrb from '@/src/components/vanta/VantaOrb';
 import VantaCommandDock from '@/src/components/vanta/VantaCommandDock';
-import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
 import VantaTopologyPanel from '@/src/components/vanta/VantaTopologyPanel';
 import VantaProviderPanel from '@/src/components/vanta/VantaProviderPanel';
-import MapsBrainOrbit from '@/src/components/vanta/MapsBrainOrbit';
+import SecondBrainWorkspace from '@/src/components/vanta/SecondBrainWorkspace';
 import { useVanta } from '@/src/contexts/VantaContext';
 import { Button, Badge } from '@/src/components/ui';
 import type { VantaPhase } from '@/src/lib/vanta';
@@ -104,10 +103,10 @@ export default function LivingSystemPage() {
       )}
 
       <div className={`relative z-10 grid min-h-0 flex-1 grid-cols-1 ${surface === 'vanta' ? 'lg:grid-cols-[minmax(0,1fr)_310px]' : ''}`}>
-        <section className="relative min-h-[460px] overflow-hidden" aria-label={surface === 'vanta' ? 'VANTA neural core' : 'Configured system map'}>
+        <section className="relative min-h-[460px] overflow-hidden" aria-label={surface === 'vanta' ? 'VANTA neural core' : 'Workspace Second Brain map'}>
           {surface === 'map' ? (
-            <div className="relative h-full w-full overflow-hidden bg-[#030101]">
-              <MapsBrainOrbit />
+            <div className="relative h-full w-full overflow-auto bg-[var(--sigma-bg)] p-4">
+              <SecondBrainWorkspace />
             </div>
           ) : (
             <>
@@ -118,7 +117,7 @@ export default function LivingSystemPage() {
               </div>
               {selectedNode && state.inspectMode && (
                 <div className="absolute left-4 top-20 z-20 max-w-xs rounded-xl border border-[var(--sigma-border)] bg-black/85 p-3.5 backdrop-blur-xl shadow-xl">
-                  <div className="text-[9px] font-mono uppercase tracking-widest text-[var(--sigma-vermilion)]">{selectedNode.kind} · {selectedNode.status.replace('_', ' ')}</div>
+                  <div className="text-[11px] font-mono uppercase tracking-widest text-[var(--sigma-vermilion)]">{selectedNode.kind} · {selectedNode.status.replace('_', ' ')}</div>
                   <h2 className="mt-1 text-xs font-bold text-white">{selectedNode.label}</h2>
                   {selectedNode.detail && <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">{selectedNode.detail}</p>}
                 </div>
@@ -132,7 +131,6 @@ export default function LivingSystemPage() {
         </section>
         {surface === 'vanta' && <div className="hidden min-h-0 lg:block"><VantaTopologyPanel /></div>}
       </div>
-      <VantaTranscriptDrawer />
     </main>
   );
 }

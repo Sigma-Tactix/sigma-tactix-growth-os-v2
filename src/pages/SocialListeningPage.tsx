@@ -279,7 +279,7 @@ export default function SocialListeningPage() {
           label="Tracked Mentions (local sample)"
           value={mentions.length.toString()}
           subtext="Seeded sample. Verified counts require connected providers."
-          icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
+          icon={<TrendingUp className="w-4 h-4 text-emerald-accent" />}
         />
 
         <MetricWidget
@@ -315,7 +315,7 @@ export default function SocialListeningPage() {
           label="PR Crisis Sentinel"
           value="Not monitoring"
           subtext="Provider streaming not deployed from this panel"
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-emerald-accent" />}
         />
       </div>
 
@@ -326,7 +326,7 @@ export default function SocialListeningPage() {
             { id: 'ALL', label: 'All Mentions' },
             { id: 'POSITIVE', label: 'Positive Sentiment' },
             { id: 'NEUTRAL', label: 'Neutral Sentiment' },
-            { id: 'CRISIS', label: 'Crisis Alerts', icon: <AlertTriangle className="w-3 h-3 text-rose-400" /> }
+            { id: 'CRISIS', label: 'Crisis Alerts', icon: <AlertTriangle className="w-3 h-3 text-rose-accent" /> }
           ]}
           activeTab={activeFilter}
           onChange={(id) => setActiveFilter(id as any)}
@@ -474,7 +474,7 @@ export default function SocialListeningPage() {
             >
               <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-accent">
                     <Wifi size={16} />
                   </div>
                   <div>
@@ -524,7 +524,7 @@ export default function SocialListeningPage() {
                         className={cn(
                           'p-2.5 rounded-xl border text-xs font-mono flex flex-col items-center gap-1.5 transition-all cursor-pointer',
                           scanChannel === item.id
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold'
+                            ? 'bg-amber-500/20 text-amber-accent border-amber-500/40 font-bold'
                             : 'bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text)]'
                         )}
                       >
@@ -631,7 +631,7 @@ export default function SocialListeningPage() {
                 <div className="space-y-4 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="px-2.5 py-0.5 text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-full uppercase font-bold">
+                      <span className="px-2.5 py-0.5 text-[10px] font-mono bg-amber-500/10 text-amber-accent border border-amber-500/30 rounded-full uppercase font-bold">
                         Verified Battlecard
                       </span>
                       <h4 className="text-base font-bold text-[var(--sigma-text)] mt-1">{activeBattlecard.competitorName}</h4>
@@ -653,7 +653,7 @@ export default function SocialListeningPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
-                      <div className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
+                      <div className="text-[10px] font-mono text-emerald-accent uppercase font-bold flex items-center gap-1">
                         <CheckCircle2 size={12} /> Claimed Strengths
                       </div>
                       <ul className="text-xs text-[var(--sigma-text-soft)] space-y-1 list-disc list-inside">
@@ -664,7 +664,7 @@ export default function SocialListeningPage() {
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-rose-500/5 border border-rose-500/20 space-y-1.5">
-                      <div className="text-[10px] font-mono text-rose-400 uppercase font-bold flex items-center gap-1">
+                      <div className="text-[10px] font-mono text-rose-accent uppercase font-bold flex items-center gap-1">
                         <AlertTriangle size={12} /> Operational Vulnerabilities
                       </div>
                       <ul className="text-xs text-[var(--sigma-text-soft)] space-y-1 list-disc list-inside">
@@ -676,7 +676,7 @@ export default function SocialListeningPage() {
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1">
-                    <div className="text-[10px] font-mono text-amber-400 uppercase font-bold">
+                    <div className="text-[10px] font-mono text-amber-accent uppercase font-bold">
                       Strategic Counter-Positioning
                     </div>
                     <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">{activeBattlecard.counterPositioning}</p>
@@ -685,7 +685,7 @@ export default function SocialListeningPage() {
                   <div className="sigma-subpanel p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] font-bold flex items-center gap-1.5">
-                        <Sparkles size={12} className="text-amber-400" />
+                        <Sparkles size={12} className="text-amber-accent" />
                         30-Second SDR Sales Talk Track
                       </div>
                       <button
@@ -696,7 +696,7 @@ export default function SocialListeningPage() {
                         }}
                         className="sigma-button-secondary px-2.5 py-1 text-[11px] font-mono flex items-center gap-1 cursor-pointer"
                       >
-                        {copiedBattlecard ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                        {copiedBattlecard ? <Check size={11} className="text-emerald-accent" /> : <Copy size={11} />}
                         {copiedBattlecard ? 'Copied' : 'Copy Pitch'}
                       </button>
                     </div>

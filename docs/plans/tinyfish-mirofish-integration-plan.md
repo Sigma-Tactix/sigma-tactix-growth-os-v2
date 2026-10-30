@@ -67,15 +67,15 @@ The first end-to-end vertical slice should be:
 - The current Flask application exposes permissive `Access-Control-Allow-Origin: *` behavior and no tenant authentication layer in its application factory.
 - The default upload limit is 50 MB and the default simulation is 10 rounds, while the repository warns that simulations can consume substantial model capacity.
 
-### Laya and current Jev state checked for this plan
+### Laya and legacy decision state checked for this plan
 
 - The likely target is `NandhaKishorM/laya`, an Apache-2.0 open-weights System 1 decision engine supporting typed `choice`, ordinal `score`, and yes/no `noul` decisions. Confirm this repository before implementation.
-- `@receptron/laya` provides a Jev-compatible Node/TypeScript ONNX runtime under MIT. Its documented default bundle is about 1.7 GB and needs roughly 2 GB of loaded-model RAM; options and state lengths are bounded.
+- `@receptron/laya` provides a compatible Node/TypeScript ONNX runtime under MIT. Its documented default bundle is about 1.7 GB and needs roughly 2 GB of loaded-model RAM; options and state lengths are bounded.
 - The official Laya runtime supports local Python/HTTP/MCP deployments, multilingual checkpoints, batching, hooks, and model routing.
 - Laya's documentation explicitly says shipped checkpoints can be over-confident and that confidence thresholds must be fitted and validated on held-out domain data. Confidence orders decisions; it does not prove correctness.
-- Sigma currently calls Jev from `src/lib/jevDecisionEngine.ts` for action-risk classification, module routing, and swarm-safety classification. The Dashboard Action Queue contains provider-specific Jev names and client-side heuristic fallbacks.
-- Sigma's current `/api/workspace/decision/status` reports `gemini_flash_fallback` when Jev is unconfigured, but the inspected decision implementation actually falls back to deterministic heuristics; that status must be corrected during migration.
-- Current Jev tests validate the heuristic and mocked-provider paths only. They do not establish production Jev or Laya accuracy, calibration, latency, or safety.
+- The legacy adapter handled action-risk classification, module routing, and swarm-safety classification. The Dashboard Action Queue contained provider-specific names and client-side heuristic fallbacks.
+- The legacy `/api/workspace/decision/status` reported `gemini_flash_fallback` when the provider was unconfigured, but the inspected implementation actually fell back to deterministic heuristics; that status required correction during migration.
+- Legacy tests validated heuristic and mocked-provider paths only. They did not establish production Laya accuracy, calibration, latency, or safety.
 
 ## 3. Module design
 
@@ -129,7 +129,7 @@ Do not expose MiroFish project, graph, report-agent, or OASIS details to React c
 
 ### 3.3 Decision module
 
-Replace the provider-specific Jev module with one Sigma-owned interface in `src/server/providers/decision/`:
+Replace the provider-specific legacy module with one Sigma-owned interface in `src/server/providers/decision/`:
 
 ```ts
 type DecisionQuestion =
@@ -149,7 +149,7 @@ Adapters:
 - `LayaHttpDecisionAdapter`: recommended production adapter to a private, pinned official Laya runtime. One warmed runtime can serve multiple Sigma application replicas without loading multi-gigabyte weights in every Node process.
 - `LayaOnnxDecisionAdapter`: optional Node/TypeScript adapter for a single-instance spike, development, or deployments where the measured memory and event-loop behavior are acceptable.
 - `DeterministicPolicyDecisionAdapter`: fail-closed rules for hard safety and degraded operation.
-- `LegacyJevDecisionAdapter`: temporary shadow-comparison and rollback adapter only; remove after the acceptance gate.
+- `LegacyDecisionAdapter`: temporary shadow-comparison and rollback adapter only; remove after the acceptance gate.
 
 The external interface stays provider-neutral. Laya-specific model names, checkpoints, token limits, transport, and answer shapes remain inside its adapter.
 
@@ -458,27 +458,27 @@ No provider-generated “confidence score” should authorize action. Automation
   -> CRM and response outcomes used for calibration
 ```
 
-### Jev-to-Laya replacement sequence
+### Legacy-to-Laya replacement sequence
 
-Do not replace Jev by changing only the URL or branding. Replace the provider-specific implementation while preserving and deepening the decision seam.
+Do not replace a provider by changing only the URL or branding. Replace the provider-specific implementation while preserving and deepening the decision seam.
 
-1. **Extract the interface.** Move the public decision contracts out of `src/lib/jevDecisionEngine.ts` into the provider-neutral decision module. Preserve `/api/workspace/decision/*` route compatibility.
-2. **Correct current truthfulness defects.** Report the actual active adapter; remove the current claim that an unconfigured Jev path is Gemini when it is heuristic. Remove fixed `70ms`, `sub-100ms`, `calibrated`, and `non-hallucinatory` UI claims unless measured for the deployed Laya checkpoint.
-3. **Add Laya in shadow mode.** For each eligible Jev/heuristic decision, record Laya's answer without letting it control the workflow. Redact state and store input/question hashes, distributions, checkpoint, latency, and human outcome.
+1. **Extract the interface.** Move the public decision contracts out of the legacy engine into the provider-neutral decision module. Preserve `/api/workspace/decision/*` route compatibility.
+2. **Correct current truthfulness defects.** Report the actual active adapter; remove the claim that an unconfigured provider path is Gemini when it is heuristic. Remove fixed `70ms`, `sub-100ms`, `calibrated`, and `non-hallucinatory` UI claims unless measured for the deployed Laya checkpoint.
+3. **Add Laya in shadow mode.** For each eligible heuristic decision, record Laya's answer without letting it control the workflow. Redact state and store input/question hashes, distributions, checkpoint, latency, and human outcome.
 4. **Build a Sigma evaluation set.** Cover each module, Arabic and English inputs, adversarial wording, ambiguous cases, class imbalance, high-risk actions, and historical human overrides. Separate training/calibration and final test sets.
 5. **Fit thresholds by decision type.** Routing, urgency, safety, and HITL decisions require different thresholds and acceptable-error policies. Low-confidence or out-of-distribution cases escalate rather than auto-route.
 6. **Enable bounded canary decisions.** Start with reversible internal routing and queue ordering. Do not canary external publishing, outreach, budget, credential, or destructive decisions.
 7. **Promote Laya to primary.** Only after accuracy, calibration error, coverage, latency, memory, cold-start, multilingual behavior, and failure recovery meet written acceptance thresholds.
-8. **Retire Jev.** Remove `TYPESAFE_API_KEY`, Jev-specific UI/type names, TypeSafe pricing/catalog entries, and the legacy adapter after a rollback window and dependency/license audit.
+8. **Retire the legacy provider.** Remove its secrets, provider-specific UI/type names, pricing/catalog entries, and adapter after a rollback window and dependency/license audit.
 
 Primary source touchpoints:
 
-- replace `src/lib/jevDecisionEngine.ts` with provider-neutral contracts and adapters
-- rename `JevDecisionOptions`, `JevDecisionResult`, `jevStatus`, and `jevTriage` persistence/UI fields
+- replace the legacy engine with provider-neutral contracts and adapters
+- rename provider-specific option, result, status, and triage persistence/UI fields
 - keep and harden `/api/workspace/decision/status`, `/triage`, `/route`, and `/safety`
 - update `src/components/dashboard/ActionQueueTab.tsx` to show the actual adapter, checkpoint, calibrated coverage band, and policy override
 - update `src/lib/tokenCostEngine.ts` from TypeSafe token pricing to local Laya compute telemetry
-- replace `TYPESAFE_API_KEY` in `.env.example` with pinned Laya runtime configuration
+- replace legacy provider configuration in `.env.example` with pinned Laya runtime configuration
 - add decision records/calibration tables or append-only audit events with workspace scope and RLS
 
 Initial orchestrator question sets should be versioned configuration, not arbitrary agent-written prompts:
@@ -517,7 +517,7 @@ Initial orchestrator question sets should be versioned configuration, not arbitr
 
 - Completed: correct `laya[serve]` 0.3.20 runtime installed separately from the unrelated Laya desktop app; CLI routing and HTTP health probe verified locally.
 - Completed: provider-neutral TypeScript decision adapter with typed Laya HTTP requests, deterministic fallback, shadow-mode comparison, and truthful runtime states.
-- Completed: decision status exposed to VANTA, Laya topology node added, Action Queue wording changed from Jev-specific claims to provider-neutral truthful state, and local `.env` set to shadow mode.
+- Completed: decision status exposed to VANTA, Laya topology node added, Action Queue wording changed from provider-specific claims to provider-neutral truthful state, and local `.env` set to shadow mode.
 - Verified: focused decision/VANTA tests pass; the official English checkpoint downloaded and completed one non-sensitive typed HTTP inference; health now reports `loaded: ["english"]`; Growth OS reports `shadow`, uncalibrated, and not execution-eligible. The runtime also warned that affected shipped temperature values were clamped and their confidence must be treated as uncalibrated, reinforcing the calibration gate.
 - Implemented locally: evidence-backed `/api/workspace/capabilities` registry; MCP catalogue toggles remain `enabled` rather than being mislabeled `configured` or `verified`.
 - Implemented locally: migration `0016_decision_traces.sql`, modular decision routes, hashed/redacted decision traces, trace-list API, and VANTA recent-trace context. Deployment is blocked because the configured Supabase service-role key belongs to a different project than `SUPABASE_URL`.
@@ -528,12 +528,12 @@ Initial orchestrator question sets should be versioned configuration, not arbitr
 
 ### Phase 1A — Laya shadow and orchestrator canary
 
-- Run Laya beside the current Jev/heuristic path without controlling workflows.
+- Run Laya beside the current heuristic path without controlling workflows.
 - Build the Sigma decision evaluation set and fit per-question calibration thresholds.
 - Expose decision comparison, disagreement, latency, and human override metrics internally.
 - Canary reversible module routing and Action Queue ordering.
 
-**Exit gate:** written thresholds pass on a held-out multilingual set; ambiguous/high-risk cases escalate correctly; resource/cold-start behavior is acceptable; rollback is verified. Only then make Laya primary and remove Jev after the rollback window.
+**Exit gate:** written thresholds pass on a held-out multilingual set; ambiguous/high-risk cases escalate correctly; resource/cold-start behavior is acceptable; rollback is verified. Only then make Laya primary and remove the legacy adapter after the rollback window.
 
 ### Phase 2 — TinyFish competitor-monitor vertical slice
 
@@ -581,7 +581,7 @@ Initial orchestrator question sets should be versioned configuration, not arbitr
 ### Automated
 
 - interface contract tests for all production adapters using recorded/redacted fixtures
-- Laya/Jev-compatible contract tests for `choice`, `score`, and boolean decisions plus truncation/option-limit failures
+- Laya contract tests for `choice`, `score`, and boolean decisions plus truncation/option-limit failures
 - frozen Sigma decision evaluation set with per-module, Arabic/English, ambiguous, adversarial, and high-risk cases
 - calibration, coverage, confusion matrix, false-negative, override, and out-of-distribution tests per decision type
 - Laya cold-start, warm latency, memory, concurrency, worker/sidecar failure, and deterministic-policy fallback tests

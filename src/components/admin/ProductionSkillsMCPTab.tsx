@@ -36,6 +36,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/src/contexts/ToastContext';
 import { getAgentReachDoctor, getGoogleAdsMcpStatus } from '@/src/lib/api';
 import { PROJECT_SKILLS, ProjectSkill } from '@/src/data/skillsCatalog';
+import { McpGatewayControl } from '@/src/components/connectors/McpGatewayControl';
 
 interface MCPServerInfo {
   id: string;
@@ -662,7 +663,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl space-y-2 font-mono text-xs shrink-0 max-w-sm w-full">
                 <div className="text-[10px] uppercase tracking-wider text-[var(--sigma-text-muted)] font-bold flex items-center justify-between">
                   <span>Interactive Search CLI</span>
-                  <span className="text-emerald-500 font-bold">READY</span>
+                  <span className="text-emerald-accent font-bold">READY</span>
                 </div>
                 <div className="p-2.5 bg-[var(--sigma-surface-muted)] rounded-xl border border-[var(--sigma-border)] flex items-center justify-between gap-2">
                   <code className="text-accent text-[11px] truncate">npx skills find [query]</code>
@@ -671,7 +672,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                     className="p-1.5 rounded-lg hover:bg-[var(--sigma-surface-strong)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors shrink-0"
                     title="Copy find command"
                   >
-                    {copiedId === 'cli-find' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                    {copiedId === 'cli-find' ? <Check size={13} className="text-emerald-accent" /> : <Copy size={13} />}
                   </button>
                 </div>
                 <div className="text-[10px] text-[var(--sigma-text-muted)] flex items-center gap-1">
@@ -686,7 +687,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
             {/* Quality Checklist Pillars */}
             <div className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
               <div className="p-3.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-accent shrink-0">
                   <CheckSquare size={16} />
                 </div>
                 <div>
@@ -696,7 +697,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               </div>
 
               <div className="p-3.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-accent shrink-0">
                   <ShieldCheck size={16} />
                 </div>
                 <div>
@@ -706,7 +707,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               </div>
 
               <div className="p-3.5 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-accent shrink-0">
                   <TrendingUp size={16} />
                 </div>
                 <div>
@@ -768,7 +769,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                         by <span className="text-[var(--sigma-text)] font-semibold">{skill.owner}</span>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 text-[10px] font-mono font-bold shrink-0">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-accent text-[10px] font-mono font-bold shrink-0">
                       ★ {skill.stars}
                     </span>
                   </div>
@@ -781,7 +782,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                     <span className="px-2 py-0.5 rounded bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text)] font-bold">
                       {skill.installs}
                     </span>
-                    <span className="text-emerald-500 font-bold flex items-center gap-1">
+                    <span className="text-emerald-accent font-bold flex items-center gap-1">
                       <CheckCircle2 size={11} /> Verified Safe
                     </span>
                   </div>
@@ -794,7 +795,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                       className="p-1.5 rounded-lg hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors shrink-0"
                       title="Copy install command"
                     >
-                      {copiedId === skill.id ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                      {copiedId === skill.id ? <Check size={13} className="text-emerald-accent" /> : <Copy size={13} />}
                     </button>
                   </div>
                 </div>
@@ -833,7 +834,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-rose-500/15 text-rose-500 font-mono text-xs font-bold border border-rose-500/30 flex items-center gap-1.5">
+                  <span className="px-3 py-1 rounded-full bg-rose-500/15 text-rose-accent font-mono text-xs font-bold border border-rose-500/30 flex items-center gap-1.5">
                     <ShieldAlert size={13} /> evaluation/laya/README.md
                   </span>
                   <span className="text-[var(--sigma-text-muted)] font-mono text-xs">• Access-Controlled Ground Truth</span>
@@ -842,7 +843,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                   Laya Decision Evaluation Set & Promotion Gate
                 </h3>
                 <p className="text-[var(--sigma-text-muted)] text-xs max-w-2xl leading-relaxed">
-                  Decides whether a Laya checkpoint transitions from <code className="text-[var(--sigma-text)] font-mono">shadow</code> to <code className="text-emerald-500 font-mono">active</code>. Model output must never create its own ground-truth label. Every valid case requires human-supplied <code className="text-[var(--sigma-text)] font-mono">expected</code>, <code className="text-[var(--sigma-text)] font-mono">approvedBy</code>, and <code className="text-[var(--sigma-text)] font-mono">approvedAt</code>.
+                  Decides whether a Laya checkpoint transitions from <code className="text-[var(--sigma-text)] font-mono">shadow</code> to <code className="text-emerald-accent font-mono">active</code>. Model output must never create its own ground-truth label. Every valid case requires human-supplied <code className="text-[var(--sigma-text)] font-mono">expected</code>, <code className="text-[var(--sigma-text)] font-mono">approvedBy</code>, and <code className="text-[var(--sigma-text)] font-mono">approvedAt</code>.
                 </p>
               </div>
 
@@ -850,7 +851,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl space-y-3 font-mono text-xs shrink-0 max-w-xs w-full">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase text-[var(--sigma-text-muted)]">Promotion Gate</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-500 text-[10px] font-bold border border-emerald-500/30">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-accent text-[10px] font-bold border border-emerald-500/30">
                     LAYA_CALIBRATED=TRUE
                   </span>
                 </div>
@@ -861,7 +862,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--sigma-text-muted)]">Policy Overrides:</span>
-                    <span className="text-emerald-500 font-bold">0 Violations</span>
+                    <span className="text-emerald-accent font-bold">0 Violations</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--sigma-text-muted)]">Current State:</span>
@@ -883,19 +884,19 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs text-center">
               <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
                 <div className="text-lg font-black text-accent">triage / route / safety</div>
-                <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Operations Covered</div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Operations Covered</div>
               </div>
               <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
-                <div className="text-lg font-black text-rose-500">Low / Med / High / Critical</div>
-                <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Risk Bands Covered</div>
+                <div className="text-lg font-black text-rose-accent">Low / Med / High / Critical</div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Risk Bands Covered</div>
               </div>
               <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
-                <div className="text-lg font-black text-blue-500">EN / AR / FR / ES</div>
-                <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Client Enclave Locales</div>
+                <div className="text-lg font-black text-blue-accent">EN / AR / FR / ES</div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Client Enclave Locales</div>
               </div>
               <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
-                <div className="text-lg font-black text-emerald-500">6 Critical Boundaries</div>
-                <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Spend, Publish, Outreach, Data</div>
+                <div className="text-lg font-black text-emerald-accent">6 Critical Boundaries</div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Spend, Publish, Outreach, Data</div>
               </div>
             </div>
           </div>
@@ -929,7 +930,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                   className={cn(
                     "px-3 py-1 rounded-lg text-xs font-mono uppercase transition-all border",
                     evalFilterRisk === r
-                      ? "bg-rose-500/15 border-rose-500 text-rose-500 font-bold"
+                      ? "bg-rose-500/15 border-rose-500 text-rose-accent font-bold"
                       : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                   )}
                 >
@@ -966,10 +967,10 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                             {c.operation}
                           </span>
                           <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[9px] uppercase font-bold",
-                            c.riskBand === 'critical' ? "bg-rose-500/20 text-rose-500" :
-                            c.riskBand === 'high' ? "bg-amber-500/20 text-amber-500" :
-                            "bg-blue-500/20 text-blue-500"
+                            "px-1.5 py-0.5 rounded text-[11px] uppercase font-bold",
+                            c.riskBand === 'critical' ? "bg-rose-500/20 text-rose-accent" :
+                            c.riskBand === 'high' ? "bg-amber-500/20 text-amber-accent" :
+                            "bg-blue-500/20 text-blue-accent"
                           )}>
                             {c.riskBand}
                           </span>
@@ -983,7 +984,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                         </div>
                       </td>
                       <td className="px-5 py-4 max-w-xs">
-                        <code className="text-emerald-500 text-[11px] font-bold block truncate">
+                        <code className="text-emerald-accent text-[11px] font-bold block truncate">
                           {c.expected}
                         </code>
                       </td>
@@ -994,7 +995,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                         </div>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-bold text-[10px]">
+                        <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-accent font-bold text-[10px]">
                           ✓ {c.status}
                         </span>
                       </td>
@@ -1031,19 +1032,19 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-center shrink-0">
                 <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
                   <div className="text-xl font-black text-accent">-54%</div>
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Avg LOC</div>
+                  <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Avg LOC</div>
                 </div>
                 <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
-                  <div className="text-xl font-black text-emerald-500">-22%</div>
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Tokens</div>
+                  <div className="text-xl font-black text-emerald-accent">-22%</div>
+                  <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Tokens</div>
                 </div>
                 <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
-                  <div className="text-xl font-black text-cyan-500">+27%</div>
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Speed</div>
+                  <div className="text-xl font-black text-cyan-accent">+27%</div>
+                  <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Speed</div>
                 </div>
                 <div className="p-3 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl">
                   <div className="text-xl font-black text-[var(--sigma-text)]">100%</div>
-                  <div className="text-[9px] text-[var(--sigma-text-muted)] uppercase">Safe</div>
+                  <div className="text-[11px] text-[var(--sigma-text-muted)] uppercase">Safe</div>
                 </div>
               </div>
             </div>
@@ -1114,14 +1115,14 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-accent uppercase font-bold">Optimized Minimal Implementation:</span>
                   {optimizationResult && (
-                    <span className="text-emerald-500 font-bold">
+                    <span className="text-emerald-accent font-bold">
                       -{optimizationResult.reductionPercent}% LOC ({optimizationResult.optimizedLoc} Lines)
                     </span>
                   )}
                 </div>
                 {optimizationResult ? (
                   <div className="bg-[var(--sigma-surface-subtle)] border border-emerald-500/30 rounded-2xl p-4 space-y-3 font-mono text-xs">
-                    <div className="text-[10px] text-emerald-500 uppercase font-bold">
+                    <div className="text-[10px] text-emerald-accent uppercase font-bold">
                       Selected Ladder Rung: {optimizationResult.ladderRung}
                     </div>
                     <pre className="text-[var(--sigma-text)] whitespace-pre-wrap overflow-x-auto text-[11px] leading-relaxed">
@@ -1143,6 +1144,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
       {/* SUB-TAB 4: MCP SERVERS DASHBOARD */}
       {activeSubTab === 'mcp' && (
         <div className="space-y-6">
+          <McpGatewayControl />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {MCP_SERVERS_CATALOG.map((server) => (
               <div
@@ -1160,11 +1162,11 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                       </h4>
                     </div>
                     <span className={cn(
-                      'px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border shrink-0',
+                      'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border shrink-0',
                       runtimeStates[server.id] === 'REACHABLE'
-                        ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'
+                        ? 'bg-emerald-500/20 text-emerald-accent border-emerald-500/30'
                         : runtimeStates[server.id] === 'FAILED'
-                          ? 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                          ? 'bg-rose-500/10 text-rose-accent border-rose-500/30'
                           : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)]',
                     )}>
                       {runtimeStates[server.id] || server.status}
@@ -1183,12 +1185,12 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
 
                   <div className="flex flex-wrap gap-1 pt-1">
                     {server.tools.slice(0, 4).map((tool, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[9px] font-mono">
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[11px] font-mono">
                         {tool}
                       </span>
                     ))}
                     {server.tools.length > 4 && (
-                      <span className="px-1.5 py-0.5 text-[var(--sigma-text-muted)] text-[9px] font-mono">
+                      <span className="px-1.5 py-0.5 text-[var(--sigma-text-muted)] text-[11px] font-mono">
                         +{server.tools.length - 4} more
                       </span>
                     )}
@@ -1299,7 +1301,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                     className={cn(
                       "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5",
                       projectSkillStatusFilter === 'ACTIVE'
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                        ? "bg-emerald-500/20 text-emerald-accent border-emerald-500/40"
                         : "bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:text-[var(--sigma-text)]"
                     )}
                   >
@@ -1311,7 +1313,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                     className={cn(
                       "px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5",
                       projectSkillStatusFilter === 'ARCHIVED'
-                        ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                        ? "bg-amber-500/20 text-amber-accent border-amber-500/40"
                         : "bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:text-[var(--sigma-text)]"
                     )}
                   >
@@ -1335,13 +1337,13 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                     onClick={() => handleCopyCmd('npm run skills:search', 'cli-search')}
                     className="px-2.5 py-1 bg-[var(--sigma-surface)] hover:bg-[var(--sigma-surface-strong)] border border-[var(--sigma-border)] rounded-lg text-[11px] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors flex items-center gap-1 cursor-pointer"
                   >
-                    {copiedId === 'cli-search' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} Copy CLI Search
+                    {copiedId === 'cli-search' ? <Check size={11} className="text-emerald-accent" /> : <Copy size={11} />} Copy CLI Search
                   </button>
                   <button
                     onClick={() => handleCopyCmd('npm run skills:list', 'cli-list')}
                     className="px-2.5 py-1 bg-[var(--sigma-surface)] hover:bg-[var(--sigma-surface-strong)] border border-[var(--sigma-border)] rounded-lg text-[11px] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-colors flex items-center gap-1 cursor-pointer"
                   >
-                    {copiedId === 'cli-list' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} Copy List
+                    {copiedId === 'cli-list' ? <Check size={11} className="text-emerald-accent" /> : <Copy size={11} />} Copy List
                   </button>
                 </div>
               </div>
@@ -1381,8 +1383,8 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                                 <span className={cn(
                                   "px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border flex items-center gap-1",
                                   isActive
-                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                    : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                    ? "bg-emerald-500/15 text-emerald-accent border-emerald-500/30"
+                                    : "bg-amber-500/15 text-amber-accent border-amber-500/30"
                                 )}>
                                   {isActive ? (
                                     <>
@@ -1415,8 +1417,8 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
 
                           {/* Archive reason if applicable */}
                           {skill.archiveReason && (
-                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[11px] text-amber-300 space-y-1">
-                              <span className="font-bold text-[10px] uppercase tracking-wider block text-amber-400">
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[11px] text-amber-accent space-y-1">
+                              <span className="font-bold text-[10px] uppercase tracking-wider block text-amber-accent">
                                 Archive Note:
                               </span>
                               <p className="leading-relaxed">{skill.archiveReason}</p>
@@ -1436,7 +1438,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                               className="px-3 py-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-muted)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl font-mono text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
                               title="Copy command to archive this skill"
                             >
-                              {copiedId === `arch-${skill.id}` ? <Check size={12} className="text-emerald-400" /> : <Archive size={12} />}
+                              {copiedId === `arch-${skill.id}` ? <Check size={12} className="text-emerald-accent" /> : <Archive size={12} />}
                               Archive
                             </button>
                           ) : (
@@ -1470,7 +1472,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                         <span className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase tracking-widest font-bold">
                           {skill.source}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[9px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-accent text-[11px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
                           <CheckCircle2 size={10} /> {skill.specStatus} SPEC
                         </span>
                       </div>
@@ -1496,7 +1498,7 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
                   <div className="flex items-center justify-between pt-3 border-t border-[var(--sigma-border)]">
                     <div className="flex flex-wrap gap-1.5">
                       {skill.tags.map((t, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[9px] font-mono">
+                        <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-[var(--sigma-text-muted)] text-[11px] font-mono">
                           #{t}
                         </span>
                       ))}
@@ -1518,3 +1520,4 @@ function CustomToggle({ value, onChange }: { value: boolean; onChange: (v: boole
     </div>
   );
 }
+

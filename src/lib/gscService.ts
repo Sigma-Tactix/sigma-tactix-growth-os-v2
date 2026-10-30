@@ -21,12 +21,35 @@ export const GSC_DEFAULT_SITE_URL = "sc-domain:sigmatactix.com";
 export const GSC_OAUTH_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 export const GSC_REDIRECT_PATH = "/api/gsc/callback";
 
+/**
+ * Google treats http://localhost and http://127.0.0.1 as DISTINCT redirect
+ * URIs (byte-for-byte matching per their mismatch doc) — yet they reach the
+ * same dev server. Canonicalize loopback to "localhost" so a grant minted
+ * from one spelling does not fail when the browser uses the other.
+ */
+export function canonicalizeGscLoopback(origin: string): string {
+  return origin
+    .replace(/^http:\/\/127\.0\.0\.1(?::|\/|$)/i, (m) => m.replace("127.0.0.1", "localhost"))
+    .replace(/^http:\/\/\[::1\](?::|\/|$)/i, (m) => m.replace("[::1]", "localhost"));
+}
+
 /** Env names that may carry the canonical public origin (first non-empty wins). */
 const GSC_APP_ORIGIN_ENV_VARS = ["APP_URL", "APP_ORIGIN", "PUBLIC_APP_URL"] as const;
 
-/** Normalizes a public origin: trims whitespace, strips trailing slashes. */
+/**
+ * Normalizes a public origin: trims whitespace, strips trailing slashes.
+ * Lowercases the hostname (hosts are case-insensitive but Google compares the
+ * full URI byte-for-byte, so a mixed-case Host header would poison the mint).
+ */
 export function normalizeGscOrigin(origin: string): string {
-  return origin.trim().replace(/\/+$/, "");
+  const trimmed = origin.trim().replace(/\/+$/, "");
+  try {
+    const url = new URL(trimmed);
+    url.hostname = url.hostname.toLowerCase();
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return trimmed;
+  }
 }
 
 /**
@@ -42,10 +65,30 @@ export function resolveGscAppOrigin(requestOrigin?: string): string {
     const raw = (process.env[name] || "").trim();
     // The repo ships APP_URL="MY_..." style placeholders in some setups —
     // never mint a redirect URI from a placeholder.
-    if (raw && !raw.startsWith("MY_")) return normalizeGscOrigin(raw);
+    if (raw && !raw.startsWith("MY_")) {
+      // Google compares the URI byte-for-byte: http://localhost:3000 and
+      // http://127.0.0.1:3000 are DIFFERENT whitelists. Canonicalize to
+      // "localhost" so the grant the user pastes always matches the mint.
+      return canonicalizeGscLoopback(normalizeGscOrigin(raw));
+    }
   }
   const fallback = (requestOrigin || "").trim();
-  return fallback ? normalizeGscOrigin(fallback) : "";
+  return fallback ? canonicalizeGscLoopback(normalizeGscOrigin(fallback)) : "";
+}
+
+/**
+ * Google OAuth client-ID shape check (their mismatch doc: Web-application
+ * clients use Authorized redirect URIs; a truncated/pasted-wrong value or a
+ * non-Web client type can NEVER match a web-server redirect URI). This only
+ * WARNS, never blocks — it flags values that do not look like a Web client ID
+ * so the dialog can say so before the browser hits Google's Error 400 page.
+ */
+export function looksSuspiciousGscClientId(clientId: string): boolean {
+  const id = clientId.trim();
+  if (!id) return true;
+  if (!/\.apps\.googleusercontent\.com$/.test(id)) return true;
+  if (/\s/.test(id) || id.length < 30) return true;
+  return false;
 }
 
 /** The EXACT redirect URI Google must have whitelisted (origin + path). */
@@ -149,6 +192,167 @@ export function buildGscAuthUrl(input: { clientId: string; redirectUri: string; 
     state: input.state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Pre-flight: verify client_id + redirect_uri with Google BEFORE the browser
+// navigates to the consent screen. Per Google's OAuth web-server docs
+// (authorization errors → redirect_uri_mismatch), Google validates the pair at
+// the authorize endpoint itself: an unregistered URI bounces to
+// accounts.google.com/signin/oauth/error?authError=<base64url> (live probe:
+// `Cg5pbnZhbGlkX2NsaWVudA` → "invalid_client"), while an accepted pair is
+// 302'd to sign-in/consent. Probing that first hop converts Google's dead-end
+// error page into an exact, actionable diagnosis inside the Connect dialog.
+// FAIL-OPEN invariant: any network/parsing hiccup returns ok:null so the real
+// user-facing flow still runs and reports its own outcome.
+// ---------------------------------------------------------------------------
+
+/**
+ * Google OAuth client IDs always end in `.apps.googleusercontent.com`.
+ * Deliberately NOT policing the numeric prefix — the goal is only to catch
+ * pasted Client Secrets (`GOCSPX-…`) and API keys (`AIza…`) early.
+ */
+const GSC_CLIENT_ID_PATTERN = /\.apps\.googleusercontent\.com$/i;
+
+/** Error codes Google can pack into the authorize bounce. */
+const GSC_AUTH_ERROR_CODES = [
+  "redirect_uri_mismatch",
+  "invalid_client",
+  "invalid_request",
+  "unauthorized_client",
+  "admin_policy_enforcement",
+] as const;
+
+export interface GscPreflightResult {
+  /** true = Google accepted the pair; false = rejected; null = could not verify. */
+  ok: boolean | null;
+  code?: string;
+  detail?: string;
+}
+
+/** `1067897367455-abc…` — enough to identify which client must whitelist the URI. */
+export function maskGscClientId(clientId: string): string {
+  const trimmed = clientId.trim();
+  if (trimmed.length <= 16) return trimmed;
+  return `${trimmed.slice(0, 8)}…${trimmed.slice(-28)}`;
+}
+
+/**
+ * Google packs the OAuth failure into the `authError` query param as base64url
+ * with a protobuf-style prefix (0x0a + length + ASCII). Decode it and fall
+ * back to scanning the raw value for known codes.
+ */
+export function decodeGscAuthError(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let decoded = "";
+  try {
+    decoded = Buffer.from(trimmed, "base64url").toString("latin1");
+  } catch {
+    decoded = "";
+  }
+  const haystack = `${trimmed} ${decoded}`;
+  for (const code of GSC_AUTH_ERROR_CODES) {
+    if (haystack.includes(code)) return code;
+  }
+  return null;
+}
+
+/** Classifies the first hop of the authorize endpoint's response. */
+export function classifyGscAuthProbe(input: {
+  status: number;
+  location?: string | null;
+  body?: string | null;
+}): GscPreflightResult {
+  const { status, location, body } = input;
+  if (location) {
+    const isGoogleError =
+      /accounts\.google\.com\/(?:v\d+\/)?(?:signin\/oauth\/error|o\/error)/i.test(location) ||
+      /[?&]authError=/.test(location);
+    if (isGoogleError) {
+      let code: string | null = null;
+      try {
+        code = decodeGscAuthError(new URL(location).searchParams.get("authError"));
+      } catch {
+        // Malformed Location — keep code null and report the generic bucket.
+      }
+      return {
+        ok: false,
+        code: code || "oauth_error",
+        detail: "Google rejected the authorization request before sign-in.",
+      };
+    }
+    if (/accounts\.google\.com/i.test(location)) {
+      // Sign-in / consent — Google accepted this exact client + URI pair.
+      return { ok: true };
+    }
+    return {
+      ok: null,
+      code: "unexpected_redirect",
+      detail: `Google redirected to an unrecognized URL: ${location.slice(0, 160)}`,
+    };
+  }
+  const text = body || "";
+  if (text) {
+    for (const code of GSC_AUTH_ERROR_CODES) {
+      if (text.includes(code)) {
+        return { ok: false, code, detail: "Google served an error page instead of the sign-in flow." };
+      }
+    }
+    if (/Error\s*400/i.test(text)) {
+      return { ok: false, code: "error_400", detail: "Google served a 400 error page instead of the sign-in flow." };
+    }
+    if (/<form[^>]+action="[^"]*signin|Sign in with Google/i.test(text)) {
+      return { ok: true };
+    }
+  }
+  if (status >= 300 && status < 400) {
+    return { ok: null, code: "redirect_without_location", detail: "Redirect carried no Location header." };
+  }
+  return {
+    ok: null,
+    code: "unrecognized_response",
+    detail: `Google answered HTTP ${status} — could not determine whether the pair is registered.`,
+  };
+}
+
+/**
+ * Server-to-server probe of the authorize endpoint with the EXACT pair the
+ * browser would use. No client secret is required (and none is sent) — the
+ * authorize endpoint validates only client_id + redirect_uri.
+ */
+export async function probeGscAuthorize(input: {
+  clientId: string;
+  redirectUri: string;
+}): Promise<GscPreflightResult> {
+  const clientId = input.clientId.trim();
+  if (!clientId) {
+    return { ok: false, code: "missing_client_id", detail: "No OAuth Client ID to verify." };
+  }
+  if (!GSC_CLIENT_ID_PATTERN.test(clientId)) {
+    return {
+      ok: false,
+      code: "invalid_client_id_format",
+      detail:
+        "That does not look like a Google OAuth Client ID (expected `<id>.apps.googleusercontent.com`). You may have pasted the Client Secret or an API key.",
+    };
+  }
+  const url = buildGscAuthUrl({ clientId, redirectUri: input.redirectUri, state: "gsc-preflight" });
+  try {
+    const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(8000) });
+    if (res.status >= 300 && res.status < 400) {
+      return classifyGscAuthProbe({ status: res.status, location: res.headers.get("location") });
+    }
+    const page = await res.text().catch(() => "");
+    return classifyGscAuthProbe({ status: res.status, body: page });
+  } catch (err) {
+    return {
+      ok: null,
+      code: "probe_failed",
+      detail: err instanceof Error ? err.message : "Could not reach Google to verify the pair.",
+    };
+  }
 }
 
 export function readGscTokens(db: WorkspaceData): GscTokens | null {

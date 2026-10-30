@@ -383,7 +383,7 @@ export default function ChannelAttributionTable({ onRowClick, className }: Chann
                     {/* Status Badge */}
                     <td className="py-3.5 px-4 text-center">
                       <span className={cn(
-                        "px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase border",
+                        "px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase border",
                         row.status === 'SCALING' 
                           ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" 
                           : row.status === 'OPTIMAL'

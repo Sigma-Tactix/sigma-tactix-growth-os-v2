@@ -37,7 +37,7 @@ nothing is using it.** This is wiring, not construction.
 
 | # | Decision | Rationale |
 | --- | --- | --- |
-| 1 | ✅ **Dropped Jev entirely** | It was already orphaned — nothing imported it. `decisionEngine.ts` was the live Laya path all along |
+| 1 | ✅ **Removed the experimental decision tool** | It was already orphaned; `decisionEngine.ts` is the single live Laya path |
 | 2 | ✅ **One decision engine only** | Two engines meant two confidence semantics and a migration nobody finished |
 | 3 | ✅ **Laya informs, never authorizes** | Upstream's own docs say a confident answer is not permission |
 | 4 | ✅ **One agent registry** | Generated docs + tests make drift a build failure, not a surprise |
@@ -121,4 +121,4 @@ npm run laya:serve  # start the decision runtime (separate shell)
 ```
 
 **Current status:** `tsc` clean · **384 tests passing** · 48 agent files generated ·
-1 decision engine, 0 references to Jev remaining in source.
+One provider-neutral decision engine remains in source.

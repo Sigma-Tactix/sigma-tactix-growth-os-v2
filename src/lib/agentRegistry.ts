@@ -15,6 +15,7 @@
  */
 
 import type { CategoryKey } from './decisionEngine.js';
+import type { AgentToolName } from './agentTools.js';
 
 export type Tier = 0 | 1 | 2;
 export type Plane = 'read' | 'write';
@@ -31,6 +32,7 @@ export interface SubAgentSpec {
   inputContract: string;
   outputContract: string;
   timeoutMs: number;
+  permittedTools: AgentToolName[];
 }
 
 export interface SystemAgentSpec {
@@ -73,11 +75,56 @@ export const MASTER_AGENT = {
   blocked: ['Executive Vault', 'Credentials Vault'],
 } as const;
 
+const SUB_AGENT_TOOL_GRANTS: Record<string, AgentToolName[]> = {
+  'evidence-collector': ['fetch_site_content', 'search_second_brain'],
+  'web-vitals-scorer': ['fetch_site_content'],
+  'competitor-gap-mapper': ['fetch_site_content', 'search_second_brain'],
+  'funnel-analyst': ['search_second_brain', 'get_connector_status'],
+  'audit-score-composer': ['search_second_brain', 'write_workspace_file'],
+  'roadmap-synthesizer': ['search_second_brain', 'write_workspace_file'],
+  'channel-mix-analyst': ['search_second_brain', 'get_connector_status', 'read_google_ads_mcp'],
+  'spend-efficiency-scorer': ['search_second_brain', 'read_google_ads_mcp'],
+  'creative-fatigue-detector': ['search_second_brain', 'get_connector_status'],
+  'kpi-tracker': ['search_second_brain', 'get_connector_status', 'read_google_ads_mcp'],
+  'budget-allocator': ['search_second_brain', 'write_workspace_file'],
+  'bid-strategist': ['search_second_brain', 'write_workspace_file'],
+  'query-intent': ['fetch_site_content', 'search_second_brain'],
+  'keyword-gap-finder': ['fetch_site_content', 'search_second_brain'],
+  'citation-gap': ['fetch_site_content', 'search_second_brain'],
+  'backlink-prospector': ['fetch_site_content', 'search_second_brain'],
+  'schema-emitter': ['search_second_brain', 'write_workspace_file'],
+  'content-brief-writer': ['search_second_brain', 'write_workspace_file'],
+  'brand-voice-enforcer': ['search_second_brain'],
+  'carousel-architect': ['search_second_brain', 'write_workspace_file'],
+  'video-storyboarder': ['search_second_brain', 'write_workspace_file'],
+  'creative-variant': ['search_second_brain', 'write_workspace_file'],
+  'visual-prompt-engineer': ['search_second_brain', 'write_workspace_file'],
+  'repurposer': ['search_second_brain', 'write_workspace_file'],
+  'lead-qualifier': ['search_second_brain'],
+  'account-researcher': ['fetch_site_content', 'search_second_brain'],
+  'pipeline-hygienist': ['search_second_brain', 'get_connector_status'],
+  'sequence-drafter': ['search_second_brain', 'write_workspace_file'],
+  'handoff-composer': ['search_second_brain', 'write_workspace_file'],
+  'health-scorer': ['search_second_brain', 'get_connector_status'],
+  'churn-risk-analyst': ['search_second_brain', 'get_connector_status'],
+  'expansion-signal-finder': ['search_second_brain', 'get_connector_status'],
+  'save-play-designer': ['search_second_brain', 'write_workspace_file'],
+  'qbr-composer': ['search_second_brain', 'write_workspace_file'],
+  'connector-health-monitor': ['get_connector_status'],
+  'policy-auditor': ['search_second_brain', 'get_connector_status'],
+  'retrospective-analyst': ['search_second_brain'],
+  'workflow-template-author': ['search_second_brain', 'write_workspace_file'],
+  'schedule-planner': ['search_second_brain', 'write_workspace_file'],
+  'kb-vectorizer': ['search_second_brain'],
+};
+
 function sub(
   id: string, owner: SystemAgentId, purpose: string, plane: Plane,
   inputContract: string, outputContract: string, timeoutMs = 30_000,
 ): SubAgentSpec {
-  return { id, owner, purpose, plane, inputContract, outputContract, timeoutMs };
+  const permittedTools = SUB_AGENT_TOOL_GRANTS[id];
+  if (!permittedTools) throw new Error(`No explicit tool grant registered for sub-agent: ${id}`);
+  return { id, owner, purpose, plane, inputContract, outputContract, timeoutMs, permittedTools };
 }
 
 export const SYSTEM_AGENTS: SystemAgentSpec[] = [

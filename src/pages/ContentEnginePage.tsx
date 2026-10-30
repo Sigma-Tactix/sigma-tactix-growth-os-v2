@@ -47,6 +47,8 @@ import {
 import CarouselCardViewer from '@/src/components/CarouselCardViewer';
 import { generateCreativeImage, generateSocialCampaign, queueDeterministicRender, exportCreativeLectureDeck } from '@/src/lib/creativeApi';
 import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
+import { ScheduleSocialPostModal } from '@/src/components/social/ScheduleSocialPostModal';
+import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 
 const DEMO_DEFAULT_LINKEDIN_SLIDES: CarouselSlide[] = [
   {
@@ -233,6 +235,7 @@ export default function ContentEnginePage() {
   const [activeTab, setActiveTab] = useState<'TEXT' | 'IMAGE' | 'VIDEO' | 'SOCIAL'>('SOCIAL');
   const [selectedItem, setSelectedItem] = useState<ContentEngineItem>(SEED_CONTENT_ITEMS[0]);
   const [copied, setCopied] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   // Text Engine State
   const [textTopic, setTextTopic] = useState('Why modern growth teams are firing their marketing agency of record');
@@ -280,6 +283,30 @@ export default function ContentEnginePage() {
     hashtags: ['#GrowthOS', '#B2BGrowth', '#AIAgents', '#RevenueOperations', '#SigmaTactix']
   });
 
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>(() => {
+    if (isDemoSeedEnabled()) {
+      return [
+        {
+          id: 'run-ce-01',
+          agentName: 'STAGE Lead Creative Strategist',
+          agentRole: 'Omnichannel Narrative Architect',
+          timestamp: '10:42 AM',
+          status: 'SUCCESS',
+          moduleOrigin: 'Content Engine & Omnichannel Creative',
+          inputSummary: 'Topic: 5 Hidden Digital Revenue Leaks (LinkedIn Carousel)',
+          outputSummary: '5-slide B2B teardown deck synthesized, aligned with Brand Vault vectors, ready for distribution.',
+          imageUrl: 'https://sigmatactix.com/assets/carousels/revenue-leaks-v1.pdf',
+          metrics: [
+            { label: 'Format', value: 'Multi-Slide Deck (PDF / PPTX)' },
+            { label: 'Voice Alignment', value: '99.4%' },
+            { label: 'Channel', value: 'LinkedIn' }
+          ]
+        }
+      ];
+    }
+    return [];
+  });
+
   // Text Generation Handler
   const handleGenerateText = () => {
     setIsGeneratingText(true);
@@ -313,6 +340,24 @@ The future belongs to founders who own their intelligence engine rather than ren
 
       setContentItems(prev => [newItem, ...prev]);
       setSelectedItem(newItem);
+
+      const runRecord: AgentRunRecord = {
+        id: `run-art-${Date.now()}`,
+        agentName: 'STAGE Lead Editorial Copywriter',
+        agentRole: 'Long-Form Authority Strategist',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'SUCCESS',
+        moduleOrigin: 'Content Engine (Long-Form Editorial)',
+        inputSummary: `Topic: ${textTopic} | Format: ${textFormat} | Audience: ${targetAudience}`,
+        outputSummary: `Produced 850-word piece with 99.2% Brand Vault voice alignment and zero banned AI clichés.`,
+        metrics: [
+          { label: 'Format', value: textFormat },
+          { label: 'Audience', value: targetAudience },
+          { label: 'Status', value: 'READY_FOR_HITL' }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
+
       notifySuccess(
         'Content Generated & Aligned',
         `Produced 850-word piece with 99.2% Brand Vault voice alignment and zero banned AI clichés.`
@@ -349,12 +394,45 @@ The future belongs to founders who own their intelligence engine rather than ren
       };
 
       setImageHistory(prev => [record, ...prev.slice(0, 7)]);
+
+      const runRecord: AgentRunRecord = {
+        id: `run-img-${Date.now()}`,
+        agentName: 'Creative Multi-Provider Synthesis',
+        agentRole: 'Visual Asset Architect',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'SUCCESS',
+        moduleOrigin: 'Content Engine (Visual Studio)',
+        inputSummary: `Prompt: ${imagePrompt} | Ratio: ${imageRatio} | Style: ${imageStyle}`,
+        outputSummary: `Generated visual creative with verified provider ${result.provider} in ${imageRatio} format.`,
+        imageUrl: result.imageUrl,
+        metrics: [
+          { label: 'Provider', value: result.provider },
+          { label: 'Ratio', value: imageRatio },
+          { label: 'Style', value: imageStyle }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
+
       notifySuccess(
         'Visual Creative Synthesized', 
         `Generated with verified provider ${result.provider} in ${imageRatio} format.`
       );
     } catch (err: any) {
       console.error('Image synthesis error:', err);
+      const runRecord: AgentRunRecord = {
+        id: `run-img-err-${Date.now()}`,
+        agentName: 'Creative Multi-Provider Synthesis',
+        agentRole: 'Visual Asset Architect',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'ERROR',
+        moduleOrigin: 'Content Engine (Visual Studio)',
+        inputSummary: `Prompt: ${imagePrompt} | Ratio: ${imageRatio}`,
+        outputSummary: `Synthesis error: ${err.message || 'Could not synthesize image.'}`,
+        metrics: [
+          { label: 'Ratio', value: imageRatio }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
       notifyError('Synthesis Failed', err.message || 'Could not synthesize image.');
     } finally {
       setIsGeneratingImage(false);
@@ -406,12 +484,44 @@ The future belongs to founders who own their intelligence engine rather than ren
       };
 
       setContentItems(prev => [newItem, ...prev]);
+
+      const runRecord: AgentRunRecord = {
+        id: `run-soc-${Date.now()}`,
+        agentName: 'STAGE Omnichannel Campaign Swarm',
+        agentRole: 'Cross-Platform Content Orchestrator',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'SUCCESS',
+        moduleOrigin: 'Content Engine (Social & Carousels)',
+        inputSummary: `Topic: ${socialTopic} | Channel: ${selectedSocialChannel} | Audience: ${socialAudience}`,
+        outputSummary: `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives (${result.slides?.length || 0} slides / scenes) aligned with Brand Vault vectors.`,
+        metrics: [
+          { label: 'Channel', value: selectedSocialChannel },
+          { label: 'Audience', value: socialAudience },
+          { label: 'Voice Alignment', value: '99.4%' }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
+
       notifySuccess(
         'Campaign Synthesized', 
         `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives aligned with Brand Vault vectors.`
       );
     } catch (err: any) {
       console.error('Social generation error:', err);
+      const runRecord: AgentRunRecord = {
+        id: `run-soc-err-${Date.now()}`,
+        agentName: 'STAGE Omnichannel Campaign Swarm',
+        agentRole: 'Cross-Platform Content Orchestrator',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'ERROR',
+        moduleOrigin: 'Content Engine (Social & Carousels)',
+        inputSummary: `Topic: ${socialTopic} | Channel: ${selectedSocialChannel}`,
+        outputSummary: `Generation error: ${err.message || 'Could not generate social campaign.'}`,
+        metrics: [
+          { label: 'Channel', value: selectedSocialChannel }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
       notifyError('Generation Failed', err.message || 'Could not generate social campaign.');
     } finally {
       setIsGeneratingSocial(false);
@@ -439,8 +549,36 @@ The future belongs to founders who own their intelligence engine rather than ren
         aspectRatio: '9:16',
         durationSeconds: 5,
       });
+
+      const runRecord: AgentRunRecord = {
+        id: `run-vid-${Date.now()}`,
+        agentName: 'HyperFrames Video Motion Engine',
+        agentRole: 'Vertical Video Renderer',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'SUCCESS',
+        moduleOrigin: 'Content Engine (YouTube Shorts)',
+        inputSummary: `Scene #${sceneIndex + 1}: ${scene.screenText || activeCampaign.topic}`,
+        outputSummary: `Task ${queued.task.id} queued for HITL owner/admin approval before HyperFrames creates MP4.`,
+        metrics: [
+          { label: 'Task ID', value: queued.task.id },
+          { label: 'Task Status', value: queued.task.status }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
+
       notifySuccess('Render queued for approval', `Scene #${sceneIndex + 1} is task ${queued.task.id}. An owner/admin must approve it before HyperFrames creates the MP4.`);
     } catch (err: any) {
+      const runRecord: AgentRunRecord = {
+        id: `run-vid-err-${Date.now()}`,
+        agentName: 'HyperFrames Video Motion Engine',
+        agentRole: 'Vertical Video Renderer',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'ERROR',
+        moduleOrigin: 'Content Engine (YouTube Shorts)',
+        inputSummary: `Scene #${sceneIndex + 1}`,
+        outputSummary: `Render error: ${err.message || 'Could not synthesize shorts scene.'}`
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
       notifyError('Render Failed', err.message || 'Could not synthesize shorts scene.');
     } finally {
       setIsRenderingShortsVideo(false);
@@ -674,7 +812,14 @@ The future belongs to founders who own their intelligence engine rather than ren
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
+                <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
+                  <button
+                    onClick={() => setIsScheduleModalOpen(true)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-400 text-black hover:bg-amber-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm font-sans"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Schedule via Social Hub</span>
+                  </button>
                   <span>{activeCampaign.slides?.length || 0} Slides Generated</span>
                   <span>•</span>
                   <span>Brand Vault Voice: 99.4%</span>
@@ -1162,7 +1307,7 @@ The future belongs to founders who own their intelligence engine rather than ren
                       )}
                     >
                       <img src={rec.url} alt="History" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] font-mono text-white font-bold">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[11px] font-mono text-white font-bold">
                         {rec.ratio}
                       </div>
                     </button>
@@ -1366,6 +1511,25 @@ The future belongs to founders who own their intelligence engine rather than ren
           </div>
         </div>
       )}
+
+      {/* Execution Results & Artifact Audit Trail */}
+      <div className="mt-10">
+        <AgentRunResults
+          records={runHistory}
+          title="Content Engine Execution Logs & Artifacts"
+          description="Log of generated long-form authority articles, synthesized visual creatives, multi-slide social decks, and queued video renders."
+          onClear={() => setRunHistory([])}
+        />
+      </div>
+
+      {/* Social Distribution Hub Scheduling Modal */}
+      <ScheduleSocialPostModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        initialContent={activeCampaign.caption || activeCampaign.hook || activeCampaign.topic}
+        title={activeCampaign.topic}
+        campaignId="content-engine-campaign"
+      />
     </div>
   );
 }

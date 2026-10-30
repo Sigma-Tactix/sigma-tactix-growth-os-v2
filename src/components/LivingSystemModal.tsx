@@ -283,7 +283,7 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
                           <span className="text-[10px] text-green-400 font-mono">99%</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-mono truncate">{pipe.description}</p>
-                        <div className="text-[9px] text-cyan-300 font-mono">→ Feeds: {pipe.dependents.join(', ')}</div>
+                        <div className="text-[11px] text-cyan-300 font-mono">→ Feeds: {pipe.dependents.join(', ')}</div>
                       </div>
                     ))}
                   </div>
@@ -307,7 +307,7 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
                           <span className="text-[10px] text-amber-400 font-mono">{vault.sizeOrVolume}</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-mono truncate">{vault.description}</p>
-                        <div className="text-[9px] text-amber-300 font-mono">Cleared for: {vault.dependents.slice(0, 2).join(', ')}</div>
+                        <div className="text-[11px] text-amber-300 font-mono">Cleared for: {vault.dependents.slice(0, 2).join(', ')}</div>
                       </div>
                     ))}
                   </div>
@@ -328,10 +328,10 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
                       >
                         <div className="text-xs font-bold font-mono text-white flex items-center justify-between">
                           <span className="truncate">{file.name}</span>
-                          <span className="text-[9px] text-pink-300 shrink-0">{file.sizeOrVolume}</span>
+                          <span className="text-[11px] text-pink-300 shrink-0">{file.sizeOrVolume}</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-mono truncate">{file.description}</p>
-                        <div className="text-[9px] text-pink-400 font-mono">Bound to: {file.dependents[0]}</div>
+                        <div className="text-[11px] text-pink-400 font-mono">Bound to: {file.dependents[0]}</div>
                       </div>
                     ))}
                   </div>
@@ -355,7 +355,7 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
                           <span className="text-[10px] text-purple-300 font-mono">{agent.healthScore}%</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-mono truncate">{agent.description}</p>
-                        <div className="text-[9px] text-purple-300 font-mono">{agent.category}</div>
+                        <div className="text-[11px] text-purple-300 font-mono">{agent.category}</div>
                       </div>
                     ))}
                   </div>
@@ -391,22 +391,22 @@ export default function LivingSystemModal({ isOpen, onClose, initialSelectedNode
               {/* Telemetry Stats Grid */}
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                  <div className="text-[9px] uppercase text-zinc-500">Volume / Capacity</div>
+                  <div className="text-[11px] uppercase text-zinc-500">Volume / Capacity</div>
                   <div className="font-bold text-white">{selectedNode.sizeOrVolume}</div>
                 </div>
 
                 <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                  <div className="text-[9px] uppercase text-zinc-500">Latency / Encryption</div>
+                  <div className="text-[11px] uppercase text-zinc-500">Latency / Encryption</div>
                   <div className="font-bold text-white">{selectedNode.latencyOrCycle}</div>
                 </div>
 
                 <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                  <div className="text-[9px] uppercase text-zinc-500">24h Invocations</div>
+                  <div className="text-[11px] uppercase text-zinc-500">24h Invocations</div>
                   <div className="font-bold text-amber-400">{selectedNode.accessCount24h.toLocaleString()}</div>
                 </div>
 
                 <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl space-y-0.5">
-                  <div className="text-[9px] uppercase text-zinc-500">Security Zone</div>
+                  <div className="text-[11px] uppercase text-zinc-500">Security Zone</div>
                   <div className="font-bold text-emerald-400 truncate">{selectedNode.securityZone || 'ZONE_PUBLIC_BUS'}</div>
                 </div>
               </div>

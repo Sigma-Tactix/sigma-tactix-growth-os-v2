@@ -16,13 +16,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
+  // Fill + AA-safe text via the theme-aware --sigma-on-primary token: light
+  // theme #d83812 with white (4.67:1); dark theme #ff5a32 with #09090b
+  // (6.40:1). Verified in the contrast sweep — white on #ff5a32 would only be
+  // 3.11:1 (AA fail at 12px), so a static white is not used.
   primary: `
-    bg-gradient-to-b from-[#ff5722] to-[#ff481b] 
-    text-white font-semibold 
-    border border-[#ff481b]/80 
-    shadow-[0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25)] 
+    bg-gradient-to-b from-[var(--sigma-primary)] to-[var(--sigma-primary-hover)]
+    text-[var(--sigma-on-primary)] font-semibold
+    border border-[var(--sigma-primary-hover)]/80
+    shadow-[0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25)]
     hover:brightness-105 hover:shadow-[0_4px_16px_rgba(255,72,27,0.3),inset_0_1px_0_rgba(255,255,255,0.3)]
-    focus-visible:ring-2 focus-visible:ring-[#ff481b] focus-visible:ring-offset-2
+    focus-visible:ring-2 focus-visible:ring-[var(--sigma-primary)] focus-visible:ring-offset-2
   `,
   secondary: `
     bg-[var(--sigma-surface)] 
@@ -48,16 +52,18 @@ const variantStyles: Record<ButtonVariant, string> = {
   `,
   destructive: `
     bg-rose-500/10 
-    text-rose-400 
+    text-rose-accent 
     border border-rose-500/30 
-    hover:bg-rose-500/20 hover:border-rose-500/50 hover:text-rose-300
+    hover:bg-rose-500/20 hover:border-rose-500/50 hover:text-rose-accent
     focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2
   `,
 };
 
+// btn-xs / btn-sm: compact visual height, extended to a 44px hit area on touch
+// devices via a pseudo-element (see index.css @media (pointer: coarse)).
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: 'h-7 px-2.5 text-[11px] rounded-lg gap-1.5',
-  sm: 'h-8.5 px-3 text-xs rounded-lg gap-2',
+  xs: 'btn-xs h-7 px-2.5 text-[11px] rounded-lg gap-1.5',
+  sm: 'btn-sm h-8.5 px-3 text-xs rounded-lg gap-2',
   md: 'h-10 px-4 text-xs font-medium rounded-xl gap-2',
   lg: 'h-11.5 px-5 text-sm font-semibold rounded-xl gap-2.5',
 };
@@ -106,3 +112,4 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
 
 Button.displayName = 'Button';
 export default Button;
+

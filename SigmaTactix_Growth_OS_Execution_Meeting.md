@@ -76,7 +76,7 @@ Separate ad spend, exceptional production, and heavy AI/API use. Use onboarding 
 
 ### Release evidence and blockers
 - A prior production build has succeeded; that proves bundling, not production readiness.
-- During this meeting, `npm run check` could not execute in the current shell because `npm` is not on this shell's PATH. Earlier captured evidence reports that the same check failed in TypeScript under `tools/save-token-jev` before Vitest ran. Treat the gate as **red until rerun in the correct Node/npm environment and passing evidence is recorded**.
+- During this meeting, `npm run check` could not execute in the current shell because `npm` was not on that shell's PATH. Treat the historical gate as **red until a current check runs in the correct Node/npm environment and passing evidence is recorded**.
 - Do not represent claims such as full tenant isolation, billing reliability, autonomous execution, or complete integrations as production-ready until they pass the listed acceptance gates.
 
 ### P0 launch blockers
