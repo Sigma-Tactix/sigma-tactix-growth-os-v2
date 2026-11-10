@@ -114,3 +114,14 @@ reports/security-inventory/
 
 # remaining personal reference (kept local)
 *Full Website Audit.pdf
+
+# --- agent tooling caches + generated output kept on disk but out of git (added 2026-11-10) ---
+.kilo/
+graphify-out/
+artifacts/
+.claude/settings.local.json
+
+# live per-agent runtime scratch (regenerated on every session; never commit)
+.claude/sessions/
+.claude/state/
+.agents/teamwork/

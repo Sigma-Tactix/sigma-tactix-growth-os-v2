@@ -1,3 +1,56 @@
+# SigmaTactix Growth OS — AI Agent Rules & Guidelines
+
+> **Single source of truth.** Every coding agent (Claude Code, Google Antigravity /
+> Gemini, Codex CLI, Cline, vexp) reads this file. Tool-specific pointer files
+> (`.clinerules`, `CLAUDE.md`, `.claude/CLAUDE.md`) import `@AGENTS.md` so there is
+> never a second copy of these rules to drift. If you change a rule, change it here
+> and only here.
+
+## 1. Project Overview & Architecture
+SigmaTactix Growth OS is a multi-tenant AI-native marketing operating system.
+- **Frontend**: React 19, TypeScript, TailwindCSS v4, Lucide React, Recharts, Three.js / Drei.
+- **Backend**: Express API gateway (`server.ts`) running on Node.js/Bun.
+- **Database**: Supabase PostgreSQL with `pgvector`, Row-Level Security (RLS) on all application tables.
+- **AI Core**: Google Gemini (`@google/genai`), multi-model fallback configured via `AIKeyConfig`.
+- **External Intelligence**: Agent Reach (`v1.5.0`) 15-channel CLI router (`agent-reach`).
+- **Living System**: VANTA neural core (`vantaServer.ts`, `VantaContext.tsx`).
+- **Design System**: Strict appearance tokens (`AppearanceContext.tsx`, `index.css`, `sigma-*` utility classes).
+- **Subagents**: Harness SDD hierarchy (`.agents/agentic.json`, 4 subagents, 25 skills).
+
+## 2. Ubiquitous Domain Language (Strict Invariants)
+Always adhere to terms defined in `CONTEXT.md`:
+- Use **Client Enclave** (never "account" or "tenant folder").
+- Use **Knowledge Vault** (never "bucket" or "folder").
+- Use **Secret Vault** for Executive and Credentials vaults.
+- Use **Swarm** (never "bot pool").
+- Use **Human-in-the-Loop (HITL)** for agent approval gates.
+- Use **Agent Reach** for external platform routing.
+- Use **VANTA** for the neural voice/system core.
+- Use **SDR Battlecard** for competitor sales scripts.
+- Use **AEO** for Answer Engine Optimization.
+
+## 3. Strict Security & Architecture Rules
+1. **Never Bypass RLS**: All Supabase database queries must execute with user-scoped JWTs or strictly isolated helper functions. Never use `SUPABASE_SERVICE_ROLE_KEY` in frontend code or standard API routes.
+2. **Secret Vault Isolation**: `executive_vault` and `credentials_vault` are NEVER accessible to autonomous AI agents. RBAC matrices in `src/lib/agentPolicies.ts` must be maintained.
+3. **SSRF Guardrail**: Any endpoint accepting URLs for scraping, crawling, or proxying MUST validate the target host via `assertPublicHost()` to block loopback (127.0.0.1, localhost), link-local (169.254.169.254), and RFC1918 private IP subnets.
+4. **Credential Encryption**: All third-party connector tokens must be encrypted with AES-256-GCM via `credentialCrypto.ts`. Never store raw keys in database records.
+5. **No AI Slop in UI**: Avoid generic AI buzzwords, robotic metrics, or hallucinated numbers. Use verified benchmarks from `industryReportFormats.ts` and grounded source banners for scraped content.
+6. **Theme Token Discipline**: Never hardcode pure white or pure black backgrounds for cards or menus. Use the semantic theme classes (`sigma-card`, `sigma-control`, `sigma-menu`, `sigma-text`, `sigma-muted`, `sigma-input`, `sigma-divider`) to support light, dark, and system appearances.
+7. **Token Cost Engine Accuracy**: When matching models in `tokenCostEngine.ts`, always sort candidate models by descending key length to prevent prefix collisions (e.g., `o1` matching `o1-mini`).
+8. **Deep Modules & Clean Seams**: Keep public interfaces simple and hide implementation complexity behind deep services (e.g. `agentReachService.ts`, `vantaServer.ts`).
+
+## 4. Verification & Testing
+- Run unit tests with `npm run test` (Vitest).
+- Run typechecking with `npm run lint` (`tsc --noEmit`).
+- Before modifying database logic, verify against `backend/database/migrations/verify.sql`.
+- One combined gate: `npm run verify` (build + typecheck + tests) must pass before any merge (see `docs/SYSTEM_STATUS.md`).
+
+## 5. Working Conventions (5-tool studio)
+- **One branch per task**, regardless of which agent opened it. No tool edits `main` directly.
+- **One verify gate**: run `npm run verify` (build + typecheck + tests) before merge.
+- **One rules doc**: this file. Never fork rules into a tool-specific copy.
+- **Production** = deploying the verified tree; do not ship a branch that has not passed `verify`.
+
 ## vexp - Context-Aware AI Coding <!-- vexp v3.3.8 -->
 
 ### Context strategy: call run_pipeline ONCE at task start

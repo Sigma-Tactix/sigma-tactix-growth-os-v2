@@ -12,6 +12,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run",
+    "verify": "npm run build && npm run lint && npm run test",
     "setup:google-ads-mcp": "pipx install google-ads-mcp==0.0.4",
     "opusmax:setup": "opusmax setup",
     "opusmax:status": "opusmax status --verify",
