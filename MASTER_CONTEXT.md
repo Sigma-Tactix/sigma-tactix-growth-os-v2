@@ -1,8 +1,35 @@
 # SigmaTactix Growth OS — Master Context
 
 > **Last updated**: 2026-10-30
-> **Version**: v0.2.14-dev (GitHub Management & Code Security Gate Enforcement)
-> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); local implementation verified with clean compilation (`tsc --noEmit` 0 errors); production build (`npm run build`) passing; test suite passing 83/83 test files (567/567 tests); GitHub CI quality gate, Dependabot schedule, PR template, CODEOWNERS, security policy, and local pre-commit safety verification script (`npm run verify:safety`) operationalized.
+> **Version**: v0.2.16-dev (Concise Digital Marketing Suite & Production Fixes)
+> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`); five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. Verify gate (`npm run verify`) is the release check.
+
+## Digital Marketing Suite Consolidation & Reported-Defect Fixes — 2026-10-30
+
+- **Suite consolidation (global-department mapping):** 14 working modules grouped into 7 concise spaces mirroring standard marketing departments — Creative Studio (Content + Image + Video), Social Publishing Hub (Carousels + Listening), Search & Conversion (SEO/AEO + CRO), Demand Engine (Intake + Outreach), Paid & Retention (Ads + Email), Market Intelligence (Competitors + Simulator), Measurement (Attribution). Single source of truth `src/data/suiteHubConfig.ts` + tests; tabbed surface `src/pages/SuiteHubPage.tsx` reuses existing module pages unchanged; `/suite` redirects to `/suite/creative`. All 14 old routes remain live; `Layout.tsx` sidebar now shows 7 suite items and `isDigitalMarketingRoute` includes `/suite/*` plus the previously-missed `/competitors` and `/market-simulator` (theme container fix).
+- **VANTA + 2D/3D brain map ("not working"):** both live on the VANTA-gated `/living-system` surface; gate (`VITE_VANTA_ENABLED`) off ⇒ sidebar item was hidden, reading as missing. Fixed: item now always visible with `Gated` badge (`VANTA_GATED_BADGE` in `vantaFeatureFlag.ts`); held-page lists the 4 concrete enablement steps (migration 0015, provider key, flag, `?vantaLab=1` dev preview). Data path (`getLivingSystemGraph` → `buildMapsBrainGraph` → `MapsBrainOrbit`) is intact and presentation-only.
+- **Ecosystem Status ("not working"):** content was demo-seed-only (`VITE_SEED_DEMO_WORKSPACE`), leaving a dead empty panel in real workspaces. Fixed with an honest, navigable "No live health checks connected yet" inventory — configured subsystems listed as **Unverified**, never fabricated OPERATIONAL states (AGENTS.md no-AI-slop rule).
+- **Agent Reach / Doctor ("not working"):** root cause is the external `agent-reach` CLI not installed on the host (server shells out via `execFileAsync`; hardcoded foreign path `/Users/mac/...` removed). UI now shows an honest "runtime not installed — channels correctly report offline" banner instead of an unexplained wall of errors. Code already degrades gracefully; no doctor-path bugs.
+- **API-key updates ("not working"):** save path itself was sound (commit `4d69d6d`); real defects were (a) client provider catalog missing 5 of the server's 14 providers so saved keys silently dropped on refresh, and (b) a failed keys-fetch wiping the on-screen provider list. Fixed via `src/data/aiProviderCatalog.ts` (server-mirrored, 14 providers) + regression test that parses `server.ts` and fails on drift + null-safe refresh in `Tenants.tsx`.
+- **Docs:** full mapping, root-cause table and ranked next steps in `docs/digital-marketing-suite-consolidation-2026-10-30.md`. Follow-ups: enable VANTA on a real env (migration 0015 + provider verify + flag), wire Ecosystem Status to a real health endpoint, install Agent Reach CLI for live channels.
+
+## High-Fidelity Visual Proposal Redesign & Skills Integration — 2026-10-30
+
+- **Skills Ecosystem Discovery (`/find-skills`):**
+  - Evaluated community leaderboard and installed `anthropics/skills@frontend-design` and `vercel-labs/agent-skills@web-design-guidelines` via Skills CLI (`npx skills add`).
+  - Incorporated design lead principles: eliminated AI aesthetic tells (over-tracked uppercase eyebrows, negative squished letter spacing, middle dots, repetitive cards with identical placeholder copy), introduced generous whitespace breathing room (`padding: 84px 0`, line-height `1.65`, comfortable font hierarchy).
+- **Domain-Tailored CRO Proposal Architecture (`src/lib/landingArtifact.ts`):**
+  - **Candidate A (Blueberry ERP — Linkinsoft LLC, Dubai):**
+    - Built **Contractor Margin Control Tower UI Mockup**: Live site telemetry window showing active UAE construction projects (Dubai South Hub Ph-2, Business Bay Tower C, JAFZA Cold Warehouse), subcontractor timesheet logs (Al-Etihad MEP, Gulf Earthmoving), overtime variance flags, and FTA tax compliance badges.
+    - **Operational Friction Comparison**: Status Quo (WhatsApp shift cards, disputed BOQ variation orders, 45-day billing lag) vs. Blueberry Governed OS (mobile biometric clock-in, automatic BOQ rate card validation, one-click FTA e-invoicing and WPS Central Bank SIF export).
+    - **3-Step Visual Architecture Flow**: Biometric site log ingest -> Automated rate & BOQ contract engine -> Certified invoice and bank remittance.
+  - **Candidate B (Fleetroot — Connected Mobility, Dubai):**
+    - Built **Connected Fleet Telematics & SLA Control Tower UI Mockup**: 342 active vehicles on road, 98.4% on-time SLA window, 0 cold-chain temperature deviations, live GCC corridor SVG route map (DXB Cargo Hub -> Dubai Hills -> Downtown -> Dubai Marina), and live order telemetry feed.
+    - **Operational Friction Comparison**: Legacy manual phone/WhatsApp dispatch & lost paper PODs vs. Dynamic multi-drop algorithmic dispatch, IoT BLE temperature telemetry, and geofenced photo POD.
+    - **3-Step Visual Architecture Flow**: Telematics & order ingest -> Dynamic route optimization solver -> Verified delivery handshake & digital POD.
+- **Database & Integrity Verification:**
+  - Synchronized both proposals to Supabase `landing_artifacts` table with exact byte counts (Blueberry: 30,081 bytes; Fleetroot: 31,332 bytes), deterministic SHA-256 evidence hashes, and RLS enforcement.
+  - Verified 100% test pass rate across all 83 test files (567 tests) and local pre-commit safety gate (`npm run verify:safety`).
 
 ## GitHub Management, CI Quality Gates & Code Security Hardening — 2026-10-30
 
@@ -676,6 +703,24 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 | Second Brain (Vaults) | `/vaults` | `SecondBrain.tsx` | 10 specialized knowledge vaults, 22-extension auto-routing, RAG embeddings |
 
 ### Digital Marketing Suite
+
+> **Consolidated 2026-10-30:** the 14 working modules are grouped into 7 concise
+> spaces that mirror global marketing departments (Creative Studio, Social
+> Publishing Hub, Search & Conversion, Demand Engine, Paid & Retention, Market
+> Intelligence, Measurement). Single source of truth: `src/data/suiteHubConfig.ts`
+> (tested), shared surface `src/pages/SuiteHubPage.tsx` (modules as tabs, `?tab=`
+> deep links). The standalone routes below remain live for deep links/reports;
+> details in `docs/digital-marketing-suite-consolidation-2026-10-30.md`.
+
+| Suite space | Route | Consolidated modules (old routes) |
+| --- | --- | --- |
+| Creative Studio | `/suite/creative` | Editorial Content (`/content`), Image Studio (`/image-studio`), Video Studio (`/video-studio`) |
+| Social Publishing Hub | `/suite/social` | Social Carousels (`/social-carousels`), Social Listening (`/social-listening`) |
+| Search & Conversion | `/suite/search` | SEO & AEO (`/seo-aeo`), CRO Studio (`/cro-studio`) |
+| Demand Engine | `/suite/demand` | Intake Engine (`/intake`), Outreach & Leads (`/outreach`) |
+| Paid & Retention | `/suite/paid` | Paid Ads Manager (`/paid-ads`), Email Marketing (`/email-marketing`) |
+| Market Intelligence | `/suite/intelligence` | Competitor Research (`/competitors`), Market Simulator (`/market-simulator`) |
+| Measurement | `/suite/attribution` | Attribution & ROI (`/attribution`) |
 
 | Module | Route | Component | Description |
 | --- | --- | --- | --- |

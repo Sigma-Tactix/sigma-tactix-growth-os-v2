@@ -189,7 +189,7 @@ export default function AgentReachPage() {
                 {isLoadingDoctor ? 'CHECKING RUNTIME...' : (summary.cliAvailable ? `RUNTIME ${summary.cliVersion || 'DETECTED'}` : 'RUNTIME UNAVAILABLE')}
               </Badge>
               <span className="text-xs text-zinc-500 font-mono ml-1">
-                /Users/mac/.local/bin/agent-reach
+                agent-reach (server-side CLI)
               </span>
             </div>
 
@@ -221,6 +221,27 @@ export default function AgentReachPage() {
           </div>
         </div>
       </GlassCard>
+
+      {/* Honest state: the 15-channel router is driven by the agent-reach CLI on the
+          API server. When it is not installed, every channel reads offline — say so
+          plainly instead of leaving a wall of error rows that looks like a bug. */}
+      {!isLoadingDoctor && !summary.cliAvailable && (
+        <div className="p-5 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-start gap-3.5 text-sky-200 shadow-xl backdrop-blur-xl">
+          <Database size={20} className="text-sky-400 shrink-0 mt-0.5" />
+          <div className="space-y-1.5 text-xs">
+            <div className="text-sm font-bold text-white">Agent Reach runtime not installed</div>
+            <p className="text-sky-200/90 leading-relaxed max-w-3xl">
+              This router executes the <code className="font-mono">agent-reach</code> CLI on the API server
+              (looked up on <code className="font-mono">PATH</code>, then <code className="font-mono">/usr/local/bin</code> and{' '}
+              <code className="font-mono">/opt/homebrew/bin</code>). Until it is installed, all {Object.keys(summary.channels).length || 15}{' '}
+              channels below correctly report <span className="font-bold">offline</span> — nothing is misfiring, the backend is just absent.
+            </p>
+            <p className="font-mono text-sky-300/90">
+              Install: follow the Agent Reach 1.5 setup guide, then restart the API server and click “Run Doctor”.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Top Telemetry Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

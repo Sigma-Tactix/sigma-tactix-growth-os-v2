@@ -29,7 +29,25 @@ import { useToast } from '@/src/contexts/ToastContext';
 import QuickFixAssistant, { QuickFixData } from '@/src/components/QuickFixAssistant';
 import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 
-export type EcosystemItemStatus = 'OPERATIONAL' | 'WARNING' | 'OFFLINE';
+export type EcosystemItemStatus = 'OPERATIONAL' | 'WARNING' | 'OFFLINE' | 'UNCHECKED';
+
+/**
+ * Honest fallback inventory for non-demo workspaces. No live health endpoint is
+ * wired into this panel yet, so we must NOT claim any subsystem is OPERATIONAL
+ * (that would be a fabricated metric the remediation plan bans). What we CAN
+ * state without evidence is which subsystems are *configured* and where to open
+ * them. Every entry below is therefore UNCHECKED, not "operational".
+ */
+const STATIC_SUBSYSTEMS: { name: string; route: string; detail: string }[] = [
+  { name: 'Growth Dashboard', route: '/', detail: 'Executive scorecards and anomaly alerts.' },
+  { name: 'Agent Cockpit & Approvals', route: '/agents', detail: 'Scoped swarms, DAG execution and HITL gates.' },
+  { name: 'Agent Reach Router', route: '/agent-reach', detail: '15-channel external research; needs the agent-reach CLI installed on the server.' },
+  { name: 'Report Scheduler', route: '/scheduler', detail: 'Recurring executive report generation.' },
+  { name: 'Executive Reports', route: '/reports', detail: 'PDF/CSV exports traced to vault and ledger cells.' },
+  { name: 'Second Brain Vaults', route: '/vaults', detail: '10 permissioned knowledge vaults with RLS.' },
+  { name: 'Living System (VANTA)', route: '/living-system', detail: 'Neural voice and system map; held behind the VANTA release gate.' },
+  { name: 'Connectors & Integrations', route: '/connectors', detail: 'Pipeline connectors feeding the Second Brain.' },
+];
 
 export interface EcosystemElement {
   id: string;
@@ -578,9 +596,37 @@ export default function EcosystemStatusBar({
 
       {/* Accordion Tree of Sections -> Subsections -> Elements */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
-        {filteredSections.length === 0 ? (
+        {totalCount === 0 ? (
+          <div className="space-y-3 p-2">
+            <div className="rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-3.5 text-xs leading-relaxed text-[var(--sigma-text-muted)]">
+              <div className="font-bold text-[var(--sigma-text)]">No live health checks connected yet</div>
+              <p className="mt-1.5">
+                This panel does not fabricate status. Until a health-check endpoint is wired in, it lists the
+                subsystems that are configured and where to open them — each marked
+                <span className="mx-1 font-mono text-[10px] font-bold uppercase">Unverified</span>
+                rather than “operational”.
+              </p>
+            </div>
+            {STATIC_SUBSYSTEMS.map((sub) => (
+              <button
+                key={sub.name}
+                type="button"
+                onClick={() => navigate(sub.route)}
+                className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface)] p-3 text-left text-xs transition-all hover:border-[var(--sigma-border-strong)] hover:bg-[var(--sigma-surface-raised)]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[var(--sigma-text)]">{sub.name}</span>
+                  <span className="rounded bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-[var(--sigma-text-muted)]">
+                    Unverified
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] text-[var(--sigma-text-muted)]">{sub.detail}</div>
+              </button>
+            ))}
+          </div>
+        ) : filteredSections.length === 0 ? (
           <div className="p-8 text-center text-[var(--sigma-text-muted)] text-sm">
-            {totalCount === 0 ? 'No runtime health checks have been recorded for this workspace.' : 'No matching ecosystem elements found.'}
+            No matching ecosystem elements found.
           </div>
         ) : (
           filteredSections.map(section => {

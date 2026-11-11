@@ -63,7 +63,7 @@ import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
-import { isVantaReleaseEnabled, resolveVantaNavigationTarget } from '@/src/lib/vantaFeatureFlag';
+import { isVantaReleaseEnabled, resolveVantaNavigationTarget, VANTA_GATED_BADGE } from '@/src/lib/vantaFeatureFlag';
 
 interface NavSection {
   title: string;
@@ -82,15 +82,19 @@ const vantaNavigationTarget = resolveVantaNavigationTarget({
   development: developmentEnv?.DEV === true,
 });
 
-const vantaNavigationItems: NavSection['items'] = vantaNavigationTarget
-  ? [{
-      label: 'Living System',
-      href: vantaNavigationTarget.href,
-      icon: BrainCircuit,
-      roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
-      badge: vantaNavigationTarget.badge,
-    }]
-  : [];
+// The Living System entry point is always discoverable. When the VANTA release
+// gate is off (and not in a dev preview) it still shows — with a "Gated" badge
+// — so the surface and the 2D/3D system map are not mistaken for "missing" or
+// "broken"; opening it explains exactly what to enable.
+const vantaNavigationItems: NavSection['items'] = [
+  {
+    label: 'Living System',
+    href: (vantaNavigationTarget?.href ?? '/living-system') as string,
+    icon: BrainCircuit,
+    roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
+    badge: vantaNavigationTarget?.badge ?? VANTA_GATED_BADGE,
+  },
+];
 
 const navSections: NavSection[] = [
   {
@@ -105,20 +109,13 @@ const navSections: NavSection[] = [
   {
     title: 'Digital Marketing Suite',
     items: [
-      { label: 'SEO & AEO Authority', href: '/seo-aeo', icon: Globe, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'GSC + AI' },
-      { label: 'Performance Ads & ROAS', href: '/paid-ads', icon: Megaphone, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Editorial Content Engine', href: '/content', icon: FileText, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Social & Carousels', href: '/social-carousels', icon: Share2, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'LinkedIn' },
-      { label: 'AI Creative Image Studio', href: '/image-studio', icon: ImageIcon, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Flux Pro' },
-      { label: 'Video & Motion Studio', href: '/video-studio', icon: Video, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'HyperFrames' },
-      { label: 'Email & Lifecycle', href: '/email-marketing', icon: Mail, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'CRO & Landing Pages', href: '/cro-studio', icon: Target, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Inbound Leads & WhatsApp', href: '/intake', icon: Zap, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Sub-60s' },
-      { label: 'Cold Outreach & ABM', href: '/outreach', icon: Send, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Social Listening & Radar', href: '/social-listening', icon: Ear, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Competitor Intelligence', href: '/competitors', icon: Trophy, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'TinyFish' },
-      { label: 'Market Simulator', href: '/market-simulator', icon: Swords, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'MiroFish' },
-      { label: 'Attribution & Blended CAC', href: '/attribution', icon: BarChart3, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
+      { label: 'Creative Studio', href: '/suite/creative', icon: FileText, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Text · Image · Video' },
+      { label: 'Social Publishing Hub', href: '/suite/social', icon: Share2, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Publish + Listen' },
+      { label: 'Search & Conversion', href: '/suite/search', icon: Globe, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'SEO · AEO · CRO' },
+      { label: 'Demand Engine', href: '/suite/demand', icon: Zap, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Inbound + Outbound' },
+      { label: 'Paid & Retention', href: '/suite/paid', icon: Megaphone, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Ads + Email' },
+      { label: 'Market Intelligence', href: '/suite/intelligence', icon: Trophy, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Competitors + MiroFish' },
+      { label: 'Attribution & Blended CAC', href: '/suite/attribution', icon: BarChart3, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
     ]
   },
   {
@@ -188,11 +185,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? allNavItems.filter(i => i.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
-  const isDigitalMarketingRoute = [
-    '/seo-aeo', '/paid-ads', '/content', '/content-engine', '/social-carousels',
-    '/image-studio', '/video-studio', '/email-marketing', '/cro-studio', '/intake',
-    '/outreach', '/social-listening', '/attribution',
-  ].includes(location.pathname);
+  const isDigitalMarketingRoute =
+    location.pathname.startsWith('/suite') ||
+    ['/seo-aeo', '/paid-ads', '/content', '/content-engine', '/social-carousels',
+     '/image-studio', '/video-studio', '/email-marketing', '/cro-studio', '/intake',
+     '/outreach', '/social-listening', '/attribution', '/competitors', '/market-simulator'
+    ].includes(location.pathname);
 
   return (
     <div className="sigma-app flex min-h-[100dvh] bg-background overflow-hidden selection:bg-accent/20 selection:text-zinc-950">
