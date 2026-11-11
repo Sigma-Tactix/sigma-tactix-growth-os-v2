@@ -968,7 +968,8 @@ Format: Write directly in clear GitHub markdown with headers, bullet points, and
         content: response.text,
         title: topic,
         format,
-        audience
+        audience,
+        engine: "gemini"
       });
       return;
     } catch (err: any) {
@@ -996,7 +997,8 @@ By deploying an AI-native growth infrastructure directly into your cloud, your b
 The future belongs to founders who own their intelligence engine rather than rent it.`,
     title: topic,
     format,
-    audience
+    audience,
+    engine: "local-template"
   });
 });
 

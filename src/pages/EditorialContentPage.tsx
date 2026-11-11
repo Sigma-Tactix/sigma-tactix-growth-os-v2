@@ -32,6 +32,7 @@ import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { repurposeArticleWithAgentReach } from '@/src/lib/api';
+import { generateTextContent, type GenerateTextResult } from '@/src/lib/creativeApi';
 import { RepurposedArticle } from '@/src/types';
 import { Button, GlassCard, Badge } from '@/src/components/ui';
 
@@ -72,10 +73,10 @@ const ARTICLE_FORMATS: ArticleFormat[] = [
 export default function EditorialContentPage() {
   const { notifySuccess, notifyError } = useToast();
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat['id']>('THOUGHT_LEADERSHIP');
-  const [topic, setTopic] = useState('Why Renting Marketing Headcount Kills B2B Tech Enterprise Value');
-  const [targetAudience, setTargetAudience] = useState('B2B Tech Founders, CEOs, and Chief Revenue Officers');
-  const [primaryKeyword, setPrimaryKeyword] = useState('B2B growth infrastructure, Sovereign Growth OS');
-  const [brandVoiceScore, setBrandVoiceScore] = useState(99.4);
+  // No pre-filled marketing thesis: a fresh tenant writes their own topic.
+  const [topic, setTopic] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [primaryKeyword, setPrimaryKeyword] = useState('');
   const [antiSlopActive, setAntiSlopActive] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -88,83 +89,37 @@ export default function EditorialContentPage() {
   const [isRepurposing, setIsRepurposing] = useState(false);
   const [repurposedMeta, setRepurposedMeta] = useState<RepurposedArticle | null>(null);
 
-  // Generated Content State
-  const [generatedArticle, setGeneratedArticle] = useState<string>(`# Why Renting Marketing Headcount Kills B2B Tech Enterprise Value
+  // Generated Content State — starts empty: a fresh tenant has not generated
+  // an article yet, so no fabricated "sample" document is shown on load.
+  const [generatedArticle, setGeneratedArticle] = useState<string>('');
+  // Which engine last produced the document: a model run, the local template
+  // fallback, or nothing yet. No "voice match %" — no scorer is implemented.
+  const [lastEngine, setLastEngine] = useState<'gemini' | 'local-template' | null>(null);
 
-When a venture-backed tech company allocates $25,000 to $40,000 monthly to traditional digital marketing retainers, the board assumes they are purchasing growth velocity. 
+  // Agent Run History — starts empty; only real generations land here.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
-In reality, they are entering a negative-compounding lease on external human headcount.
-
-## The Three Fatal Defects of the Agency Retainer Model
-
-### 1. Context Evaporation (The 9-Month Half-Life)
-The account executive who pitches your contract rarely touches your campaigns. Execution is delegated to junior coordinators who turn over every nine months. With every departure, your positioning nuance, ad test failures, and objection patterns vanish into thin air.
-
-### 2. Attribution Opacity
-Monthly agency reviews celebrate vanity metrics: "Impressions up 42%", "Top-of-funnel clicks up 35%." Yet, the blended cost to acquire a paying enterprise customer continues to climb. Why? Because third-party agencies operate on last-click attribution models designed to justify their own existence, rather than diagnosing real pipeline friction.
-
-### 3. Zero Durable Asset Accumulation
-When you terminate an agency contract after two years and $700,000 in spend, what assets remain on your balance sheet? Zero lines of code. Zero structured knowledge bases. Zero autonomous execution engines. You are forced to reboot from scratch.
-
-## The Sovereign Alternative: Client-Owned Growth OS
-
-Top-performing operators are shifting from *renting labor* to *owning infrastructure*. 
-
-By deploying an AI-native Growth OS directly inside your cloud environment:
-- **Permanent Institutional Memory**: Every customer interview, sales transcript, and conversion experiment feeds an immutable Second Brain.
-- **Autonomous Scoped Agents**: Specialized AI swarms execute SEO content, ad copy variants, and competitor intelligence around the clock.
-- **Deterministic Human-in-the-Loop (HITL) Guardrails**: Senior executives approve strategies while autonomous agents handle manual labor at zero marginal cost.
-
-Capital efficiency in 2026 is no longer about who hires the largest external agency. It is about who owns the most resilient autonomous infrastructure.`);
-
-  // Agent Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-editorial-01',
-      agentName: 'Editorial Engine Swarm',
-      agentRole: 'Executive Copywriter & Brand Voice Enforcer',
-      timestamp: 'Today at 04:15 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Editorial Content Studio',
-      inputSummary: 'Thought Leadership: Renting Marketing Headcount vs Sovereign Growth OS',
-      outputSummary: 'Generated 1,420 words. Brand Voice Match: 99.4%. Cliché count: 0.',
-      fullOutput: generatedArticle,
-      metrics: [
-        { label: 'Words', value: '1,420' },
-        { label: 'Voice Score', value: '99.4%' },
-        { label: 'Read Time', value: '5.5 min' },
-        { label: 'Slop Filter', value: 'Passed' }
-      ]
-    }
-  ]);
-
-  const handleGenerate = () => {
+  // Generate via the real creative endpoint (Gemini when configured,
+  // otherwise an honest local template — the engine field says which).
+  const handleGenerate = async () => {
     if (!topic.trim()) {
       notifyError('Topic Required', 'Please enter an editorial thesis or article topic.');
       return;
     }
 
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      const newArticle = `# ${topic}
+    try {
+      const result: GenerateTextResult = await generateTextContent({
+        topic: topic.trim(),
+        format: selectedFormat,
+        targetAudience: targetAudience.trim() || undefined,
+        antiSlop: antiSlopActive
+      });
 
-## Executive Summary
-In today's hyper-competitive software landscape, companies that rely on generic marketing playbooks face accelerating customer acquisition costs. Building proprietary topical authority is no longer optional—it is the bedrock of sovereign pipeline generation.
+      setGeneratedArticle(result.content);
+      setLastEngine(result.engine);
 
-## Core Thesis
-The primary reason B2B tech companies struggle with content conversion is not a lack of output, but a lack of proprietary point-of-view (POV). When marketing material regurgitates common knowledge, buyers instinctively tune out.
-
-## Strategic Framework
-1. **First-Principles ICP Alignment**: Ground every paragraph in empirical customer pain points drawn directly from closed-won sales calls.
-2. **Anti-Slop Guardrails**: Systematically purge buzzwords like "in today's fast-paced digital world" and "game changer".
-3. **High-Density Data Proof**: Back every thesis with verified enterprise telemetry.
-
-## Operational Playbook
-Deploying scoped AI swarms allows your team to generate authoritative, voice-aligned thought leadership in minutes instead of weeks, preserving executive time for strategic direction.`;
-
-      setGeneratedArticle(newArticle);
-
+      const wordCount = result.content.split(/\s+/).filter(Boolean).length;
       const newRun: AgentRunRecord = {
         id: `run-editorial-${Date.now()}`,
         agentName: 'Editorial Engine Swarm',
@@ -172,19 +127,34 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
         timestamp: 'Just now',
         status: 'SUCCESS',
         moduleOrigin: 'Editorial Content Studio',
-        inputSummary: `${selectedFormat}: ${topic}`,
-        outputSummary: `Generated article for ${targetAudience}. Brand Voice Match: ${brandVoiceScore}%.`,
-        fullOutput: newArticle,
+        inputSummary: `${selectedFormat}: ${topic.trim()}`,
+        outputSummary:
+          result.engine === 'gemini'
+            ? `Model-generated ${wordCount}-word article for ${result.audience}.`
+            : `Local template draft (${wordCount} words) — no model key configured; not model output.`,
+        fullOutput: result.content,
         metrics: [
           { label: 'Format', value: selectedFormat },
-          { label: 'Voice Score', value: `${brandVoiceScore}%` },
+          { label: 'Engine', value: result.engine === 'gemini' ? 'Gemini' : 'Local template' },
+          { label: 'Words', value: String(wordCount) },
           { label: 'Anti-Slop', value: antiSlopActive ? 'Active' : 'Bypassed' }
         ]
       };
 
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('Article Generated', 'Produced high-signal thought leadership piece adhering to brand guidelines.');
-    }, 1400);
+      if (result.engine === 'local-template') {
+        notifySuccess(
+          'Draft Generated (Local Template)',
+          'No AI key is configured, so this is a deterministic local template, not model output. Configure a provider key for real generation.'
+        );
+      } else {
+        notifySuccess('Article Generated', `Produced a ${wordCount}-word article via the configured model.`);
+      }
+    } catch (err: any) {
+      notifyError('Generation Failed', err?.message || 'Could not generate the article.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRepurposeArticle = async () => {
@@ -272,7 +242,11 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
             </Button>
 
             <Badge variant="success" size="md" icon={<ShieldCheck className="w-4 h-4" />}>
-              Brand Voice: {brandVoiceScore}%
+              {lastEngine === 'gemini'
+                ? 'Last draft: model-generated'
+                : lastEngine === 'local-template'
+                  ? 'Last draft: local template (no key)'
+                  : 'No draft yet — generate to start'}
             </Badge>
 
             <Button
@@ -463,7 +437,11 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto max-h-[500px] pr-2 space-y-4 font-sans text-slate-200 text-sm leading-relaxed whitespace-pre-wrap selection:bg-amber-500/30">
-              {generatedArticle}
+              {generatedArticle ? generatedArticle : (
+                <div className="text-xs text-[var(--sigma-muted)] font-mono leading-relaxed">
+                  No article yet. Set a topic on the left and run "Generate Voice-Aligned Article", or repurpose a source via Agent Reach. Nothing shown here is a pre-seeded sample.
+                </div>
+              )}
             </div>
 
             {/* Grounded Quotes Drawer if available */}
@@ -483,18 +461,24 @@ Deploying scoped AI swarms allows your team to generate authoritative, voice-ali
               </div>
             )}
 
-            {/* Quality Footer */}
+            {/* Source Footer — honest: says which engine produced the draft.
+                No fabricated "cliché count" or "reading level" (no such scorer
+                is implemented). */}
             <div className="mt-4 pt-4 border-t border-[var(--sigma-border)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--sigma-muted)]">
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-emerald-accent">
-                  <CheckCircle2 className="w-4 h-4" /> 0 AI Clichés Detected
-                </span>
                 <span className="flex items-center gap-1.5 text-[var(--sigma-text)]">
-                  <Award className="w-4 h-4 text-[var(--sigma-vermilion)]" /> Reading Level: Grade 11
+                  <Award className="w-4 h-4 text-[var(--sigma-vermilion)]" />
+                  {lastEngine === 'gemini'
+                    ? 'Source: configured model'
+                    : lastEngine === 'local-template'
+                      ? 'Source: deterministic local template'
+                      : 'No draft generated yet'}
                 </span>
               </div>
               <div className="text-[var(--sigma-muted)]">
-                Synchronized with Sigmatactix Second Brain
+                {generatedArticle
+                  ? `${generatedArticle.split(/\s+/).filter(Boolean).length} words in this document`
+                  : 'Ready to generate'}
               </div>
             </div>
           </GlassCard>
