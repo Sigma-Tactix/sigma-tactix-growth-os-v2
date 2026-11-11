@@ -1,8 +1,17 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-10-30
-> **Version**: v0.2.16-dev (Concise Digital Marketing Suite & Production Fixes)
-> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`); five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. Verify gate (`npm run verify`) is the release check.
+> **Last updated**: 2026-11-12
+> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes)
+> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. Branch `task/dmsuite-consolidation-and-fixes` on PR #33, pushed, gate green. Verify gate (`npm run verify`) is the release check.
+
+## DM Suite Honest-State Hardening, Audit Fixes & Agent SOP/AOP — 2026-11-12
+
+Follow-up pass on `task/dmsuite-consolidation-and-fixes` (PR #33), 15 commits on top of the consolidation:
+
+- **Production-readiness audit hardening (`4b2c82f`)**: dev-guarded the `?vantaLab=1` VANTA bypass so it can no longer open the unreleased surface in a production build; made the `/living-system` held-page theme-token-compliant; the Agent Reach service now derives its CLI probe paths from `process.env.HOME` (no hard-coded `/Users/mac`), reads `cliVersion` from the CLI doctor output instead of asserting `1.5.0`, and the not-installed banner reflects the real probe order; the Ecosystem status trigger dot is green only in demo-seed mode (neutral in real mode, matching the "Not checked" panel).
+- **No-AI-slop honest-state sweep across the suite** (AGENTS §3.5): creative studios stop attributing renders to unwired video models; social listening + carousels gate demo mentions/seeds behind the demo flag and label them; competitor intelligence stops claiming unexecuted scrapes; email & lifecycle drop fabricated send/DNS/spam claims and demo-gate seeds; paid ads stop claiming executed optimizer runs / live campaigns; SEO/AEO demo-gate seeds; outreach stops seeding fabricated pipeline data; editorial wires "generate" to the real endpoint and drops fabricated sample + scores; intake persists the questionnaire to the Second Brain via a real endpoint.
+- **Landing-artifact engine (`dfdaada`)**: high-fidelity, domain-tailored landing-page draft builder (`src/lib/landingArtifact.ts`) with UI mockups, before/after comparison matrices and 3-step architecture diagrams for the Blueberry (ERP) and Fleetroot (logistics) candidates; provenance + SHA-256 integrity preserved, no fabricated conversion claims.
+- **Agent SOP/AOP docs (`1e441a4`)**: standard operating + anti-operational procedures generated for every agent from the registry (`scripts/generateAgentDocs.mjs`).
 
 ## Digital Marketing Suite Consolidation & Reported-Defect Fixes — 2026-10-30
 
