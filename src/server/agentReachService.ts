@@ -19,16 +19,31 @@ interface AgentReachDoctorOptions {
   runDoctor?: () => Promise<{ stdout: string }>;
 }
 
-const KNOWN_CLI_PATHS = [
-  '/Users/mac/.local/bin/agent-reach',
-  '/usr/local/bin/agent-reach',
-  '/opt/homebrew/bin/agent-reach',
-];
+// Probe order: this host's home-dir install, then the two macOS bin locations,
+// then the bare command on PATH. No user-specific paths are hard-coded — the
+// home-dir entry is derived from the running process's environment, so the
+// service works on any host that installs agent-reach.
+function agentReachCliPaths(): string[] {
+  const home = process.env.HOME || '';
+  return [
+    home ? `${home}/.local/bin/agent-reach` : '',
+    '/usr/local/bin/agent-reach',
+    '/opt/homebrew/bin/agent-reach',
+  ].filter(Boolean);
+}
 
-const EXTENDED_PATH = `${process.env.PATH || ''}:/opt/homebrew/bin:/Users/mac/.local/bin:/usr/local/bin`;
+function extendedAgentReachPath(): string {
+  const home = process.env.HOME || '';
+  return [
+    process.env.PATH || '',
+    home ? `${home}/.local/bin` : '',
+    '/opt/homebrew/bin',
+    '/usr/local/bin',
+  ].filter(Boolean).join(':');
+}
 
 export function resolveAgentReachBinary(): string {
-  for (const p of KNOWN_CLI_PATHS) {
+  for (const p of agentReachCliPaths()) {
     if (fs.existsSync(p)) return p;
   }
   return 'agent-reach';
@@ -126,7 +141,7 @@ export async function getAgentReachDoctor(options: AgentReachDoctorOptions = {})
           timeout: 15000,
           env: {
             ...process.env,
-            PATH: EXTENDED_PATH,
+            PATH: extendedAgentReachPath(),
             AGENT_REACH_LANG: 'en',
           },
         }));
@@ -136,6 +151,15 @@ export async function getAgentReachDoctor(options: AgentReachDoctorOptions = {})
     let readyCount = 0;
     let warningCount = 0;
     let offlineCount = 0;
+
+    // CLI version telemetry for the doctor summary — read from the CLI's own
+    // output when it reports one, omitted otherwise so the UI shows "DETECTED"
+    // rather than an asserted version. (The /1.5.0 User-Agent strings on the
+    // outbound HTTP calls are this app's client identifier, not a CLI claim.)
+    const cliVersion: string | undefined =
+      (typeof parsed.version === 'string' && parsed.version) ||
+      (parsed.meta && typeof parsed.meta.version === 'string' && parsed.meta.version) ||
+      undefined;
 
     for (const [key, val] of Object.entries<any>(parsed)) {
       const status = (val.status as 'ok' | 'warn' | 'off' | 'error') || 'off';
@@ -158,7 +182,7 @@ export async function getAgentReachDoctor(options: AgentReachDoctorOptions = {})
     return {
       timestamp,
       cliAvailable: true,
-      cliVersion: '1.5.0',
+      cliVersion,
       totalChannels: Object.keys(channels).length,
       readyCount,
       warningCount,
@@ -643,7 +667,7 @@ async function searchYouTubeIntelligence(query: string): Promise<AgentReachFetch
     ], {
       timeout: 20000,
       maxBuffer: 4 * 1024 * 1024,
-      env: { ...process.env, PATH: EXTENDED_PATH },
+      env: { ...process.env, PATH: extendedAgentReachPath() },
     });
     const parsed = JSON.parse(stdout.trim());
     const entries: any[] = Array.isArray(parsed?.entries) ? parsed.entries.filter(Boolean) : [];

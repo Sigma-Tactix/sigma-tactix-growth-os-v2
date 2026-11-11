@@ -64,6 +64,7 @@ import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer'
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
 import { isVantaReleaseEnabled, resolveVantaNavigationTarget, VANTA_GATED_BADGE } from '@/src/lib/vantaFeatureFlag';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 
 interface NavSection {
   title: string;
@@ -298,7 +299,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="relative p-2.5 mx-auto bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] rounded-xl flex items-center justify-center text-[var(--sigma-primary)] transition-all group cursor-pointer"
             >
               <Activity size={16} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              {/* A steady green reads as "healthy" and would fabricate a signal at
+                  the outermost surface of the status system. In a real workspace the
+                  panel honestly reports "Not checked", so the dot is neutral; it is
+                  green only in demo mode, where sample telemetry actually exists. */}
+              <span className={cn(
+                "absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full",
+                isDemoSeedEnabled() ? "bg-emerald-400" : "bg-[var(--sigma-text-muted)] opacity-60"
+              )} />
             </button>
           )}
         </div>

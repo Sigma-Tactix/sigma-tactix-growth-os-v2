@@ -50,29 +50,36 @@ function RouteFallback() {
   return <div className="min-h-[40vh] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" aria-label="Loading page" />;
 }
 
+// Same bracket-access pattern as Layout.tsx / vantaFeatureFlag.ts: a literal
+// import.meta.env.X would be statically replaced by the bundler.
+const developmentEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
+
 function VantaRoute() {
   const location = useLocation();
-  const fidelityLab = new URLSearchParams(location.search).has('vantaLab');
+  // The fidelity-lab bypass is DEVELOPMENT ONLY. Without the DEV guard it is a
+  // live query-string backdoor to the unreleased surface in any build, which
+  // would defeat the release gate this held-page describes.
+  const fidelityLab = developmentEnv?.DEV === true && new URLSearchParams(location.search).has('vantaLab');
 
   if (isVantaReleaseEnabled() || fidelityLab) return <LivingSystemPage />;
 
   return (
-    <main className="flex min-h-[65vh] items-center justify-center rounded-3xl border border-orange-500/15 bg-[#050302] p-6">
-      <section className="max-w-xl rounded-2xl border border-white/10 bg-white/[0.025] p-8 text-center">
+    <main className="flex min-h-[65vh] items-center justify-center rounded-3xl border border-[var(--sigma-border)] p-6">
+      <section className="max-w-xl rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-surface)] p-8 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-orange-300">VANTA release gate</p>
-        <h1 className="mt-3 text-2xl font-black text-white">Living System is gated in this build</h1>
-        <p className="mt-3 text-sm leading-6 text-zinc-400">
+        <h1 className="mt-3 text-2xl font-black text-[var(--sigma-text)]">Living System is gated in this build</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--sigma-text-muted)]">
           VANTA (the neural core and the 2D/3D system map) is intentionally held until its database
           migration, provider verification and visual acceptance checks pass. To run it on this
           machine:
         </p>
-        <ol className="mt-4 space-y-2 rounded-xl border border-white/10 bg-black/30 p-4 text-left text-xs leading-relaxed text-zinc-300">
-          <li><span className="font-mono text-orange-300">1.</span> Apply VANTA migration <span className="font-mono">0015_vanta_conversations.sql</span> to the configured Supabase database.</li>
+        <ol className="mt-4 space-y-2 rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-4 text-left text-xs leading-relaxed text-[var(--sigma-text)]">
+          <li><span className="font-mono text-orange-300">1.</span> Apply VANTA migration <span className="font-mono">0015_vanta_conversations.sql</span> to the configured Supabase database. For full decision-trace evidence also apply <span className="font-mono">0016_decision_traces.sql</span>; VANTA degrades gracefully without it.</li>
           <li><span className="font-mono text-orange-300">2.</span> Set a verified Gemini key in <span className="font-mono">.env</span> (<span className="font-mono">GEMINI_API_KEY</span>) or Admin → AI Model Config.</li>
           <li><span className="font-mono text-orange-300">3.</span> Add <span className="font-mono">VITE_VANTA_ENABLED="true"</span> to <span className="font-mono">.env</span> and restart <span className="font-mono">npm run dev</span>.</li>
-          <li><span className="font-mono text-orange-300">4.</span> In development only, append <span className="font-mono">?vantaLab=1</span> to <span className="font-mono">/living-system</span> for the fidelity preview.</li>
+          <li><span className="font-mono text-orange-300">4.</span> In development builds only, append <span className="font-mono">?vantaLab=1</span> to <span className="font-mono">/living-system</span> for the fidelity preview. Production builds always require the release flag.</li>
         </ol>
-        <p className="mt-4 text-[11px] text-zinc-500">
+        <p className="mt-4 text-[11px] text-[var(--sigma-text-muted)]">
           See <span className="font-mono">.env.example</span> (VANTA release gate) and{' '}
           <span className="font-mono">docs/module-health-audit</span> F-003 for the acceptance criteria.
         </p>

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Building2, Layers } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
@@ -57,12 +57,6 @@ function ModulePage({ module }: { module: SuiteModule }) {
 export default function SuiteHubPage({ hubId }: { hubId: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const hub = (Object.values(SUITE_HUBS) as SuiteHubDef[]).find((h) => h.id === hubId);
-  // Only a tab param that names a module OF THIS HUB wins; a stale or foreign
-  // ?tab value must not silently drive the view (deep links must resolve).
-  const requestedTab = hub ? hub.modules.find((m) => m.id === searchParams.get('tab')) : undefined;
-  const [activeTab, setActiveTab] = useState<string>(
-    () => requestedTab?.id || hub?.modules[0]?.id || '',
-  );
 
   // Single-module measurement hub — direct link, no wrapper chrome.
   if (hubId === 'attribution') {
@@ -76,7 +70,13 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
     );
   }
 
-  const activeModule = hub.modules.find((m) => m.id === activeTab) || hub.modules[0];
+  // The URL (?tab=<moduleId>) is the single source of truth for the active tab,
+  // so browser back/forward and cross-hub deep links always resolve to a tab
+  // that matches the address bar. Only a ?tab value that names a module OF THIS
+  // hub wins; a stale or foreign ?tab falls back to the hub's first module
+  // instead of silently driving the view.
+  const activeModule =
+    hub.modules.find((m) => m.id === searchParams.get('tab')) || hub.modules[0];
 
   return (
     <div className="space-y-5">
@@ -103,7 +103,8 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
             }))}
             activeTab={activeModule.id}
             onChange={(id) => {
-              setActiveTab(id);
+              // Keep the URL the single source of truth. The module's own route
+              // is preserved so deep links into sub-workspaces still resolve.
               const params = new URLSearchParams(searchParams);
               params.set('tab', id);
               setSearchParams(params, { replace: true });

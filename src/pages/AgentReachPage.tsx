@@ -232,12 +232,13 @@ export default function AgentReachPage() {
             <div className="text-sm font-bold text-white">Agent Reach runtime not installed</div>
             <p className="text-sky-200/90 leading-relaxed max-w-3xl">
               This router executes the <code className="font-mono">agent-reach</code> CLI on the API server
-              (looked up on <code className="font-mono">PATH</code>, then <code className="font-mono">/usr/local/bin</code> and{' '}
-              <code className="font-mono">/opt/homebrew/bin</code>). Until it is installed, all {Object.keys(summary.channels).length || 15}{' '}
-              channels below correctly report <span className="font-bold">offline</span> — nothing is misfiring, the backend is just absent.
+              (probed at <code className="font-mono">~/.local/bin</code>, <code className="font-mono">/usr/local/bin</code> and{' '}
+              <code className="font-mono">/opt/homebrew/bin</code>, then on <code className="font-mono">PATH</code>). Until it is installed, the{' '}
+              {Object.keys(summary.channels).length} channels below correctly report{' '}
+              <span className="font-bold">offline</span> — nothing is misfiring, the backend is just absent.
             </p>
             <p className="font-mono text-sky-300/90">
-              Install: follow the Agent Reach 1.5 setup guide, then restart the API server and click “Run Doctor”.
+              Install: set up Agent Reach on the API server host, restart the server, then click “Run Doctor”.
             </p>
           </div>
         </div>
