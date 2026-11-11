@@ -20,6 +20,8 @@ import { cn } from '@/src/lib/utils';
 import { GlassCard, Button, Badge, Input } from '@/src/components/ui';
 import { SECOND_BRAIN_VAULTS } from '@/src/data/secondBrainVaults';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
+import { useToast } from '@/src/contexts/ToastContext';
+import { apiFetch } from '@/src/lib/api';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 
 interface FormState {
@@ -36,16 +38,19 @@ interface FormState {
 
 export default function IntakeEngine() {
   const { currentWorkspace } = useWorkspace();
+  const { notifyError } = useToast();
+  // Pre-fill ONLY from this tenant's own workspace record. Fields the tenant
+  // has not filled start blank — invented default numbers read as their data.
   const [formData, setFormData] = useState<FormState>({
-    companyName: currentWorkspace?.name || 'Sigma Tactix Growth Corp',
-    websiteUrl: currentWorkspace?.domain ? (currentWorkspace.domain.startsWith('http') ? currentWorkspace.domain : `https://${currentWorkspace.domain}`) : 'https://sigmatactix.com',
-    monthlyRevenue: '$150k - $500k',
-    primaryICP: currentWorkspace?.icp || 'B2B SaaS Founders & Growth Directors',
-    primaryChannel: 'Google Search & Meta Ads',
-    monthlyAdSpend: '$45,000/mo',
-    primaryBottleneck: 'SEO gaps & high mobile conversion bounce rate',
-    brandVoiceTone: currentWorkspace?.brandVault?.voiceAndTone || 'Authoritative, technical, transparent, zero fluff',
-    competitorDifferentiator: currentWorkspace?.brandVault?.corePositioning || 'Proprietary client-owned Second Brain instead of agency black boxes'
+    companyName: currentWorkspace?.name || '',
+    websiteUrl: currentWorkspace?.domain ? (currentWorkspace.domain.startsWith('http') ? currentWorkspace.domain : `https://${currentWorkspace.domain}`) : '',
+    monthlyRevenue: '',
+    primaryICP: currentWorkspace?.icp || '',
+    primaryChannel: '',
+    monthlyAdSpend: '',
+    primaryBottleneck: '',
+    brandVoiceTone: currentWorkspace?.brandVault?.voiceAndTone || '',
+    competitorDifferentiator: currentWorkspace?.brandVault?.corePositioning || ''
   });
 
   useEffect(() => {
@@ -65,72 +70,96 @@ export default function IntakeEngine() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [activePipelineStep, setActivePipelineStep] = useState(0);
 
-  // Dynamic Routing mapping preview based on form fields
+  // Dynamic Routing mapping preview based on form fields. The "will be
+  // written" text is a plan, not a claim: fields only land when the
+  // questionnaire is submitted and the route confirms success.
   const dynamicRoutes = [
     {
       sourceField: 'Brand Voice & Differentiator',
       targetVault: 'Brand Vault (ZONE_1_BRAND)',
-      actionTriggered: 'Voice vectors normalized & stored in pgvector index',
+      actionTriggered: 'Voice tone & positioning recorded in Brand Vault on submit',
       activeModule: 'Content & Creative Engine (NEXUS-03)'
     },
     {
       sourceField: 'Primary ICP & Revenue Band',
       targetVault: 'Customer Vault (ZONE_1_CUSTOMER)',
-      actionTriggered: 'Persona vector cluster synthesized & TAM mapped',
+      actionTriggered: 'ICP recorded in Customer Vault; revenue band filed with Executive Vault',
       activeModule: 'Lead Gen & Diagnostic Specialist'
     },
     {
       sourceField: 'Ad Spend & Channel Data',
       targetVault: 'Marketing Vault (ZONE_2_MARKETING)',
-      actionTriggered: 'CAC baseline benchmark set to $48.20',
+      actionTriggered: 'Channel recorded; spend filed with Executive Vault — no CAC derived',
       activeModule: 'Performance Re-allocator (VORTEX-02)'
     },
     {
-      sourceField: 'Primary Bottlenecks ("SEO gaps")',
+      sourceField: 'Primary Bottleneck',
       targetVault: 'Audit Vault (ZONE_1_AUDIT)',
-      actionTriggered: 'Auto-flagged "SEO Gaps" -> Activates Authority Builder',
+      actionTriggered: 'Reported bottleneck flagged in Audit Vault funnel findings',
       activeModule: 'Authority Builder Agent (AURORA-01)'
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [previousWritten, setPreviousWritten] = useState<string[]>([]);
+
+  // Run history starts empty: a fresh workspace has no prior ingestion.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setActivePipelineStep(1);
-
-    setTimeout(() => setActivePipelineStep(2), 800);
-    setTimeout(() => setActivePipelineStep(3), 1600);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await apiFetch('/api/workspace/intake/questionnaire', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Intake service responded ${res.status}.`);
+      }
+      const written: string[] = (data.written || []).map(
+        (w: { vault: string; field: string }) => `${w.vault} → ${w.field}`
+      );
+      setPreviousWritten(written);
       setIsSubmitted(true);
-    }, 2400);
+      setActivePipelineStep(2);
+      setRunHistory(prev => [
+        {
+          id: `run-intake-${Date.now()}`,
+          agentName: 'Intake Ingestion',
+          agentRole: 'Second Brain Questionnaire Router',
+          timestamp: 'Just now',
+          status: 'SUCCESS',
+          moduleOrigin: 'Inbound Leads & Intake Engine',
+          inputSummary: `Onboarding questionnaire for ${formData.companyName || 'workspace'}`,
+          outputSummary: written.length
+            ? `${written.length} field(s) persisted: ${written.join(', ')}.`
+            : 'Required fields verified; optional fields were left blank.',
+          fullOutput: JSON.stringify(data, null, 2),
+          metrics: [
+            { label: 'Fields Written', value: String(written.length) },
+            { label: 'Store', value: 'Second Brain (Supabase)' },
+            { label: 'Vaults Touched', value: String(new Set((data.written || []).map((w: any) => w.vault)).size) }
+          ]
+        },
+        ...prev
+      ]);
+    } catch (err: any) {
+      setIsSubmitted(false);
+      setActivePipelineStep(0);
+      notifyError('Intake Failed', err?.message || 'Could not persist the questionnaire.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setIsSubmitted(false);
     setActivePipelineStep(0);
+    setPreviousWritten([]);
   };
-
-  // Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-intake-01',
-      agentName: 'Intake Ingestion Swarm',
-      agentRole: 'Schema Validator & Second Brain Vectorizer',
-      timestamp: 'Today at 04:10 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Inbound Leads & Intake Engine',
-      inputSummary: 'Ingested Sigma Tactix Company Profile & ICP parameters',
-      outputSummary: 'Mapped 10 fields to Brand, Marketing, and Audit vaults. Armed AURORA-01 & VORTEX-02.',
-      fullOutput: 'Schema verification passed. Generated embeddings in pgvector Second Brain namespace.',
-      metrics: [
-        { label: 'Fields Mapped', value: '10 / 10' },
-        { label: 'Vault Status', value: 'Synced' },
-        { label: 'Latency', value: '240ms' },
-        { label: 'Security Level', value: 'RBAC Enforced' }
-      ]
-    }
-  ]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -151,7 +180,7 @@ export default function IntakeEngine() {
               Dynamic Intake & Configuration Engine
             </h1>
             <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
-              Client onboarding questionnaire with real-time "Audit-to-Configuration" data routing. Parsed fields populate the 10 Second Brain Vaults and automatically arm execution modules.
+              Client onboarding questionnaire with "Audit-to-Configuration" data routing. On submit, each answered field is persisted into the Second Brain vaults listed at right — and only answered fields are written.
             </p>
           </div>
         </div>
@@ -194,6 +223,7 @@ export default function IntakeEngine() {
                     onChange={(e) => setFormData({ ...formData, monthlyRevenue: e.target.value })}
                     className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
                   >
+                    <option value="">Not specified</option>
                     <option value="< $50k">&lt; $50k ARR</option>
                     <option value="$50k - $150k">$50k - $150k ARR</option>
                     <option value="$150k - $500k">$150k - $500k ARR (Scaling)</option>
@@ -240,7 +270,7 @@ export default function IntakeEngine() {
               <div className="pt-4 flex items-center justify-between border-t border-[var(--sigma-border)]">
                 <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
                   <ShieldCheck size={14} className="text-emerald-400" />
-                  <span>Zero-Knowledge AES-256 Vault Encryption</span>
+                  <span>Persisted to your tenant's Second Brain (RLS-scoped)</span>
                 </div>
 
                 <Button
@@ -250,7 +280,7 @@ export default function IntakeEngine() {
                   isLoading={isSubmitting}
                   leftIcon={<Send size={14} />}
                 >
-                  {isSubmitting ? "Ingesting & Routing..." : "Ingest & Execute Route"}
+                  {isSubmitting ? "Persisting..." : "Save to Second Brain"}
                 </Button>
               </div>
             </form>
@@ -315,10 +345,12 @@ export default function IntakeEngine() {
               >
                 <div className="flex items-center gap-2 font-semibold text-xs">
                   <CheckCircle2 size={15} className="text-emerald-400" />
-                  <span>Onboarding Ingested & Second Brain Synchronized</span>
+                  <span>Questionnaire Persisted to the Second Brain</span>
                 </div>
                 <p className="text-[11px] text-emerald-200/80 leading-relaxed font-sans">
-                  The 10 Vaults have been updated. Authority Builder (AURORA-01) and Performance Re-allocator (VORTEX-02) have received context vectors.
+                  {previousWritten.length > 0
+                    ? `Written: ${previousWritten.join(' · ')}`
+                    : 'All optional fields were left blank; required fields were verified.'}
                 </p>
                 <div className="pt-2">
                   <Button

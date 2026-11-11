@@ -3228,6 +3228,90 @@ app.post("/api/workspace/launch-intake", async (req: Request, res: Response) => 
   res.json({ success: true, steps, secondBrain: db.secondBrain, intakeTask, emailSent: emailResult.sent });
 });
 
+// Intake questionnaire -> real (#dm-suite audit fix). The Intake Engine page
+// used to "complete" after a client-side timer and claim vaults were updated
+// that nothing ever wrote. This route persists the questionnaire into the
+// Second Brain vaults (the same store the rest of the OS reads), honestly,
+// field-by-field — only non-empty answers are written, and the response says
+// exactly which fields landed where.
+app.post("/api/workspace/intake/questionnaire", async (req: Request, res: Response) => {
+  const body = req.body as Record<string, string> | undefined;
+  const companyName = (body?.companyName || "").trim();
+  const primaryICP = (body?.primaryICP || "").trim();
+  const websiteUrl = (body?.websiteUrl || "").trim();
+  const monthlyRevenue = (body?.monthlyRevenue || "").trim();
+  const primaryChannel = (body?.primaryChannel || "").trim();
+  const monthlyAdSpend = (body?.monthlyAdSpend || "").trim();
+  const primaryBottleneck = (body?.primaryBottleneck || "").trim();
+  const brandVoiceTone = (body?.brandVoiceTone || "").trim();
+  const competitorDifferentiator = (body?.competitorDifferentiator || "").trim();
+
+  if (!companyName || !primaryICP) {
+    res.status(400).json({ error: "Company name and target ICP are required." });
+    return;
+  }
+  if (websiteUrl) {
+    try {
+      const u = new URL(websiteUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("bad protocol");
+    } catch {
+      res.status(400).json({ error: "Website URL must be a valid http(s) URL." });
+      return;
+    }
+  }
+
+  const db = await getDB(res);
+  const written: Array<{ vault: string; field: string }> = [];
+
+  if (websiteUrl) {
+    db.secondBrain.websiteVault.siteUrl = websiteUrl;
+    written.push({ vault: "Website Vault", field: "siteUrl" });
+  }
+  if (brandVoiceTone) {
+    db.secondBrain.brandVault.voiceAndTone = brandVoiceTone;
+    written.push({ vault: "Brand Vault", field: "voiceAndTone" });
+  }
+  if (competitorDifferentiator) {
+    db.secondBrain.brandVault.corePositioning = competitorDifferentiator;
+    written.push({ vault: "Brand Vault", field: "corePositioning" });
+  }
+  if (primaryICP) {
+    db.secondBrain.customerVault.idealCustomerProfile = primaryICP;
+    written.push({ vault: "Customer Vault", field: "idealCustomerProfile" });
+  }
+  if (primaryChannel) {
+    db.secondBrain.marketingVault.currentChannels = [
+      ...new Set([...(db.secondBrain.marketingVault.currentChannels || []), primaryChannel]),
+    ];
+    written.push({ vault: "Marketing Vault", field: "currentChannels" });
+  }
+  // Free-text context the vaults have no dedicated column for: recorded
+  // verbatim in the vaults they concern. No metric is derived from them
+  // here — a CAC baseline only exists once real spend+conversion data lands.
+  if (monthlyRevenue || monthlyAdSpend) {
+    db.secondBrain.executiveVault.financialsOverview =
+      `${db.secondBrain.executiveVault.financialsOverview || ""} Intake (${new Date().toISOString().split("T")[0]}): revenue band ${monthlyRevenue || "unspecified"}; media spend ${monthlyAdSpend || "unspecified"}.`.trim();
+    written.push({ vault: "Executive Vault", field: "financialsOverview" });
+  }
+  if (primaryBottleneck) {
+    db.secondBrain.auditVault.findings.funnelQuality = primaryBottleneck;
+    written.push({ vault: "Audit Vault", field: "funnelQuality (reported bottleneck)" });
+  }
+
+  await saveDB(res, db);
+
+  res.json({
+    success: true,
+    written,
+    unanswered: [
+      ...(monthlyRevenue ? [] : ["monthlyRevenue"]),
+      ...(monthlyAdSpend ? [] : ["monthlyAdSpend"]),
+      ...(primaryBottleneck ? [] : ["primaryBottleneck"]),
+    ],
+    secondBrain: db.secondBrain,
+  });
+});
+
 // Workspace & Team (#15) — real invite/accept/role/remove, replacing the old
 // fully-local db.teamMembers/db.invitations fakery. Roster + pending invites
 // come from the get_workspace_team/list RPCs and a direct table read (RLS
