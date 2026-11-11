@@ -67,12 +67,15 @@ export interface DripSequence {
   };
 }
 
+// These are default sequence TEMPLATES, not live campaigns. They start DRAFT
+// (no email delivery backend is wired in this studio), and a fresh tenant
+// only sees them as editable starting points — never as "ACTIVE" sends.
 const DEFAULT_SEQUENCES: DripSequence[] = [
   {
     id: 'seq-01',
     name: 'Enterprise Demo Request Instant Nurture',
     targetAudience: 'Inbound high-intent B2B demo requesters',
-    status: 'ACTIVE',
+    status: isDemoSeedEnabled() ? 'ACTIVE' : 'DRAFT',
     compliance: {
       canSpamAddress: 'Sigma Tactix Inc., 100 Montgomery St, Suite 1800, San Francisco, CA 94104',
       rfc8058OneClickUnsubscribe: true,
@@ -141,7 +144,7 @@ const DEFAULT_SEQUENCES: DripSequence[] = [
     id: 'seq-02',
     name: 'Growth Diagnostic Scorecard Follow-up',
     targetAudience: 'Companies completing the Growth OS audit',
-    status: 'ACTIVE',
+    status: isDemoSeedEnabled() ? 'ACTIVE' : 'DRAFT',
     compliance: {
       canSpamAddress: 'Sigma Tactix Inc., 100 Montgomery St, Suite 1800, San Francisco, CA 94104',
       rfc8058OneClickUnsubscribe: true,
@@ -183,7 +186,7 @@ const DEFAULT_SEQUENCES: DripSequence[] = [
 ];
 
 export default function EmailMarketingPage() {
-  const { notifySuccess, notifyError, notifyInfo } = useToast();
+  const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useToast();
   const [activeTab, setActiveTab] = useState<'BROADCAST' | 'SEQUENCES' | 'COMPLIANCE_AUDIT' | 'DELIVERABILITY'>('BROADCAST');
   
   // Broadcast State
@@ -198,7 +201,8 @@ export default function EmailMarketingPage() {
   const [selectedSequenceId, setSelectedSequenceId] = useState<string>('seq-01');
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(0);
   const [isScanningCompliance, setIsScanningCompliance] = useState<boolean>(false);
-  const [complianceScore, setComplianceScore] = useState<number>(100);
+  // No audit has run until the user clicks "Run Compliance Checklist Review".
+  const [complianceScore, setComplianceScore] = useState<number | null>(null);
 
   // Active sequence reference
   const currentSequence = sequences.find(s => s.id === selectedSequenceId) || sequences[0];
@@ -229,27 +233,13 @@ We put together an interactive teardown of the 5 hidden digital revenue leaks si
 Best,
 The Sigma Tactix Revenue Architecture Team`);
 
-  // Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-email-01',
-      agentName: 'Lifecycle Email Architect',
-      agentRole: 'B2B Nurture & Deliverability Optimizer',
-      timestamp: 'Today at 05:00 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Email & Lifecycle Marketing',
-      inputSummary: 'Broadcast: Agency Retainer Replacement Angle',
-      outputSummary: 'Subject A/B scored. Spam index: 0/10 (Clean). Est Open: 64%.',
-      fullOutput: `Subject A: ${subjectLineA}\nSubject B: ${subjectLineB}\n\n${emailBody}`,
-      metrics: [
-        { label: 'Spam Score', value: '0.0 (Clean)' },
-        { label: 'Predicted Open Rate', value: '64.2%' },
-        { label: 'Reading Grade', value: '8.2' },
-        { label: 'Deliverability Health', value: '99.8%' }
-      ]
-    }
-  ]);
+  // Run History — empty by default. No email campaign has been synthesized
+  // in a fresh workspace; entries are only added after a user action here.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
+  // No live email-generation or spam-scoring backend is wired yet: this
+  // drafts the copy locally in-session and records exactly that — it never
+  // claims a scored subject line, a spam index, or verified SPF/DKIM.
   const handleGenerate = () => {
     setIsGenerating(true);
     setTimeout(() => {
@@ -260,21 +250,21 @@ The Sigma Tactix Revenue Architecture Team`);
         agentName: 'Lifecycle Email Architect',
         agentRole: 'B2B Nurture & Deliverability Optimizer',
         timestamp: 'Just now',
-        status: 'SUCCESS',
+        status: 'PARTIAL',
         moduleOrigin: 'Email & Lifecycle Marketing',
-        inputSummary: `Optimized Broadcast for Enterprise Segment`,
-        outputSummary: 'Synthesized high-converting lifecycle copy with sub-second spam check.',
-        fullOutput: emailBody,
+        inputSummary: 'Broadcast draft for enterprise segment',
+        outputSummary: 'Drafted locally in this session. No send, spam-score or DNS check was performed — no email backend is connected yet.',
+        fullOutput: `Subject A: ${subjectLineA}\nSubject B: ${subjectLineB}\n\n${emailBody}`,
         metrics: [
-          { label: 'Subject', value: 'Optimized' },
-          { label: 'SPF / DKIM', value: 'Valid' },
-          { label: 'Spam Risk', value: 'Ultra-Low' }
+          { label: 'Stage', value: 'Local draft' },
+          { label: 'Spam Check', value: 'Not run' },
+          { label: 'Dispatch', value: 'Not sent' }
         ]
       };
 
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('Email Campaign Synthesized', 'Subject line variants and high-signal body generated.');
-    }, 1200);
+      notifyInfo('Broadcast Drafted Locally', 'Copy staged in this session. Connect an email provider to synthesize, score and send for real.');
+    }, 600);
   };
 
   // Update current step properties
@@ -337,33 +327,44 @@ The Sigma Tactix Revenue Architecture Team`);
     notifyInfo('Step Removed', 'Updated touchpoint sequence numbering.');
   };
 
-  // Run App-Wide Compliance Scan
+  // This "scan" is a static checklist review of the configuration shown on
+  // this page — it does not verify DNS, mailer or legal state anywhere. It
+  // records a PASS/REVIEW result over the checklist only, and says so.
   const handleRunComplianceScan = () => {
     setIsScanningCompliance(true);
     setTimeout(() => {
       setIsScanningCompliance(false);
-      setComplianceScore(100);
+      const seq = currentSequence;
+      const allGood =
+        !!seq?.compliance.canSpamAddress.trim() &&
+        seq?.compliance.rfc8058OneClickUnsubscribe === true;
 
       const scanRun: AgentRunRecord = {
         id: `run-comp-${Date.now()}`,
         agentName: 'Growth OS Compliance Sentinel',
         agentRole: 'Cross-Module Regulatory Verifier',
         timestamp: 'Just now',
-        status: 'SUCCESS',
+        status: allGood ? 'SUCCESS' : 'PARTIAL',
         moduleOrigin: 'Email & Lifecycle Marketing',
-        inputSummary: 'Cross-module audit: CAN-SPAM, RFC 8058, GDPR, FTC AI Guidelines, Google Core Policy',
-        outputSummary: '100% compliant. RFC 8058 1-click unsubscribe active, postal footers bound, consent logging enforced.',
-        fullOutput: 'Cross-Module Status: 100% Compliant\nCAN-SPAM: Enforced\nRFC 8058: Active\nGDPR: Consent Tracked\nCASL: 180-Day Window Active',
+        inputSummary: 'Static checklist review: CAN-SPAM address, RFC 8058 config, consent windows',
+        outputSummary: allGood
+          ? 'Checklist items configured on this page: CAN-SPAM address present, RFC 8058 1-click unsubscribe enabled. No live mailer/DNS verification was performed.'
+          : 'One or more checklist items are missing on this page (CAN-SPAM address or RFC 8058). No live verification was performed.',
+        fullOutput: `CAN-SPAM Address: ${seq?.compliance.canSpamAddress || '(missing)'}\nRFC 8058 1-Click Unsubscribe: ${seq?.compliance.rfc8058OneClickUnsubscribe ? 'enabled' : 'disabled'}\nCASL Consent Window: ${seq?.compliance.caslConsentWindowDays} days\nDaily Send Cap: ${seq?.compliance.dailySendCap}\nNote: static config review only — no DNS or mailer checks were run.`,
         metrics: [
-          { label: 'Overall Score', value: '100 / 100' },
-          { label: 'CAN-SPAM', value: 'Verified' },
-          { label: 'RFC 8058', value: 'Active' },
-          { label: 'FTC Disclosure', value: 'Enforced' }
+          { label: 'Checklist', value: allGood ? 'All configured' : 'Items missing' },
+          { label: 'Scope', value: 'Page config only' },
+          { label: 'Live Verification', value: 'Not performed' }
         ]
       };
+      setComplianceScore(allGood ? 100 : 0);
       setRunHistory(prev => [scanRun, ...prev]);
-      notifySuccess('Compliance Audit Passed', 'All Growth OS modules meet enterprise legal & anti-spam regulations.');
-    }, 1400);
+      if (allGood) {
+        notifyInfo('Compliance Checklist Reviewed', 'On-page items configured. This is a checklist review — no DNS, mailer or legal verification was performed.');
+      } else {
+        notifyWarning('Compliance Checklist Needs Items', 'CAN-SPAM address or RFC 8058 is missing on the active sequence. Checklist only — no live verification was performed.');
+      }
+    }, 800);
   };
 
   return (
@@ -415,7 +416,7 @@ The Sigma Tactix Revenue Architecture Team`);
               <div>
                 <div className="flex items-center justify-between mb-1 text-xs">
                   <span className="font-medium text-slate-300">Variant A (Problem Agitation)</span>
-                  <span className="text-teal-400 font-mono">Predicted Open: 68.2%</span>
+                  <span className="text-teal-400 font-mono">Model est. open — not measured</span>
                 </div>
                 <input
                   type="text"
@@ -428,7 +429,7 @@ The Sigma Tactix Revenue Architecture Team`);
               <div>
                 <div className="flex items-center justify-between mb-1 text-xs">
                   <span className="font-medium text-slate-300">Variant B (Empirical Curiosity)</span>
-                  <span className="text-emerald-400 font-mono">Predicted Open: 64.9%</span>
+                  <span className="text-emerald-400 font-mono">Model est. open — not measured</span>
                 </div>
                 <input
                   type="text"
@@ -459,19 +460,19 @@ The Sigma Tactix Revenue Architecture Team`);
               </Button>
             </div>
 
-            {/* Spam Filter Audit */}
+            {/* Spam posture — no spam engine is wired yet: state it plainly. */}
             <div className="p-4 rounded-xl bg-[#0F0F12] border border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-white">Spam Trigger Audit</div>
-                  <div className="text-[11px] text-slate-400">Zero blacklisted promotional phrases detected.</div>
+                  <div className="text-[11px] text-slate-400">No spam-checking engine is connected to this studio yet.</div>
                 </div>
               </div>
-              <span className="text-xs font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                100% INBOX READY
+              <span className="text-xs font-bold text-amber-400 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+                NOT VERIFIED
               </span>
             </div>
           </div>
@@ -611,7 +612,7 @@ The Sigma Tactix Revenue Architecture Team`);
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-teal-300 font-mono">
                         STEP {step.stepNumber} • DAY {step.delayDays}
                       </span>
-                      <span className="text-[10px] text-zinc-500 font-mono">{step.openRateEstimate} Open</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">est. {step.openRateEstimate} open</span>
                     </div>
                     <h4 className="text-xs font-semibold text-slate-200 mt-2 line-clamp-1">{step.title}</h4>
                     <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">{step.subjectVariantA}</p>
@@ -619,29 +620,33 @@ The Sigma Tactix Revenue Architecture Team`);
                 ))}
               </div>
 
-              {/* Compliance Controls Box */}
+              {/* Compliance Controls Box — settings configured for this
+                  sequence; nothing is enforced until a send pipeline exists. */}
               <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-3 text-xs">
                 <div className="flex items-center gap-2 font-semibold text-emerald-400">
-                  <ShieldCheck className="w-4 h-4" /> Built-In Regulatory Safeguards
+                  <ShieldCheck className="w-4 h-4" /> Regulatory Settings
                 </div>
                 <div className="space-y-2 text-[11px] text-zinc-400">
                   <div className="flex items-center justify-between">
                     <span>CAN-SPAM Address Footer</span>
-                    <Badge variant="success">INJECTED</Badge>
+                    <Badge variant="neutral">{currentSequence?.compliance.canSpamAddress ? 'Configured' : 'Missing'}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>RFC 8058 1-Click Unsubscribe</span>
-                    <Badge variant="success">ACTIVE</Badge>
+                    <Badge variant="neutral">{currentSequence?.compliance.rfc8058OneClickUnsubscribe ? 'Configured' : 'Disabled'}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Quiet Hours (No Night/Weekend Sends)</span>
-                    <Badge variant="success">ENFORCED</Badge>
+                    <Badge variant="neutral">Per step</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Suppression Circuit Breaker</span>
-                    <Badge variant="success">&lt;0.08% RISK</Badge>
+                    <Badge variant="neutral">{currentSequence?.compliance.suppressionCircuitBreaker ? 'On' : 'Off'}</Badge>
                   </div>
                 </div>
+                <p className="text-[10px] text-zinc-500 leading-relaxed pt-1 border-t border-white/10">
+                  These are settings on the sequence. No mailer or enforcement engine is connected, so they are not applied anywhere yet.
+                </p>
               </div>
             </div>
 
@@ -711,7 +716,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <div>
                       <div className="flex items-center justify-between mb-1 text-xs">
                         <span className="font-medium text-slate-300">Subject Variant A (Primary)</span>
-                        <span className="text-teal-400 font-mono">Predicted Open: {currentStep.openRateEstimate}</span>
+                        <span className="text-teal-400 font-mono">Model est. open: {currentStep.openRateEstimate}</span>
                       </div>
                       <input
                         type="text"
@@ -748,16 +753,17 @@ The Sigma Tactix Revenue Architecture Team`);
                     />
                   </div>
 
-                  {/* Save Notification */}
+                  {/* Save — sequences live in this page's state only; a
+                      workspace persistence endpoint is not wired yet. */}
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-[11px] text-zinc-500">
-                      Changes auto-saved to workspace sequence manifest.
+                      Edits apply to this session. Sequence persistence to the workspace is not wired yet.
                     </span>
                     <button
-                      onClick={() => notifySuccess('Sequence Saved', 'Active drip sequence configuration persisted.')}
+                      onClick={() => notifyInfo('Configuration Updated', 'Sequence updated in this session only. No workspace write was made — persistence is not wired yet.')}
                       className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-bold text-white shadow"
                     >
-                      Save Configuration
+                      Apply to Session
                     </button>
                   </div>
                 </div>
@@ -777,13 +783,19 @@ The Sigma Tactix Revenue Architecture Team`);
                 <h3 className="text-lg font-bold text-white">Growth OS App-Wide Regulatory Compliance Matrix</h3>
               </div>
               <p className="text-xs text-zinc-400 max-w-2xl leading-relaxed">
-                Continuous compliance monitoring across Email, Social, CRO, and SEO modules to protect brand liability, prevent anti-spam fines, and ensure legal adherence across US, EU/UK, and Canadian jurisdictions.
+                A static regulatory checklist for the configuration on this page. Running the review checks the on-page settings only — it does not verify DNS, mailer or legal state, so treat results as a review, not a certification.
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-zinc-500">Audit Status</span>
-                <div className="text-xl font-mono font-extrabold text-emerald-400">{complianceScore} / 100 PASS</div>
+                <span className="text-[10px] uppercase font-bold text-zinc-500">Checklist Status</span>
+                {complianceScore === null ? (
+                  <div className="text-xl font-mono font-extrabold text-zinc-400">Not reviewed</div>
+                ) : complianceScore > 0 ? (
+                  <div className="text-xl font-mono font-extrabold text-emerald-400">All items configured</div>
+                ) : (
+                  <div className="text-xl font-mono font-extrabold text-amber-400">Items missing</div>
+                )}
               </div>
               <Button
                 variant="primary"
@@ -791,7 +803,7 @@ The Sigma Tactix Revenue Architecture Team`);
                 disabled={isScanningCompliance}
                 leftIcon={isScanningCompliance ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               >
-                {isScanningCompliance ? 'Scanning System...' : 'Run Full Compliance Scan'}
+                {isScanningCompliance ? 'Reviewing Checklist...' : 'Run Compliance Checklist Review'}
               </Button>
             </div>
           </div>
@@ -805,7 +817,7 @@ The Sigma Tactix Revenue Architecture Team`);
                   <Mail className="w-4 h-4 text-teal-400" />
                   <h4 className="text-sm font-semibold text-white">Email &amp; Outbound Lifecycle</h4>
                 </div>
-                <Badge variant="success">100% REGULATED</Badge>
+                <Badge variant="neutral">REFERENCE</Badge>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
@@ -814,7 +826,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <strong>Regulations:</strong> 15 U.S.C. 7701 requires a verified physical address; Google/Yahoo 2024+ sender guidelines mandate RFC 8058 1-click unsubscribe headers. Non-compliance risks $50,120 per violation and domain blacklisting.
                   </p>
                   <p className="text-[11px] text-teal-300 font-medium pt-1">
-                    <strong>Strongest Workaround:</strong> Automated pre-flight checks strictly block outbound broadcasts if a verified physical address or RFC 8058 headers are absent. Recipients are purged in &lt;24 hours automatically.
+                    <strong>Intended guardrail:</strong> Design the send pipeline so pre-flight checks block broadcasts without a verified address or RFC 8058 headers. No mailer is wired to this studio yet, so these are requirements, not active enforcement.
                   </p>
                 </div>
               </div>
@@ -827,7 +839,7 @@ The Sigma Tactix Revenue Architecture Team`);
                   <Globe className="w-4 h-4 text-purple-400" />
                   <h4 className="text-sm font-semibold text-white">Social &amp; Carousel Automation</h4>
                 </div>
-                <Badge variant="success">FTC COMPLIANT</Badge>
+                <Badge variant="neutral">REFERENCE</Badge>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
@@ -836,7 +848,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <strong>Regulations:</strong> Unclear AI attribution in commercial promotions violates truth-in-advertising guidelines. Third-party brand mark infringement poses trademark liability.
                   </p>
                   <p className="text-[11px] text-purple-300 font-medium pt-1">
-                    <strong>Strongest Workaround:</strong> The system embeds AI provenance metadata, restricts logo usage to Brand Vault assets, and enforces human sign-off in Agent Cockpit before any post touches LinkedIn or X APIs.
+                    <strong>Intended guardrail:</strong> Keep AI provenance metadata on promotions and restrict logos to Brand Vault assets. Human sign-off lives in Agent Cockpit for anything that reaches a channel API — social posting is not wired from this studio.
                   </p>
                 </div>
               </div>
@@ -849,7 +861,7 @@ The Sigma Tactix Revenue Architecture Team`);
                   <Scale className="w-4 h-4 text-amber-400" />
                   <h4 className="text-sm font-semibold text-white">CRO &amp; Landing Pages</h4>
                 </div>
-                <Badge variant="success">GDPR / ePRIVACY READY</Badge>
+                <Badge variant="neutral">REFERENCE</Badge>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
@@ -858,7 +870,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <strong>Regulations:</strong> EU/UK GDPR Article 83 fines up to €20M for non-consented analytics scripts; FTC Act Section 5 prohibits deceptive claims and unsubstantiated ROI metrics.
                   </p>
                   <p className="text-[11px] text-amber-300 font-medium pt-1">
-                    <strong>Strongest Workaround:</strong> All generated landing page proposals automatically inject compliant cookie preference bars, verifiable client proof benchmarks, and mandatory privacy/terms links.
+                    <strong>Intended guardrail:</strong> Proposals for generated pages should carry cookie consent controls and verifiable proof points. The CRO studio is where those artifacts are built and approved — this card is reference, not an enforcement log.
                   </p>
                 </div>
               </div>
@@ -871,7 +883,7 @@ The Sigma Tactix Revenue Architecture Team`);
                   <BarChart3 className="w-4 h-4 text-emerald-400" />
                   <h4 className="text-sm font-semibold text-white">SEO &amp; AEO Authority Content</h4>
                 </div>
-                <Badge variant="success">GOOGLE CORE READY</Badge>
+                <Badge variant="neutral">REFERENCE</Badge>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
@@ -880,7 +892,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <strong>Regulations:</strong> Google penalizes mass-generated, low-information-gain content with sitewide algorithmic demotions or complete manual index removal.
                   </p>
                   <p className="text-[11px] text-emerald-300 font-medium pt-1">
-                    <strong>Strongest Workaround:</strong> The SEO module binds Schema.org JSON-LD structured author credentials, enforces primary citation citations, and mandates human review before publishing to Google Search Console.
+                    <strong>Intended guardrail:</strong> The SEO module emits Schema.org JSON-LD and requires citation support; the SEO & AEO studio owns that workflow and its approval gates. This card documents the requirement, not live enforcement.
                   </p>
                 </div>
               </div>
@@ -889,25 +901,31 @@ The Sigma Tactix Revenue Architecture Team`);
         </div>
       )}
 
-      {/* Main Tab 4: Deliverability */}
+      {/* Main Tab 4: Deliverability — no DNS/mailer checks are wired yet, so
+          this reports what is NOT known rather than inventing records. */}
       {activeTab === 'DELIVERABILITY' && (
         <div className="p-6 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-6">
-          <h3 className="text-base font-semibold text-white">DNS &amp; Domain Authentication Health</h3>
+          <div>
+            <h3 className="text-base font-semibold text-white">DNS &amp; Domain Authentication Health</h3>
+            <p className="text-xs text-zinc-400 mt-1">
+              No DNS lookup or mailer test is connected to this studio, so nothing below has been measured. Records appear here once a check is wired.
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             {[
-              { label: 'SPF Record', status: 'VALID', value: 'v=spf1 include:_spf.google.com ~all' },
-              { label: 'DKIM Signature', status: 'PASS', value: '2048-bit RSA active' },
-              { label: 'DMARC Policy', status: 'ENFORCED', value: 'p=reject; rua=mailto:dmarc@sigmatactix.com' },
-              { label: 'Sender Score', status: '99 / 100', value: 'Ultra-low bounce (<0.1%)' }
+              { label: 'SPF Record', status: 'NOT CHECKED', value: 'No lookup performed' },
+              { label: 'DKIM Signature', status: 'NOT CHECKED', value: 'No lookup performed' },
+              { label: 'DMARC Policy', status: 'NOT CHECKED', value: 'No lookup performed' },
+              { label: 'Sender Score', status: 'NO DATA', value: 'No mailer connected' }
             ].map((item, i) => (
               <div key={i} className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">{item.label}</span>
-                  <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-[10px] font-bold text-zinc-400 px-2 py-0.5 rounded bg-zinc-500/10 border border-zinc-500/20">
                     {item.status}
                   </span>
                 </div>
-                <div className="text-xs font-mono text-slate-200 truncate">{item.value}</div>
+                <div className="text-xs font-mono text-zinc-500 truncate">{item.value}</div>
               </div>
             ))}
           </div>
