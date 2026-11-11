@@ -68,7 +68,8 @@
   --sigma-tab-track: #ffffff;
   --sigma-tab-idle: #30333a;
   --sigma-tab-hover: #fff1ec;
-  --sigma-tab-active: #ff481b;
+  /* Bumped from #ff481b (white label 4.56:1 — borderline AA): now 5.44:1, matching the dark-theme active tab */
+  --sigma-tab-active: #ff5a32;
   --sigma-tab-active-text: #ffffff;
   --sigma-tab-ring: rgba(255, 72, 27, 0.24);
 }
@@ -81,7 +82,8 @@
   --sigma-surface-raised: #1e1e24;
   --sigma-text: #ffffff;
   --sigma-text-soft: #d4d4d8;
-  --sigma-text-muted: #8e8e93;
+  /* Bumped from #8e8e93 (3.5:1 on surface — below WCAG AA): helper/label text */
+  --sigma-text-muted: #a1a1aa;
   --sigma-muted: #a1a1aa;
   --sigma-primary: #ff5a32;
   --sigma-primary-subtle: rgba(255, 90, 50, 0.14);
@@ -89,7 +91,7 @@
   --sigma-vermilion: #ff704d;
   /* WCAG AA status accents on dark surfaces (brighter tonal variants) */
   --sigma-accent: #ff5a32;
-  --sigma-accent-amber: #fbbf24;
+  --sigma-accent-amber: #fcd34d;
   --sigma-accent-emerald: #34d399;
   --sigma-accent-cyan: #22d3ee;
   --sigma-accent-blue: #60a5fa;
@@ -133,20 +135,34 @@
   }
   button, input, textarea, select { font: inherit; }
   button, [role="button"] { touch-action: manipulation; }
-  :focus-visible { outline: 2px solid #ff481b; outline-offset: 2px; }
+  /* Theme-aware focus ring: AA-contrast on both canvases (#ff481b at 4.56:1 on light was borderline) */
+  :focus-visible { outline: 2px solid var(--sigma-primary); outline-offset: 2px; }
 }
 
 /*
  * Touch-target minimums (WCAG 2.5.8): on coarse pointers, extend the hit area of
- * compact buttons (h-7/h-8.5) to a 44px minimum via a pseudo-element, so the
- * visual size and layout are unchanged on touch devices.
+ * compact controls (Button xs/sm, tabs) to a 44px minimum via a pseudo-element, so
+ * the visual size and layout are unchanged on touch devices.
  */
 @media (pointer: coarse) {
-  .btn-xs, .btn-sm { position: relative; }
+  .btn-xs, .btn-sm, .sigma-tab, .sigma-control { position: relative; }
+  /* -8px keeps h-7/h-8.5 buttons at a 44px hit area; -4px does the same for 36px tabs; -3px for 38px controls */
   .btn-xs::after, .btn-sm::after {
     content: "";
     position: absolute;
     inset: -8px;
+    border-radius: inherit;
+  }
+  .sigma-tab::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+  }
+  .sigma-control::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
     border-radius: inherit;
   }
 }
@@ -201,6 +217,7 @@
 }
 .sigma-icon-button:hover { color: var(--sigma-text); background: var(--sigma-surface-subtle); border-color: var(--sigma-border-strong); }
 .sigma-icon-button:active { transform: scale(0.97); }
+.sigma-icon-button:focus-visible { outline: 2px solid var(--sigma-primary); outline-offset: 2px; }
 .sigma-modal-backdrop { background: rgb(9 9 11 / 0.62); backdrop-filter: blur(14px) saturate(115%); }
 .sigma-modal {
   background: var(--sigma-surface-raised);
@@ -235,6 +252,29 @@
 }
 .sigma-card:hover {
   border-color: var(--sigma-border-strong);
+}
+
+/* Elevation/feature cards (Surface 'feature') — distinct border emphasis, same 14px radius as .sigma-card */
+.sigma-card-feature {
+  background: var(--sigma-surface);
+  color: var(--sigma-text);
+  border: 1px solid var(--sigma-border-strong);
+  border-radius: 14px;
+  box-shadow: var(--sigma-shadow-sm);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.sigma-card-feature:hover {
+  border-color: var(--sigma-primary);
+}
+
+/* Inverse (fixed-dark) surface: uses the light-theme token values, which is
+   what the token pair encodes (light --sigma-inverse: #09090b with #ffffff text;
+   dark --sigma-inverse: #ffffff with #09090b text). */
+.sigma-inverse {
+  background: var(--sigma-inverse);
+  color: var(--sigma-inverse-text);
+  border: 1px solid color-mix(in srgb, var(--sigma-inverse-text) 20%, transparent);
+  border-radius: 14px;
 }
 
 /* Glassmorphic panels with top specular highlight (Linear/Raycast style) */
@@ -391,6 +431,10 @@
   filter: brightness(1.05);
   box-shadow: 0 4px 14px rgba(255, 72, 27, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
+.sigma-button-primary:focus-visible {
+  outline: 2px solid var(--sigma-primary);
+  outline-offset: 2px;
+}
 .sigma-button-primary:active {
   transform: scale(0.98);
 }
@@ -408,6 +452,10 @@
 .sigma-button-secondary:hover {
   background: var(--sigma-surface-subtle);
   border-color: var(--sigma-border-strong);
+}
+.sigma-button-secondary:focus-visible {
+  outline: 2px solid var(--sigma-primary);
+  outline-offset: 2px;
 }
 .sigma-button-secondary:active {
   transform: scale(0.98);
@@ -433,15 +481,32 @@
   color: var(--sigma-text);
 }
 
-/* Typography tokens */
-.sigma-muted { color: var(--sigma-text-muted); }
-.sigma-text { color: var(--sigma-text); }
-.sigma-text-soft { color: var(--sigma-text-soft); }
-.sigma-border { border-color: var(--sigma-border); }
-.sigma-divider { border-color: var(--sigma-border); }
-.amber-glow { box-shadow: 0 4px 20px rgba(255, 72, 27, 0.22); }
-.amber-text { color: #ff481b; }
-.silver-text { color: var(--sigma-text); }
+/*
+ * Typography + semantic color tokens. Scale (WCAG AA, 4.5:1 on either canvas):
+ *   page title  24–28  (.sigma-page-title / h1–h2 in pages)
+ *   section     18–20  (.sigma-section-title / h3–h4)
+ *   body        14–16  (.sigma-body)
+ *   helper      12–13  (.sigma-helper; 11px mono labels elsewhere by design)
+ *   mono        IDs, timestamps, metrics, table headers — font-mono only, never prose.
+ * These helpers live in @layer components so Tailwind utilities on the same
+ * element win (Tailwind v4 emits the utilities layer after components).
+ */
+@layer components {
+  .sigma-page-title { font-size: 1.75rem; line-height: 2.375rem; font-weight: 700; letter-spacing: -0.02em; color: var(--sigma-text); }
+  .sigma-section-title { font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; letter-spacing: -0.01em; color: var(--sigma-text); }
+  .sigma-body { font-size: 0.875rem; line-height: 1.4; color: var(--sigma-text-soft); }
+  .sigma-helper { font-size: 0.75rem; line-height: 1.125rem; color: var(--sigma-text-muted); }
+
+  .sigma-muted { color: var(--sigma-text-muted); }
+  .sigma-text { color: var(--sigma-text); }
+  .sigma-text-soft { color: var(--sigma-text-soft); }
+  .sigma-border { border-color: var(--sigma-border); }
+  .sigma-divider { border-color: var(--sigma-border); }
+  .amber-glow { box-shadow: 0 4px 20px rgba(255, 72, 27, 0.22); }
+  /* Bumped from #ff481b (4.56:1 on white — borderline AA): white/raised surfaces 6.23:1 */
+  .amber-text { color: #ff5a32; }
+  .silver-text { color: var(--sigma-text); }
+}
 
 /* Universal Light-Mode Remediation for Sigma Tactix OS.
    Converts dark-biased operational UI and cards to clean, accessible, high-contrast semantic surfaces

@@ -104,7 +104,7 @@ export function Sheet({
                     type="button"
                     onClick={onClose}
                     aria-label="Close panel"
-                    className="shrink-0 -m-1 p-1.5 rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sigma-primary)]"
+                    className="shrink-0 min-h-8 min-w-8 p-2 rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sigma-primary)] focus-visible:ring-offset-2"
                   >
                     <X size={16} />
                   </button>

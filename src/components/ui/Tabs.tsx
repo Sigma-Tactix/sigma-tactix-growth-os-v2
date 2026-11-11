@@ -71,7 +71,7 @@ export function Tabs<T extends string = string>({
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
               'sigma-tab relative z-10 flex shrink-0 items-center justify-center whitespace-nowrap outline-none',
-              size === 'sm' ? 'min-h-9 px-3 text-xs gap-1.5' : 'min-h-10 px-4 text-[13px] font-semibold gap-2',
+              size === 'sm' ? 'min-h-9 px-3 text-xs gap-1.5' : 'min-h-10 px-4 text-sm font-semibold gap-2',
               variant === 'underline' && 'rounded-none px-3',
               isActive
                 ? 'sigma-tab-active'

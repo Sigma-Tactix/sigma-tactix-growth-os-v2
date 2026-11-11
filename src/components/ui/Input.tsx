@@ -45,7 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
           id={inputId}
           disabled={disabled}
           className={cn(
-            'w-full h-10 px-3.5 bg-[var(--sigma-input)] text-[var(--sigma-text)] text-xs rounded-xl border transition-all duration-150',
+            'w-full h-10 px-3.5 bg-[var(--sigma-input)] text-[var(--sigma-text)] text-sm rounded-xl border transition-all duration-150',
             'border-[var(--sigma-border)] shadow-[var(--sigma-shadow-sm)]',
             'placeholder:text-[var(--sigma-text-muted)]',
             'focus:outline-none focus:border-[var(--sigma-primary)] focus:ring-2 focus:ring-[var(--sigma-primary)]/20',
@@ -66,9 +66,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       </div>
 
       {error ? (
-        <p className="text-[11px] text-rose-accent font-medium">{error}</p>
+        <p className="text-xs text-rose-accent font-medium">{error}</p>
       ) : helperText ? (
-        <p className="text-[11px] text-[var(--sigma-text-muted)]">{helperText}</p>
+        <p className="text-xs text-[var(--sigma-text-muted)]">{helperText}</p>
       ) : null}
     </div>
   );

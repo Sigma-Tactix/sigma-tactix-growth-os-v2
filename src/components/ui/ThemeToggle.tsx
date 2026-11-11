@@ -25,7 +25,7 @@ export default function ThemeToggle() {
         {open && (
           <motion.div initial={reduceMotion ? false : { opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={reduceMotion ? undefined : { opacity: 0, y: -4, scale: 0.98 }} transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }} className="sigma-menu absolute right-0 top-full z-50 mt-2 w-40 p-1.5">
             {options.map(({ value, label, Icon }) => (
-              <button key={value} type="button" onClick={() => { setAppearance(value); setOpen(false); }} className={cn('sigma-menu-item flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs font-semibold', appearance === value && 'bg-accent/10 text-accent')}>
+              <button key={value} type="button" onClick={() => { setAppearance(value); setOpen(false); }} className={cn('sigma-menu-item flex w-full min-h-9 items-center gap-2 px-2.5 text-left text-xs font-semibold', appearance === value && 'bg-accent/10 text-accent')}>
                 <Icon size={15} aria-hidden="true" />
                 <span className="flex-1">{label}</span>
                 {appearance === value && <Check size={14} aria-hidden="true" />}

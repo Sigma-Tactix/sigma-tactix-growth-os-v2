@@ -85,7 +85,8 @@ export function Dialog({
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
               'w-full rounded-2xl bg-[var(--sigma-surface)] border border-[var(--sigma-border-strong)]',
-              'shadow-[var(--sigma-shadow-lg)] text-[var(--sigma-text)] outline-none flex flex-col max-h-[85vh]',
+              'shadow-[var(--sigma-shadow-lg)] text-[var(--sigma-text)] outline-none flex flex-col overflow-hidden',
+              'max-h-[min(32rem,calc(100vh-2rem))]',
               sizeStyles[size],
               className
             )}
@@ -102,7 +103,7 @@ export function Dialog({
                   type="button"
                   onClick={onClose}
                   aria-label="Close dialog"
-                  className="shrink-0 -m-1 p-1.5 rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sigma-primary)]"
+                  className="shrink-0 min-h-8 min-w-8 p-2 rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sigma-primary)] focus-visible:ring-offset-2"
                 >
                   <X size={16} />
                 </button>
