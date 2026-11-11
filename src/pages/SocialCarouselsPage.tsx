@@ -121,8 +121,8 @@ export const CAPTION_PRESETS = [
   },
   {
     id: 'caption-teardown',
-    label: 'Data-Driven Diagnostic Teardown Format',
-    text: `Empirical B2B Funnel Teardown 📊\n\nWe analyzed $1.4M in monthly ad spend across 42 B2B tech companies.\n\nThe brutal reality:\n• 82% of buyer journeys originate in dark social & AI answer engines\n• Inbound qualification conversion drops 10x after the first 5 minutes\n• Creative fatigue sets in at 4.8x frequency, tanking CTR by 28%\n\nSwipe through the carousel above for the exact infrastructure changes top 1% operators make to seal these leaks.\n\nSave this deck for your next QBR. 📑\n\n#CRO #DemandGeneration #DataDriven #SigmaTactix`
+    label: 'Diagnostic Teardown Format (template — cite your own data)',
+    text: `Empirical B2B Funnel Teardown 📊\n\nStructure: open with the scope you actually measured (channels, spend, period), then the three findings your own analytics produced:\n• Where intent originates that last-click attribution misses\n• Where qualification latency or creative fatigue is costing you conversion\n• The single infrastructure fix with the clearest expected payoff\n\nSwipe through the carousel above for the breakdown. Replace each bullet with a finding from your own data before publishing — no invented numbers. 📑\n\n#CRO #DemandGeneration #DataDriven #SigmaTactix`
   },
   {
     id: 'caption-contrarian',
@@ -294,9 +294,11 @@ export default function SocialCarouselsPage() {
   const [isRepurposing, setIsRepurposing] = useState(false);
   const [repurposedMeta, setRepurposedMeta] = useState<RepurposedCarouselAndThread | null>(null);
 
-  // Active Slides & Campaign Data — initialize with verified template slides so Visual viewer is never empty
-  const [slides, setSlides] = useState<CarouselSlide[]>(DEMO_INITIAL_LINKEDIN_SLIDES);
-  const [threadTweets, setThreadTweets] = useState<TweetItem[]>(DEMO_INITIAL_THREAD_TWEETS);
+  // Active Slides & Campaign Data — a fresh tenant starts empty; the demo
+  // slides stay reachable behind VITE_SEED_DEMO_WORKSPACE only (INITIAL_*
+  // constants at the bottom of this file).
+  const [slides, setSlides] = useState<CarouselSlide[]>(INITIAL_LINKEDIN_SLIDES);
+  const [threadTweets, setThreadTweets] = useState<TweetItem[]>(INITIAL_THREAD_TWEETS);
 
   // Run History
   const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
@@ -321,8 +323,8 @@ export default function SocialCarouselsPage() {
       }
     }
     if (preset.id === 'topic-leaks') {
-      setSlides(DEMO_INITIAL_LINKEDIN_SLIDES);
-      setThreadTweets(DEMO_INITIAL_THREAD_TWEETS);
+      setSlides(INITIAL_LINKEDIN_SLIDES);
+      setThreadTweets(INITIAL_THREAD_TWEETS);
     }
   };
 
@@ -936,6 +938,6 @@ export default function SocialCarouselsPage() {
 // must render none of them; they stay reachable behind
 // VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
 // ---------------------------------------------------------------------------
-const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
-const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];
+export const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
+export const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];
 
