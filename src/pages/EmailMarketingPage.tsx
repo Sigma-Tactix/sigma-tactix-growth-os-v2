@@ -576,8 +576,16 @@ The Sigma Tactix Revenue Architecture Team`);
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-xs font-mono font-bold border",
+                  currentSequence.status === 'ACTIVE'
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                )}
+              >
                 STATUS: {currentSequence.status}
+                {currentSequence.status === 'DRAFT' && ' (not sending)'}
               </span>
               <button
                 onClick={handleAddStep}
@@ -729,7 +737,7 @@ The Sigma Tactix Revenue Architecture Team`);
                     <div>
                       <div className="flex items-center justify-between mb-1 text-xs">
                         <span className="font-medium text-slate-300">Subject Variant B (Alternative)</span>
-                        <span className="text-emerald-400 font-mono">Predicted CTR: {currentStep.ctrEstimate}</span>
+                        <span className="text-emerald-400 font-mono">Model est. CTR: {currentStep.ctrEstimate}</span>
                       </div>
                       <input
                         type="text"
