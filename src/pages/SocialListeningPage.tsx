@@ -34,6 +34,7 @@ import {
   SEED_SOCIAL_MENTIONS,
   SocialMention
 } from '@/src/data/marketingModulesData';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { syncAgentReachSocial, scanCompetitorWithAgentReach } from '@/src/lib/api';
 import { CompetitorBattlecard } from '@/src/types';
@@ -41,11 +42,14 @@ import { Button, GlassCard, Badge, Tabs, MetricWidget } from '@/src/components/u
 
 export default function SocialListeningPage() {
   const { notifySuccess, notifyInfo } = useToast();
-  const [mentions, setMentions] = useState<SocialMention[]>(SEED_SOCIAL_MENTIONS);
-  const [selectedMention, setSelectedMention] = useState<SocialMention>(SEED_SOCIAL_MENTIONS[0]);
+  // Mentions start from the demo sample ONLY behind VITE_SEED_DEMO_WORKSPACE;
+  // a fresh tenant begins empty and sees verified captures from live scans.
+  const seedMentions = isDemoSeedEnabled() ? SEED_SOCIAL_MENTIONS : [];
+  const [mentions, setMentions] = useState<SocialMention[]>(seedMentions);
+  const [selectedMention, setSelectedMention] = useState<SocialMention | null>(seedMentions[0] || null);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'POSITIVE' | 'NEUTRAL' | 'CRISIS'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [responseDraft, setResponseDraft] = useState(SEED_SOCIAL_MENTIONS[0].aiResponseDraft || '');
+  const [responseDraft, setResponseDraft] = useState(seedMentions[0]?.aiResponseDraft || '');
   const [isScanningReach, setIsScanningReach] = useState(false);
 
   // Multi-Channel Agent Reach Scan State
@@ -188,6 +192,7 @@ export default function SocialListeningPage() {
   };
 
   const handleRegenerateResponse = () => {
+    if (!selectedMention) return;
     const drafts = [
       `Spot on analysis @${selectedMention.authorHandle}. Traditional marketing agencies rent junior headcount that turns over every 9 months. With them goes all accumulated test data. We designed Sigma Tactix as a sovereign Growth OS so tech companies own their permanent intelligence.`,
       `Appreciate the mention @${selectedMention.authorHandle}! The core problem in B2B tech isn't traffic—it's infrastructure coordination. When you install an AI-native Second Brain, attribution clarity and autonomous agent execution compound on your balance sheet forever.`,
@@ -195,10 +200,16 @@ export default function SocialListeningPage() {
     ];
     const newDraft = drafts[Math.floor(Math.random() * drafts.length)];
     setResponseDraft(newDraft);
-    notifySuccess('Response Draft Re-synthesized', 'Generated revised brand voice response draft.');
+    // Honest label: this swaps in an alternate canned template — it does not
+    // call a model, so it must not read as a fresh synthesis.
+    notifySuccess('Alternate Template Applied', 'Swapped in a different brand-voice template. No model call was made.');
   };
 
   const handleSendResponse = () => {
+    if (!selectedMention || !responseDraft.trim()) {
+      notifyInfo('Nothing to Stage', 'Select a mention and write a response draft first.');
+      return;
+    }
     // Phase 0 truthful state: staging a local response draft is queued work,
     // never a completed dispatch. No post is published from this panel.
     const newRun: AgentRunRecord = {
@@ -208,11 +219,11 @@ export default function SocialListeningPage() {
       timestamp: 'Just now',
       status: 'PARTIAL',
       moduleOrigin: 'Social Listening & Radar',
-      inputSummary: `Response draft for @${selectedMention.authorHandle} on ${selectedMention.channel}`,
+      inputSummary: `Response draft for @${selectedMention.authorHandle} on ${selectedMention.channel || 'unknown channel'}`,
       outputSummary: 'Draft staged locally. Not dispatched. HITL publication requires an approved distribution run.',
       fullOutput: responseDraft,
       metrics: [
-        { label: 'Channel', value: selectedMention.channel },
+        { label: 'Channel', value: selectedMention.channel || '—' },
         { label: 'Author', value: selectedMention.authorHandle },
         { label: 'Dispatch', value: 'Not sent (local draft)' }
       ]
@@ -339,81 +350,117 @@ export default function SocialListeningPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Mentions List */}
         <div className="space-y-3">
-          <div className="text-xs font-mono font-medium text-[var(--sigma-muted)] uppercase tracking-wider px-1">
-            Incoming Mentions Stream ({filteredMentions.length})
+          <div className="flex items-center justify-between px-1">
+            <div className="text-xs font-mono font-medium text-[var(--sigma-muted)] uppercase tracking-wider">
+              Incoming Mentions Stream ({filteredMentions.length})
+            </div>
+            {seedMentions.length > 0 && (
+              <span className="text-[10px] font-mono text-amber-400/90">
+                includes seeded sample — not live captures
+              </span>
+            )}
           </div>
 
-          {filteredMentions.map(item => (
-            <GlassCard
-              key={item.id}
-              spotlight
-              elevation="flat"
-              interactive
-              onClick={() => {
-                setSelectedMention(item);
-                setResponseDraft(item.aiResponseDraft || '');
-              }}
-              className={cn(
-                "p-4 transition-all text-left space-y-2",
-                selectedMention.id === item.id && "border-[var(--sigma-vermilion)]/50 ring-1 ring-[var(--sigma-vermilion)]/30"
-              )}
-            >
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="font-semibold text-[var(--sigma-text)]">{item.authorHandle}</span>
-                <Badge
-                  variant={item.sentiment === 'POSITIVE' ? 'success' : item.sentiment === 'NEGATIVE' ? 'danger' : 'neutral'}
-                  size="xs"
-                >
-                  {item.sentiment}
-                </Badge>
-              </div>
+          {filteredMentions.length === 0 ? (
+            <div className="p-4 rounded-xl border border-dashed border-[var(--sigma-border)] text-[11px] font-mono text-[var(--sigma-muted)] leading-relaxed">
+              No mentions yet. Run an Agent Reach scan to capture real discussions, or sync social feeds once channel connectors are configured.
+            </div>
+          ) : (
+            filteredMentions.map(item => (
+              <GlassCard
+                key={item.id}
+                spotlight
+                elevation="flat"
+                interactive
+                onClick={() => {
+                  setSelectedMention(item);
+                  setResponseDraft(item.aiResponseDraft || '');
+                }}
+                className={cn(
+                  "p-4 transition-all text-left space-y-2",
+                  selectedMention?.id === item.id && "border-[var(--sigma-vermilion)]/50 ring-1 ring-[var(--sigma-vermilion)]/30"
+                )}
+              >
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="font-semibold text-[var(--sigma-text)]">
+                    {item.authorHandle}
+                    {item.isSeeded && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/90 border border-amber-500/20 text-[9px] uppercase tracking-wide">
+                        Seeded sample
+                      </span>
+                    )}
+                  </span>
+                  <Badge
+                    variant={item.sentiment === 'POSITIVE' ? 'success' : item.sentiment === 'NEGATIVE' ? 'danger' : 'neutral'}
+                    size="xs"
+                  >
+                    {item.sentiment ?? 'Unclassified'}
+                  </Badge>
+                </div>
 
-              <p className="text-xs text-[var(--sigma-muted)] line-clamp-2 leading-relaxed">
-                "{item.contentSnippet}"
-              </p>
+                <p className="text-xs text-[var(--sigma-muted)] line-clamp-2 leading-relaxed">
+                  "{item.contentSnippet}"
+                </p>
 
-              <div className="flex items-center justify-between text-[10px] font-mono text-[var(--sigma-muted)] pt-1.5 border-t border-[var(--sigma-border)]">
-                <span>{item.channel} • {item.reachEstimate}</span>
-                <span>{item.timestamp}</span>
-              </div>
-            </GlassCard>
-          ))}
+                <div className="flex items-center justify-between text-[10px] font-mono text-[var(--sigma-muted)] pt-1.5 border-t border-[var(--sigma-border)]">
+                  <span>{item.channel}{item.reachEstimate ? ` • ${item.reachEstimate}` : ''}</span>
+                  <span>{item.timestamp}</span>
+                </div>
+              </GlassCard>
+            ))
+          )}
         </div>
 
         {/* Mention Teardown & Response Studio */}
         <GlassCard spotlight elevation="raised" className="lg:col-span-2 p-6 space-y-5">
+          {!selectedMention ? (
+            <div className="text-xs font-mono text-[var(--sigma-muted)] leading-relaxed">
+              No mention selected. Pick one from the stream (or run a scan to capture a live mention) to review its context and draft a response.
+            </div>
+          ) : (
+            <>
           <div className="flex items-start justify-between border-b border-[var(--sigma-border)] pb-4">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-[var(--sigma-text)] text-base">{selectedMention.authorHandle}</span>
-                <span className="text-xs text-[var(--sigma-muted)] font-mono">• {selectedMention.channel}</span>
-                <span className="text-xs text-[var(--sigma-muted)] font-mono">• Reach: {selectedMention.reachEstimate}</span>
+                <span className="text-xs text-[var(--sigma-muted)] font-mono">• {selectedMention.channel || 'channel n/a'}</span>
+                {selectedMention.isSeeded ? (
+                  <Badge variant="warning" size="xs">Seeded sample</Badge>
+                ) : (
+                  <span className="text-xs text-[var(--sigma-muted)] font-mono">
+                    {selectedMention.reachEstimate ? `• Reach: ${selectedMention.reachEstimate}` : '• Reach: not measured'}
+                  </span>
+                )}
               </div>
-              <div className="text-[11px] text-[var(--sigma-muted)] font-mono mt-0.5">Detected: {selectedMention.timestamp}</div>
+              <div className="text-[11px] text-[var(--sigma-muted)] font-mono mt-0.5">
+                {selectedMention.isSeeded ? 'Sample item — not a live capture' : `Detected: ${selectedMention.timestamp}`}
+              </div>
             </div>
 
             <Badge
               variant={selectedMention.sentiment === 'POSITIVE' ? 'success' : selectedMention.sentiment === 'NEGATIVE' ? 'danger' : 'neutral'}
               size="sm"
             >
-              {selectedMention.sentiment}
+              {selectedMention.sentiment ?? 'Unclassified'}
             </Badge>
           </div>
 
           <div className="p-4 bg-[var(--sigma-bg)]/80 border border-[var(--sigma-border)] rounded-xl space-y-1.5">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-muted)]">Original Public Post</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-muted)]">
+              {selectedMention.isSeeded ? 'Sample Post (Seeded Demo Data)' : 'Original Public Post'}
+            </div>
             <p className="text-xs text-[var(--sigma-text)] leading-relaxed italic">
               "{selectedMention.contentSnippet}"
             </p>
           </div>
 
-          {/* AI Response Drafter */}
+          {/* Response Drafter */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-semibold text-[var(--sigma-vermilion)] uppercase flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> AI Response Drafter (Nexus-03 Aligned)
+                <Sparkles className="w-3.5 h-3.5" /> Response Drafter (Brand-Voice Templates)
               </span>
-              <span className="text-[11px] font-mono text-[var(--sigma-muted)]">Enforces Brand Tone & Vault Rules</span>
+              <span className="text-[11px] font-mono text-[var(--sigma-muted)]">Canned templates — editable before dispatch</span>
             </div>
 
             <textarea
@@ -426,7 +473,7 @@ export default function SocialListeningPage() {
 
             <div className="flex items-center justify-between pt-1">
               <span className="text-[11px] text-[var(--sigma-muted)] font-mono">
-                Requires Human-in-the-Loop review before live publishing
+                Stages a local draft — nothing is published until a distribution run is approved
               </span>
 
               <div className="flex gap-2">
@@ -435,7 +482,7 @@ export default function SocialListeningPage() {
                   variant="outline"
                   size="sm"
                 >
-                  Regenerate
+                  Swap Template
                 </Button>
 
                 <Button
@@ -444,11 +491,13 @@ export default function SocialListeningPage() {
                   size="sm"
                   icon={<Send className="w-3.5 h-3.5" />}
                 >
-                  Approve & Dispatch
+                  Stage for Review
                 </Button>
               </div>
             </div>
           </div>
+            </>
+          )}
         </GlassCard>
       </div>
 
