@@ -1143,12 +1143,23 @@ interface SovereignLead {
   stage: 'NEW_INBOUND' | 'ENRICHED' | 'OUTREACH_QUEUED' | 'REPLIED_WARM' | 'CALL_BOOKED' | 'CLOSED_WON';
   sourceVector: string;
   estimatedArr?: string;
-  icpScore: number;
+  /**
+   * ICP score is only present when a real scoring/enrichment source produced
+   * it. Leads entered manually or captured inbound start "unscored" — a
+   * random number here would read as fact in the pipeline KPIs.
+   */
+  icpScore?: number;
   notes?: string;
   capturedAt: string;
 }
 
-const inMemorySovereignLeads: SovereignLead[] = [
+// The sovereign pipeline starts EMPTY for a fresh workspace. The five demo
+// leads below are reachable ONLY behind SEED_DEMO_WORKSPACE=true (the same
+// server switch that seeds the demo Second Brain) — fabricated prospects
+// never ship as live pipeline data.
+const inMemorySovereignLeads: SovereignLead[] =
+  process.env.SEED_DEMO_WORKSPACE === "true"
+    ? [
   {
     id: 'lead-101',
     name: 'Sarah Chen',
@@ -1221,7 +1232,8 @@ const inMemorySovereignLeads: SovereignLead[] = [
     notes: 'Enriched verified email and mobile tech stack. Elementor site with 0 JSON-LD schemas detected.',
     capturedAt: new Date(Date.now() - 3600000 * 4).toISOString()
   }
-];
+  ]
+    : [];
 
 // Public Capture Lead API for Embeddable Conversion Dock (No auth needed)
 app.post("/api/public/capture-lead", async (req: Request, res: Response) => {
@@ -1243,8 +1255,8 @@ app.post("/api/public/capture-lead", async (req: Request, res: Response) => {
     domain: domain ? domain.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').trim() : undefined,
     stage: 'NEW_INBOUND',
     sourceVector: sourceVector || 'Conversion Dock (Embed)',
-    estimatedArr: '$1M - $5M',
-    icpScore: 85,
+    // No ARR band or ICP score is invented on capture: the lead is unscored
+    // until a real enrichment source produces one.
     notes: notes || needs || 'Captured via public Conversion Dock widget.',
     capturedAt: new Date().toISOString()
   };
@@ -1273,7 +1285,7 @@ app.get(["/api/leads", "/api/workspace/leads"], async (req: Request, res: Respon
 });
 
 app.post(["/api/leads/create", "/api/workspace/leads/create"], async (req: Request, res: Response) => {
-  const { name, email, company, domain, title, linkedinUrl, stage, sourceVector, estimatedArr, notes } = req.body;
+  const { name, email, company, domain, title, linkedinUrl, stage, sourceVector, estimatedArr, icpScore, notes } = req.body;
   if (!name || !name.trim() || !email || !email.trim()) {
     res.status(400).json({ error: "Name and email are mandatory." });
     return;
@@ -1289,8 +1301,12 @@ app.post(["/api/leads/create", "/api/workspace/leads/create"], async (req: Reque
     linkedinUrl: linkedinUrl?.trim(),
     stage: stage || 'NEW_INBOUND',
     sourceVector: sourceVector || 'Manual Entry',
-    estimatedArr: estimatedArr || '$2.0M',
-    icpScore: Math.floor(80 + Math.random() * 18),
+    estimatedArr: estimatedArr || undefined,
+    // ICP score is only recorded when a caller supplies a real one; a
+    // fabricated random number would otherwise badge as fact in the UI.
+    icpScore: typeof icpScore === 'number' && Number.isFinite(icpScore)
+      ? Math.max(0, Math.min(100, Math.round(icpScore)))
+      : undefined,
     notes: notes?.trim(),
     capturedAt: new Date().toISOString()
   };
