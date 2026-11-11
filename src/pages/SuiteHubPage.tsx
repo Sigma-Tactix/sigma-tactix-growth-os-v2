@@ -57,8 +57,11 @@ function ModulePage({ module }: { module: SuiteModule }) {
 export default function SuiteHubPage({ hubId }: { hubId: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const hub = (Object.values(SUITE_HUBS) as SuiteHubDef[]).find((h) => h.id === hubId);
+  // Only a tab param that names a module OF THIS HUB wins; a stale or foreign
+  // ?tab value must not silently drive the view (deep links must resolve).
+  const requestedTab = hub ? hub.modules.find((m) => m.id === searchParams.get('tab')) : undefined;
   const [activeTab, setActiveTab] = useState<string>(
-    () => hub?.modules.find((m) => m.id === searchParams.get('tab'))?.id || hub?.modules[0]?.id || '',
+    () => requestedTab?.id || hub?.modules[0]?.id || '',
   );
 
   // Single-module measurement hub — direct link, no wrapper chrome.
