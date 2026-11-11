@@ -35,6 +35,7 @@ import {
   CompetitorProfile, 
   CreativeComparisonItem 
 } from '@/src/data/marketingModulesData';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 import {
@@ -45,13 +46,19 @@ import {
 } from '@/src/lib/api';
 
 export default function CompetitorResearchPage() {
-  const { notifySuccess, notifyInfo, notifyError } = useToast();
+  const { notifySuccess, notifyInfo, notifyWarning, notifyError } = useToast();
   const navigate = useNavigate();
 
-  const [competitors, setCompetitors] = useState<CompetitorProfile[]>(SEED_COMPETITORS);
-  const [creativeComparisons, setCreativeComparisons] = useState<CreativeComparisonItem[]>(SEED_CREATIVE_COMPARISONS);
-  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorProfile>(SEED_COMPETITORS[0]);
-  const [selectedCreativeComparison, setSelectedCreativeComparison] = useState<CreativeComparisonItem>(SEED_CREATIVE_COMPARISONS[0]);
+  // Demo seeds are gated like every other module: a fresh tenant opens with an
+  // empty tracker. Seeded profiles/creative comparisons only show behind
+  // VITE_SEED_DEMO_WORKSPACE, and even then they are labelled as sample data.
+  const seededCompetitors = isDemoSeedEnabled() ? SEED_COMPETITORS : [];
+  const [competitors, setCompetitors] = useState<CompetitorProfile[]>(seededCompetitors);
+  const seededComparisons = isDemoSeedEnabled() ? SEED_CREATIVE_COMPARISONS : [];
+  const [creativeComparisons, setCreativeComparisons] = useState<CreativeComparisonItem[]>(seededComparisons);
+  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorProfile | null>(seededCompetitors[0] ?? null);
+  const [selectedCreativeComparison, setSelectedCreativeComparison] = useState<CreativeComparisonItem | null>(seededComparisons[0] ?? null);
+  const showSampleBanner = isDemoSeedEnabled();
   
   type TabType = 'WEB_INTELLIGENCE' | 'CREATIVE_MATRIX' | 'PROFILES' | 'COUNTER_ATTACK';
   const [activeTab, setActiveTab] = useState<TabType>('WEB_INTELLIGENCE');
@@ -98,26 +105,10 @@ export default function CompetitorResearchPage() {
     return () => { active = false; };
   }, []);
 
-  // Agent Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-comp-01',
-      agentName: 'Spectre-06 Ad Spy Swarm',
-      agentRole: 'Rival Funnel & Creative Spy Specialist',
-      timestamp: 'Today at 04:20 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Competitor Intelligence',
-      inputSummary: 'Target: omnivanguard.io (Meta Ad Library & Google Ads Transparency)',
-      outputSummary: 'Scraped 42 ad creatives. Flagged creative fatigue on 3 core angles.',
-      fullOutput: 'Identified $45k/mo estimated spend. Positioned counter-hooks into Second Brain Customer Vault.',
-      metrics: [
-        { label: 'Rival Tracked', value: 'OmniVanguard' },
-        { label: 'Ads Extracted', value: '42' },
-        { label: 'Vulnerabilities', value: '4 High Impact' },
-        { label: 'Counter-Playbook', value: 'Generated' }
-      ]
-    }
-  ]);
+  // Agent Run History — starts empty. Entries are only added after a real
+  // TinyFish search/fetch succeeds. A fresh workspace must not show a
+  // fabricated "completed ad-spy run".
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
   const handleSearchWeb = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -138,12 +129,12 @@ export default function CompetitorResearchPage() {
         status: 'SUCCESS',
         moduleOrigin: 'Competitor Intelligence',
         inputSummary: `Query: "${searchQuery}"`,
-        outputSummary: `Retrieved ${results.length} competitor evidence items with cryptographic source hashes.`,
+        outputSummary: `Retrieved ${results.length} competitor evidence items from the web-intelligence gateway.`,
         fullOutput: JSON.stringify(results, null, 2),
         metrics: [
           { label: 'Results', value: `${results.length}` },
           { label: 'Provider', value: 'TinyFish' },
-          { label: 'Latency', value: `${results[0]?.latencyMs || 45}ms` }
+          ...(results[0]?.latencyMs != null ? [{ label: 'Latency', value: `${results[0].latencyMs}ms` }] : [])
         ]
       };
       setRunHistory(prev => [newRun, ...prev]);
@@ -173,11 +164,10 @@ export default function CompetitorResearchPage() {
         status: 'SUCCESS',
         moduleOrigin: 'Competitor Intelligence',
         inputSummary: `Target URL: ${target}`,
-        outputSummary: `Extracted ${doc?.content?.length || 0} characters of markdown pricing & messaging structure.`,
+        outputSummary: `Extracted ${doc?.content?.length || 0} characters of markdown from the fetched page.`,
         fullOutput: doc?.content || '',
         metrics: [
           { label: 'Source', value: doc?.sourceUrl || target },
-          { label: 'Status', value: '200 OK' },
           { label: 'Format', value: 'Markdown' }
         ]
       };
@@ -189,14 +179,19 @@ export default function CompetitorResearchPage() {
     }
   };
 
+    // No vault-commit endpoint exists for arbitrary text yet, so this stages the
+  // snapshot locally in-session and says exactly that — it does not claim an
+  // immutable SHA-256 write to Zone 2 (no API call is made).
   const handleCommitToMarketingVault = (doc: any) => {
     setCommittedVaultUrl(doc.sourceUrl);
-    notifySuccess(
-      'Committed to Marketing Vault',
-      `Saved immutable snapshot for "${doc.title || doc.sourceUrl}" into Zone 2 (Marketing Vault) with SHA-256 provenance.`
+    notifyInfo(
+      'Snapshot Staged',
+      `"${doc.title || doc.sourceUrl}" marked for Marketing Vault in this session. No vault write was made — commit persistence is not wired yet.`
     );
   };
 
+  // Honest "planned action": no ad-library scraping backend exists yet. This
+  // records a queued plan and never claims a completed scrape or a vault write.
   const handleDeploySpyAgent = () => {
     setIsDeployingSpy(true);
     setTimeout(() => {
@@ -206,23 +201,23 @@ export default function CompetitorResearchPage() {
         agentName: 'Spectre-06 Ad Spy Swarm',
         agentRole: 'Rival Funnel & Creative Spy Specialist',
         timestamp: 'Just now',
-        status: 'SUCCESS',
+        status: 'PARTIAL',
         moduleOrigin: 'Competitor Intelligence',
-        inputSummary: 'Dispatched full counter-attack playbook against tracked rivals',
-        outputSummary: 'Synthesized 12 rival counter-hooks directly into Second Brain vaults.',
-        fullOutput: 'Committed 12 new hooks to ZONE_2_MARKETING. Counter-messaging active.',
+        inputSummary: 'Counter-attack plan requested against tracked rivals',
+        outputSummary: 'Plan queued. No ad-library scraping backend is configured, so nothing was scraped and nothing was committed to vaults.',
+        fullOutput: 'PLANNED ACTION — counter-attack plan only. Wire Spectre-06 to a real ad-transparency source to execute.',
         metrics: [
-          { label: 'Counter-Hooks', value: '12 Active' },
-          { label: 'Channels', value: 'Meta, Google, X' },
-          { label: 'Status', value: 'Synchronized' }
+          { label: 'Plan Items', value: '3' },
+          { label: 'Channels', value: 'Meta, Google, X (planned)' },
+          { label: 'Status', value: 'Queued — not executed' }
         ]
       };
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess(
-        'Spectre-06 Ad Spy Swarm Dispatched',
-        'Scraped Meta Ad Library & Google Ads Transparency Center. Committed 12 new rival hooks to Second Brain Customer Vault.'
+      notifyWarning(
+        'Counter-Attack Plan Queued',
+        'The playbook is staged as a plan. No ad libraries were scraped and no hooks were committed — connect a scraping source to execute for real.'
       );
-    }, 1400);
+    }, 400);
   };
 
   return (
@@ -269,7 +264,7 @@ export default function CompetitorResearchPage() {
               isLoading={isDeployingSpy}
               icon={<Bot className="w-4 h-4" />}
             >
-              {isDeployingSpy ? 'Deploying Swarm...' : 'Deploy Counter-Attack Swarm'}
+              {isDeployingSpy ? 'Staging Plan...' : 'Stage Counter-Attack Plan'}
             </Button>
           </div>
         </div>
@@ -280,28 +275,26 @@ export default function CompetitorResearchPage() {
         <MetricWidget
           label="Tracked Rivals"
           value={`${competitors.length} Competitors`}
-          subtext="107 active ad creatives tracked"
+          subtext={competitors.length > 0 ? (showSampleBanner ? "Sample profiles — no live tracking yet" : "In tracker") : "No rivals tracked yet"}
         />
 
         <MetricWidget
           label="Web Intelligence"
-          value="TinyFish Active"
-          delta={{ value: "Live", trend: "up" }}
-          subtext="Headless markdown extraction"
+          value={tinyFishState === 'verified' ? 'TinyFish Live' : tinyFishState === 'fixture' ? 'TinyFish Fixture' : 'Setup Required'}
+          delta={tinyFishState === 'verified' ? { value: "Live", trend: "up" } : undefined}
+          subtext="Server-side search & markdown extraction"
         />
 
         <MetricWidget
-          label="Primary Vulnerability"
-          value="Rented Headcount"
-          delta={{ value: "High Risk", trend: "down" }}
-          subtext="High retainers, zero client memory"
+          label="Counter-Positioning"
+          value="Playbook Ready"
+          subtext="Modeled counter-angles — not a measured CTR result"
         />
 
         <MetricWidget
-          label="Counter-Ad Win Rate"
-          value="3.4x Higher CTR"
-          delta={{ value: "+240%", trend: "up" }}
-          subtext="Verified on LinkedIn & Meta"
+          label="Verified Claims"
+          value="None Yet"
+          subtext="No ad-platform or lift data is connected; win rates are modeled estimates only"
         />
       </div>
 
@@ -466,6 +459,17 @@ export default function CompetitorResearchPage() {
       {/* TAB 2: CREATIVE COMPARISONS MATRIX */}
       {activeTab === 'CREATIVE_MATRIX' && (
         <div className="space-y-6">
+          {showSampleBanner && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+              Sample creative comparisons from a demo seed — not scraped ad data. Connect a live ad-library source to replace them with tracked creatives.
+            </div>
+          )}
+          {creativeComparisons.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500">
+              No creative comparisons yet. Run a Live Web Intelligence search and fetch a rival ad page to build the matrix, or enable the demo seed.
+            </div>
+          ) : (
+            <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {creativeComparisons.map(item => (
               <button
@@ -474,7 +478,7 @@ export default function CompetitorResearchPage() {
                 onClick={() => setSelectedCreativeComparison(item)}
                 className={cn(
                   "p-4 rounded-xl border text-left transition-all cursor-pointer",
-                  selectedCreativeComparison.id === item.id
+                  selectedCreativeComparison?.id === item.id
                     ? "bg-amber-400/10 border-amber-400/40 text-white shadow-lg shadow-amber-500/5"
                     : "bg-zinc-900/30 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
                 )}
@@ -490,6 +494,7 @@ export default function CompetitorResearchPage() {
           </div>
 
           {/* Detailed Side-by-Side Comparison */}
+          {selectedCreativeComparison ? (
           <GlassCard elevation="raised" className="p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
               <div>
@@ -529,7 +534,7 @@ export default function CompetitorResearchPage() {
                 <div className="flex items-center justify-between text-xs">
                   <Badge variant="vermilion">SIGMA COUNTER-ATTACK</Badge>
                   <span className="text-emerald-400 font-mono text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Deployed Angle
+                    <CheckCircle2 className="w-3 h-3" /> Proposed Counter-Angle
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -547,11 +552,29 @@ export default function CompetitorResearchPage() {
               </div>
             </div>
           </GlassCard>
+          ) : (
+            <div className="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-500">
+              Select a comparison on the left to see the side-by-side analysis.
+            </div>
+          )}
+          </>
+          )}
         </div>
       )}
 
       {/* TAB 3: PROFILES */}
       {activeTab === 'PROFILES' && (
+        <div className="space-y-4">
+          {showSampleBanner && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+              Sample competitor profiles from a demo seed — spend, ad counts and traffic are estimates, not live intelligence.
+            </div>
+          )}
+          {competitors.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500">
+              No competitor profiles in the tracker yet. Add rivals via Live Web Intelligence, or enable the demo seed to browse sample profiles.
+            </div>
+          ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-2">Tracked Competitors</span>
@@ -562,7 +585,7 @@ export default function CompetitorResearchPage() {
                 onClick={() => setSelectedCompetitor(comp)}
                 className={cn(
                   "w-full p-4 rounded-xl border text-left transition-all cursor-pointer",
-                  selectedCompetitor.id === comp.id
+                  selectedCompetitor?.id === comp.id
                     ? "bg-amber-400/10 border-amber-400/40 text-white"
                     : "bg-zinc-900/30 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
                 )}
@@ -578,13 +601,14 @@ export default function CompetitorResearchPage() {
             ))}
           </div>
 
+          {selectedCompetitor ? (
           <div className="md:col-span-2 p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-6">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-white">{selectedCompetitor.name}</h3>
-                <a 
-                  href={`https://${selectedCompetitor.domain}`} 
-                  target="_blank" 
+                <a
+                  href={`https://${selectedCompetitor.domain}`}
+                  target="_blank"
                   rel="noreferrer"
                   className="text-xs text-amber-400 hover:underline flex items-center gap-1 mt-0.5"
                 >
@@ -623,6 +647,13 @@ export default function CompetitorResearchPage() {
               </div>
             </div>
           </div>
+          ) : (
+            <div className="md:col-span-2 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-500">
+              Select a competitor on the left to see its profile.
+            </div>
+          )}
+        </div>
+          )}
         </div>
       )}
 
@@ -642,12 +673,12 @@ export default function CompetitorResearchPage() {
               {
                 rule: 'Pillory the Rented Headcount Model',
                 detail: 'Whenever a competitor advertises team size ("our 50-person agency"), deploy counter-ads highlighting permanent client asset ownership and zero context loss.',
-                status: 'ACTIVE IN VORTEX-02'
+                status: 'PLANNED — VORTEX-02'
               },
               {
                 rule: 'Target Competitor Brand Search with Comparison Teardowns',
                 detail: 'Bid on "[Competitor Name] alternatives" and "[Competitor Name] review" with deep architectural teardowns hosted on high-speed static landing pages.',
-                status: 'ACTIVE IN GOOGLE ADS'
+                status: 'PLANNED — GOOGLE ADS'
               },
               {
                 rule: 'Exploit Slow Iteration Cycles',
