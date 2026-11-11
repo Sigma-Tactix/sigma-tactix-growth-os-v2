@@ -609,8 +609,8 @@ export default function PaidAdsPage() {
         tablet: -20
       });
       notifySuccess(
-        'Researched Demand Gen Applied',
-        'Configured top-of-funnel discovery mix: 60% video/reels, +20% mobile bid adjustment, and discovery pacing.'
+        'Demand Gen Template Applied to Draft',
+        'Filled the plan draft with the top-of-funnel discovery mix (60% video/reels, +20% mobile bid adjustment, discovery pacing). Local draft only — no live campaign or ad account was changed.'
       );
     } else {
       setChannelWeights({
@@ -689,8 +689,8 @@ export default function PaidAdsPage() {
     const links = channels.map(ch => `${utmUrl}?utm_source=${ch}&utm_medium=cpc&utm_campaign=${utmCampaign}&utm_content=${utmAudienceTag}`);
     navigator.clipboard.writeText(links.join('\n'));
     notifySuccess(
-      'Batch UTM Suite Generated',
-      `Synthesized and copied 4 verified UTM links for all active media plan channels.`
+      'UTM Tracking Links Generated',
+      'Copied 4 UTM tracking links built locally from your inputs. They are not verified against any ad platform — no campaign or account was checked.'
     );
   };
 
@@ -827,7 +827,7 @@ export default function PaidAdsPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => notifyInfo('Safety Gate Verified', 'Vortex-02 is strictly bound by the $1,000/day autonomous shift cap. Excess shifts route to Admin HITL queue.')}
+            onClick={() => notifyInfo('Designed Safety Gate', 'The $1,000/day autonomous shift cap is a design guardrail, not a live-enforced setting — no optimizer connector is attached to this workspace yet. Real enforcement arrives with the ad-platform pipeline.')}
             icon={<ShieldCheck size={13} className="text-emerald-accent" />}
           >
             HITL Cap: $1,000/day
@@ -857,11 +857,13 @@ export default function PaidAdsPage() {
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white font-heading">Client Brief & Strategic Growth Context</h3>
                 <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
-                  Verified Context Active
+                  Example Brief
                 </span>
               </div>
               <p className="text-xs text-zinc-400">
                 Grounding parameters for performance media planning, ICP qualification, RFP tenders, and baseline reports.
+                These fields start with an editable example, not data pulled from your workspace or ad platforms — replace them
+                with your real metrics before using this brief to plan.
               </p>
             </div>
           </div>
@@ -946,8 +948,8 @@ export default function PaidAdsPage() {
                     <span className="flex items-center gap-1.5">
                       <DollarSign size={14} /> Budget & Targets
                     </span>
-                    <span className="text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                      Pacing: 100%
+                    <span className="text-[11px] text-zinc-400 font-bold bg-zinc-500/10 px-1.5 py-0.5 rounded">
+                      Pacing: not measured (no live spend)
                     </span>
                   </div>
                   {isEditingBrief ? (
@@ -1803,7 +1805,9 @@ export default function PaidAdsPage() {
             <div>
               <h3 className="text-lg font-bold silver-text">Universal Campaign Metrics Matrix</h3>
               <p className="text-xs text-zinc-400">
-                Full-funnel telemetry across ad networks: Google Ads, Meta Ads Manager, and LinkedIn.
+                Where campaign spend, CTRs, CPCs and ROAS will show once a linked ad pipeline reports to this
+                workspace. Until then nothing is shown — the benchmark simulation is clearly labeled and uses zero
+                real spend.
               </p>
             </div>
             <span className={cn(
