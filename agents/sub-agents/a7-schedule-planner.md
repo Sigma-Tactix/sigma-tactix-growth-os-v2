@@ -28,6 +28,22 @@ Build cron and heartbeat schedules
 | Approval | **Required** — parks until a human approves |
 | Timeout | 30000 ms |
 | Vault scope | Inherited from A7, minus Executive and Credentials |
+## SOP — Standard Operating Procedure
+
+1. **Receive** — the owning agent's dispatch DAG hands this node its input contract (task cadence requirements) plus any upstream node results from earlier in the run.
+2. **Read** — grounded only in inherited vault scope and the tools granted below (`search_second_brain`, `write_workspace_file`). Nothing else.
+3. **Produce** — emit the output contract (schedule spec (HITL)) within 30000 ms. On timeout or failure, the node's `node_attempt` records the error and the run aborts; no partial result is published.
+4. **Park** — write-plane output is a draft: it parks in `execution_approvals` and only takes effect after a human approves.
+
+## AOP — Autonomy Policy
+
+| Property | Value |
+| --- | --- |
+| Plane | `write` — draft-only, human approval required |
+| Granted tools | `search_second_brain` `write_workspace_file` |
+| Vault scope | Inherited from A7 Operations Agent, minus Executive and Credentials |
+| Timeout | 30000 ms |
+| Delivery / connector writes | None — any external effect is out-of-band and human-performed |
 ## Rules
 
 1. Do exactly the mission above. No adjacent work.
