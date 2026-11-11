@@ -56,6 +56,7 @@ import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { INDUSTRY_MEDIA_PLAN_TEMPLATES, MediaPlanTemplate } from '@/src/data/mediaPlanTemplates';
 import { apiFetch } from '@/src/lib/api';
+import { generateTextContent } from '@/src/lib/creativeApi';
 import { parseMediaPlanText } from '@/src/lib/mediaPlanParser';
 
 // Interfaces for Performance Marketing Suite
@@ -624,8 +625,8 @@ export default function PaidAdsPage() {
         tablet: -25
       });
       notifySuccess(
-        'Researched High-Growth Applied',
-        'Configured B2B conversion-backed mix: 77% Search & LinkedIn ABM with +25% Desktop bid adjustment (2.8x higher demo conversion).'
+        'B2B Mix Applied',
+        'Applied the conversion-backed template locally: 77% Search & LinkedIn ABM, +25% desktop bid adjustment. Template heuristic only — not a measured lift; verify against live campaign data before scaling.'
       );
     }
   };
@@ -640,26 +641,9 @@ export default function PaidAdsPage() {
   const [utmTerm, setUtmTerm] = useState('b2b_growth_os');
   const [copiedUtm, setCopiedUtm] = useState(false);
 
-  // Agent Run Results
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-paid-01',
-      agentName: 'Paid Media Optimizer Swarm',
-      agentRole: 'ROAS Maximizer & Creative Fatigue Auditor',
-      timestamp: 'Today at 04:30 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Performance Marketing & Paid Ads',
-      inputSummary: 'PMax Enterprise & LinkedIn ABM Spend Rebalance',
-      outputSummary: 'Shifted $4,200 from high-fatigue Meta ad sets to LinkedIn ABM. Blended ROAS lifted to 5.48x.',
-      fullOutput: 'Analyzed 6 active campaigns. Flagged 2 ad creatives with frequency > 4.2x. Automated bid adjustments applied under HITL limits.',
-      metrics: [
-        { label: 'Blended ROAS', value: '5.48x' },
-        { label: 'Active Spend', value: '$45,000' },
-        { label: 'Fatigue Alerts', value: '2 Resolved' },
-        { label: 'Pipeline Generated', value: '$1.4M' }
-      ]
-    }
-  ]);
+  // Agent Run Results — starts empty. No optimizer run has happened in a fresh
+  // workspace; entries are only added when the user queues a plan here.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
   // Sync UTM URL when workspace changes
   React.useEffect(() => {
@@ -672,6 +656,8 @@ export default function PaidAdsPage() {
   const [searchKeywords, setSearchKeywords] = useState('AI Growth OS, B2B Marketing Infrastructure, Second Brain Marketing');
   const [targetCpaInput, setTargetCpaInput] = useState(75);
   const [isGeneratingRsa, setIsGeneratingRsa] = useState(false);
+  // A generated RSA draft (null until the user runs the real generator).
+  const [rsaDraft, setRsaDraft] = useState<{ content: string; engine: 'gemini' | 'local-template' } | null>(null);
 
   // Swarm State
   const [isDeployingVortex, setIsDeployingVortex] = useState(false);
@@ -730,31 +716,94 @@ export default function PaidAdsPage() {
     setIsPlanModalOpen(false);
     setNewPlanName('');
     notifySuccess(
-      'Media Plan Activated',
-      `"${newPlan.name}" initialized with $${newPlan.totalBudget.toLocaleString()} budget ceiling.`
+      'Media Plan Added',
+      `"${newPlan.name}" created with a $${newPlan.totalBudget.toLocaleString()} budget ceiling. It is a local plan — no ad spend runs until an ad account is connected and a campaign executes it.`
     );
   };
 
+  // Honest optimizer queue: no ad-platform connector is wired to this page yet,
+  // so a "deploy" records a queued plan (and says nothing ran) instead of
+  // claiming a completed CPA audit and applied bid changes.
   const handleDeployVortexSwarm = () => {
+    if (!activeAudience) {
+      notifyWarning('No Active Audience', 'Create or select an audience before queueing an optimizer pass.');
+      return;
+    }
     setIsDeployingVortex(true);
     setTimeout(() => {
       setIsDeployingVortex(false);
-      notifySuccess(
-        'Vortex-02 Swarm Deployed',
-        'Audited 14-day CPA across Google & Meta. All bid adjustments aligned with active Media Plan pacing.'
+      const newRun: AgentRunRecord = {
+        id: `run-vortex-${Date.now()}`,
+        agentName: 'Vortex-02 Optimizer Swarm',
+        agentRole: 'ROAS Maximizer & Creative Fatigue Auditor',
+        timestamp: 'Just now',
+        status: 'PARTIAL',
+        moduleOrigin: 'Performance Marketing & Paid Ads',
+        inputSummary: `Optimizer pass requested for ${activeAudience.name}`,
+        outputSummary: 'Plan queued only. No ad-platform connector is attached to this workspace, so no CPA audit, spend shift or bid change was executed.',
+        fullOutput: 'PLANNED ACTION — connect Google/Meta via the ad-account pipeline to execute optimizer runs for real.',
+        metrics: [
+          { label: 'Executed', value: 'No (no connector)' },
+          { label: 'Stage', value: 'Queued plan' }
+        ]
+      };
+      setRunHistory(prev => [newRun, ...prev]);
+      notifyWarning(
+        'Optimizer Run Queued',
+        'No ad-platform connector is connected to this workspace, so no CPA audit or bid changes ran. This records the plan only — connect Google/Meta to execute for real.'
       );
-    }, 1400);
+    }, 400);
   };
 
-  const handleGenerateRsa = () => {
+  // Real generator: calls the same endpoint the other creative modules use.
+  // The preview renders the actual returned copy and discloses which engine
+  // produced it (model vs local template) — no invented headline counts.
+  const handleGenerateRsa = async () => {
+    if (!searchKeywords.trim()) {
+      notifyWarning('Keywords Required', 'Add target keywords before generating an RSA draft.');
+      return;
+    }
+    if (!activeAudience) {
+      notifyWarning('No Active Audience', 'Create or select an audience first — the draft is tailored to one.');
+      return;
+    }
     setIsGeneratingRsa(true);
-    setTimeout(() => {
-      setIsGeneratingRsa(false);
-      notifySuccess(
-        'Responsive Search Ad Synthesized',
-        'Generated 15 high-converting headlines and 4 descriptions aligned with Brand Vault positioning.'
+    try {
+      const result = await generateTextContent({
+        topic: `Responsive Search Ad copy for keywords: ${searchKeywords.trim()}. Write 15 headline variations (each under 30 characters) and 4 description variations (each under 90 characters), aligned to target CPA ~$${targetCpaInput}.`,
+        format: 'SEARCH_ADS',
+        targetAudience: activeAudience.name,
+      });
+      setRsaDraft({ content: result.content, engine: result.engine });
+      const newRun: AgentRunRecord = {
+        id: `run-rsa-${Date.now()}`,
+        agentName: 'RSA Draft Engine',
+        agentRole: 'Responsive Search Ad Copywriter',
+        timestamp: 'Just now',
+        status: 'SUCCESS',
+        moduleOrigin: 'Performance Marketing & Paid Ads',
+        inputSummary: `RSA draft from keywords: ${searchKeywords.slice(0, 80)}`,
+        outputSummary: result.engine === 'gemini'
+          ? 'Ad copy drafted by the configured model. Nothing was pushed to Google — the ad remains a local draft.'
+          : 'Ad copy drafted from the local template (no model key configured). Nothing was pushed to Google — the ad remains a local draft.',
+        fullOutput: result.content,
+        metrics: [
+          { label: 'Engine', value: result.engine === 'gemini' ? 'Model' : 'Local template' },
+          { label: 'Pushed', value: 'No (draft only)' }
+        ]
+      };
+      setRunHistory(prev => [newRun, ...prev]);
+      notifyInfo(
+        'RSA Draft Ready',
+        result.engine === 'gemini'
+          ? 'Generated with the configured model. It is a local draft — not pushed to Google.'
+          : 'Generated from the local template (no model key set). It is a local draft — not pushed to Google.'
       );
-    }, 1200);
+    } catch (err) {
+      notifyWarning('RSA Draft Unavailable', err instanceof Error ? err.message : 'Could not generate the RSA draft.');
+    } finally {
+      setIsGeneratingRsa(false);
+    }
   };
 
   return (
@@ -2092,49 +2141,38 @@ export default function PaidAdsPage() {
           <div className="lg:col-span-2 p-6 bg-surface border border-white/10 rounded-2xl space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">Active Google RSA Ad Preview</h3>
-                <div className="text-xs font-mono text-zinc-400 mt-0.5">Ad Strength: Excellent (Score: 98/100)</div>
+                <h3 className="font-bold text-white text-sm">Responsive Search Ad Draft</h3>
+                <div className="text-xs font-mono text-zinc-400 mt-0.5">
+                  {rsaDraft
+                    ? `Engine: ${rsaDraft.engine === 'gemini' ? 'configured model' : 'local template (no model key)'}`
+                    : 'No draft generated yet'}
+                </div>
               </div>
-              <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono rounded-lg">
-                Status: Live in Auction
+              <span className="px-2.5 py-1 bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 text-xs font-mono rounded-lg">
+                Status: Local draft — not pushed to Google
               </span>
             </div>
 
-            <div className="p-4 bg-black/80 border border-zinc-800 rounded-xl space-y-2 font-sans">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[11px]">Sponsored</span>
-                <span>https://sigmatactix.com/growth-os</span>
+            {rsaDraft ? (
+              <div className="p-4 bg-black/80 border border-zinc-800 rounded-xl space-y-2 font-sans">
+                <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                  <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[11px]">Draft</span>
+                  <span>{utmUrl}</span>
+                </div>
+                <pre className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap font-sans max-h-96 overflow-y-auto">
+                  {rsaDraft.content}
+                </pre>
+                <p className="text-[11px] text-zinc-500 pt-1">
+                  Copy is editable above and lives in this session only. Pushing it to Google Ads requires a connected ad
+                  account; no campaign was created by generating this draft.
+                </p>
               </div>
-              <div className="text-blue-400 text-base font-medium hover:underline cursor-pointer">
-                AI Growth OS for Mid-Market | Sovereign Second Brain Architecture
+            ) : (
+              <div className="p-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+                Enter target keywords and run "Generate Responsive Search Ad" to draft RSA copy locally.
+                {rsaDraft ? '' : ' Nothing is pushed to Google — this studio does not create live campaigns yet.'}
               </div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                Replace fragmented agency retainers with client-owned growth infrastructure. 10 permissioned vaults with pgvector RAG and autonomous execution swarms. Run our free 6-minute Growth Diagnostic today.
-              </p>
-              <div className="flex flex-wrap gap-3 pt-2 text-xs text-blue-400">
-                <span className="hover:underline cursor-pointer">• Growth Diagnostic (78/100)</span>
-                <span className="hover:underline cursor-pointer">• Second Brain Blueprint</span>
-                <span className="hover:underline cursor-pointer">• Architecture Whitepaper</span>
-              </div>
-            </div>
-
-            {/* Headline variations */}
-            <div className="space-y-2 pt-2">
-              <div className="text-xs font-mono font-bold text-zinc-400 uppercase">Top Performing Headline Variations</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {[
-                  { text: 'Stop Renting Marketing Agencies', ctr: '4.82%', score: 98 },
-                  { text: 'AI Growth OS for Mid-Market', ctr: '4.15%', score: 94 },
-                  { text: 'Sovereign Second Brain Cloud', ctr: '3.90%', score: 92 },
-                  { text: 'Guardrails & Human-in-the-Loop', ctr: '3.65%', score: 90 }
-                ].map((item, i) => (
-                  <div key={i} className="p-2.5 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between text-xs">
-                    <span className="text-zinc-200 truncate pr-2">"{item.text}"</span>
-                    <span className="font-mono text-emerald-400 font-bold whitespace-nowrap">{item.ctr} CTR</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
