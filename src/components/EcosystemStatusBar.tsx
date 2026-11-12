@@ -648,15 +648,15 @@ export default function EcosystemStatusBar({
             const sectionHasIssue = section.subSections.some(sub => sub.elements.some(e => e.status !== 'OPERATIONAL'));
 
             return (
-              <div key={section.id} className="rounded-xl border border-white/5 bg-surface/50 overflow-hidden">
+              <div key={section.id} className="rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] overflow-hidden">
                 {/* Section Header */}
                 <button
                   onClick={() => setExpandedSectionId(isSectionExpanded ? null : section.id)}
-                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-white/5 transition-all text-left"
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-[var(--sigma-surface-raised)] transition-all text-left"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <section.icon size={15} className={sectionHasIssue ? "text-amber-400" : "text-accent"} />
-                    <span className="text-xs font-bold text-zinc-200 truncate">{section.name}</span>
+                    <span className="text-xs font-bold text-[var(--sigma-text)] truncate">{section.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {sectionHasIssue && (
@@ -668,16 +668,16 @@ export default function EcosystemStatusBar({
 
                 {/* Subsections & Elements list */}
                 {isSectionExpanded && (
-                  <div className="px-2 pb-2 space-y-2.5 border-t border-white/5 pt-2">
+                  <div className="px-2 pb-2 space-y-2.5 border-t border-[var(--sigma-border)] pt-2">
                     {section.subSections.map(sub => (
-                      <div key={sub.id} className="space-y-1.5 pl-2 border-l border-white/10">
+                      <div key={sub.id} className="space-y-1.5 pl-2 border-l border-[var(--sigma-border)]">
                         <div className="flex items-center justify-between pr-2">
                           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
                             {sub.title}
                           </span>
                           <button
                             onClick={() => navigate(sub.route)}
-                            className="text-[11px] font-mono text-zinc-400 hover:text-accent flex items-center gap-1 hover:underline"
+                            className="text-[11px] font-mono text-[var(--sigma-text-muted)] hover:text-accent flex items-center gap-1 hover:underline"
                           >
                             <span>Open</span>
                             <ArrowRight size={10} />
@@ -688,6 +688,7 @@ export default function EcosystemStatusBar({
                         <div className="space-y-1.5">
                           {sub.elements.map(el => {
                             const isOperational = el.status === 'OPERATIONAL';
+                            const wasRouted = Boolean(remediatedIds[el.id]);
                             const isExpandedFix = expandedFixId === el.id;
 
                             return (
@@ -696,7 +697,7 @@ export default function EcosystemStatusBar({
                                 className={cn(
                                   "p-2.5 rounded-lg border transition-all text-xs font-mono",
                                   isOperational
-                                    ? "bg-black/20 border-white/5 hover:border-white/15"
+                                    ? "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                                     : "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50"
                                 )}
                               >
@@ -705,11 +706,11 @@ export default function EcosystemStatusBar({
                                     <div className="flex items-center gap-2">
                                       <span className={cn(
                                         "w-2 h-2 rounded-full shrink-0",
-                                        isOperational ? "bg-green-400" : "bg-amber-400 animate-pulse"
+                                        isOperational ? "bg-green-400" : wasRouted ? "bg-amber-400" : "bg-amber-400 animate-pulse"
                                       )} />
-                                      <span className="font-bold text-white truncate text-xs">{el.name}</span>
+                                      <span className="font-bold text-[var(--sigma-text)] truncate text-xs">{el.name}</span>
                                     </div>
-                                    <p className="text-[10px] text-zinc-400 mt-1 leading-snug font-sans">
+                                    <p className="text-[10px] text-[var(--sigma-text-muted)] mt-1 leading-snug font-sans">
                                       {el.diagnosticDetail}
                                     </p>
                                   </div>
@@ -739,15 +740,28 @@ export default function EcosystemStatusBar({
                                         </button>
                                       </QuickFixAssistant>
                                     ) : (
-                                      <span className={cn(
-                                        "text-[11px] font-bold px-1.5 py-0.5 rounded uppercase block",
-                                        isOperational ? "bg-green-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
-                                      )}>
-                                        {el.status}
-                                      </span>
+                                      /* An element the operator routed to its tool
+                                         shows "awaiting verification", not a
+                                         WARNING badge — the panel has no health
+                                         endpoint to clear it back to OPERATIONAL. */
+                                      wasRouted ? (
+                                        <span
+                                          className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase block bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
+                                          title="Routed to its responsible tool; no fix was applied and none was verified."
+                                        >
+                                          Awaiting verification
+                                        </span>
+                                      ) : (
+                                        <span className={cn(
+                                          "text-[11px] font-bold px-1.5 py-0.5 rounded uppercase block",
+                                          isOperational ? "bg-green-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                                        )}>
+                                          {el.status}
+                                        </span>
+                                      )
                                     )}
                                     {el.latency && (
-                                      <span className="text-[11px] text-zinc-500 mt-0.5 block font-mono">
+                                      <span className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5 block font-mono">
                                         {el.latency}
                                       </span>
                                     )}
@@ -773,13 +787,13 @@ export default function EcosystemStatusBar({
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        className="space-y-2 text-[10px] bg-black/40 p-2 rounded-md border border-amber-500/20"
+                                        className="space-y-2 text-[10px] bg-[var(--sigma-surface-raised)] p-2 rounded-md border border-amber-500/20"
                                       >
-                                        <div className="text-amber-200 font-sans font-medium">
+                                        <div className="text-[var(--sigma-text)] font-sans font-medium">
                                           {el.howToFix.issueSummary}
                                         </div>
 
-                                        <ul className="space-y-1 text-zinc-300 font-mono text-[11px] list-disc list-inside">
+                                        <ul className="space-y-1 text-[var(--sigma-text-soft)] font-mono text-[11px] list-disc list-inside">
                                           {el.howToFix.actionableSteps.map((step, sIndex) => (
                                             <li key={sIndex} className="leading-tight">{step}</li>
                                           ))}
@@ -792,7 +806,7 @@ export default function EcosystemStatusBar({
                                                 navigate(el.howToFix.targetRoute);
                                               }
                                             }}
-                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[11px] font-mono text-zinc-300 hover:text-white flex items-center gap-1"
+                                            className="px-2 py-1 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] rounded text-[11px] font-mono text-[var(--sigma-text-soft)] hover:text-[var(--sigma-text)] flex items-center gap-1"
                                           >
                                             <span>Open Tool</span>
                                             <ExternalLink size={10} />

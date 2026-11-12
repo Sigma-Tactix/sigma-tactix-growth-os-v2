@@ -364,38 +364,46 @@ export default function VideoStudioPage() {
               </span>
             </div>
             {/* Dynamic Section Name strictly reflecting selected Aspect Ratio */}
-            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white md:text-3xl">
-              <Video className="h-7 w-7 text-[var(--sigma-vermilion)]" />
-              Video &amp; Motion Studio — Motion Video ({aspectRatio})
+            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-[var(--sigma-text)] min-w-0 md:text-3xl">
+              <Video className="h-7 w-7 shrink-0 text-[var(--sigma-vermilion)]" />
+              <span>Video &amp; Motion Studio — Motion Video ({aspectRatio})</span>
             </h1>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-400">
-              Synthesize storytelling explainers and open-weights AI videos with Wan2.1, LTX-Video, CogVideoX, and HyperFrames. Features 0.75x paced voiceover and ending frame branding for www.sigmatactix.com.
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
+              Storytelling explainers and open-weights reference stacks routed through the governed HyperFrames renderer: 0.75x paced voiceover and ending frame branding for www.sigmatactix.com.
             </p>
           </div>
 
           {/* Mode Switcher Tabs: Separate Normal Video vs Motion FX Video */}
-          <div className="flex items-center gap-2 bg-black/60 p-1.5 rounded-xl border border-white/10 shrink-0">
+          <div
+            role="tablist"
+            aria-label="Video mode"
+            className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl border border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] shrink-0"
+          >
             <button
+              role="tab"
+              aria-selected={videoMode === 'NORMAL'}
               onClick={() => setVideoMode('NORMAL')}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
+                "px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
                 videoMode === 'NORMAL'
-                  ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] shadow-md"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
-              <Video className="w-4 h-4" /> Normal Video Generation
+              <Video className="w-4 h-4" /> Normal Video
             </button>
             <button
+              role="tab"
+              aria-selected={videoMode === 'MOTION_FX'}
               onClick={() => setVideoMode('MOTION_FX')}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
+                "px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
                 videoMode === 'MOTION_FX'
-                  ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-blue-accent text-white shadow-md"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
-              <Sparkles className="w-4 h-4 text-purple-300" /> Motion FX Storytelling Video
+              <Sparkles className="w-4 h-4" /> Motion FX
             </button>
           </div>
         </div>
@@ -425,6 +433,7 @@ export default function VideoStudioPage() {
                     key={model.id}
                     onClick={() => wired && setSelectedModel(model.id)}
                     disabled={!wired}
+                    aria-pressed={wired && selectedModel === model.id}
                     className={cn(
                       "w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between",
                       selectedModel === model.id && wired

@@ -525,7 +525,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {TOPIC_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -559,7 +559,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {AUDIENCE_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -624,7 +624,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {CAPTION_PRESETS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -690,11 +690,18 @@ export default function SocialCarouselsPage() {
           {channel === 'X_Thread' ? (
             /* Twitter Thread View */
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-                  <Twitter className="w-4 h-4 text-sky-accent" />
-                  X / Twitter Thread ({threadTweets.length} Tweets)
-                </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                    <Twitter className="w-4 h-4 text-sky-accent" />
+                    X / Twitter Thread ({threadTweets.length} Tweets)
+                  </h3>
+                  {isDemoSeedEnabled() && threadTweets.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25">
+                      demo seed
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     const fullThread = threadTweets.map(t => t.text).join('\n\n---\n\n');
@@ -734,14 +741,19 @@ export default function SocialCarouselsPage() {
             /* Visual Carousel Card Viewer */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--sigma-text)]">Visual Slide Deck Preview</h3>
                   <span className="text-xs text-[var(--sigma-text-muted)]">{slides.length} slides, 4:5 portrait</span>
+                  {isDemoSeedEnabled() && slides.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25">
+                      demo seed
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsScheduleModalOpen(true)}
-                    className="px-3 py-1.5 text-xs flex items-center gap-1.5 bg-amber-400 text-black font-semibold rounded-lg hover:bg-amber-300 transition-all cursor-pointer shadow-sm"
+                    className="px-3 py-1.5 text-xs flex items-center gap-1.5 bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] font-semibold rounded-lg hover:bg-[var(--sigma-primary-hover)] transition-all cursor-pointer shadow-sm"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     <span>Schedule via Social Hub</span>

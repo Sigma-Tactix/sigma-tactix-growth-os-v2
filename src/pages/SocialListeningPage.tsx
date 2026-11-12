@@ -355,7 +355,7 @@ export default function SocialListeningPage() {
               Incoming Mentions Stream ({filteredMentions.length})
             </div>
             {seedMentions.length > 0 && (
-              <span className="text-[10px] font-mono text-amber-400/90">
+              <span className="text-[10px] font-mono text-amber-accent">
                 includes seeded sample — not live captures
               </span>
             )}
@@ -385,7 +385,7 @@ export default function SocialListeningPage() {
                   <span className="font-semibold text-[var(--sigma-text)]">
                     {item.authorHandle}
                     {item.isSeeded && (
-                      <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/90 border border-amber-500/20 text-[9px] uppercase tracking-wide">
+                      <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-accent/10 text-amber-accent border border-amber-accent/25 text-[9px] uppercase tracking-wide">
                         Seeded sample
                       </span>
                     )}
@@ -523,7 +523,7 @@ export default function SocialListeningPage() {
             >
               <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-accent">
+                  <div className="w-8 h-8 rounded-xl bg-amber-accent/10 border border-amber-accent/30 flex items-center justify-center text-amber-accent">
                     <Wifi size={16} />
                   </div>
                   <div>
@@ -573,7 +573,7 @@ export default function SocialListeningPage() {
                         className={cn(
                           'p-2.5 rounded-xl border text-xs font-mono flex flex-col items-center gap-1.5 transition-all cursor-pointer',
                           scanChannel === item.id
-                            ? 'bg-amber-500/20 text-amber-accent border-amber-500/40 font-bold'
+                            ? 'bg-amber-accent/15 text-amber-accent border-amber-accent/40 font-bold'
                             : 'bg-[var(--sigma-surface)] text-[var(--sigma-text-muted)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text)]'
                         )}
                       >
@@ -619,7 +619,7 @@ export default function SocialListeningPage() {
             >
               <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <div className="w-8 h-8 rounded-xl bg-rose-accent/10 border border-rose-accent/30 flex items-center justify-center text-rose-accent">
                     <Swords size={16} />
                   </div>
                   <div>
@@ -680,7 +680,7 @@ export default function SocialListeningPage() {
                 <div className="space-y-4 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="px-2.5 py-0.5 text-[10px] font-mono bg-amber-500/10 text-amber-accent border border-amber-500/30 rounded-full uppercase font-bold">
+                      <span className="px-2.5 py-0.5 text-[10px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/30 rounded-full uppercase font-bold">
                         Verified Battlecard
                       </span>
                       <h4 className="text-base font-bold text-[var(--sigma-text)] mt-1">{activeBattlecard.competitorName}</h4>
@@ -701,7 +701,7 @@ export default function SocialListeningPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
+                    <div className="p-3.5 rounded-xl bg-emerald-accent/5 border border-emerald-accent/20 space-y-1.5">
                       <div className="text-[10px] font-mono text-emerald-accent uppercase font-bold flex items-center gap-1">
                         <CheckCircle2 size={12} /> Claimed Strengths
                       </div>
