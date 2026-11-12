@@ -45,14 +45,9 @@ export default function CarouselCardViewer({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const totalSlides = slides.length;
-  const currentSlide = slides[currentSlideIndex] || slides[0] || {
-    slideNumber: 1,
-    badge: 'STRATEGIC AUDIT',
-    title: topic,
-    subtitle: 'Autonomous Growth Architecture',
-    contentPoints: ['Continuous pipeline qualification', 'Zero-knowledge-loss Second Brain', 'Human-in-the-loop governance'],
-    takeaway: 'Client-owned systems compound. Rented retainers evaporate.'
-  };
+  // No fabricated placeholder slide: when the deck is empty the viewer
+  // renders an honest empty state instead of invented content.
+  const currentSlide = slides[currentSlideIndex];
 
   useEffect(() => {
     // Whenever slides update, immediately reset to slide 0 so new slides are displayed
@@ -74,6 +69,24 @@ export default function CarouselCardViewer({
   const goToPrev = () => {
     if (currentSlideIndex > 0) {
       setCurrentSlideIndex(prev => prev - 1);
+    }
+  };
+
+  // Keyboard navigation on the stage: arrows step slides, digits jump.
+  // (Slide reset on prop change is already handled by the slides effect above.)
+  const handleStageKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goToNext();
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goToPrev();
+    } else if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      const idx = Number(event.key);
+      if (idx >= 1 && idx <= totalSlides) {
+        setCurrentSlideIndex(idx - 1);
+      }
     }
   };
 
@@ -640,11 +653,25 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     }
   };
 
+  // Honest empty state: a fresh tenant with no generated slides gets a clear
+  // instruction, not a fabricated placeholder slide.
+  if (slides.length === 0 || !currentSlide) {
+    return (
+      <div className="sigma-panel p-10 text-center space-y-2">
+        <Layers className="w-5 h-5 text-[var(--sigma-text-muted)] mx-auto" />
+        <p className="text-sm text-[var(--sigma-text-soft)]">No slides to preview yet.</p>
+        <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed">
+          Generate a provider-backed carousel or repurpose a source via Agent Reach to render the visual deck here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Top Toolbar: Aspect Ratio, Theme, and Bulk Actions */}
       <div className="sigma-panel flex flex-wrap items-center justify-between gap-3 p-3.5">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 min-w-0">
           <div className="flex items-center gap-1.5 bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
             <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] px-2">Ratio:</span>
             <button
