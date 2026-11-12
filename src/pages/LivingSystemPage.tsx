@@ -33,32 +33,32 @@ export default function LivingSystemPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold tracking-wider text-white uppercase">VANTA</h1>
+              <h1 className="text-sm font-bold tracking-wider text-[var(--sigma-text)] uppercase">VANTA</h1>
               <Badge variant="vermilion" size="sm">Sigma Intelligence</Badge>
             </div>
-            <p className="text-[11px] text-zinc-400">Inspects evidence, explains causality, and proposes work. Never executes silently.</p>
+            <p className="text-[11px] text-[var(--sigma-text-muted)]">Inspects evidence, explains causality, and proposes work. Never executes silently.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl border border-[var(--sigma-border)] bg-black/25 p-1" role="tablist" aria-label="Living System view">
-            <button type="button" role="tab" aria-selected={surface === 'vanta'} onClick={() => setSurface('vanta')} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition ${surface === 'vanta' ? 'bg-[var(--sigma-vermilion)]/15 text-orange-100' : 'text-zinc-500 hover:text-zinc-200'}`}>
+          <div className="flex rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-1" role="tablist" aria-label="Living System view">
+            <button type="button" role="tab" aria-selected={surface === 'vanta'} onClick={() => setSurface('vanta')} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition ${surface === 'vanta' ? 'bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-text)]' : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'}`}>
               <Orbit size={12} /> VANTA Core
             </button>
-            <button type="button" role="tab" aria-selected={surface === 'map'} onClick={() => setSurface('map')} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition ${surface === 'map' ? 'bg-[var(--sigma-vermilion)]/15 text-orange-100' : 'text-zinc-500 hover:text-zinc-200'}`}>
+            <button type="button" role="tab" aria-selected={surface === 'map'} onClick={() => setSurface('map')} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition ${surface === 'map' ? 'bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-text)]' : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'}`}>
               <BrainCircuit size={12} /> System Map
             </button>
           </div>
           {state.provider.decisionRuntime && (
             <span
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-black/30 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 md:flex"
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] md:flex"
               title={state.provider.decisionRuntime.detail}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${state.provider.decisionRuntime.reachable ? 'bg-violet-400' : 'bg-zinc-600'}`} />
               Laya · {state.provider.decisionRuntime.state.replace('_', ' ')}
             </span>
           )}
-          <span className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-black/30 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-400 sm:flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--sigma-text-muted)] sm:flex">
             <span className={`h-1.5 w-1.5 rounded-full ${state.provider.verified ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
             {state.provider.label}
           </span>
@@ -66,7 +66,7 @@ export default function LivingSystemPage() {
           <button
             type="button"
             onClick={() => setTranscriptOpen(!transcriptOpen)}
-            className={`rounded-xl border p-2 text-xs transition ${transcriptOpen ? 'border-[var(--sigma-vermilion)]/40 bg-[var(--sigma-vermilion)]/10 text-white' : 'border-[var(--sigma-border)] text-zinc-400 hover:text-white bg-[var(--sigma-surface)]'}`}
+            className={`rounded-xl border p-2 text-xs transition ${transcriptOpen ? 'border-[var(--sigma-vermilion)]/40 bg-[var(--sigma-vermilion)]/10 text-[var(--sigma-text)]' : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] bg-[var(--sigma-surface)]'}`}
             aria-label="Toggle transcript"
           >
             <MessageSquareText size={16} />
