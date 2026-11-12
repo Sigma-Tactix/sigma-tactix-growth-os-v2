@@ -712,7 +712,7 @@ export default function SocialListeningPage() {
                       </ul>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-rose-500/5 border border-rose-500/20 space-y-1.5">
+                    <div className="p-3.5 rounded-xl bg-rose-accent/5 border border-rose-accent/20 space-y-1.5">
                       <div className="text-[10px] font-mono text-rose-accent uppercase font-bold flex items-center gap-1">
                         <AlertTriangle size={12} /> Operational Vulnerabilities
                       </div>
@@ -724,7 +724,7 @@ export default function SocialListeningPage() {
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1">
+                  <div className="p-3.5 rounded-xl bg-amber-accent/5 border border-amber-accent/20 space-y-1">
                     <div className="text-[10px] font-mono text-amber-accent uppercase font-bold">
                       Strategic Counter-Positioning
                     </div>
