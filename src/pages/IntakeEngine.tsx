@@ -172,11 +172,11 @@ export default function IntakeEngine() {
                 <Zap size={12} className="mr-1 inline" /> Automated Onboarding
               </Badge>
               <Badge variant="success" size="sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-accent inline-block mr-1.5 animate-pulse" />
                 Audit Routing Active
               </Badge>
             </div>
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
               Dynamic Intake & Configuration Engine
             </h1>
             <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
@@ -193,7 +193,7 @@ export default function IntakeEngine() {
             <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
               <div className="flex items-center gap-2.5">
                 <FileSpreadsheet size={18} className="text-[var(--sigma-vermilion)]" />
-                <h3 className="text-base font-bold text-white">Client Onboarding Questionnaire</h3>
+                <h3 className="text-base font-bold text-[var(--sigma-text)]">Client Onboarding Questionnaire</h3>
               </div>
               <span className="text-[10px] font-mono text-zinc-500 uppercase">Interactive Schema v3.2</span>
             </div>
@@ -221,7 +221,7 @@ export default function IntakeEngine() {
                   <select
                     value={formData.monthlyRevenue}
                     onChange={(e) => setFormData({ ...formData, monthlyRevenue: e.target.value })}
-                    className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                    className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-vermilion)]"
                   >
                     <option value="">Not specified</option>
                     <option value="< $50k">&lt; $50k ARR</option>
@@ -263,13 +263,13 @@ export default function IntakeEngine() {
                   rows={2}
                   value={formData.primaryBottleneck}
                   onChange={(e) => setFormData({ ...formData, primaryBottleneck: e.target.value })}
-                  className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                  className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:border-[var(--sigma-vermilion)]"
                 />
               </div>
 
               <div className="pt-4 flex items-center justify-between border-t border-[var(--sigma-border)]">
                 <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <ShieldCheck size={14} className="text-emerald-accent" />
                   <span>Persisted to your tenant's Second Brain (RLS-scoped)</span>
                 </div>
 
@@ -294,7 +294,7 @@ export default function IntakeEngine() {
             <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-3">
               <div className="flex items-center gap-2">
                 <Cpu size={16} className="text-[var(--sigma-vermilion)]" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Audit-to-Configuration Pipeline</h3>
+                <h3 className="text-xs font-bold text-[var(--sigma-text)] uppercase tracking-wider">Audit-to-Configuration Pipeline</h3>
               </div>
               <Badge variant="outline" size="sm">Auto-Router Active</Badge>
             </div>
@@ -315,7 +315,7 @@ export default function IntakeEngine() {
                     "p-3.5 rounded-xl border transition-all",
                     isSubmitting && activePipelineStep === i + 1 
                       ? "bg-[var(--sigma-surface-raised)] border-[var(--sigma-vermilion)]/60 shadow-md ring-1 ring-[var(--sigma-vermilion)]/30" 
-                      : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-white/15"
+                      : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1.5">
@@ -324,13 +324,13 @@ export default function IntakeEngine() {
                     <span className="text-[10px] font-mono text-[var(--sigma-vermilion)] font-semibold">{route.targetVault.split(' ')[0]}</span>
                   </div>
 
-                  <div className="text-xs font-semibold text-white mb-1">
+                  <div className="text-xs font-semibold text-[var(--sigma-text)] mb-1">
                     {route.actionTriggered}
                   </div>
 
                   <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-[var(--sigma-border)]">
                     <span className="text-zinc-500">Arming Agent:</span>
-                    <span className="text-zinc-200 font-medium">{route.activeModule}</span>
+                    <span className="text-[var(--sigma-text)] font-medium">{route.activeModule}</span>
                   </div>
                 </motion.div>
               ))}
@@ -341,13 +341,13 @@ export default function IntakeEngine() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 space-y-2"
+                className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-accent space-y-2"
               >
                 <div className="flex items-center gap-2 font-semibold text-xs">
-                  <CheckCircle2 size={15} className="text-emerald-400" />
+                  <CheckCircle2 size={15} className="text-emerald-accent" />
                   <span>Questionnaire Persisted to the Second Brain</span>
                 </div>
-                <p className="text-[11px] text-emerald-200/80 leading-relaxed font-sans">
+                <p className="text-[11px] text-emerald-accent/80 leading-relaxed font-sans">
                   {previousWritten.length > 0
                     ? `Written: ${previousWritten.join(' · ')}`
                     : 'All optional fields were left blank; required fields were verified.'}
@@ -367,8 +367,8 @@ export default function IntakeEngine() {
 
           {/* Quick Info Box */}
           <GlassCard elevation="flat" className="p-5 border border-[var(--sigma-border)] space-y-2 text-xs text-zinc-400">
-            <h4 className="font-semibold text-white flex items-center gap-2">
-              <ShieldCheck size={16} className="text-emerald-400" /> Strict Vault Boundary Guarantee
+            <h4 className="font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-accent" /> Strict Vault Boundary Guarantee
             </h4>
             <p className="leading-relaxed text-zinc-400">
               Data ingested via this form is tagged with security classifications and isolated to your tenant schema. External agents cannot query outside their scoped RBAC permissions.

@@ -538,33 +538,57 @@ export default function SeoAeoPage() {
         </div>
       </GlassCard>
 
-      {/* Metric Highlights Strip */}
+      {/* Metric Highlights Strip — demo figures are demo-gated; a real
+          workspace renders measured states, never invented KPIs. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricWidget
-          label="Blended AEO Citation Rate"
-          value="83.4%"
-          delta={{ value: "+18.2% vs last mo", trend: "up" }}
-          subtext="Cited in 4 of 5 major LLMs"
-        />
-
-        <MetricWidget
-          label="Tracked Keyword Clusters"
-          value="3 Pillars / 11 Spokes"
-          subtext="Total search volume: 39.2k/mo"
-        />
-
-        <MetricWidget
-          label="Top Citation Engine"
-          value="Perplexity AI"
-          subtext="Rank #1.4 average position"
-        />
-
-        <MetricWidget
-          label="Structured Schema Health"
-          value="98.5%"
-          delta={{ value: "Valid", trend: "up" }}
-          subtext="JSON-LD valid & indexed"
-        />
+        {showSampleBanner ? (
+          <>
+            <MetricWidget
+              label="Blended AEO Citation Rate (Demo)"
+              value="83.4%"
+              delta={{ value: "+18.2% vs last mo", trend: "up" }}
+              subtext="Modeled demo figure, not measured"
+            />
+            <MetricWidget
+              label="Tracked Keyword Clusters (Demo)"
+              value="3 Pillars / 11 Spokes"
+              subtext="Modeled demo volume: 39.2k/mo"
+            />
+            <MetricWidget
+              label="Top Citation Engine (Demo)"
+              value="Perplexity AI"
+              subtext="Modeled demo rank #1.4, not measured"
+            />
+            <MetricWidget
+              label="Structured Schema Health (Demo)"
+              value="98.5%"
+              subtext="Illustrative benchmark, not a live audit"
+            />
+          </>
+        ) : (
+          <>
+            <MetricWidget
+              label="Blended AEO Citation Rate"
+              value="Not measured"
+              subtext="No LLM citation source connected"
+            />
+            <MetricWidget
+              label="Tracked Keyword Clusters"
+              value={clusters.length > 0 ? `${clusters.length} tracked` : "None yet"}
+              subtext="Connect Search Console to build clusters"
+            />
+            <MetricWidget
+              label="Top Citation Engine"
+              value="Not measured"
+              subtext="No citation source connected"
+            />
+            <MetricWidget
+              label="Structured Schema Templates"
+              value={Object.keys(SCHEMA_DEFINITIONS).length}
+              subtext="Local JSON-LD templates, not a live audit"
+            />
+          </>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -952,7 +976,7 @@ export default function SeoAeoPage() {
               <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
                 <div className="font-bold text-white">Sub-Agent 3: AURORA-SUB-3</div>
                 <div className="text-zinc-400 text-[11px]">Backlink Quality & Entity Hunter</div>
-                <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (22 tasks completed)</div>
+                <div className="text-zinc-400 font-mono text-[10px]">Status: IDLE — no runs in this workspace yet</div>
               </div>
             </div>
           </div>
