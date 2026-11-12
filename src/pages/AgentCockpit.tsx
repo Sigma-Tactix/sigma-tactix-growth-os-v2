@@ -215,8 +215,8 @@ export default function AgentCockpit() {
 
   const handleBatchBenchmark = () => {
     notifyInfo(
-      'Batch Benchmark Enqueued',
-      `Enqueued parallel test suites across ${selectedAgentIds.length} selected agents in BullMQ.`
+      'Batch Benchmark Not Submitted',
+      `${selectedAgentIds.length} agents marked for benchmarking. No test suite was submitted — server-side benchmarking is not connected yet.`
     );
   };
 
@@ -419,7 +419,7 @@ export default function AgentCockpit() {
           { phase: '05 Rehearsal complete', description: 'Local rehearsal finished — no server run, no persisted state', timestamp: '00:00:18', status: 'completed' }
         ],
         traceLog: [
-          `[00:00:01] [SIM] Rehearsal step: task "agent.codename" staged locally`,
+          `[00:00:01] [SIM] Rehearsal step: task "${taskName}" staged locally`,
           `[00:00:02] [SIM] Rehearsal step: allowed read vaults shown as ${agent.readVaults.join(', ')}`,
           `[00:00:04] [SIM] Rehearsal step: planning phase described, not executed`,
           `[00:00:09] [SIM] Rehearsal step: illustrative tool call only`,
@@ -467,15 +467,15 @@ export default function AgentCockpit() {
           agentCodename: agent.codename,
           level: 'INFO',
           category: 'QUEUE',
-          message: `Run #${runId} finished in 18s. PostgreSQL transaction committed to ${agent.writeVaults[0]}.`,
+          message: `Rehearsal run #${runId} finished in 18s. Local rehearsal only — nothing was committed or persisted.`,
           durationMs: 18000
         },
         ...prev
       ]);
 
-      notifySuccess(
-        `${agent.name} Execution Completed`,
-        `Task "${taskName}" completed in 18s. State committed to ${agent.writeVaults[0]}.`,
+      notifyInfo(
+        `${agent.name} Rehearsal Completed`,
+        `Task "${taskName}" finished its local rehearsal in 18s. No agent was dispatched and no state was persisted.`,
         { category: 'AGENT' }
       );
     }, 4800);
@@ -699,7 +699,7 @@ export default function AgentCockpit() {
               key={task.id}
               className={cn(
                 "p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3.5 bg-[var(--sigma-surface-subtle)]",
-                task.status === 'PENDING' ? "border-[#ff481b]/30 shadow-md" :
+                task.status === 'PENDING' ? "border-[var(--sigma-primary)]/30 shadow-md" :
                 task.status === 'APPROVED' ? "border-emerald-500/20 opacity-70" :
                 "border-rose-500/20 opacity-70"
               )}
@@ -716,7 +716,7 @@ export default function AgentCockpit() {
                 </div>
 
                 <h4 className="text-xs font-semibold text-[var(--sigma-text)] leading-snug">{task.title}</h4>
-                <div className="text-[10px] font-mono text-[#ff481b] mt-0.5">{task.agentName}</div>
+                <div className="text-[10px] font-mono text-[var(--sigma-primary)] mt-0.5">{task.agentName}</div>
 
                 <p className="text-xs text-[var(--sigma-text-soft)] mt-2.5 bg-[var(--sigma-bg)] p-2.5 rounded-lg border border-[var(--sigma-border)] leading-relaxed">
                   {task.proposedAction}
@@ -724,7 +724,7 @@ export default function AgentCockpit() {
 
                 <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2.5 space-y-1">
                   <div><strong className="text-[var(--sigma-text)]">Rationale:</strong> {task.rationale}</div>
-                  <div><strong className="text-[#ff481b]">Expected Impact:</strong> {task.impactEstimate}</div>
+                  <div><strong className="text-[var(--sigma-primary)]">Expected Impact:</strong> {task.impactEstimate}</div>
                   <div><strong className="text-[var(--sigma-text-muted)]">Target Vault:</strong> {task.vaultAffected}</div>
                 </div>
               </div>
@@ -794,7 +794,7 @@ export default function AgentCockpit() {
                 title={selectedAgentIds.length === agents.length ? "Deselect All Agents" : "Select All Agents"}
               >
                 {selectedAgentIds.length === agents.length ? (
-                  <CheckSquare size={16} className="text-[#ff481b]" />
+                  <CheckSquare size={16} className="text-[var(--sigma-primary)]" />
                 ) : (
                   <Square size={16} className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]" />
                 )}
@@ -886,7 +886,7 @@ export default function AgentCockpit() {
               <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--sigma-border)] text-[10px] font-mono text-[var(--sigma-text-muted)]">
                 <span>Skills: <strong className="text-[var(--sigma-text)] font-semibold">{orchestratorAgent.skills.length}</strong></span>
                 <span>Sub-Agents: <strong className="text-purple-400 font-semibold">{orchestratorAgent.subAgents.length}</strong></span>
-                <span>Accuracy: <strong className="text-[#ff481b] font-semibold">{orchestratorAgent.accuracyRate}</strong></span>
+                <span>Accuracy: <strong className="text-[var(--sigma-primary)] font-semibold">{orchestratorAgent.accuracyRate}</strong></span>
               </div>
             </GlassCard>
           )}
@@ -908,9 +908,9 @@ export default function AgentCockpit() {
                   className={cn(
                     "p-3.5 text-left transition-all",
                     isSelected 
-                      ? "ring-1 ring-[#ff481b]/50 border-[#ff481b]/40 shadow-sm" 
+                      ? "ring-1 ring-[var(--sigma-primary)]/50 border-[var(--sigma-primary)]/40 shadow-sm" 
                       : isMultiSelected
-                        ? "border-[#ff481b]/25 bg-[#ff481b]/5"
+                        ? "border-[var(--sigma-primary)]/25 bg-[var(--sigma-primary)]/5"
                         : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                   )}
                 >
@@ -923,13 +923,13 @@ export default function AgentCockpit() {
                         title={isMultiSelected ? "Deselect Agent" : "Select Agent for Batch Operations"}
                       >
                         {isMultiSelected ? (
-                          <CheckSquare size={14} className="text-[#ff481b]" />
+                          <CheckSquare size={14} className="text-[var(--sigma-primary)]" />
                         ) : (
                           <Square size={14} className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]" />
                         )}
                       </button>
 
-                      <span className="font-mono text-xs font-semibold text-[#ff481b]">{agent.codename}</span>
+                      <span className="font-mono text-xs font-semibold text-[var(--sigma-primary)]">{agent.codename}</span>
                       <h4 className="font-semibold text-xs text-[var(--sigma-text)] truncate">{agent.name}</h4>
                     </div>
 
@@ -1014,7 +1014,7 @@ export default function AgentCockpit() {
                   <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[var(--sigma-border)] text-[10px] font-mono text-[var(--sigma-text-muted)]">
                     <span>Skills: <strong className="text-[var(--sigma-text)] font-semibold">{agent.skills.length}</strong></span>
                     <span>Sub-Agents: <strong className="text-[var(--sigma-primary)] font-semibold">{agent.subAgents.length}</strong></span>
-                    <span>Accuracy: <strong className="text-[#ff481b] font-semibold">{agent.accuracyRate}</strong></span>
+                    <span>Accuracy: <strong className="text-[var(--sigma-primary)] font-semibold">{agent.accuracyRate}</strong></span>
                   </div>
                 </GlassCard>
               );
@@ -1113,7 +1113,7 @@ export default function AgentCockpit() {
                 {/* RBAC Vault Access Matrix */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-mono uppercase text-muted tracking-widest flex items-center gap-2">
-                    <Lock size={12} className="text-secondary" /> Enforced RBAC Vault Clearance Matrix
+                    <Lock size={12} className="text-accent" /> Enforced RBAC Vault Clearance Matrix
                   </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1170,7 +1170,7 @@ export default function AgentCockpit() {
                 </div>
 
                 {/* Live Run Execution Monitor & Trace Log */}
-                <div className="space-y-3 pt-4 border-t border-white/5">
+                <div className="space-y-3 pt-4 border-t border-[var(--sigma-border)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Terminal size={16} className="text-accent" />
@@ -1229,7 +1229,7 @@ export default function AgentCockpit() {
                     </div>
                   ) : (
                     <div className="p-6 text-center bg-black/20 rounded-xl border border-dashed border-white/10 text-xs text-muted font-mono">
-                      No active execution. Click &quot;Trigger Run&quot; above to launch a verified lifecycle trace for {selectedAgent.codename}.
+                      No active execution. Click &ldquo;Trigger Run&rdquo; above to launch a local rehearsal trace for {selectedAgent.codename}. Nothing is dispatched or persisted until a verified server run exists.
                     </div>
                   )}
                 </div>
@@ -1368,10 +1368,10 @@ export default function AgentCockpit() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--sigma-surface)]/95 border border-[#ff481b]/30 shadow-2xl rounded-2xl p-2 px-3.5 backdrop-blur-2xl flex items-center gap-3 sm:gap-4"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--sigma-surface)]/95 border border-[var(--sigma-primary)]/30 shadow-2xl rounded-2xl p-2 px-3.5 backdrop-blur-2xl flex items-center gap-3 sm:gap-4"
           >
             <div className="flex items-center gap-2 border-r border-[var(--sigma-border)] pr-3 sm:pr-4">
-              <span className="w-2 h-2 rounded-full bg-[#ff481b] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[var(--sigma-primary)] animate-pulse" />
               <div className="text-xs font-mono font-medium text-[var(--sigma-text)] whitespace-nowrap">
                 <span className="font-bold">{selectedAgentIds.length}</span>
                 <span className="text-[var(--sigma-text-muted)] font-normal"> of {agents.length} Selected</span>
@@ -1406,7 +1406,7 @@ export default function AgentCockpit() {
                 variant="secondary"
                 size="xs"
                 onClick={handleBatchExport}
-                icon={<Download size={13} className="text-[#ff481b]" />}
+                icon={<Download size={13} className="text-[var(--sigma-primary)]" />}
               >
                 Export Bundle (.md)
               </Button>

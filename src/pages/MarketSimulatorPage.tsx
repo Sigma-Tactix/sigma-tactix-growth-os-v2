@@ -219,7 +219,7 @@ export default function MarketSimulatorPage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Badge variant="vermilion">EVIDENCE-GROUNDED REHEARSAL</Badge>
-              <span className="text-zinc-600 text-xs">•</span>
+              <span className="text-muted text-xs">•</span>
               <Badge variant={providerState === 'unconfigured' ? 'warning' : 'success'}>
                 {providerState === 'fixture'
                   ? 'MIROFISH FIXTURE SANDBOX (ACTIVE)'
@@ -228,11 +228,11 @@ export default function MarketSimulatorPage() {
                   : 'SETUP REQUIRED'}
               </Badge>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
               <Swords className="w-7 h-7 text-[var(--sigma-vermilion)]" />
               Market Scenario Simulator (MiroFish)
             </h1>
-            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+            <p className="text-muted text-sm mt-1 max-w-2xl leading-relaxed">
               Rehearse buyer objections, persona sentiment, and rival retaliation rounds before launching live campaigns or changing pricing.
             </p>
           </div>
@@ -279,10 +279,10 @@ export default function MarketSimulatorPage() {
       {/* Preset Selector */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-[var(--sigma-vermilion)]" /> Scenario Rehearsal Presets
           </span>
-          <span className="text-xs text-zinc-500">Pick a preset or customize below</span>
+          <span className="text-xs text-muted">Pick a preset or customize below</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {PRESET_SCENARIOS.map(preset => {
@@ -295,16 +295,16 @@ export default function MarketSimulatorPage() {
                 className={cn(
                   "p-4 rounded-xl border text-left transition-all cursor-pointer relative",
                   isSelected
-                    ? "bg-amber-400/10 border-amber-400/50 text-white shadow-lg shadow-amber-500/5 ring-1 ring-amber-400/30"
-                    : "bg-zinc-900/40 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                    ? "bg-amber-400/10 border-amber-400/50 text-[var(--sigma-text)] shadow-lg shadow-amber-500/5 ring-1 ring-amber-400/30"
+                    : "bg-[var(--sigma-surface-subtle)]/50 border-border text-muted hover:border-border-strong hover:text-[var(--sigma-text-soft)]"
                 )}
               >
                 <div className="flex items-center justify-between text-[11px] font-mono mb-1">
                   <Badge variant={isSelected ? "vermilion" : "neutral"} size="xs">{preset.badge}</Badge>
-                  {isSelected && <span className="text-amber-400 text-xs font-semibold">Selected</span>}
+                  {isSelected && <span className="text-amber-accent text-xs font-semibold">Selected</span>}
                 </div>
-                <div className="font-semibold text-sm text-white mt-2 truncate">{preset.title}</div>
-                <div className="text-xs text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{preset.question}</div>
+                <div className="font-semibold text-sm text-[var(--sigma-text)] mt-2 truncate">{preset.title}</div>
+                <div className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{preset.question}</div>
               </button>
             );
           })}
@@ -313,12 +313,12 @@ export default function MarketSimulatorPage() {
 
       {/* Scenario Configuration Box */}
       <GlassCard elevation="raised" className="p-6 space-y-5">
-        <div className="border-b border-zinc-800/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="border-b border-border pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-[var(--sigma-text)] flex items-center gap-2">
               <Target className="w-5 h-5 text-amber-accent" /> Scenario Configuration
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Specify the exact research hypothesis, target market question, and boundary assumptions.
             </p>
           </div>
@@ -336,38 +336,38 @@ export default function MarketSimulatorPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Scenario Title</label>
+              <label className="block text-xs font-medium text-[var(--sigma-text-soft)] mb-1.5">Scenario Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full bg-zinc-950/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/50"
+                className="w-full bg-[var(--sigma-input)] border border-border rounded-lg px-3.5 py-2.5 text-sm text-[var(--sigma-text)] focus:outline-none focus:border-amber-400/50"
                 placeholder="e.g. Rival 20% Discount Response Rehearsal"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Research Question</label>
+              <label className="block text-xs font-medium text-[var(--sigma-text-soft)] mb-1.5">Research Question</label>
               <textarea
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 rows={3}
-                className="w-full bg-zinc-950/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/50 resize-none"
+                className="w-full bg-[var(--sigma-input)] border border-border rounded-lg px-3.5 py-2.5 text-sm text-[var(--sigma-text)] focus:outline-none focus:border-amber-400/50 resize-none"
                 placeholder="How will our target buyer personas react to this market shift?"
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">Market Assumptions & Guardrails</label>
+            <label className="block text-xs font-medium text-[var(--sigma-text-soft)] mb-1.5">Market Assumptions & Guardrails</label>
             <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
               {assumptions.map((item, index) => (
-                <div key={index} className="flex items-center justify-between bg-zinc-950/60 border border-zinc-800/80 rounded-md px-3 py-1.5 text-xs text-zinc-300">
+                <div key={index} className="flex items-center justify-between bg-[var(--sigma-input)] border border-border rounded-md px-3 py-1.5 text-xs text-[var(--sigma-text-soft)]">
                   <span className="truncate pr-2">• {item}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveAssumption(index)}
-                    className="text-zinc-500 hover:text-red-400 text-xs shrink-0"
+                    className="text-muted hover:text-red-400 text-xs shrink-0"
                   >
                     ×
                   </button>
@@ -381,7 +381,7 @@ export default function MarketSimulatorPage() {
                 value={newAssumption}
                 onChange={e => setNewAssumption(e.target.value)}
                 placeholder="Add market assumption..."
-                className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400/50"
+                className="flex-1 bg-[var(--sigma-input)] border border-border rounded-lg px-3 py-1.5 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-amber-400/50"
               />
               <Button type="submit" variant="secondary" size="sm" icon={<Plus className="w-3 h-3" />}>
                 Add
@@ -396,14 +396,14 @@ export default function MarketSimulatorPage() {
         <GlassCard elevation="raised" className="p-6 text-center space-y-4 border-amber-400/30">
           <div className="flex items-center justify-center gap-3">
             <RefreshCw className="w-6 h-6 text-amber-accent animate-spin" />
-            <span className="text-base font-semibold text-white">
+            <span className="text-base font-semibold text-[var(--sigma-text)]">
               Running MiroFish Market Simulation (Round {simulationRound} of 10)
             </span>
           </div>
-          <p className="text-xs text-zinc-400 max-w-lg mx-auto">
+          <p className="text-xs text-muted max-w-lg mx-auto">
             Modeling buyer interactions across synthetic persona cohorts. Simulating objections, price elasticity, and competitive counter-messaging...
           </p>
-          <div className="w-full bg-zinc-950 rounded-full h-2 max-w-md mx-auto overflow-hidden">
+          <div className="w-full bg-[var(--sigma-surface-subtle)] rounded-full h-2 max-w-md mx-auto overflow-hidden">
             <div
               className="bg-amber-400 h-2 transition-all duration-300"
               style={{ width: `${(simulationRound / 10) * 100}%` }}
@@ -416,15 +416,15 @@ export default function MarketSimulatorPage() {
       {report && (
         <div className="space-y-6">
           <GlassCard elevation="raised" className="p-6 space-y-6 border-emerald-500/30 shadow-xl shadow-emerald-500/5">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-zinc-800/80 pb-5">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-border pb-5">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="success" size="sm">SIMULATION COMPLETED</Badge>
-                  <span className="text-zinc-600 text-xs">•</span>
-                  <span className="text-xs text-zinc-400 font-mono">10 Rounds Simulated</span>
+                  <span className="text-muted text-xs">•</span>
+                  <span className="text-xs text-muted font-mono">10 Rounds Simulated</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">{report.title}</h3>
-                <p className="text-sm text-zinc-300 mt-2 leading-relaxed max-w-4xl">
+                <h3 className="text-xl font-bold text-[var(--sigma-text)]">{report.title}</h3>
+                <p className="text-sm text-[var(--sigma-text-soft)] mt-2 leading-relaxed max-w-4xl">
                   {report.summary}
                 </p>
               </div>
@@ -443,14 +443,14 @@ export default function MarketSimulatorPage() {
 
             {/* Simulated Personas */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              <div className="p-4 rounded-xl bg-[var(--sigma-input)] border border-border space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-accent uppercase tracking-wider">
                   <Users className="w-4 h-4" /> Synthetic Buyer Personas
                 </div>
                 <div className="space-y-2">
                   {report.simulatedPersonas?.map((persona: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-zinc-300">
-                      <span className="text-amber-400 font-bold shrink-0">{idx + 1}.</span>
+                    <div key={idx} className="flex items-start gap-2 text-xs text-[var(--sigma-text-soft)]">
+                      <span className="text-amber-accent font-bold shrink-0">{idx + 1}.</span>
                       <span>{persona}</span>
                     </div>
                   ))}
@@ -458,13 +458,13 @@ export default function MarketSimulatorPage() {
               </div>
 
               {/* Key Objections */}
-              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
+              <div className="p-4 rounded-xl bg-[var(--sigma-input)] border border-border space-y-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-rose-400 uppercase tracking-wider">
                   <AlertTriangle className="w-4 h-4" /> Key Market Objections
                 </div>
                 <div className="space-y-2">
                   {report.keyObjections?.map((obj: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-zinc-300">
+                    <div key={idx} className="flex items-start gap-2 text-xs text-[var(--sigma-text-soft)]">
                       <span className="text-rose-400 font-bold shrink-0">•</span>
                       <span>{obj}</span>
                     </div>
@@ -473,13 +473,13 @@ export default function MarketSimulatorPage() {
               </div>
 
               {/* Predicted Counter-Moves */}
-              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
+              <div className="p-4 rounded-xl bg-[var(--sigma-input)] border border-border space-y-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-sky-400 uppercase tracking-wider">
                   <TrendingUp className="w-4 h-4" /> Predicted Rival Counter-Moves
                 </div>
                 <div className="space-y-2">
                   {report.predictedCounterMoves?.map((move: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-zinc-300">
+                    <div key={idx} className="flex items-start gap-2 text-xs text-[var(--sigma-text-soft)]">
                       <span className="text-sky-400 font-bold shrink-0">•</span>
                       <span>{move}</span>
                     </div>
@@ -490,7 +490,7 @@ export default function MarketSimulatorPage() {
 
             {/* Suggested Growth Experiments */}
             <div className="space-y-3 pt-2">
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[var(--sigma-vermilion)]" />
                 Actionable Growth Experiments (Human Approval Gated)
               </h4>
@@ -500,17 +500,17 @@ export default function MarketSimulatorPage() {
                   return (
                     <div
                       key={idx}
-                      className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800 flex flex-col justify-between gap-3"
+                      className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)]/50 border border-border flex flex-col justify-between gap-3"
                     >
                       <div>
                         <div className="flex items-center justify-between text-xs mb-1.5">
                           <Badge variant="outline" size="xs">{exp.targetSegment}</Badge>
                           <span className="text-emerald-400 text-xs font-mono font-medium">{exp.metric}</span>
                         </div>
-                        <h5 className="text-sm font-semibold text-white">{exp.title}</h5>
+                        <h5 className="text-sm font-semibold text-[var(--sigma-text)]">{exp.title}</h5>
                       </div>
-                      <div className="pt-2 flex items-center justify-between border-t border-zinc-800/60">
-                        <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+                      <div className="pt-2 flex items-center justify-between border-t border-border">
+                        <span className="text-[11px] text-muted flex items-center gap-1">
                           <Lock className="w-3 h-3" /> Requires HITL Approval
                         </span>
                         <Button

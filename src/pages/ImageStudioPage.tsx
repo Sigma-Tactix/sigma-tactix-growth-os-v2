@@ -423,7 +423,7 @@ export default function ImageStudioPage() {
       ]
     };
     setRunHistory(prev => [fallbackRun, ...prev]);
-    notifySuccess('Sovereign Graphic Generated', 'Synthesized resilient brand canvas asset.');
+    notifySuccess('Local Graphic Generated', 'On-device vector fallback created. This is a local template, not a provider image.');
   };
 
   // User-Selectable Download Handler (.PNG & .JPG)

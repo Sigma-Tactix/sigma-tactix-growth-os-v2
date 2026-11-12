@@ -165,14 +165,14 @@ export default function AgentReachPage() {
 
   const getChannelIcon = (id: string) => {
     switch (id) {
-      case 'youtube': return <Youtube size={18} className="text-red-400" />;
-      case 'twitter': return <Twitter size={18} className="text-sky-400" />;
-      case 'github': return <Github size={18} className="text-white" />;
-      case 'reddit': return <MessageSquare size={18} className="text-orange-400" />;
-      case 'linkedin': return <Linkedin size={18} className="text-blue-400" />;
-      case 'rss': return <Rss size={18} className="text-amber-400" />;
-      case 'v2ex': return <Radio size={18} className="text-emerald-400" />;
-      default: return <Globe size={18} className="text-zinc-400" />;
+      case 'youtube': return <Youtube size={18} className="text-rose-accent" />;
+      case 'twitter': return <Twitter size={18} className="text-sky-accent" />;
+      case 'github': return <Github size={18} className="text-[var(--sigma-text)]" />;
+      case 'reddit': return <MessageSquare size={18} className="text-amber-accent" />;
+      case 'linkedin': return <Linkedin size={18} className="text-blue-accent" />;
+      case 'rss': return <Rss size={18} className="text-amber-accent" />;
+      case 'v2ex': return <Radio size={18} className="text-emerald-accent" />;
+      default: return <Globe size={18} className="text-[var(--sigma-text-muted)]" />;
     }
   };
 
@@ -184,7 +184,7 @@ export default function AgentReachPage() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="vermilion">AGENT CAPABILITY</Badge>
-              <span className="text-zinc-600 text-xs">•</span>
+              <span className="text-[var(--sigma-text-muted)] text-xs">•</span>
               <Badge variant={isLoadingDoctor ? 'neutral' : (summary.cliAvailable ? 'success' : 'warning')}>
                 {isLoadingDoctor ? 'CHECKING RUNTIME...' : (summary.cliAvailable ? `RUNTIME ${summary.cliVersion || 'DETECTED'}` : 'RUNTIME UNAVAILABLE')}
               </Badge>
@@ -193,11 +193,11 @@ export default function AgentReachPage() {
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
               <Radio className="w-7 h-7 text-[var(--sigma-vermilion)]" />
               Internet Capability Router
             </h1>
-            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-2xl leading-relaxed">
               Evidence-backed routing across supported research channels. A channel is marked ready only when the Agent Reach doctor reports a working backend.
             </p>
           </div>
@@ -306,7 +306,7 @@ export default function AgentReachPage() {
       )}
 
       {/* 3. Interactive Live Extraction Sandbox */}
-      <div className="p-8 rounded-3xl bg-zinc-950/70 border border-white/10 backdrop-blur-2xl shadow-xl space-y-6">
+      <div id="agent-reach-sandbox" className="p-8 rounded-3xl bg-zinc-950/70 border border-white/10 backdrop-blur-2xl shadow-xl space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold mb-1">
@@ -461,7 +461,7 @@ export default function AgentReachPage() {
 
       {/* 4. Filter & Search Toolbar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 p-1 bg-surface/60 border border-white/10 rounded-2xl backdrop-blur-xl">
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-2xl backdrop-blur-xl">
           {(['ALL', 'READY', 'TIER_0', 'TIER_1', 'TIER_2'] as const).map(tier => (
             <button
               key={tier}
@@ -469,8 +469,8 @@ export default function AgentReachPage() {
               className={cn(
                 'px-4 py-2 rounded-xl text-xs font-mono uppercase transition-all cursor-pointer',
                 filterTier === tier
-                  ? 'bg-amber-500 text-black font-bold shadow-lg'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] font-bold shadow-[var(--sigma-shadow-md)]'
+                  : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
               )}
             >
               {tier === 'ALL' ? `All (${summary.totalChannels})` : tier === 'READY' ? `Ready (${summary.readyCount})` : tier.replace('_', ' ')}
@@ -485,13 +485,31 @@ export default function AgentReachPage() {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search 15 platforms..."
-            className="w-full bg-surface/60 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       </div>
 
       {/* 5. Channel Matrix Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div>
+        <div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] flex items-center justify-between mb-4">
+          <span>Channel Matrix ({filteredChannels.length} of {channelList.length} shown)</span>
+          <span>Refresh with "Run Doctor" above</span>
+        </div>
+        {filteredChannels.length === 0 ? (
+          <div className="p-10 rounded-2xl border border-dashed border-[var(--sigma-border)] text-center space-y-1.5">
+            <Terminal size={20} className="mx-auto text-[var(--sigma-text-muted)] opacity-60" />
+            <div className="text-sm text-[var(--sigma-text)]">
+              {channelList.length === 0 ? 'No channel telemetry yet' : 'No channels match the current view'}
+            </div>
+            <div className="text-xs text-[var(--sigma-text-muted)]">
+              {channelList.length === 0
+                ? 'Run the doctor to probe the 15-channel router. The channel list appears once the latest scan returns.'
+                : 'Clear the search box or switch the tier filter to see more channels.'}
+            </div>
+          </div>
+        ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredChannels.map(ch => {
           const isOk = ch.status === 'ok';
           const isWarn = ch.status === 'warn';
@@ -500,23 +518,23 @@ export default function AgentReachPage() {
             <div
               key={ch.id}
               className={cn(
-                'p-6 rounded-2xl bg-surface/50 border transition-all duration-200 flex flex-col justify-between space-y-4 shadow-xl',
+                'p-6 rounded-2xl bg-[var(--sigma-surface)]/60 border transition-all duration-200 flex flex-col justify-between space-y-4 shadow-[var(--sigma-shadow-md)]',
                 isOk
                   ? 'border-emerald-500/20 hover:border-emerald-500/40'
                   : isWarn
                   ? 'border-amber-500/20 hover:border-amber-500/40'
-                  : 'border-white/5 hover:border-white/15'
+                  : 'border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]'
               )}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center">
                       {getChannelIcon(ch.id)}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">{ch.name}</h3>
-                      <div className="text-[10px] font-mono text-zinc-500 uppercase">
+                      <h3 className="text-sm font-bold text-[var(--sigma-text)]">{ch.name}</h3>
+                      <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase">
                         Tier {ch.tier} • {ch.id}
                       </div>
                     </div>
@@ -525,35 +543,36 @@ export default function AgentReachPage() {
                   <span className={cn(
                     'px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold tracking-wider',
                     isOk
-                      ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                      ? 'bg-emerald-500/10 text-emerald-accent border border-emerald-500/30'
                       : isWarn
-                      ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
-                      : 'bg-zinc-800 text-zinc-400 border border-white/5'
+                      ? 'bg-amber-500/10 text-amber-accent border border-amber-500/30'
+                      : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]'
                   )}>
                     {isOk ? 'READY' : isWarn ? 'CONFIG' : 'OFFLINE'}
                   </span>
                 </div>
 
-                <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-[var(--sigma-text-muted)] line-clamp-2 leading-relaxed">
                   {ch.message || 'Platform capability managed via Agent Reach CLI router.'}
                 </p>
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-white/5">
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+              <div className="space-y-3 pt-3 border-t border-[var(--sigma-border)]">
+                <div className="flex items-center justify-between text-[11px] font-mono text-[var(--sigma-text-muted)]">
                   <span>Backend:</span>
-                  <span className="text-white font-bold">{ch.activeBackend || ch.backends[0] || 'OpenCLI'}</span>
+                  <span className="text-[var(--sigma-text)] font-bold">{ch.activeBackend || ch.backends[0] || 'OpenCLI'}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   {isOk ? (
                     <button
                       onClick={() => {
-                        setSandboxChannel(ch.id === 'youtube' ? 'youtube' : ch.id === 'v2ex' ? 'v2ex' : 'web');
-                        if (ch.id === 'youtube') setSandboxTarget('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                        const nextChannel = ch.id === 'youtube' ? 'youtube' : ch.id === 'v2ex' ? 'v2ex' : 'web';
+                        setSandboxChannel(nextChannel);
+                        if (nextChannel === 'youtube') setSandboxTarget('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+                        document.getElementById('agent-reach-sandbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }}
-                      className="flex-1 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="flex-1 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-accent border border-emerald-500/30 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Play size={12} />
                       Test Live
@@ -578,7 +597,7 @@ export default function AgentReachPage() {
                       navigator.clipboard.writeText(cmd);
                       notifySuccess('Command Copied', cmd);
                     }}
-                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 rounded-xl text-xs font-mono flex items-center justify-center transition-all cursor-pointer shrink-0"
+                    className="px-3 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-xs font-mono flex items-center justify-center transition-all cursor-pointer shrink-0"
                     title={`Copy: ${ch.fixCommand || `agent-reach configure --platform ${ch.id}`}`}
                   >
                     <Copy size={12} />
@@ -588,18 +607,20 @@ export default function AgentReachPage() {
             </div>
           );
         })}
+        </div>
+        )}
       </div>
 
       {/* 6. Quick Ingestion to Social Listening Bridge */}
-      <div className="p-8 rounded-3xl bg-surface/50 border border-white/10 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="p-8 rounded-3xl bg-[var(--sigma-surface)]/50 border border-[var(--sigma-border)] backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-amber-accent font-bold">
             Cross-Module Integration
           </div>
-          <h3 className="text-lg font-heading font-bold text-white">
+          <h3 className="text-lg font-heading font-bold text-[var(--sigma-text)]">
             Sync Live Internet Mentions into Social Listening
           </h3>
-          <p className="text-xs text-zinc-400 max-w-xl">
+          <p className="text-xs text-[var(--sigma-text-muted)] max-w-xl">
             Trigger a live scan for your brand keywords across available Agent Reach backends. Each captured post automatically receives Gemini sentiment classification.
           </p>
         </div>
@@ -610,7 +631,7 @@ export default function AgentReachPage() {
             value={syncKeyword}
             onChange={e => setSyncKeyword(e.target.value)}
             placeholder="Brand keyword..."
-            className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <button
             onClick={handleQuickSyncSocial}
