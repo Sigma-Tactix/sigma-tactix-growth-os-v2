@@ -19,11 +19,12 @@ import {
   Check,
   Zap,
   Lock,
+  FlaskConical,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
-import { GlassCard, Button, Badge, MetricWidget } from '@/src/components/ui';
+import { GlassCard, Button, Badge, MetricWidget, EmptyState } from '@/src/components/ui';
 import {
   createMarketSimulation,
   getMarketSimulationCapabilities,
@@ -217,17 +218,24 @@ export default function MarketSimulatorPage() {
       <GlassCard spotlight elevation="raised" className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <Badge variant="vermilion">EVIDENCE-GROUNDED REHEARSAL</Badge>
               <span className="text-muted text-xs">•</span>
-              <Badge variant={providerState === 'unconfigured' ? 'warning' : 'success'}>
+              <Badge
+                variant={providerState === 'unconfigured' ? 'warning' : providerState === 'checking' ? 'neutral' : 'success'}
+              >
                 {providerState === 'fixture'
                   ? 'MIROFISH FIXTURE SANDBOX (ACTIVE)'
                   : providerState === 'verified'
                   ? 'MIROFISH PRIVATE GATEWAY (VERIFIED)'
+                  : providerState === 'checking'
+                  ? 'CHECKING GATEWAY…'
                   : 'SETUP REQUIRED'}
               </Badge>
             </div>
+            {providerDetail && (
+              <p className="text-[11px] text-muted font-mono mb-1.5 max-w-2xl">{providerDetail}</p>
+            )}
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
               <Swords className="w-7 h-7 text-[var(--sigma-vermilion)]" />
               Market Scenario Simulator (MiroFish)
@@ -410,6 +418,15 @@ export default function MarketSimulatorPage() {
             />
           </div>
         </GlassCard>
+      )}
+
+      {/* Idle state: neither running nor a finished report */}
+      {!isRunning && !report && (
+        <EmptyState
+          icon={<FlaskConical className="w-5 h-5" />}
+          title="No simulation run yet"
+          description="Configure a scenario hypothesis and its boundary assumptions above, then run a governed simulation to generate buyer persona reactions, objections, and rival counter-moves. Nothing has been simulated yet."
+        />
       )}
 
       {/* Results View */}
