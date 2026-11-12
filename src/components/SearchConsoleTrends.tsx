@@ -444,8 +444,8 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-12 h-12 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-        <div className="text-xs font-mono text-amber-400 font-bold">LOADING SEARCH CONSOLE DATA...</div>
+        <div className="w-12 h-12 rounded-full border-2 border-amber-accent border-t-transparent animate-spin" />
+        <div className="text-xs font-mono text-amber-accent font-bold">LOADING SEARCH CONSOLE DATA...</div>
       </div>
     );
   }
@@ -459,9 +459,9 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       return (
         <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
           {isError ? (
-            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
+            <AlertTriangle className="w-12 h-12 text-rose-accent mx-auto" />
           ) : (
-            <ShieldCheck className="w-12 h-12 text-blue-400 mx-auto" />
+            <ShieldCheck className="w-12 h-12 text-blue-accent mx-auto" />
           )}
           <h3 className="text-lg font-bold text-white">
             {isError ? 'Search Console Fetch Failed' : 'Connected — Awaiting OAuth Grant'}
@@ -521,9 +521,9 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       label: 'Total Clicks',
       value: data.totals.clicks.toLocaleString(),
       icon: MousePointerClick,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-400/10',
-      borderColor: 'border-blue-400/20',
+      color: 'text-blue-accent',
+      bgColor: 'bg-blue-accent/10',
+      borderColor: 'border-blue-accent/20',
       change: periodChange ? periodChange.clickChange : null,
       sparkData: data.timeSeries.map(p => p.clicks),
       sparkColor: '#60a5fa'
@@ -532,9 +532,9 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       label: 'Total Impressions',
       value: data.totals.impressions.toLocaleString(),
       icon: Eye,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-400/10',
-      borderColor: 'border-purple-400/20',
+      color: 'text-cyan-accent',
+      bgColor: 'bg-cyan-accent/10',
+      borderColor: 'border-cyan-accent/20',
       change: periodChange ? periodChange.impChange : null,
       sparkData: data.timeSeries.map(p => p.impressions),
       sparkColor: '#c084fc'
@@ -543,9 +543,9 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       label: 'Avg. CTR',
       value: `${(data.totals.ctr * 100).toFixed(2)}%`,
       icon: Target,
-      color: 'text-emerald-400',
-      bgColor: 'bg-emerald-400/10',
-      borderColor: 'border-emerald-400/20',
+      color: 'text-emerald-accent',
+      bgColor: 'bg-emerald-accent/10',
+      borderColor: 'border-emerald-accent/20',
       change: null,
       sparkData: data.timeSeries.map(p => p.ctr),
       sparkColor: '#34d399'
@@ -554,9 +554,9 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       label: 'Avg. Position',
       value: data.totals.position.toFixed(1),
       icon: BarChart3,
-      color: 'text-amber-400',
-      bgColor: 'bg-amber-400/10',
-      borderColor: 'border-amber-400/20',
+      color: 'text-amber-accent',
+      bgColor: 'bg-amber-accent/10',
+      borderColor: 'border-amber-accent/20',
       change: periodChange ? periodChange.posChange : null,
       invertChange: true,
       sparkData: data.timeSeries.map(p => p.position),
@@ -569,24 +569,24 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       {/* Header Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/20 flex items-center justify-center">
-            <Search className="w-5 h-5 text-blue-400" />
+          <div className="w-10 h-10 rounded-xl bg-blue-accent/15 border border-blue-accent/25 flex items-center justify-center">
+            <Search className="w-5 h-5 text-blue-accent" />
           </div>
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               Google Search Console Trends
               {!isConnected && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25 font-bold">
                   DEMO DATA
                 </span>
               )}
               {isConnected && dataNote && previewSimulated && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-accent/20 text-amber-accent border border-amber-accent/40 font-bold">
                   SIMULATED PREVIEW (OAUTH PENDING)
                 </span>
               )}
               {isConnected && !dataNote && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-accent/10 text-emerald-accent border border-emerald-accent/25 font-bold">
                   LIVE
                 </span>
               )}
@@ -632,7 +632,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] rounded-xl flex items-center gap-1.5 font-bold">
+              <span className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-accent/25 text-emerald-accent font-mono text-[11px] rounded-xl flex items-center gap-1.5 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" /> GSC: {gscSiteUrl}
               </span>
               <button
@@ -694,7 +694,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                   <span className="text-[10px] font-mono text-zinc-400 uppercase">{m.label}</span>
                 </div>
                 {changeVal !== null && (
-                  <span className={cn("text-[10px] font-mono font-bold flex items-center gap-0.5", isPositive ? "text-emerald-400" : "text-red-400")}>
+                  <span className={cn("text-[10px] font-mono font-bold flex items-center gap-0.5", isPositive ? "text-emerald-accent" : "text-rose-accent")}>
                     {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                     {Math.abs(changeVal).toFixed(1)}%
                   </span>
@@ -742,7 +742,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full min-w-[560px] text-left">
             <thead>
               <tr className="border-b border-zinc-800/60">
                 <th className="py-2 text-[10px] font-mono text-zinc-500 uppercase w-[40%]">

@@ -46,7 +46,7 @@ function ConfidenceBar({ value }: { value: number }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -88,8 +88,17 @@ function TraceCard({ trace, isExpanded, onToggle }: {
     <GlassCard
       interactive
       onClick={onToggle}
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
       className={cn(
-        'p-4 transition-all',
+        'p-4 transition-all cursor-pointer',
         isExpanded && 'ring-1 ring-[var(--sigma-border-active)] border-[var(--sigma-border-active)]',
       )}
     >
@@ -169,9 +178,9 @@ function TraceCard({ trace, isExpanded, onToggle }: {
                       <div key={key} className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-mono text-[var(--sigma-text-soft)]">{key}</span>
                         <div className="flex items-center gap-2 flex-1 max-w-[180px]">
-                          <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[#ff481b]/70"
+                              className="h-full rounded-full bg-accent/70"
                               style={{ width: `${Math.round(value * 100)}%` }}
                             />
                           </div>
@@ -217,9 +226,9 @@ function TraceCard({ trace, isExpanded, onToggle }: {
               )}
 
               {/* Redacted Input Evidence */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
-                <EyeOff size={11} className="text-zinc-500 shrink-0" />
-                <span className="text-[10px] font-mono text-zinc-500">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+                <EyeOff size={11} className="text-[var(--sigma-text-muted)] shrink-0" />
+                <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
                   Input fingerprint: {trace.id?.slice(0, 8)}… — raw content redacted by governance policy
                 </span>
               </div>
@@ -319,7 +328,7 @@ export default function AgentTraceInspector({ agentId, agentName, agentCodename 
               className={cn(
                 'px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer',
                 filter === f
-                  ? 'bg-[#ff481b]/20 text-[#ff481b] border border-[#ff481b]/30'
+                  ? 'bg-accent/20 text-accent border border-accent/30'
                   : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] border border-transparent hover:border-[var(--sigma-border)]',
               )}
             >
