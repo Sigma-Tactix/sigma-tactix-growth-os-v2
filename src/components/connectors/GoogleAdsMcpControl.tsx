@@ -79,7 +79,7 @@ export function GoogleAdsMcpControl({ onSelectCustomer }: GoogleAdsMcpControlPro
               </ul>
             </div>
           ) : null}
-          {error && <div className="text-xs text-red-500 border border-red-500/20 bg-red-500/5 rounded-xl p-3">{error}</div>}
+          {error && <div role="alert" className="text-xs text-rose-accent border border-rose-500/20 bg-rose-500/5 rounded-xl p-3">{error}</div>}
 
           {customers.length > 0 && (
             <div className="space-y-2">

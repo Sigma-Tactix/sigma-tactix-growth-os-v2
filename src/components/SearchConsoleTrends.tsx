@@ -173,6 +173,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
   // for the exact client + redirect URI pair, obtained without navigating.
   const [preflightResult, setPreflightResult] = useState<GSCPreflightResult | null>(null);
   const [isPreflighting, setIsPreflighting] = useState(false);
+  const connectSiteUrlInputRef = useRef<HTMLInputElement>(null);
 
   const isConnected = connection.connected;
   const paramsHandledRef = useRef(false);
@@ -237,6 +238,25 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
+
+  // Connect dialog a11y: focus the property input when opened from any
+  // entry point, close on Escape, and lock body scroll while open.
+  useEffect(() => {
+    if (!isConnectModalOpen) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    connectSiteUrlInputRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsConnectModalOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isConnectModalOpen]);
 
   const refreshDialogRedirectUri = async () => {
     try {
@@ -457,41 +477,41 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
     if (isConnected && dataNote) {
       const isError = dataNote.kind === 'error';
       return (
-        <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
+        <div className="p-8 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-2xl text-center space-y-4">
           {isError ? (
             <AlertTriangle className="w-12 h-12 text-rose-accent mx-auto" />
           ) : (
             <ShieldCheck className="w-12 h-12 text-blue-accent mx-auto" />
           )}
-          <h3 className="text-lg font-bold text-white">
+          <h3 className="text-lg font-bold text-[var(--sigma-text)]">
             {isError ? 'Search Console Fetch Failed' : 'Connected — Awaiting OAuth Grant'}
           </h3>
-          <p className="text-sm text-zinc-400 max-w-md mx-auto">{dataNote.message}</p>
+          <p className="text-sm text-[var(--sigma-text-muted)] max-w-md mx-auto">{dataNote.message}</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => {
                 setPreviewSimulated(true);
                 setData(generateDemoGSCData(dateRange));
               }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 font-semibold rounded-xl text-sm border border-amber-400/30 cursor-pointer transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-accent/15 hover:bg-amber-accent/25 text-amber-accent font-semibold rounded-xl text-sm border border-amber-accent/30 cursor-pointer transition-all"
             >
               <Eye className="w-4 h-4" /> Preview Simulated Trends (Demo Mode)
             </button>
             <button
               onClick={() => loadData()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-200 font-semibold rounded-xl text-sm border border-white/10 cursor-pointer transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] font-semibold rounded-xl text-sm border border-[var(--sigma-border-strong)] cursor-pointer transition-all"
             >
               <RefreshCw className="w-4 h-4" /> Retry Fetch
             </button>
             <button
               onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl text-sm cursor-pointer shadow-md hover:from-blue-600 hover:to-purple-700 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--sigma-primary)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse)] font-semibold rounded-xl text-sm cursor-pointer shadow-md transition-all"
             >
               <Link2 className="w-4 h-4" /> Open Connect Dialog
             </button>
             <button
               onClick={handleDisconnect}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-medium rounded-xl text-sm border border-white/10 cursor-pointer transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] font-medium rounded-xl text-sm border border-[var(--sigma-border)] cursor-pointer transition-all"
             >
               Disconnect
             </button>
@@ -500,15 +520,15 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       );
     }
     return (
-      <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
-        <Globe className="w-12 h-12 text-zinc-600 mx-auto" />
-        <h3 className="text-lg font-bold text-white">Connect Google Search Console</h3>
-        <p className="text-sm text-zinc-400 max-w-md mx-auto">
+      <div className="p-8 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-2xl text-center space-y-4">
+        <Globe className="w-12 h-12 text-[var(--sigma-text-muted)] mx-auto" />
+        <h3 className="text-lg font-bold text-[var(--sigma-text)]">Connect Google Search Console</h3>
+        <p className="text-sm text-[var(--sigma-text-muted)] max-w-md mx-auto">
           Link your Google Search Console account to see real-time click, impression, CTR, and ranking data for your verified property.
         </p>
         <button
           onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold rounded-xl text-sm cursor-pointer shadow-lg shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--sigma-primary)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse)] font-semibold rounded-xl text-sm cursor-pointer shadow-lg transition-all"
         >
           <Link2 className="w-4 h-4" /> Connect Search Console
         </button>
@@ -573,7 +593,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
             <Search className="w-5 h-5 text-blue-accent" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-base font-bold text-[var(--sigma-text)] flex items-center gap-2">
               Google Search Console Trends
               {!isConnected && (
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25 font-bold">
@@ -591,7 +611,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                 </span>
               )}
             </h3>
-            <p className="text-[11px] text-zinc-500 font-mono">
+            <p className="text-[11px] text-[var(--sigma-text-muted)] font-mono">
               {data.siteUrl} • {data.dateRange.start} → {data.dateRange.end}
             </p>
           </div>
@@ -599,7 +619,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
 
         <div className="flex items-center gap-2">
           {/* Date Range Selector */}
-          <div className="flex items-center bg-zinc-900/60 border border-zinc-800/80 rounded-xl overflow-hidden">
+          <div className="flex items-center bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border-strong)] rounded-xl overflow-hidden">
             {(['7d', '28d', '90d', '16m'] as const).map(range => (
               <button
                 key={range}
@@ -607,8 +627,8 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                 className={cn(
                   "px-3 py-2 text-[11px] font-mono cursor-pointer transition-all",
                   dateRange === range
-                    ? "bg-amber-400/10 text-amber-400 font-bold"
-                    : "text-zinc-500 hover:text-white hover:bg-zinc-800/50"
+                    ? "bg-amber-accent/10 text-amber-accent font-bold"
+                    : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-raised)]"
                 )}
               >
                 {range}
@@ -618,7 +638,8 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
 
           <button
             onClick={handleRefresh}
-            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl border border-zinc-700/50 cursor-pointer transition-all"
+            aria-label="Refresh Search Console data"
+            className="p-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] rounded-xl border border-[var(--sigma-border)] cursor-pointer transition-all"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -626,18 +647,18 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
           {!isConnected ? (
             <button
               onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
-              className="px-3.5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl text-[11px] flex items-center gap-1.5 cursor-pointer shadow-md hover:from-blue-600 hover:to-purple-700 transition-all"
+              className="px-3.5 py-2 bg-[var(--sigma-primary)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse)] font-semibold rounded-xl text-[11px] flex items-center gap-1.5 cursor-pointer shadow-md transition-all"
             >
               <Link2 className="w-3.5 h-3.5" /> Connect GSC
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-accent/25 text-emerald-accent font-mono text-[11px] rounded-xl flex items-center gap-1.5 font-bold">
+              <span className="px-3 py-1.5 bg-emerald-accent/10 border border-emerald-accent/25 text-emerald-accent font-mono text-[11px] rounded-xl flex items-center gap-1.5 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" /> GSC: {gscSiteUrl}
               </span>
               <button
                 onClick={handleDisconnect}
-                className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl text-[10px] font-mono border border-white/10 transition-all cursor-pointer"
+                className="px-2.5 py-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] rounded-xl text-[10px] font-mono border border-[var(--sigma-border)] transition-all cursor-pointer"
               >
                 Disconnect
               </button>
@@ -648,15 +669,15 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
 
       {/* Simulated Preview Alert Banner */}
       {isConnected && dataNote && previewSimulated && (
-        <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-amber-300">
+        <div className="p-3.5 bg-amber-accent/10 border border-amber-accent/25 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-amber-accent">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span><strong>Simulated Telemetry Preview:</strong> Showing demonstration trend curves for <code>{connection?.siteUrl || 'configured property'}</code> while awaiting Google OAuth authorization.</span>
+            <span><strong>Simulated Telemetry Preview:</strong> These are demonstration curves, not measurements for <code>{connection?.siteUrl || 'the configured property'}</code> — live data still requires the Google OAuth authorization below.</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => { setRedirectUriCopied(false); setIsConnectModalOpen(true); void refreshDialogRedirectUri(); }}
-              className="px-3 py-1 bg-amber-400 text-black font-semibold rounded-lg hover:bg-amber-300 text-xs transition-all cursor-pointer"
+              className="px-3 py-1 bg-amber-accent text-[var(--sigma-inverse)] font-semibold rounded-lg hover:opacity-90 text-xs transition-all cursor-pointer"
             >
               Authorize OAuth
             </button>
@@ -665,7 +686,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                 setPreviewSimulated(false);
                 setData(null);
               }}
-              className="px-3 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-lg text-xs cursor-pointer border border-white/10"
+              className="px-3 py-1 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] rounded-lg text-xs cursor-pointer border border-[var(--sigma-border)]"
             >
               Show Status Card
             </button>
@@ -709,10 +730,10 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
 
       {/* Trend Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl">
+        <div className="p-5 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-2xl">
           <TrendChart timeSeries={data.timeSeries} metric="clicks" color="#60a5fa" label="Clicks Over Time" />
         </div>
-        <div className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl">
+        <div className="p-5 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-2xl">
           <TrendChart timeSeries={data.timeSeries} metric="impressions" color="#c084fc" label="Impressions Over Time" />
         </div>
       </div>
@@ -765,10 +786,10 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                       </span>
                     )}
                   </td>
-                  <td className="py-2.5 text-xs text-blue-400 font-mono text-right font-bold">{row.clicks.toLocaleString()}</td>
-                  <td className="py-2.5 text-xs text-purple-400 font-mono text-right">{row.impressions.toLocaleString()}</td>
-                  <td className="py-2.5 text-xs text-emerald-400 font-mono text-right">{(row.ctr * 100).toFixed(1)}%</td>
-                  <td className="py-2.5 text-xs text-amber-400 font-mono text-right">{row.position.toFixed(1)}</td>
+                  <td className="py-2.5 text-xs text-blue-accent font-mono text-right font-bold">{row.clicks.toLocaleString()}</td>
+                  <td className="py-2.5 text-xs text-cyan-accent font-mono text-right">{row.impressions.toLocaleString()}</td>
+                  <td className="py-2.5 text-xs text-emerald-accent font-mono text-right">{(row.ctr * 100).toFixed(1)}%</td>
+                  <td className="py-2.5 text-xs text-amber-accent font-mono text-right">{row.position.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>
@@ -779,8 +800,11 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
       {/* Connect GSC Modal */}
       <AnimatePresence>
         {isConnectModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsConnectModalOpen(false); }}>
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="gsc-connect-dialog-title"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -789,16 +813,17 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
               {/* Modal Header */}
               <div className="flex items-center justify-between p-5 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <div className="p-2 rounded-lg bg-blue-accent/10 text-blue-accent border border-blue-accent/20">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Connect Google Search Console</h3>
+                    <h3 id="gsc-connect-dialog-title" className="text-sm font-bold text-white">Connect Google Search Console</h3>
                     <p className="text-[11px] text-zinc-400">Store a property + OAuth client, then complete the read-only Google grant</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsConnectModalOpen(false)}
+                  aria-label="Close connect dialog"
                   className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
@@ -812,18 +837,19 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                     Verified Search Property
                   </label>
                   <input
+                    ref={connectSiteUrlInputRef}
                     type="text"
                     value={gscSiteUrl}
                     onChange={e => setGscSiteUrl(e.target.value)}
                     placeholder="e.g. sc-domain:example.com or https://example.com/"
-                    className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-sm text-white font-mono focus:outline-none focus:border-blue-accent/50"
                   />
                   <p className="text-[10px] text-zinc-500 mt-1">Domain properties require DNS verification. URL-prefix properties require meta tag.</p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-300">
-                    <ShieldCheck className="w-4 h-4 text-blue-400" />
+                <div className="p-3.5 rounded-xl bg-blue-accent/5 border border-blue-accent/15 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-accent">
+                    <ShieldCheck className="w-4 h-4 text-blue-accent" />
                     Save Property &amp; Continue to Google
                   </div>
                   <p className="text-[11px] text-zinc-300 leading-relaxed">
@@ -851,7 +877,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                 {/* Optional OAuth 2.0 Credentials */}
                 <div className="pt-2 border-t border-white/10 space-y-3">
                   <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-amber-400" /> Custom Google Cloud OAuth (Optional)
+                    <Key className="w-3.5 h-3.5 text-amber-accent" /> Custom Google Cloud OAuth (Optional)
                   </span>
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -859,14 +885,16 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                       value={clientId}
                       onChange={e => setClientId(e.target.value)}
                       placeholder="OAuth Client ID"
-                      className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/50"
+                      aria-label="OAuth Client ID"
+                      className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-amber-accent/50"
                     />
                     <input
                       type="password"
                       value={clientSecret}
                       onChange={e => setClientSecret(e.target.value)}
                       placeholder="OAuth Client Secret"
-                      className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/50"
+                      aria-label="OAuth Client Secret"
+                      className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-amber-accent/50"
                     />
                   </div>
                 </div>
@@ -883,7 +911,7 @@ export default function SearchConsoleTrends({ onResultPush }: SearchConsoleTrend
                   </p>
                   {(dialogRedirectUri || connection.redirectUri) ? (
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 min-w-0 truncate px-2.5 py-2 bg-black/50 border border-white/10 rounded-lg text-[11px] font-mono text-emerald-300">
+                      <code className="flex-1 min-w-0 truncate px-2.5 py-2 bg-black/50 border border-white/10 rounded-lg text-[11px] font-mono text-emerald-accent">
                         {dialogRedirectUri || connection.redirectUri}
                       </code>
                       <button

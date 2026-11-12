@@ -45,7 +45,7 @@ import {
   SocialCampaignData
 } from '@/src/data/marketingModulesData';
 import CarouselCardViewer from '@/src/components/CarouselCardViewer';
-import { generateCreativeImage, generateSocialCampaign, queueDeterministicRender, exportCreativeLectureDeck } from '@/src/lib/creativeApi';
+import { generateCreativeImage, generateSocialCampaign, generateTextContent, queueDeterministicRender, exportCreativeLectureDeck } from '@/src/lib/creativeApi';
 import { GlassCard, Button, Badge, Tabs } from '@/src/components/ui';
 import { ScheduleSocialPostModal } from '@/src/components/social/ScheduleSocialPostModal';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
@@ -231,9 +231,9 @@ interface GeneratedImageRecord {
 
 export default function ContentEnginePage() {
   const { notifySuccess, notifyInfo, notifyError } = useToast();
-  const [contentItems, setContentItems] = useState<ContentEngineItem[]>(SEED_CONTENT_ITEMS);
+  const [contentItems, setContentItems] = useState<ContentEngineItem[]>([]);
   const [activeTab, setActiveTab] = useState<'TEXT' | 'IMAGE' | 'VIDEO' | 'SOCIAL'>('SOCIAL');
-  const [selectedItem, setSelectedItem] = useState<ContentEngineItem>(SEED_CONTENT_ITEMS[0]);
+  const [selectedItem, setSelectedItem] = useState<ContentEngineItem | null>(null);
   const [copied, setCopied] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
@@ -266,6 +266,9 @@ export default function ContentEnginePage() {
   const [socialAudience, setSocialAudience] = useState('B2B Tech Executives & Revenue Leaders');
   const [socialTone, setSocialTone] = useState('Authoritative, empirical, anti-slop, engineering-grade');
   const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
+  // Which engine produced the last social campaign: 'gemini' (model output)
+  // or 'local-template' (deterministic fallback when no key is configured).
+  const [socialCampaignEngine, setSocialCampaignEngine] = useState<'gemini' | 'local-template' | null>(null);
   const [socialViewMode, setSocialViewMode] = useState<'CARDS' | 'COPY'>('CARDS');
   const [renderedShortsVideo, setRenderedShortsVideo] = useState<{ url: string; sceneIdx: number } | null>(null);
   const [isRenderingShortsVideo, setIsRenderingShortsVideo] = useState(false);
@@ -294,11 +297,11 @@ export default function ContentEnginePage() {
           status: 'SUCCESS',
           moduleOrigin: 'Content Engine & Omnichannel Creative',
           inputSummary: 'Topic: 5 Hidden Digital Revenue Leaks (LinkedIn Carousel)',
-          outputSummary: '5-slide B2B teardown deck synthesized, aligned with Brand Vault vectors, ready for distribution.',
+          outputSummary: '5-slide B2B teardown deck synthesized (demo fixture), ready for distribution.',
           imageUrl: 'https://sigmatactix.com/assets/carousels/revenue-leaks-v1.pdf',
           metrics: [
             { label: 'Format', value: 'Multi-Slide Deck (PDF / PPTX)' },
-            { label: 'Voice Alignment', value: '99.4%' },
+            { label: 'Seed', value: 'Demo seed' },
             { label: 'Channel', value: 'LinkedIn' }
           ]
         }
@@ -307,34 +310,37 @@ export default function ContentEnginePage() {
     return [];
   });
 
-  // Text Generation Handler
-  const handleGenerateText = () => {
+  // Text Generation Handler — real endpoint: Gemini when a key is
+  // configured, deterministic local template otherwise (the engine
+  // field says which one ran; no invented alignment percentages).
+  const handleGenerateText = async () => {
+    if (!textTopic.trim()) {
+      notifyError('Topic Required', 'Please enter a topic or thesis for the piece.');
+      return;
+    }
+
     setIsGeneratingText(true);
-    setTimeout(() => {
-      setIsGeneratingText(false);
+    try {
+      const result = await generateTextContent({
+        topic: textTopic.trim(),
+        format: textFormat,
+        targetAudience: targetAudience.trim() || undefined,
+        antiSlop: antiSlopActive
+      });
+
+      const wordCount = result.content.split(/\s+/).filter(Boolean).length;
+      const engine = result.engine;
       const newItem: ContentEngineItem = {
         id: `cnt-${Date.now()}`,
-        title: textTopic,
-        type: textFormat === 'LONG_FORM' ? 'LONG_FORM' : 'NEWSLETTER',
+        title: result.title || textTopic.trim(),
+        type: textFormat === 'LONG_FORM' || textFormat === 'CASE_STUDY' ? 'LONG_FORM' : textFormat === 'PR_RELEASE' ? 'LONG_FORM' : 'NEWSLETTER',
         channel: 'Blog',
         status: 'READY_FOR_HITL',
-        voiceAlignmentScore: 99.2,
-        targetAudience: targetAudience,
-        generatedContent: `# ${textTopic}
-
-When a B2B tech company signs an agency retainer, they believe they are purchasing execution velocity. In reality, they are entering a negative-compounding lease on human headcount.
-
-## The Three Structural Defects of Rented Headcount
-
-1. **Context Evaporation**: The junior associates managing your campaigns turn over every 9 months. With them goes your positioning nuance, ad test history, and objection learnings.
-2. **Attribution Opacity**: Monthly 40-slide decks celebrate "impressions" and "top-of-funnel engagement" while qualified pipeline remains stagnant.
-3. **Zero Asset Equity**: When you terminate the agency, you walk away with zero code, zero durable memory, and zero self-driving systems.
-
-## The Sovereign Alternative: Client-Owned Second Brain
-
-By installing an AI-native growth infrastructure directly into your cloud, your business develops permanent institutional memory. Scoped agent swarms diagnose revenue leaks, construct topical authority, and reallocate media spend under strict Human-in-the-Loop guardrails.
-
-The future belongs to founders who own their intelligence engine rather than rent it.`,
+        // No voice scorer is implemented — keep the field but never
+        // display it as a measured alignment figure.
+        voiceAlignmentScore: 0,
+        targetAudience: result.audience || targetAudience,
+        generatedContent: result.content,
         mediaUrl: generatedImageUrl
       };
 
@@ -349,20 +355,45 @@ The future belongs to founders who own their intelligence engine rather than ren
         status: 'SUCCESS',
         moduleOrigin: 'Content Engine (Long-Form Editorial)',
         inputSummary: `Topic: ${textTopic} | Format: ${textFormat} | Audience: ${targetAudience}`,
-        outputSummary: `Produced 850-word piece with 99.2% Brand Vault voice alignment and zero banned AI clichés.`,
+        outputSummary: engine === 'gemini'
+          ? `Model-generated ${wordCount}-word ${textFormat} piece.`
+          : `Local template draft (${wordCount} words) — no provider key configured; not model output.`,
         metrics: [
+          { label: 'Engine', value: engine === 'gemini' ? 'Gemini' : 'Local template' },
           { label: 'Format', value: textFormat },
-          { label: 'Audience', value: targetAudience },
+          { label: 'Words', value: String(wordCount) },
           { label: 'Status', value: 'READY_FOR_HITL' }
         ]
       };
       setRunHistory(prev => [runRecord, ...prev]);
 
-      notifySuccess(
-        'Content Generated & Aligned',
-        `Produced 850-word piece with 99.2% Brand Vault voice alignment and zero banned AI clichés.`
-      );
-    }, 1200);
+      if (engine === 'local-template') {
+        notifySuccess(
+          'Draft Generated (Local Template)',
+          'No provider key is configured, so this is a deterministic template draft, not model output.'
+        );
+      } else {
+        notifySuccess('Content Generated', `Produced a ${wordCount}-word piece via the configured model.`);
+      }
+    } catch (err: any) {
+      const runRecord: AgentRunRecord = {
+        id: `run-art-err-${Date.now()}`,
+        agentName: 'STAGE Lead Editorial Copywriter',
+        agentRole: 'Long-Form Authority Strategist',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'ERROR',
+        moduleOrigin: 'Content Engine (Long-Form Editorial)',
+        inputSummary: `Topic: ${textTopic} | Format: ${textFormat}`,
+        outputSummary: `Generation error: ${err?.message || 'Could not generate the piece.'}`,
+        metrics: [
+          { label: 'Format', value: textFormat }
+        ]
+      };
+      setRunHistory(prev => [runRecord, ...prev]);
+      notifyError('Generation Failed', err?.message || 'Could not generate the piece.');
+    } finally {
+      setIsGeneratingText(false);
+    }
   };
 
   // Real Image Generation Handler (Prompt-Driven AI Synthesis)
@@ -468,6 +499,10 @@ The future belongs to founders who own their intelligence engine rather than ren
         hashtags: result.hashtags || prev.hashtags
       }));
 
+      // Honest engine label: only source === 'gemini' is model output;
+      // anything else is the deterministic local template fallback.
+      setSocialCampaignEngine(result.source === 'gemini' ? 'gemini' : 'local-template');
+
       // Add to content items list
       const newItem: ContentEngineItem = {
         id: `cnt-soc-${Date.now()}`,
@@ -475,7 +510,8 @@ The future belongs to founders who own their intelligence engine rather than ren
         type: 'SOCIAL_CAROUSEL',
         channel: selectedSocialChannel === 'YouTube_Shorts' ? 'YouTube Shorts' : selectedSocialChannel === 'X_Thread' ? 'X/Twitter' : 'LinkedIn',
         status: 'READY_FOR_HITL',
-        voiceAlignmentScore: 99.4,
+        // No voice scorer is implemented — never display this as alignment %.
+        voiceAlignmentScore: 0,
         targetAudience: socialAudience,
         generatedContent: result.hook + '\n\n' + (result.slides?.map(s => `SLIDE ${s.slideNumber}: ${s.title}\n${(s.contentPoints || []).map(p => `• ${p}`).join('\n')}`).join('\n\n') || ''),
         carouselSlides: result.slides,
@@ -493,18 +529,18 @@ The future belongs to founders who own their intelligence engine rather than ren
         status: 'SUCCESS',
         moduleOrigin: 'Content Engine (Social & Carousels)',
         inputSummary: `Topic: ${socialTopic} | Channel: ${selectedSocialChannel} | Audience: ${socialAudience}`,
-        outputSummary: `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives (${result.slides?.length || 0} slides / scenes) aligned with Brand Vault vectors.`,
+        outputSummary: `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives (${result.slides?.length || 0} slides / scenes).`,
         metrics: [
           { label: 'Channel', value: selectedSocialChannel },
           { label: 'Audience', value: socialAudience },
-          { label: 'Voice Alignment', value: '99.4%' }
+          { label: 'Slides / Scenes', value: `${result.slides?.length || result.shortsScenes?.length || 0}` }
         ]
       };
       setRunHistory(prev => [runRecord, ...prev]);
 
       notifySuccess(
-        'Campaign Synthesized', 
-        `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives aligned with Brand Vault vectors.`
+        'Campaign Synthesized',
+        `Generated ${selectedSocialChannel.replace(/_/g, ' ')} post creatives via the configured provider.`
       );
     } catch (err: any) {
       console.error('Social generation error:', err);
@@ -583,6 +619,24 @@ The future belongs to founders who own their intelligence engine rather than ren
     } finally {
       setIsRenderingShortsVideo(false);
     }
+  };
+
+  // Staging is local bookkeeping: it marks the active item READY_FOR_HITL
+  // and routes the artifact to the Agent Cockpit queue. It does not publish
+  // anything — a distribution run still requires approval.
+  const handleStageForHitl = () => {
+    if (!selectedItem) {
+      notifyInfo('Nothing to Stage', 'Generate a piece, visual asset, or campaign first — then it can be staged for HITL review.');
+      return;
+    }
+    if (selectedItem.status === 'READY_FOR_HITL') {
+      notifyInfo('Already Staged', `${selectedItem.title} is already queued at the Human-in-the-Loop gate. Approve it in Agent Cockpit to publish.`);
+      return;
+    }
+    const staged = { ...selectedItem, status: 'READY_FOR_HITL' as const };
+    setSelectedItem(staged);
+    setContentItems(prev => prev.map(item => (item.id === staged.id ? staged : item)));
+    notifySuccess('Staged for HITL Review', `${staged.title} queued at the Human-in-the-Loop gate — nothing was published.`);
   };
 
   const handleCopyContent = (text: string, title = 'Content') => {
