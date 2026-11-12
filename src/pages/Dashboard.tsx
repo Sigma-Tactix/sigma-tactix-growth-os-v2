@@ -881,7 +881,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--sigma-border)]">
-                      {segmentsData.map((seg, i) => (
+                      {segmentsData.map((seg) => (
                         <tr key={seg.name} className="hover:bg-[var(--sigma-surface-subtle)]/50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">

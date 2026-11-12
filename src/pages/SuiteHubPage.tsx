@@ -46,7 +46,7 @@ function ModulePage({ module }: { module: SuiteModule }) {
   return (
     <Suspense
       fallback={
-        <div className="sigma-card min-h-[40vh] animate-pulse" aria-label={`Loading ${module.label}`} />
+        <div className="sigma-panel min-h-[40vh] animate-pulse" aria-label={`Loading ${module.label}`} />
       }
     >
       <Page />
@@ -80,8 +80,8 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
 
   return (
     <div className="space-y-5">
-      <div className="sigma-card rounded-2xl p-5">
-        <div className="flex items-start justify-between gap-4">
+      <div className="sigma-card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)]">{hub.department}</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--sigma-text)]">{hub.title}</h1>

@@ -182,35 +182,40 @@ export function ScheduleSocialPostModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="sigma-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="sigma-modal w-full max-w-xl p-6 md:p-8 space-y-5 rounded-3xl bg-[#0F0E0D] border border-white/10 shadow-2xl relative max-h-[90vh] overflow-y-auto text-zinc-200"
+          className="sigma-modal w-full max-w-xl p-6 md:p-8 space-y-5 relative max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-start justify-between border-b border-white/10 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+          <div className="flex items-start justify-between border-b border-[var(--sigma-border)] pb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2.5 rounded-2xl bg-[var(--sigma-primary-subtle)] border border-[var(--sigma-primary)]/30 text-[var(--sigma-primary)] shrink-0">
                 <Share2 className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-[var(--sigma-text)] flex items-center gap-2 flex-wrap">
                   <span>Schedule via Social Hub</span>
-                  <Badge variant={status?.mode === 'live' ? 'success' : 'neutral'} size="xs">
-                    {status?.mode === 'live' ? 'Live Gateway' : 'Offline Mock'}
+                  <Badge variant={status?.mode === 'live' ? 'success' : status === null ? 'neutral' : 'warning'} size="xs">
+                    {status === null
+                      ? 'Loading status'
+                      : status.mode === 'live'
+                        ? 'Live Gateway'
+                        : 'No provider connected'}
                   </Badge>
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Multi-channel distribution with automated ledger recording.
+                <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">
+                  Multi-channel distribution with ledger recording — scheduled jobs stay queued until a live gateway executes them.
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="sigma-icon-button"
+              aria-label="Close schedule dialog"
             >
               <X className="w-4 h-4" />
             </button>
@@ -218,70 +223,78 @@ export function ScheduleSocialPostModal({
 
           {/* Destination Channels */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-zinc-300">
+            <label className="block text-xs font-semibold text-[var(--sigma-text-soft)]">
               Select Destination Channels ({selectedChannelIds.length} selected)
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {channels.map((chan) => {
-                const isSelected = selectedChannelIds.includes(chan.id);
-                return (
-                  <button
-                    key={chan.id}
-                    type="button"
-                    onClick={() => toggleChannel(chan.id)}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                      isSelected
-                        ? 'border-amber-500/50 bg-amber-500/10 text-white'
-                        : 'border-white/5 bg-white/[0.03] text-zinc-400 hover:border-white/15'
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${
+            {channels.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[var(--sigma-border-strong)] p-4 text-xs text-[var(--sigma-text-muted)] space-y-1">
+                <p className="font-medium text-[var(--sigma-text-soft)]">No distribution channels available.</p>
+                <p>Channel credentials are not connected yet — open the Social Distribution Gateway in Connector Hub to link LinkedIn or X channels before scheduling.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {channels.map((chan) => {
+                  const isSelected = selectedChannelIds.includes(chan.id);
+                  return (
+                    <button
+                      key={chan.id}
+                      type="button"
+                      onClick={() => toggleChannel(chan.id)}
+                      aria-pressed={isSelected}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all min-w-0 ${
                         isSelected
-                          ? 'border-amber-400 bg-amber-400 text-black'
-                          : 'border-zinc-600 bg-transparent'
+                          ? 'border-[var(--sigma-primary)]/50 bg-[var(--sigma-primary-subtle)] text-[var(--sigma-text)]'
+                          : 'border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] hover:border-[var(--sigma-border-strong)]'
                       }`}
                     >
-                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold truncate capitalize">{chan.name}</div>
-                      <div className="text-[10px] text-zinc-500 truncate font-mono">
-                        {chan.handle || chan.platform}
+                      <div
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? 'border-[var(--sigma-primary)] bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)]'
+                            : 'border-[var(--sigma-border-strong)] bg-transparent'
+                        }`}
+                      >
+                        {isSelected && <CheckCircle2 className="w-3 h-3" />}
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold truncate capitalize">{chan.name}</div>
+                        <div className="text-[10px] text-[var(--sigma-text-muted)] truncate font-mono">
+                          {chan.handle || chan.platform}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Post Content */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-zinc-300">
+            <label className="block text-xs font-semibold text-[var(--sigma-text-soft)]">
               Post Content / Accompanying Copy
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={5}
-              className="sigma-input w-full px-3.5 py-2.5 text-xs font-mono leading-relaxed resize-none rounded-xl bg-black/40 border border-white/10"
+              className="sigma-input w-full px-3.5 py-2.5 text-xs font-mono leading-relaxed resize-none rounded-xl"
               placeholder="Post text with hashtags..."
             />
           </div>
 
           {/* Media Attachments Preview */}
           {mediaUrls.length > 0 && (
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs">
-              <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5 mb-2">
-                <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <div className="rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-3 text-xs">
+              <span className="text-[11px] font-semibold text-[var(--sigma-text-soft)] flex items-center gap-1.5 mb-2">
+                <Layers className="w-3.5 h-3.5 text-amber-accent" />
                 Attached Media Assets ({mediaUrls.length})
               </span>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {mediaUrls.map((url, idx) => (
                   <div
                     key={idx}
-                    className="h-14 w-14 rounded-lg border border-white/10 bg-black/50 overflow-hidden shrink-0 flex items-center justify-center text-[10px] text-zinc-500 font-mono"
+                    className="h-14 w-14 rounded-lg border border-[var(--sigma-border-strong)] bg-[var(--sigma-surface)] overflow-hidden shrink-0 flex items-center justify-center text-[10px] text-[var(--sigma-text-muted)] font-mono"
                   >
                     {url.endsWith('.mp4') ? 'VIDEO' : <img src={url} alt={`attachment-${idx}`} className="h-full w-full object-cover" />}
                   </div>
@@ -291,37 +304,43 @@ export function ScheduleSocialPostModal({
           )}
 
           {/* Action Mode & Schedule Time */}
-          <div className="space-y-3 pt-1 border-t border-white/10">
-            <div className="flex items-center gap-2">
+          <div className="space-y-3 pt-1 border-t border-[var(--sigma-border)]">
+            <div role="tablist" aria-label="Post action" className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                role="tab"
+                aria-selected={actionType === 'schedule'}
                 onClick={() => setActionType('schedule')}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-lg border transition-all ${
+                className={`flex-1 min-w-24 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                   actionType === 'schedule'
-                    ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
-                    : 'border-white/5 bg-transparent text-zinc-400'
+                    ? 'border-[var(--sigma-primary)]/50 bg-[var(--sigma-primary-subtle)] text-[var(--sigma-text)]'
+                    : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
                 }`}
               >
                 Schedule Slot
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={actionType === 'draft'}
                 onClick={() => setActionType('draft')}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-lg border transition-all ${
+                className={`flex-1 min-w-24 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                   actionType === 'draft'
-                    ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
-                    : 'border-white/5 bg-transparent text-zinc-400'
+                    ? 'border-[var(--sigma-primary)]/50 bg-[var(--sigma-primary-subtle)] text-[var(--sigma-text)]'
+                    : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
                 }`}
               >
                 Save Draft
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={actionType === 'immediate'}
                 onClick={() => setActionType('immediate')}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-lg border transition-all ${
+                className={`flex-1 min-w-24 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                   actionType === 'immediate'
-                    ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
-                    : 'border-white/5 bg-transparent text-zinc-400'
+                    ? 'border-[var(--sigma-primary)]/50 bg-[var(--sigma-primary-subtle)] text-[var(--sigma-text)]'
+                    : 'border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
                 }`}
               >
                 Publish Now
@@ -329,20 +348,21 @@ export function ScheduleSocialPostModal({
             </div>
 
             {actionType === 'schedule' && (
-              <div className="flex items-center gap-2 rounded-xl bg-black/40 border border-white/10 p-2.5">
-                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-2 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] p-2.5">
+                <Clock className="w-4 h-4 text-amber-accent shrink-0" />
                 <input
                   type="datetime-local"
+                  aria-label="Schedule date and time"
                   value={scheduleDateTime}
                   onChange={(e) => setScheduleDateTime(e.target.value)}
-                  className="bg-transparent text-xs text-white outline-none w-full font-mono"
+                  className="bg-transparent text-xs text-[var(--sigma-text)] outline-none w-full min-w-0 font-mono"
                 />
               </div>
             )}
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--sigma-border)]">
             <Button variant="secondary" size="md" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>

@@ -741,7 +741,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <button
             onClick={handleCopySlideText}
             className="sigma-button-secondary px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
@@ -761,7 +761,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={() => handleExportSlidePng(currentSlideIndex)}
             disabled={isExporting}
-            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-2.5 py-1.5 bg-amber-accent/10 hover:bg-amber-accent/20 text-amber-accent border border-amber-accent/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
             Slide PNG
@@ -770,36 +770,42 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={handleExportPdf}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-red-500/20 to-orange-500/20 hover:from-red-500/30 hover:to-orange-500/30 text-red-300 border border-red-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
             title="Download multi-slide PDF document"
           >
-            <FileDown className="w-3.5 h-3.5 text-red-400" />
+            <FileDown className="w-3.5 h-3.5 text-rose-accent" />
             Download PDF
           </button>
 
           <button
             onClick={handleExportPptx}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
             title="Download editable PowerPoint PPTX deck"
           >
-            <Presentation className="w-3.5 h-3.5 text-orange-400" />
+            <Presentation className="w-3.5 h-3.5 text-amber-accent" />
             Download PPTX
           </button>
 
           <button
             onClick={handleExportAllSlides}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/20"
+            className="px-3 py-1.5 bg-[var(--sigma-primary)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse-text)] font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5 fill-black" />
+            <Download className="w-3.5 h-3.5" />
             Export All PNGs
           </button>
         </div>
       </div>
 
       {/* Main Slide Card Stage */}
-      <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl relative overflow-hidden">
+      <div
+        className="flex flex-col items-center justify-center p-4 sm:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--sigma-primary)]"
+        tabIndex={0}
+        role="group"
+        aria-label={`Slide ${currentSlide.slideNumber} of ${totalSlides}. Use arrow keys or number keys to navigate.`}
+        onKeyDown={handleStageKeyDown}
+      >
         {/* Navigation Arrow Left */}
         <button
           onClick={goToPrev}
@@ -925,20 +931,25 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           </div>
         </div>
 
-        {/* Slide Counter Dots / Filmstrip */}
-        <div className="flex items-center gap-1.5 mt-5">
+        {/* Slide Counter Dots / Filmstrip — generous hit areas for the small dots */}
+        <div className="flex items-center gap-1 mt-5">
           {slides.map((s, idx) => (
             <button
               key={s.slideNumber}
               onClick={() => setCurrentSlideIndex(idx)}
-              className={cn(
-                "transition-all cursor-pointer",
-                currentSlideIndex === idx
-                  ? "w-8 h-2 rounded-full bg-[var(--sigma-primary)]"
-                  : "w-2 h-2 rounded-full bg-[var(--sigma-border-strong)] hover:bg-[var(--sigma-text-muted)]"
-              )}
               aria-label={`Go to slide ${s.slideNumber}`}
-            />
+              aria-current={currentSlideIndex === idx ? 'true' : undefined}
+              className="p-1.5 cursor-pointer"
+            >
+              <span
+                className={cn(
+                  "block transition-all",
+                  currentSlideIndex === idx
+                    ? "w-8 h-2 rounded-full bg-[var(--sigma-primary)]"
+                    : "w-2 h-2 rounded-full bg-[var(--sigma-border-strong)] hover:bg-[var(--sigma-text-muted)]"
+                )}
+              />
+            </button>
           ))}
         </div>
       </div>
