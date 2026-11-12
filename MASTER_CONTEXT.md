@@ -1,8 +1,21 @@
 # SigmaTactix Growth OS — Master Context
 
 > **Last updated**: 2026-11-12
-> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes)
-> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. Branch `task/dmsuite-consolidation-and-fixes` on PR #33, pushed, gate green. Verify gate (`npm run verify`) is the release check.
+> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes + final UI polish pass)
+> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+
+## Final UI Polish Pass (Design-System Tokens, Honest States, A11y) — 2026-11-12
+
+13 commits on top of the DM-suite consolidation (`5bc0e98`..`92db675`) covering the production-polish plan:
+
+- **Design-system token + primitive final pass (`5bc0e98`)**: `src/index.css` + `src/components/ui/*` — fixed WCAG-contrast token values (muted-text / accent tonals on light+dark), added focus-visible rings on interactive primitives, introduced a documented type scale, and completed `Dialog`/`Sheet`/`Input`/`Select`/`Tabs`/`Button`/`ThemeToggle` hit-area + font-size tokens. `AppearanceContext` reviewed, no change needed.
+- **Theme-token sweep across suite pages (salvage + round-2/round-3 commits)**: converted raw `zinc-*`/`white`/`black`/`amber-400` surface+status literals on theme-flipping panels to the `sigma-*` semantic tokens + `*-accent` utilities, so the 7-space suite renders correctly in light, dark, and system appearance.
+- **Honest-state KPI / empty-state fixes (`81b5124`, `6f91235`, `f5bb0ba`, `9b4e6a4`, `92db675`)**: fabricated Dashboard series deltas now reflect connector reality (no invented `+2.4%`); the SEO/AEO KPI strip is demo-gated behind `isDemoSeedEnabled()` with a "Not measured" real-mode state; `CarouselCardViewer` renders an honest empty state instead of an invented placeholder slide; `ScheduleSocialPostModal` copy now says "No provider connected / queued until a live gateway" rather than implying a live execution.
+- **Accessibility roles (`9b4e6a4`, `92db675`)**: `tablist`/`tab`/`aria-pressed`/`aria-current` on the schedule modal + carousel filmstrip; keyboard (arrow/digit) navigation + `focus-visible` ring on the slide stage; `aria-label`s on close buttons and datetime inputs.
+- **Growth-diagnostics token correction (`5196fde`)**: undefined `--sigma-text-secondary`/`--sigma-bg-subtle` references mapped to the real `--sigma-text-soft`/`--sigma-surface-subtle` tokens.
+- **Test hygiene (`be46611`)**: excluded `.harness-worktrees/` from vitest and `.gitignore` so agent worktrees no longer pollute the test glob or `git status`.
+
+Verification: `npm run build` (client+server) exit 0; `npm run lint` (`tsc --noEmit`) exit 0; `npm test` 88/90 files / 596 tests pass. The 2 failing files (`src/lib/aiSettingsRoutes.test.ts`, `src/server/routes/mcpRoutes.test.ts`) fail only on `listen EPERM` (sandbox blocks a real socket bind on 127.0.0.1); no polish commit touches them — they are the network/CI-only release check.
 
 ## DM Suite Honest-State Hardening, Audit Fixes & Agent SOP/AOP — 2026-11-12
 
