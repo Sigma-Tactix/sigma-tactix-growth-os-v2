@@ -72,6 +72,7 @@ output/*.mp4
 # --- local working / scratch + personal reference material (added 2026-10-28) ---
 hive/
 worktrees/
+.harness-worktrees/
 tasks/
 docs/tasks/
 roster-backups/
