@@ -6,7 +6,7 @@
 
 ## Final UI Polish Pass (Design-System Tokens, Honest States, A11y) — 2026-11-12
 
-13 commits on top of the DM-suite consolidation (`5bc0e98`..`92db675`) covering the production-polish plan:
+13 commits on top of the DM-suite consolidation (`5bc0e98`..`92db675`), plus a simulator follow-up (`f612718`), covering the production-polish plan:
 
 - **Design-system token + primitive final pass (`5bc0e98`)**: `src/index.css` + `src/components/ui/*` — fixed WCAG-contrast token values (muted-text / accent tonals on light+dark), added focus-visible rings on interactive primitives, introduced a documented type scale, and completed `Dialog`/`Sheet`/`Input`/`Select`/`Tabs`/`Button`/`ThemeToggle` hit-area + font-size tokens. `AppearanceContext` reviewed, no change needed.
 - **Theme-token sweep across suite pages (salvage + round-2/round-3 commits)**: converted raw `zinc-*`/`white`/`black`/`amber-400` surface+status literals on theme-flipping panels to the `sigma-*` semantic tokens + `*-accent` utilities, so the 7-space suite renders correctly in light, dark, and system appearance.
