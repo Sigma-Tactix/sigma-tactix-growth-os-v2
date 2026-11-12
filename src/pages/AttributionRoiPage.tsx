@@ -221,7 +221,7 @@ export default function AttributionRoiPage() {
           value={hasChannelData ? `${overallMER}x` : 'Not measured'}
           delta={hasChannelData ? { value: "Healthy", trend: "up" } : undefined}
           subtext={hasChannelData ? `$${(totalRevenue / 1000).toFixed(0)}k Rev / $${(totalSpend / 1000).toFixed(1)}k Spend` : 'No connected revenue'}
-          icon={<TrendingUp className="w-4 h-4 text-teal-400" />}
+          icon={<TrendingUp className="w-4 h-4 text-cyan-accent" />}
         />
 
         <MetricWidget
@@ -287,10 +287,10 @@ export default function AttributionRoiPage() {
                     <td className="py-3.5 font-sans font-medium text-[var(--sigma-text-soft)]">{item.channel}</td>
                     <td className="py-3.5 text-muted">${item.adSpend.toLocaleString()}</td>
                     <td className="py-3.5 text-muted line-through">${item.reportedCAC.toLocaleString()}</td>
-                    <td className="py-3.5 font-bold text-emerald-400">${item.blendedCAC.toLocaleString()}</td>
+                    <td className="py-3.5 font-bold text-emerald-accent">${item.blendedCAC.toLocaleString()}</td>
                     <td className="py-3.5 text-[var(--sigma-text-soft)]">{item.dealsClosed}</td>
                     <td className="py-3.5 font-bold text-[var(--sigma-text)]">${item.revenueGenerated.toLocaleString()}</td>
-                    <td className="py-3.5 text-right font-bold text-teal-400">{item.mer.toFixed(1)}x</td>
+                    <td className="py-3.5 text-right font-bold text-cyan-accent">{item.mer.toFixed(1)}x</td>
                   </tr>
                 ))}
               </tbody>

@@ -847,20 +847,20 @@ export default function PaidAdsPage() {
       </div>
 
       {/* Strategic Context & Client Briefing (Req 6.a - 6.e) */}
-      <div className="bg-zinc-900/60 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-white/5 gap-3 bg-black/30">
+      <div className="bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-[var(--sigma-border)]/60 gap-3 bg-[var(--sigma-canvas)]/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/20 flex items-center justify-center text-amber-accent">
               <Briefcase size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white font-heading">Client Brief & Strategic Growth Context</h3>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
+                <h3 className="text-base font-bold text-[var(--sigma-text)] font-heading">Client Brief & Strategic Growth Context</h3>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-accent border border-emerald-500/20 font-mono text-[11px]">
                   Example Brief
                 </span>
               </div>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-muted">
                 Grounding parameters for performance media planning, ICP qualification, RFP tenders, and baseline reports.
                 These fields start with an editable example, not data pulled from your workspace or ad platforms — replace them
                 with your real metrics before using this brief to plan.
@@ -871,14 +871,14 @@ export default function PaidAdsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsEditingBrief(!isEditingBrief)}
-              className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] border border-[var(--sigma-border)] rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <Settings2 size={13} className="text-amber-400" />
+              <Settings2 size={13} className="text-amber-accent" />
               {isEditingBrief ? 'Save Context' : 'Edit Brief'}
             </button>
             <button
               onClick={() => setIsBriefExpanded(!isBriefExpanded)}
-              className="p-1.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl border border-white/10 transition-all cursor-pointer"
+              className="p-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-muted hover:text-[var(--sigma-text)] rounded-xl border border-[var(--sigma-border)] transition-all cursor-pointer"
               title={isBriefExpanded ? 'Collapse Brief' : 'Expand Brief'}
             >
               {isBriefExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -896,98 +896,98 @@ export default function PaidAdsPage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {/* 1. Client Brief & Business Profile */}
-                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 border-b border-white/5 pb-2">
+                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
                     <span className="flex items-center gap-1.5">
                       <Building2 size={14} /> Client Business Brief
                     </span>
-                    <span className="text-[11px] text-zinc-500 uppercase">Profile</span>
+                    <span className="text-[11px] text-muted uppercase">Profile</span>
                   </div>
                   {isEditingBrief ? (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Business Overview</label>
+                        <label className="text-[11px] text-muted uppercase font-mono">Business Overview</label>
                         <textarea
                           rows={2}
                           value={clientBrief.businessOverview}
                           onChange={(e) => setClientBrief({ ...clientBrief, businessOverview: e.target.value })}
-                          className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Current Market Position</label>
+                        <label className="text-[11px] text-muted uppercase font-mono">Current Market Position</label>
                         <input
                           type="text"
                           value={clientBrief.currentPosition}
                           onChange={(e) => setClientBrief({ ...clientBrief, currentPosition: e.target.value })}
-                          className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                         />
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Overview & Value Prop</div>
-                        <p className="text-zinc-200 mt-0.5 leading-relaxed text-[11px]">{clientBrief.businessOverview}</p>
+                        <div className="text-[11px] text-muted font-mono uppercase">Overview & Value Prop</div>
+                        <p className="text-[var(--sigma-text-soft)] mt-0.5 leading-relaxed text-[11px]">{clientBrief.businessOverview}</p>
                       </div>
                       <div>
-                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Competitive Position</div>
-                        <p className="text-zinc-400 mt-0.5 text-[11px]">{clientBrief.currentPosition}</p>
+                        <div className="text-[11px] text-muted font-mono uppercase">Competitive Position</div>
+                        <p className="text-muted mt-0.5 text-[11px]">{clientBrief.currentPosition}</p>
                       </div>
                       <div>
-                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Active Marketing Footprint</div>
-                        <p className="text-zinc-400 mt-0.5 text-[11px]">{clientBrief.marketingActivities}</p>
+                        <div className="text-[11px] text-muted font-mono uppercase">Active Marketing Footprint</div>
+                        <p className="text-muted mt-0.5 text-[11px]">{clientBrief.marketingActivities}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* 2. Budget & Acquisition Targets */}
-                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 border-b border-white/5 pb-2">
+                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
                     <span className="flex items-center gap-1.5">
                       <DollarSign size={14} /> Budget & Targets
                     </span>
-                    <span className="text-[11px] text-zinc-400 font-bold bg-zinc-500/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[11px] text-muted font-bold bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 rounded">
                       Pacing: not measured (no live spend)
                     </span>
                   </div>
                   {isEditingBrief ? (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <label className="text-[11px] text-zinc-400 uppercase font-mono">Monthly Budget Ceiling ($)</label>
+                        <label className="text-[11px] text-muted uppercase font-mono">Monthly Budget Ceiling ($)</label>
                         <input
                           type="number"
                           value={clientBrief.targetBudget}
                           onChange={(e) => setClientBrief({ ...clientBrief, targetBudget: Number(e.target.value) })}
-                          className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs font-mono"
+                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs font-mono"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[11px] text-zinc-400 uppercase font-mono">Target CAC ($)</label>
+                          <label className="text-[11px] text-muted uppercase font-mono">Target CAC ($)</label>
                           <input
                             type="number"
                             value={clientBrief.targetCac}
                             onChange={(e) => setClientBrief({ ...clientBrief, targetCac: Number(e.target.value) })}
-                            className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs font-mono"
+                            className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs font-mono"
                           />
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-2 text-xs">
-                      <div className="grid grid-cols-2 gap-2 p-2.5 bg-zinc-900/60 rounded-lg font-mono">
+                      <div className="grid grid-cols-2 gap-2 p-2.5 bg-[var(--sigma-surface-subtle)]/50 rounded-lg font-mono">
                         <div>
-                          <span className="text-[11px] text-zinc-500 uppercase">Monthly Budget</span>
-                          <div className="text-base font-bold text-white mt-0.5">${clientBrief.targetBudget.toLocaleString()}</div>
+                          <span className="text-[11px] text-muted uppercase">Monthly Budget</span>
+                          <div className="text-base font-bold text-[var(--sigma-text)] mt-0.5">${clientBrief.targetBudget.toLocaleString()}</div>
                         </div>
                         <div>
-                          <span className="text-[11px] text-zinc-500 uppercase">Target CAC</span>
-                          <div className="text-base font-bold text-amber-400 mt-0.5">${clientBrief.targetCac}</div>
+                          <span className="text-[11px] text-muted uppercase">Target CAC</span>
+                          <div className="text-base font-bold text-amber-accent mt-0.5">${clientBrief.targetCac}</div>
                         </div>
                       </div>
-                      <div className="text-[11px] text-zinc-400 leading-relaxed">
+                      <div className="text-[11px] text-muted leading-relaxed">
                         Budget enforces strict safety limits. Automated bid adjustments cannot exceed 15% without human approval.
                       </div>
                     </div>
@@ -995,41 +995,41 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* 3. ICP Specifications */}
-                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 border-b border-white/5 pb-2">
+                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
                     <span className="flex items-center gap-1.5">
                       <Target size={14} /> Ideal Customer Profile (ICP)
                     </span>
-                    <span className="text-[11px] text-zinc-500 font-mono">B2B Core</span>
+                    <span className="text-[11px] text-muted font-mono">B2B Core</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[11px] text-zinc-400 uppercase font-mono">ICP Criteria & Firmographics</label>
+                      <label className="text-[11px] text-muted uppercase font-mono">ICP Criteria & Firmographics</label>
                       <textarea
                         rows={3}
                         value={clientBrief.icpProfile}
                         onChange={(e) => setClientBrief({ ...clientBrief, icpProfile: e.target.value })}
-                        className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                        className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                       />
                     </div>
                   ) : (
                     <div className="space-y-2 text-xs">
                       <div>
-                        <div className="text-[11px] text-zinc-500 font-mono uppercase">Target Firmographics</div>
-                        <p className="text-zinc-200 mt-0.5 leading-relaxed text-[11px]">{clientBrief.icpProfile}</p>
+                        <div className="text-[11px] text-muted font-mono uppercase">Target Firmographics</div>
+                        <p className="text-[var(--sigma-text-soft)] mt-0.5 leading-relaxed text-[11px]">{clientBrief.icpProfile}</p>
                       </div>
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">Stripe Stack</span>
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">Series A-C</span>
-                        <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[11px] font-mono text-zinc-300">$5M-$50M ARR</span>
+                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">Stripe Stack</span>
+                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">Series A-C</span>
+                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">$5M-$50M ARR</span>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* 4. Active RFPs & Tenders */}
-                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 border-b border-white/5 pb-2">
+                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
                     <span className="flex items-center gap-1.5">
                       <FileText size={14} /> RFP & Commercial Tenders
                     </span>
@@ -1039,18 +1039,18 @@ export default function PaidAdsPage() {
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[11px] text-zinc-400 uppercase font-mono">Active RFPs & Procurement Requirements</label>
+                      <label className="text-[11px] text-muted uppercase font-mono">Active RFPs & Procurement Requirements</label>
                       <textarea
                         rows={3}
                         value={clientBrief.rfpStatus}
                         onChange={(e) => setClientBrief({ ...clientBrief, rfpStatus: e.target.value })}
-                        className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                        className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                       />
                     </div>
                   ) : (
                     <div className="space-y-2 text-xs">
-                      <p className="text-zinc-200 leading-relaxed text-[11px]">{clientBrief.rfpStatus}</p>
-                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[11px] font-mono text-blue-300">
+                      <p className="text-[var(--sigma-text-soft)] leading-relaxed text-[11px]">{clientBrief.rfpStatus}</p>
+                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[11px] font-mono text-blue-accent/90">
                         Sovereign Vault requirements satisfied for both proposals.
                       </div>
                     </div>
@@ -1058,38 +1058,38 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* 5. Existing Performance Reports & Context */}
-                <div className="md:col-span-2 p-4 bg-black/40 border border-white/5 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 border-b border-white/5 pb-2">
+                <div className="md:col-span-2 p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
                     <span className="flex items-center gap-1.5">
                       <BarChart3 size={14} /> Historical Performance Context & Headwinds
                     </span>
-                    <span className="text-[11px] text-emerald-400 font-mono">Q3 Grounded</span>
+                    <span className="text-[11px] text-emerald-accent font-mono">Q3 Grounded</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[11px] text-zinc-400 uppercase font-mono">Performance Context & Dynamics</label>
+                      <label className="text-[11px] text-muted uppercase font-mono">Performance Context & Dynamics</label>
                       <textarea
                         rows={3}
                         value={clientBrief.historicalContext}
                         onChange={(e) => setClientBrief({ ...clientBrief, historicalContext: e.target.value })}
-                        className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                        className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                       />
                     </div>
                   ) : (
                     <div className="space-y-3 text-xs">
-                      <p className="text-zinc-200 leading-relaxed text-[11px]">{clientBrief.historicalContext}</p>
-                      <div className="grid grid-cols-3 gap-3 p-2 bg-zinc-900/60 rounded-lg font-mono text-center">
+                      <p className="text-[var(--sigma-text-soft)] leading-relaxed text-[11px]">{clientBrief.historicalContext}</p>
+                      <div className="grid grid-cols-3 gap-3 p-2 bg-[var(--sigma-surface-subtle)]/50 rounded-lg font-mono text-center">
                         <div>
-                          <div className="text-[11px] text-zinc-500">Q3 BLENDED CAC</div>
-                          <div className="text-sm font-bold text-white mt-0.5">$48.20</div>
+                          <div className="text-[11px] text-muted">Q3 BLENDED CAC</div>
+                          <div className="text-sm font-bold text-[var(--sigma-text)] mt-0.5">$48.20</div>
                         </div>
                         <div>
-                          <div className="text-[11px] text-zinc-500">Q3 BLENDED ROAS</div>
-                          <div className="text-sm font-bold text-emerald-400 mt-0.5">5.12x</div>
+                          <div className="text-[11px] text-muted">Q3 BLENDED ROAS</div>
+                          <div className="text-sm font-bold text-emerald-accent mt-0.5">5.12x</div>
                         </div>
                         <div>
-                          <div className="text-[11px] text-zinc-500">LTV : CAC RATIO</div>
-                          <div className="text-sm font-bold text-amber-400 mt-0.5">4.2 : 1</div>
+                          <div className="text-[11px] text-muted">LTV : CAC RATIO</div>
+                          <div className="text-sm font-bold text-amber-accent mt-0.5">4.2 : 1</div>
                         </div>
                       </div>
                     </div>
@@ -1209,18 +1209,18 @@ export default function PaidAdsPage() {
           </div>
 
           {/* Industry Media Plan Templates & Benchmarks (Req 6.f, 6.h) */}
-          <div className="p-6 bg-zinc-900/40 border border-white/10 rounded-2xl space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+          <div className="p-6 bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--sigma-border)]/60 pb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded font-mono text-[11px] font-bold">
+                  <span className="px-2 py-0.5 bg-[var(--sigma-accent-amber)]/10 text-amber-accent border border-[var(--sigma-accent-amber)]/20 rounded font-mono text-[11px] font-bold">
                     EVIDENCE-BACKED TEMPLATES
                   </span>
-                  <span className="text-zinc-500 text-xs">•</span>
-                  <span className="text-xs text-zinc-400 font-mono">5 ICP Verticals</span>
+                  <span className="text-muted text-xs">•</span>
+                  <span className="text-xs text-muted font-mono">5 ICP Verticals</span>
                 </div>
-                <h3 className="text-lg font-bold silver-text">Industry Media Plan Templates with Channel Benchmarks</h3>
-                <p className="text-xs text-zinc-400">
+                <h3 className="text-lg font-bold text-[var(--sigma-text)]">Industry Media Plan Templates with Channel Benchmarks</h3>
+                <p className="text-xs text-muted">
                   Pre-calibrated flight templates with real-world channel allocations, target CAC, and conversion benchmarks.
                 </p>
               </div>
@@ -1250,54 +1250,54 @@ export default function PaidAdsPage() {
                 .map(tpl => (
                   <div
                     key={tpl.id}
-                    className="p-5 bg-surface border border-white/10 rounded-2xl space-y-4 hover:border-amber-400/40 transition-all flex flex-col justify-between shadow-xl"
+                    className="p-5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl space-y-4 hover:border-[var(--sigma-accent-amber)]/60/40 transition-all flex flex-col justify-between shadow-xl"
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[11px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[var(--sigma-accent-blue)]/10 border border-[var(--sigma-accent-blue)]/20 text-blue-accent font-mono text-[11px] font-bold">
                           {tpl.industry}
                         </span>
-                        <span className="text-xs font-mono text-zinc-400">
+                        <span className="text-xs font-mono text-muted">
                           {tpl.flightDays}-Day Flight Duration
                         </span>
                       </div>
 
-                      <h4 className="text-base font-bold text-white leading-snug">{tpl.name}</h4>
-                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">{tpl.objective}</p>
+                      <h4 className="text-base font-bold text-[var(--sigma-text)] leading-snug">{tpl.name}</h4>
+                      <p className="text-xs text-muted leading-relaxed font-sans">{tpl.objective}</p>
 
                       {/* Benchmarks Strip */}
-                      <div className="grid grid-cols-3 gap-2 p-2.5 bg-black/40 rounded-xl border border-white/5 text-xs font-mono text-center">
+                      <div className="grid grid-cols-3 gap-2 p-2.5 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 text-xs font-mono text-center">
                         <div>
-                          <span className="text-[11px] text-zinc-500">AVG CPC</span>
-                          <div className="font-bold text-white mt-0.5">{tpl.benchmarks.avgCpc}</div>
+                          <span className="text-[11px] text-muted">AVG CPC</span>
+                          <div className="font-bold text-[var(--sigma-text)] mt-0.5">{tpl.benchmarks.avgCpc}</div>
                         </div>
                         <div>
-                          <span className="text-[11px] text-zinc-500">AVG CVR</span>
-                          <div className="font-bold text-emerald-400 mt-0.5">{tpl.benchmarks.avgCvr}</div>
+                          <span className="text-[11px] text-muted">AVG CVR</span>
+                          <div className="font-bold text-emerald-accent mt-0.5">{tpl.benchmarks.avgCvr}</div>
                         </div>
                         <div>
-                          <span className="text-[11px] text-zinc-500">TARGET ROAS</span>
-                          <div className="font-bold text-amber-400 mt-0.5">{tpl.targetBlendedRoas}x</div>
+                          <span className="text-[11px] text-muted">TARGET ROAS</span>
+                          <div className="font-bold text-amber-accent mt-0.5">{tpl.targetBlendedRoas}x</div>
                         </div>
                       </div>
 
                       {/* Channel Allocation Breakdown with KPIs */}
                       <div className="space-y-2 pt-1">
-                        <div className="text-[11px] font-mono text-zinc-400 uppercase font-bold">Channel Mix & Target KPIs:</div>
+                        <div className="text-[11px] font-mono text-muted uppercase font-bold">Channel Mix & Target KPIs:</div>
                         <div className="space-y-1.5">
                           {tpl.channelMix.map(cm => (
-                            <div key={cm.channel} className="p-2 bg-black/30 rounded-lg border border-white/5 space-y-1">
+                            <div key={cm.channel} className="p-2 bg-[var(--sigma-canvas)]/30 rounded-lg border border-[var(--sigma-border)]/60 space-y-1">
                               <div className="flex items-center justify-between text-xs font-mono">
                                 <div className="flex items-center gap-1.5">
                                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cm.color }} />
-                                  <span className="text-zinc-200">{cm.channel}</span>
+                                  <span className="text-[var(--sigma-text-soft)]">{cm.channel}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[11px] text-zinc-400 font-bold">{cm.weight}% Share</span>
-                                  <span className="text-[11px] text-emerald-400">CPA: {cm.cpa}</span>
+                                  <span className="text-[11px] text-muted font-bold">{cm.weight}% Share</span>
+                                  <span className="text-[11px] text-emerald-accent">CPA: {cm.cpa}</span>
                                 </div>
                               </div>
-                              <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                              <div className="w-full bg-[var(--sigma-surface-subtle)] h-1 rounded-full overflow-hidden">
                                 <div className="h-full rounded-full" style={{ width: `${cm.weight}%`, backgroundColor: cm.color }} />
                               </div>
                             </div>
@@ -1305,19 +1305,19 @@ export default function PaidAdsPage() {
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-zinc-400 italic pt-1">
+                      <p className="text-[11px] text-muted italic pt-1">
                         "{tpl.rationale}"
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                    <div className="pt-3 border-t border-[var(--sigma-border)]/60 flex items-center justify-between">
                       <div className="text-xs font-mono">
-                        <span className="text-zinc-500">Budget: </span>
-                        <span className="font-bold text-white">${tpl.totalBudget.toLocaleString()}</span>
+                        <span className="text-muted">Budget: </span>
+                        <span className="font-bold text-[var(--sigma-text)]">${tpl.totalBudget.toLocaleString()}</span>
                       </div>
                       <button
                         onClick={() => handleApplyIndustryTemplate(tpl)}
-                        className="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-400 hover:text-black text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        className="px-3.5 py-1.5 bg-[var(--sigma-accent-amber)]/10 hover:bg-[var(--sigma-primary-hover)] hover:text-[var(--sigma-inverse-text)] text-amber-accent border border-[var(--sigma-accent-amber)]/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <Wand2 size={13} />
                         Apply Industry Template →
@@ -1337,14 +1337,14 @@ export default function PaidAdsPage() {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold silver-text">Intent & Signal-Based Audience Finder</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-lg font-bold text-[var(--sigma-text)]">Intent & Signal-Based Audience Finder</h3>
+              <p className="text-xs text-muted">
                 Discovers high-propensity buying segments by synthesizing search queries, firmographics, web behavior, and social sentiment.
               </p>
             </div>
             <button
               onClick={() => setIsCustomAudienceModalOpen(!isCustomAudienceModalOpen)}
-              className="px-4 py-2.5 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 amber-glow cursor-pointer shadow-md"
+              className="px-4 py-2.5 bg-[var(--sigma-accent)] text-background font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 amber-glow cursor-pointer shadow-md"
             >
               <Plus size={14} />
               {isCustomAudienceModalOpen ? 'Hide Custom Creator' : 'Create Custom Audience'}
@@ -1353,22 +1353,22 @@ export default function PaidAdsPage() {
 
           {/* Custom Intent & Signal Audience Finder Card (Req 6.i, 6.j) */}
           {isCustomAudienceModalOpen && (
-            <div className="p-6 bg-surface border border-amber-500/30 rounded-2xl space-y-5 shadow-2xl bg-amber-500/[0.02]">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <div className="p-6 bg-surface border border-[var(--sigma-accent-amber)]/30 rounded-2xl space-y-5 shadow-2xl bg-amber-500/[0.02]">
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)]/60 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 flex items-center justify-center text-amber-accent">
                     <Sparkles size={16} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white font-heading">Custom Intent & Signal-Based Audience Builder</h4>
-                    <p className="text-[11px] text-zinc-400">Tailor custom channels, budget envelopes, and trigger signals.</p>
+                    <h4 className="text-sm font-bold text-[var(--sigma-text)] font-heading">Custom Intent & Signal-Based Audience Builder</h4>
+                    <p className="text-[11px] text-muted">Tailor custom channels, budget envelopes, and trigger signals.</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleApplyRecommendedMix}
-                  className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3 py-1.5 bg-[var(--sigma-accent-amber)]/15 hover:bg-[var(--sigma-accent-amber)]/25 text-amber-accent border border-[var(--sigma-accent-amber)]/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Wand2 size={13} />
                   1-Click Recommended Mix
@@ -1378,34 +1378,34 @@ export default function PaidAdsPage() {
               <form onSubmit={handleCreateCustomAudience} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[11px] font-mono uppercase text-zinc-400">Audience Name</label>
+                    <label className="text-[11px] font-mono uppercase text-muted">Audience Name</label>
                     <input
                       type="text"
                       value={customAudienceName}
                       onChange={(e) => setCustomAudienceName(e.target.value)}
-                      className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-xl text-white text-xs"
+                      className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-[var(--sigma-text)] text-xs"
                       placeholder="e.g. Enterprise RevOps Decision Makers"
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-mono uppercase text-zinc-400">Persona & Title Target</label>
+                    <label className="text-[11px] font-mono uppercase text-muted">Persona & Title Target</label>
                     <input
                       type="text"
                       value={customPersona}
                       onChange={(e) => setCustomPersona(e.target.value)}
-                      className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-xl text-white text-xs"
+                      className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-[var(--sigma-text)] text-xs"
                       placeholder="e.g. VP Marketing, Head of Growth"
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-mono uppercase text-zinc-400">Total Addressable Market (TAM)</label>
+                    <label className="text-[11px] font-mono uppercase text-muted">Total Addressable Market (TAM)</label>
                     <input
                       type="text"
                       value={customTam}
                       onChange={(e) => setCustomTam(e.target.value)}
-                      className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-xl text-white text-xs"
+                      className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-[var(--sigma-text)] text-xs"
                       placeholder="e.g. 45,000 Accounts"
                       required
                     />
@@ -1414,7 +1414,7 @@ export default function PaidAdsPage() {
 
                 {/* Objective Selector (Demand Gen vs High Growth vs Executive ABM) */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-mono uppercase text-zinc-400">Stage Objective (Dictates Channel Combination)</label>
+                  <label className="text-[11px] font-mono uppercase text-muted">Stage Objective (Dictates Channel Combination)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { id: 'DEMAND_GEN', label: 'Demand Gen & Awareness', desc: 'Discovery video & social (YouTube, Meta Video, LinkedIn Thought Leader)' },
@@ -1437,12 +1437,12 @@ export default function PaidAdsPage() {
                         className={cn(
                           "p-3 rounded-xl border text-left transition-all cursor-pointer",
                           customObjective === obj.id
-                            ? "bg-amber-400/10 border-amber-400 text-white shadow-md"
-                            : "bg-black/40 border-white/5 text-zinc-400 hover:border-white/20"
+                            ? "bg-amber-400/10 border-[var(--sigma-accent-amber)]/60 text-[var(--sigma-text)] shadow-md"
+                            : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)]/60 text-muted hover:border-[var(--sigma-border-strong)]"
                         )}
                       >
-                        <div className="font-bold text-xs text-white">{obj.label}</div>
-                        <div className="text-[11px] text-zinc-500 mt-0.5">{obj.desc}</div>
+                        <div className="font-bold text-xs text-[var(--sigma-text)]">{obj.label}</div>
+                        <div className="text-[11px] text-muted mt-0.5">{obj.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -1450,7 +1450,7 @@ export default function PaidAdsPage() {
 
                 {/* Custom Channel Selector Checkboxes */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-mono uppercase text-zinc-400">Custom Channels (Select Digital Media Mix)</label>
+                  <label className="text-[11px] font-mono uppercase text-muted">Custom Channels (Select Digital Media Mix)</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       'Google Search (High-Intent RSA)',
@@ -1477,12 +1477,12 @@ export default function PaidAdsPage() {
                           className={cn(
                             "p-2.5 rounded-xl border text-left text-xs font-mono transition-all cursor-pointer flex items-center justify-between",
                             isSelected
-                              ? "bg-amber-400/15 border-amber-400/40 text-white font-bold"
-                              : "bg-black/40 border-white/5 text-zinc-400 hover:border-white/20"
+                              ? "bg-amber-400/15 border-[var(--sigma-accent-amber)]/60/40 text-[var(--sigma-text)] font-bold"
+                              : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)]/60 text-muted hover:border-[var(--sigma-border-strong)]"
                           )}
                         >
                           <span className="text-[11px] truncate mr-1">{ch}</span>
-                          <span className={cn("text-[11px] px-1 rounded", isSelected ? "text-amber-400 font-bold" : "text-zinc-600")}>
+                          <span className={cn("text-[11px] px-1 rounded", isSelected ? "text-amber-accent font-bold" : "text-[var(--sigma-text-soft)]")}>
                             {isSelected ? '✓' : '+'}
                           </span>
                         </button>
@@ -1492,11 +1492,11 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* Budget Slider Input */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-3 bg-black/40 rounded-xl border border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-3 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60">
                   <div>
                     <div className="flex items-center justify-between text-xs font-mono mb-1">
-                      <span className="text-zinc-400">Campaign Flight Budget:</span>
-                      <span className="text-white font-bold text-sm">${customBudget.toLocaleString()}</span>
+                      <span className="text-muted">Campaign Flight Budget:</span>
+                      <span className="text-[var(--sigma-text)] font-bold text-sm">${customBudget.toLocaleString()}</span>
                     </div>
                     <input
                       type="range"
@@ -1505,16 +1505,16 @@ export default function PaidAdsPage() {
                       step="5000"
                       value={customBudget}
                       onChange={(e) => setCustomBudget(Number(e.target.value))}
-                      className="w-full accent-amber-400"
+                      className="w-full accent-[var(--sigma-accent-amber)]"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-mono uppercase text-zinc-400">Trigger Signals (Comma Separated)</label>
+                    <label className="text-[11px] font-mono uppercase text-muted">Trigger Signals (Comma Separated)</label>
                     <input
                       type="text"
                       value={customSignals}
                       onChange={(e) => setCustomSignals(e.target.value)}
-                      className="w-full mt-1 p-2 bg-black/60 border border-white/10 rounded-lg text-white text-xs"
+                      className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
                       placeholder="e.g. Visited pricing 2x, Competitor search"
                     />
                   </div>
@@ -1524,13 +1524,13 @@ export default function PaidAdsPage() {
                   <button
                     type="button"
                     onClick={() => setIsCustomAudienceModalOpen(false)}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-xl text-xs font-mono cursor-pointer"
+                    className="px-4 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] rounded-xl text-xs font-mono cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl amber-glow cursor-pointer shadow-md"
+                    className="px-5 py-2 bg-[var(--sigma-accent)] text-background font-black text-xs uppercase tracking-wider rounded-xl amber-glow cursor-pointer shadow-md"
                   >
                     Save & Activate Audience
                   </button>
@@ -1546,28 +1546,28 @@ export default function PaidAdsPage() {
                 onClick={() => setSelectedAudienceId(aud.id)}
                 className={cn(
                   "p-6 bg-surface border rounded-2xl cursor-pointer transition-all space-y-4 flex flex-col justify-between",
-                  selectedAudienceId === aud.id ? "border-accent shadow-2xl bg-accent/[0.02]" : "border-white/10 hover:border-white/20"
+                  selectedAudienceId === aud.id ? "border-accent shadow-2xl bg-[var(--sigma-accent)]/[0.02]" : "border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                 )}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded bg-white/5 text-zinc-300 font-mono text-[11px]">
+                    <span className="px-2 py-0.5 rounded bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-soft)] font-mono text-[11px]">
                       TAM: {aud.tamEstimate}
                     </span>
-                    <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                    <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-accent bg-emerald-500/10 px-2 py-0.5 rounded">
                       <span>Intent Intensity:</span>
                       <span>{aud.intentScore}%</span>
                     </div>
                   </div>
 
-                  <h4 className="text-base font-bold text-white leading-snug">{aud.name}</h4>
-                  <p className="text-xs text-zinc-400 font-sans">{aud.persona}</p>
+                  <h4 className="text-base font-bold text-[var(--sigma-text)] leading-snug">{aud.name}</h4>
+                  <p className="text-xs text-muted font-sans">{aud.persona}</p>
 
                   {/* Intent Signals */}
-                  <div className="space-y-1.5 pt-2 border-t border-white/5">
+                  <div className="space-y-1.5 pt-2 border-t border-[var(--sigma-border)]/60">
                     <div className="text-[11px] font-mono text-muted uppercase font-bold">Detected Intent Signals:</div>
                     {aud.intentSignals.map((sig, i) => (
-                      <div key={i} className="text-[11px] font-mono text-zinc-300 flex items-start gap-1.5">
+                      <div key={i} className="text-[11px] font-mono text-[var(--sigma-text-soft)] flex items-start gap-1.5">
                         <CheckCircle2 size={12} className="text-accent shrink-0 mt-0.5" />
                         <span>{sig}</span>
                       </div>
@@ -1576,12 +1576,12 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* Primary Channels to Engage this Audience */}
-                <div className="pt-4 border-t border-white/5 space-y-2">
+                <div className="pt-4 border-t border-[var(--sigma-border)]/60 space-y-2">
                   <div className="text-[11px] font-mono text-muted uppercase font-bold">Recommended Channels & Affinity:</div>
                   <div className="space-y-1.5">
                     {aud.primaryChannels.map((ch) => (
                       <div key={ch.channel} className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-zinc-300">{ch.channel}</span>
+                        <span className="text-[var(--sigma-text-soft)]">{ch.channel}</span>
                         <span className="font-bold text-accent">{ch.weight}%</span>
                       </div>
                     ))}
@@ -1594,7 +1594,7 @@ export default function PaidAdsPage() {
                       setActiveTab('CHANNELS_DEVICES');
                       notifySuccess('Audience Applied', `Loaded "${aud.name}" into Channel & Device Allocator.`);
                     }}
-                    className="w-full mt-3 py-2 bg-white/5 hover:bg-accent hover:text-background text-white rounded-xl text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5"
+                    className="w-full mt-3 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-accent)] hover:text-background text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5"
                   >
                     <span>Allocate Budgets to Channels</span>
                     <ArrowRight size={13} />
@@ -1613,34 +1613,34 @@ export default function PaidAdsPage() {
       {activeTab === 'CHANNELS_DEVICES' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Channel Budget Distribution (8 Cols) */}
-          <div className="lg:col-span-8 bg-surface border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+          <div className="lg:col-span-8 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--sigma-border)]/60 pb-4">
               <div>
-                <h3 className="text-lg font-bold silver-text">Audience Channel Engagement & Budget Allocation</h3>
-                <p className="text-xs text-zinc-400 font-mono">
+                <h3 className="text-lg font-bold text-[var(--sigma-text)]">Audience Channel Engagement & Budget Allocation</h3>
+                <p className="text-xs text-muted font-mono">
                   Applied Audience: <span className="text-accent font-bold">{activeAudience.name}</span>
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleAutoApplyResearchedRecommendations}
-                  className="px-3.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  className="px-3.5 py-1.5 bg-[var(--sigma-accent-amber)]/15 hover:bg-[var(--sigma-accent-amber)]/25 text-amber-accent border border-[var(--sigma-accent-amber)]/30 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 >
                   <Wand2 size={13} />
                   Auto-Apply Researched Recommendations
                 </button>
-                <div className="text-right pl-3 border-l border-white/10">
+                <div className="text-right pl-3 border-l border-[var(--sigma-border)]">
                   <div className="text-[11px] font-mono text-muted uppercase">Flight Spend:</div>
-                  <div className="text-xl font-black text-white font-mono">${flightBudget.toLocaleString()}</div>
+                  <div className="text-xl font-black text-[var(--sigma-text)] font-mono">${flightBudget.toLocaleString()}</div>
                 </div>
               </div>
             </div>
 
             {/* Interactive Flight Budget Slider */}
-            <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-2">
+            <div className="p-3 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 space-y-2">
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-zinc-400">Custom Flight Budget Adjustment:</span>
-                <span className="text-white font-bold">${flightBudget.toLocaleString()}</span>
+                <span className="text-muted">Custom Flight Budget Adjustment:</span>
+                <span className="text-[var(--sigma-text)] font-bold">${flightBudget.toLocaleString()}</span>
               </div>
               <input
                 type="range"
@@ -1649,7 +1649,7 @@ export default function PaidAdsPage() {
                 step="5000"
                 value={flightBudget}
                 onChange={(e) => setFlightBudget(Number(e.target.value))}
-                className="w-full accent-amber-400"
+                className="w-full accent-[var(--sigma-accent-amber)]"
               />
             </div>
 
@@ -1658,25 +1658,25 @@ export default function PaidAdsPage() {
               {activeAudience.primaryChannels.map((ch) => {
                 const allocatedDollars = Math.round((flightBudget * ch.weight) / 100);
                 return (
-                  <div key={ch.channel} className="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2">
+                  <div key={ch.channel} className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ch.color }} />
-                        <span className="font-bold text-white">{ch.channel}</span>
+                        <span className="font-bold text-[var(--sigma-text)]">{ch.channel}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-zinc-400">${allocatedDollars.toLocaleString()}</span>
-                        <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-bold">
+                        <span className="text-muted">${allocatedDollars.toLocaleString()}</span>
+                        <span className="px-2 py-0.5 rounded bg-[var(--sigma-accent)]/15 text-accent font-bold">
                           {ch.weight}% Share
                         </span>
                       </div>
                     </div>
 
-                    <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-[var(--sigma-surface-subtle)] h-2 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${ch.weight}%`, backgroundColor: ch.color }} />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-muted pt-1">
                       <span>Projected Reach: {Math.round((allocatedDollars * 18.5)).toLocaleString()} buyers</span>
                       <span>Target CPA: $38 - $55</span>
                       <span>Expected ROAS: 4.8x</span>
@@ -1686,35 +1686,35 @@ export default function PaidAdsPage() {
               })}
             </div>
 
-            <div className="p-4 bg-accent/10 border border-accent/20 rounded-xl flex items-center justify-between text-xs font-mono">
-              <span className="text-zinc-300">Blended Forecast with Current Channel Mix:</span>
-              <div className="flex items-center gap-4 text-white font-bold">
+            <div className="p-4 bg-[var(--sigma-accent)]/10 border border-accent/20 rounded-xl flex items-center justify-between text-xs font-mono">
+              <span className="text-[var(--sigma-text-soft)]">Blended Forecast with Current Channel Mix:</span>
+              <div className="flex items-center gap-4 text-[var(--sigma-text)] font-bold">
                 <span>Blended CAC: $42.10</span>
-                <span className="text-emerald-400">Blended ROAS: 5.12x</span>
+                <span className="text-emerald-accent">Blended ROAS: 5.12x</span>
               </div>
             </div>
           </div>
 
           {/* Device Breakdown & Bid Adjustments (4 Cols) */}
-          <div className="lg:col-span-4 bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6">
-            <div className="border-b border-white/5 pb-4">
-              <h4 className="text-base font-bold silver-text">Device Usage & Bid Strategy</h4>
-              <p className="text-xs text-zinc-400">Adjust bidding multiplier by hardware device category.</p>
+          <div className="lg:col-span-4 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 shadow-2xl space-y-6">
+            <div className="border-b border-[var(--sigma-border)]/60 pb-4">
+              <h4 className="text-base font-bold text-[var(--sigma-text)]">Device Usage & Bid Strategy</h4>
+              <p className="text-xs text-muted">Adjust bidding multiplier by hardware device category.</p>
             </div>
 
             <div className="space-y-4">
               {/* Desktop */}
-              <div className="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2.5">
+              <div className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-2 text-white font-bold">
+                  <div className="flex items-center gap-2 text-[var(--sigma-text)] font-bold">
                     <Laptop size={16} className="text-accent" />
                     <span>Desktop</span>
                   </div>
-                  <span className="font-bold text-white">{activeAudience.deviceSplit.desktop}% Traffic</span>
+                  <span className="font-bold text-[var(--sigma-text)]">{activeAudience.deviceSplit.desktop}% Traffic</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-zinc-400">Bid Adjustment:</span>
-                  <span className={cn("font-bold", deviceBids.desktop >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  <span className="text-muted">Bid Adjustment:</span>
+                  <span className={cn("font-bold", deviceBids.desktop >= 0 ? "text-emerald-accent" : "text-rose-accent")}>
                     {deviceBids.desktop > 0 ? `+${deviceBids.desktop}%` : `${deviceBids.desktop}%`}
                   </span>
                 </div>
@@ -1725,22 +1725,22 @@ export default function PaidAdsPage() {
                   step="5"
                   value={deviceBids.desktop}
                   onChange={(e) => setDeviceBids({ ...deviceBids, desktop: Number(e.target.value) })}
-                  className="w-full accent-amber-400"
+                  className="w-full accent-[var(--sigma-accent-amber)]"
                 />
               </div>
 
               {/* Mobile */}
-              <div className="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2.5">
+              <div className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-2 text-white font-bold">
+                  <div className="flex items-center gap-2 text-[var(--sigma-text)] font-bold">
                     <Smartphone size={16} className="text-accent" />
                     <span>Mobile (iOS & Android)</span>
                   </div>
-                  <span className="font-bold text-white">{activeAudience.deviceSplit.mobile}% Traffic</span>
+                  <span className="font-bold text-[var(--sigma-text)]">{activeAudience.deviceSplit.mobile}% Traffic</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-zinc-400">Bid Adjustment:</span>
-                  <span className={cn("font-bold", deviceBids.mobile >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  <span className="text-muted">Bid Adjustment:</span>
+                  <span className={cn("font-bold", deviceBids.mobile >= 0 ? "text-emerald-accent" : "text-rose-accent")}>
                     {deviceBids.mobile > 0 ? `+${deviceBids.mobile}%` : `${deviceBids.mobile}%`}
                   </span>
                 </div>
@@ -1751,22 +1751,22 @@ export default function PaidAdsPage() {
                   step="5"
                   value={deviceBids.mobile}
                   onChange={(e) => setDeviceBids({ ...deviceBids, mobile: Number(e.target.value) })}
-                  className="w-full accent-amber-400"
+                  className="w-full accent-[var(--sigma-accent-amber)]"
                 />
               </div>
 
               {/* Tablet */}
-              <div className="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2.5">
+              <div className="p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]/60 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-2 text-white font-bold">
+                  <div className="flex items-center gap-2 text-[var(--sigma-text)] font-bold">
                     <Tablet size={16} className="text-accent" />
                     <span>Tablet</span>
                   </div>
-                  <span className="font-bold text-white">{activeAudience.deviceSplit.tablet}% Traffic</span>
+                  <span className="font-bold text-[var(--sigma-text)]">{activeAudience.deviceSplit.tablet}% Traffic</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-zinc-400">Bid Adjustment:</span>
-                  <span className={cn("font-bold", deviceBids.tablet >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  <span className="text-muted">Bid Adjustment:</span>
+                  <span className={cn("font-bold", deviceBids.tablet >= 0 ? "text-emerald-accent" : "text-rose-accent")}>
                     {deviceBids.tablet > 0 ? `+${deviceBids.tablet}%` : `${deviceBids.tablet}%`}
                   </span>
                 </div>
@@ -1777,7 +1777,7 @@ export default function PaidAdsPage() {
                   step="5"
                   value={deviceBids.tablet}
                   onChange={(e) => setDeviceBids({ ...deviceBids, tablet: Number(e.target.value) })}
-                  className="w-full accent-amber-400"
+                  className="w-full accent-[var(--sigma-accent-amber)]"
                 />
               </div>
             </div>
@@ -1787,7 +1787,7 @@ export default function PaidAdsPage() {
                 setActiveTab('UTM_BUILDER');
                 notifySuccess('Strategy Synced', 'Transferred media channels and audience intent into the UTM Builder.');
               }}
-              className="w-full py-3 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl transition-all hover:opacity-90 amber-glow flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[var(--sigma-accent)] text-background font-black text-xs uppercase tracking-wider rounded-xl transition-all hover:opacity-90 amber-glow flex items-center justify-center gap-2"
             >
               <span>Build UTM Tracking Links</span>
               <ArrowRight size={14} />
@@ -1803,8 +1803,8 @@ export default function PaidAdsPage() {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold silver-text">Universal Campaign Metrics Matrix</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-lg font-bold text-[var(--sigma-text)]">Universal Campaign Metrics Matrix</h3>
+              <p className="text-xs text-muted">
                 Where campaign spend, CTRs, CPCs and ROAS will show once a linked ad pipeline reports to this
                 workspace. Until then nothing is shown — the benchmark simulation is clearly labeled and uses zero
                 real spend.
@@ -1813,34 +1813,34 @@ export default function PaidAdsPage() {
             <span className={cn(
               "text-xs font-mono px-3 py-1 rounded-lg border",
               hasConnectedAdAccounts
-                ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                ? "text-emerald-accent bg-emerald-500/10 border-emerald-500/20"
+                : "text-amber-accent bg-[var(--sigma-accent-amber)]/10 border-[var(--sigma-accent-amber)]/20"
             )}>
               {hasConnectedAdAccounts ? 'Active Ad Pipelines Live' : '0 Real Ad Accounts Linked (Spend: $0.00)'}
             </span>
           </div>
 
           {!hasConnectedAdAccounts && !showBenchmarkDemo ? (
-            <div className="p-8 bg-surface border border-white/5 rounded-2xl flex flex-col items-center justify-center text-center space-y-4 shadow-2xl">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="p-8 bg-surface border border-[var(--sigma-border)]/60 rounded-2xl flex flex-col items-center justify-center text-center space-y-4 shadow-2xl">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 flex items-center justify-center text-amber-accent">
                 <AlertCircle size={24} />
               </div>
               <div className="space-y-1.5 max-w-md">
-                <h4 className="text-base font-bold text-white font-heading">No Real Ad Accounts Connected Yet</h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                <h4 className="text-base font-bold text-[var(--sigma-text)] font-heading">No Real Ad Accounts Connected Yet</h4>
+                <p className="text-xs text-muted leading-relaxed font-mono">
                   Your ad spend is strictly $0.00. Once you link your Google Ads (CID) or Meta Ads Manager in Data Pipelines, live campaign telemetry, CPCs, conversions, and ROAS will stream here automatically.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => navigate('/connectors')}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-xs rounded-xl shadow-lg transition-all cursor-pointer"
+                  className="px-4 py-2 bg-[var(--sigma-accent-amber)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse-text)] font-mono font-bold text-xs rounded-xl shadow-lg transition-all cursor-pointer"
                 >
                   Connect Ad Pipelines →
                 </button>
                 <button
                   onClick={() => setShowBenchmarkDemo(true)}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 font-mono text-xs rounded-xl border border-white/10 transition-all cursor-pointer"
+                  className="px-4 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] font-mono text-xs rounded-xl border border-[var(--sigma-border)] transition-all cursor-pointer"
                 >
                   View Target Benchmark Simulation Model
                 </button>
@@ -1849,24 +1849,24 @@ export default function PaidAdsPage() {
           ) : (
             <div className="space-y-4">
               {showBenchmarkDemo && !hasConnectedAdAccounts && (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs font-mono text-amber-300">
+                <div className="p-3 bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 rounded-xl flex items-center justify-between text-xs font-mono text-amber-300">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-[var(--sigma-accent-amber)] animate-pulse" />
                     <span>BENCHMARK SIMULATION: Pre-launch performance model (zero real ad spend).</span>
                   </div>
                   <button
                     onClick={() => setShowBenchmarkDemo(false)}
-                    className="underline hover:text-white cursor-pointer"
+                    className="underline hover:text-[var(--sigma-text)] cursor-pointer"
                   >
                     Hide Simulation
                   </button>
                 </div>
               )}
 
-              <div className="bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-surface border border-[var(--sigma-border)] rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-black/50 text-[11px] uppercase tracking-wider text-muted border-b border-white/10 font-bold">
+                    <thead className="bg-[var(--sigma-canvas)]/40 text-[11px] uppercase tracking-wider text-muted border-b border-[var(--sigma-border)] font-bold">
                       <tr>
                         <th className="px-4 py-3.5">Campaign & Type</th>
                         <th className="px-4 py-3.5">Network</th>
@@ -1880,30 +1880,30 @@ export default function PaidAdsPage() {
                         <th className="px-4 py-3.5">SQLs (Pipeline)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[var(--sigma-border)]/60">
                       {CAMPAIGN_METRICS_DATA.map((row) => (
-                        <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={row.id} className="hover:bg-[var(--sigma-surface-subtle)]/60 transition-colors">
                           <td className="px-4 py-3.5">
-                            <div className="font-bold text-white text-xs truncate max-w-[180px]">{row.campaignName}</div>
+                            <div className="font-bold text-[var(--sigma-text)] text-xs truncate max-w-[180px]">{row.campaignName}</div>
                             <span className="text-[11px] text-accent font-mono">{row.campaignType}</span>
                           </td>
-                          <td className="px-4 py-3.5 text-zinc-300">{row.channel}</td>
-                          <td className="px-4 py-3.5 font-bold text-white">${row.spend.toLocaleString()}</td>
-                          <td className="px-4 py-3.5 text-zinc-300">{row.impressions.toLocaleString()}</td>
+                          <td className="px-4 py-3.5 text-[var(--sigma-text-soft)]">{row.channel}</td>
+                          <td className="px-4 py-3.5 font-bold text-[var(--sigma-text)]">${row.spend.toLocaleString()}</td>
+                          <td className="px-4 py-3.5 text-[var(--sigma-text-soft)]">{row.impressions.toLocaleString()}</td>
                           <td className="px-4 py-3.5">
-                            <div className="text-white">{row.clicks.toLocaleString()}</div>
-                            <div className="text-[11px] text-emerald-400">{row.ctr}%</div>
+                            <div className="text-[var(--sigma-text)]">{row.clicks.toLocaleString()}</div>
+                            <div className="text-[11px] text-emerald-accent">{row.ctr}%</div>
                           </td>
-                          <td className="px-4 py-3.5 text-zinc-300">${row.cpc.toFixed(2)}</td>
+                          <td className="px-4 py-3.5 text-[var(--sigma-text-soft)]">${row.cpc.toFixed(2)}</td>
                           <td className="px-4 py-3.5">
-                            <div className="text-white font-bold">{row.conversions.toLocaleString()}</div>
-                            <div className="text-[11px] text-amber-400">${row.cpa.toFixed(2)}</div>
+                            <div className="text-[var(--sigma-text)] font-bold">{row.conversions.toLocaleString()}</div>
+                            <div className="text-[11px] text-amber-accent">${row.cpa.toFixed(2)}</div>
                           </td>
-                          <td className="px-4 py-3.5 font-bold text-emerald-400">${row.revenue.toLocaleString()}</td>
-                          <td className="px-4 py-3.5 font-black text-white">{row.roas.toFixed(2)}x</td>
+                          <td className="px-4 py-3.5 font-bold text-emerald-accent">${row.revenue.toLocaleString()}</td>
+                          <td className="px-4 py-3.5 font-black text-[var(--sigma-text)]">{row.roas.toFixed(2)}x</td>
                           <td className="px-4 py-3.5">
-                            <div className="text-white font-bold">{row.sqls} SQLs</div>
-                            <div className="text-[11px] text-secondary">${(row.pipelineValue / 1000).toFixed(0)}k pipeline</div>
+                            <div className="text-[var(--sigma-text)] font-bold">{row.sqls} SQLs</div>
+                            <div className="text-[11px] text-muted">${(row.pipelineValue / 1000).toFixed(0)}k pipeline</div>
                           </td>
                         </tr>
                       ))}
@@ -1922,10 +1922,10 @@ export default function PaidAdsPage() {
       {activeTab === 'UTM_BUILDER' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* UTM Form (7 Cols) */}
-          <div className="lg:col-span-7 bg-surface border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="lg:col-span-7 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
             <div>
-              <h3 className="text-lg font-bold silver-text">Autonomous UTM Builder & Generator</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-lg font-bold text-[var(--sigma-text)]">Autonomous UTM Builder & Generator</h3>
+              <p className="text-xs text-muted">
                 Synthesizes canonical campaign tracking URLs formatted for GA4 Measurement Protocol, HubSpot CRM, and Second Brain attribution.
               </p>
             </div>
@@ -1938,7 +1938,7 @@ export default function PaidAdsPage() {
                   value={utmUrl}
                   onChange={(e) => setUtmUrl(e.target.value)}
                   placeholder="https://sigmatactix.com/growth-os"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
 
@@ -1950,7 +1950,7 @@ export default function PaidAdsPage() {
                     value={utmCampaign}
                     onChange={(e) => setUtmCampaign(e.target.value)}
                     placeholder="q4_enterprise_growth"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
 
@@ -1965,7 +1965,7 @@ export default function PaidAdsPage() {
                       else if (e.target.value === 'youtube') setUtmMedium('video');
                       else if (e.target.value === 'newsletter') setUtmMedium('email');
                     }}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="google">Google Ads (Search / PMax)</option>
                     <option value="meta">Meta (Instagram / Facebook)</option>
@@ -1985,7 +1985,7 @@ export default function PaidAdsPage() {
                     value={utmMedium}
                     onChange={(e) => setUtmMedium(e.target.value)}
                     placeholder="cpc / paid_social / video"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
 
@@ -1996,7 +1996,7 @@ export default function PaidAdsPage() {
                     value={utmAudienceTag}
                     onChange={(e) => setUtmAudienceTag(e.target.value)}
                     placeholder="founders_series_b"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
               </div>
@@ -2009,7 +2009,7 @@ export default function PaidAdsPage() {
                     value={utmContent}
                     onChange={(e) => setUtmContent(e.target.value)}
                     placeholder="carousel_second_brain_v1"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
 
@@ -2020,7 +2020,7 @@ export default function PaidAdsPage() {
                     value={utmTerm}
                     onChange={(e) => setUtmTerm(e.target.value)}
                     placeholder="b2b_growth_os"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
               </div>
@@ -2030,7 +2030,7 @@ export default function PaidAdsPage() {
               <button
                 type="button"
                 onClick={handleBatchGenerateUtms}
-                className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-mono font-bold uppercase transition-all border border-white/10 flex items-center gap-2"
+                className="px-4 py-2.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold uppercase transition-all border border-[var(--sigma-border)] flex items-center gap-2"
               >
                 <Layers size={13} className="text-accent" />
                 <span>Batch Generate All 4 Channels</span>
@@ -2039,27 +2039,27 @@ export default function PaidAdsPage() {
           </div>
 
           {/* UTM Preview Box (5 Cols) */}
-          <div className="lg:col-span-5 bg-surface border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="lg:col-span-5 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={16} className="text-accent" />
-                <h4 className="text-base font-bold silver-text">Generated Canonical URL</h4>
+                <h4 className="text-base font-bold text-[var(--sigma-text)]">Generated Canonical URL</h4>
               </div>
-              <p className="text-xs text-zinc-400 font-mono">Real-time concatenated parameter link.</p>
+              <p className="text-xs text-muted font-mono">Real-time concatenated parameter link.</p>
             </div>
 
-            <div className="p-4 bg-black/70 rounded-xl border border-white/10 space-y-3">
-              <div className="text-xs font-mono text-zinc-300 break-all leading-relaxed select-all">
+            <div className="p-4 bg-black/70 rounded-xl border border-[var(--sigma-border)] space-y-3">
+              <div className="text-xs font-mono text-[var(--sigma-text-soft)] break-all leading-relaxed select-all">
                 {generatedUtmLink}
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--sigma-border)]/60">
+                <span className="text-[11px] font-mono text-emerald-accent flex items-center gap-1">
                   <CheckCircle2 size={12} /> Valid GA4 Syntax
                 </span>
                 <button
                   onClick={handleCopyUtm}
-                  className="px-4 py-2 bg-accent text-background font-bold text-xs uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all hover:opacity-90 amber-glow"
+                  className="px-4 py-2 bg-[var(--sigma-accent)] text-background font-bold text-xs uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all hover:opacity-90 amber-glow"
                 >
                   {copiedUtm ? <Check size={13} /> : <Copy size={13} />}
                   <span>{copiedUtm ? 'Copied!' : 'Copy UTM Link'}</span>
@@ -2068,24 +2068,24 @@ export default function PaidAdsPage() {
             </div>
 
             {/* Individual Parameter Badges */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)]/60">
               <div className="text-[11px] font-mono text-muted uppercase font-bold">Attribution Breakdown:</div>
               <div className="space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between p-2 rounded-lg bg-black/40">
-                  <span className="text-zinc-400">utm_source:</span>
+                <div className="flex justify-between p-2 rounded-lg bg-[var(--sigma-surface-subtle)]">
+                  <span className="text-muted">utm_source:</span>
                   <span className="text-accent font-bold">{utmChannel}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-black/40">
-                  <span className="text-zinc-400">utm_medium:</span>
-                  <span className="text-white font-bold">{utmMedium}</span>
+                <div className="flex justify-between p-2 rounded-lg bg-[var(--sigma-surface-subtle)]">
+                  <span className="text-muted">utm_medium:</span>
+                  <span className="text-[var(--sigma-text)] font-bold">{utmMedium}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-black/40">
-                  <span className="text-zinc-400">utm_campaign:</span>
-                  <span className="text-emerald-400 font-bold">{utmCampaign}</span>
+                <div className="flex justify-between p-2 rounded-lg bg-[var(--sigma-surface-subtle)]">
+                  <span className="text-muted">utm_campaign:</span>
+                  <span className="text-emerald-accent font-bold">{utmCampaign}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-black/40">
-                  <span className="text-zinc-400">utm_content:</span>
-                  <span className="text-zinc-300 font-bold truncate max-w-[180px]">{utmAudienceTag}_{utmContent}</span>
+                <div className="flex justify-between p-2 rounded-lg bg-[var(--sigma-surface-subtle)]">
+                  <span className="text-muted">utm_content:</span>
+                  <span className="text-[var(--sigma-text-soft)] font-bold truncate max-w-[180px]">{utmAudienceTag}_{utmContent}</span>
                 </div>
               </div>
             </div>
@@ -2098,36 +2098,36 @@ export default function PaidAdsPage() {
       {/* ========================================================================= */}
       {activeTab === 'SEARCH_ADS' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-4 p-6 bg-surface border border-white/10 rounded-2xl shadow-xl">
-            <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+          <div className="space-y-4 p-6 bg-surface border border-[var(--sigma-border)] rounded-2xl shadow-xl">
+            <div className="text-xs font-mono font-bold text-muted uppercase tracking-wider">
               Google RSA Generator
             </div>
 
             <div>
-              <label className="text-[11px] font-mono text-zinc-400 block mb-1">Target Keywords (Comma Separated)</label>
+              <label className="text-[11px] font-mono text-muted block mb-1">Target Keywords (Comma Separated)</label>
               <textarea
                 value={searchKeywords}
                 onChange={e => setSearchKeywords(e.target.value)}
                 rows={3}
-                className="w-full p-3 bg-black/60 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400/60"
+                className="w-full p-3 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-xs text-[var(--sigma-text)] placeholder-zinc-500 focus:outline-none focus:border-[var(--sigma-accent-amber)]/60/60"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-mono text-zinc-400 block mb-1">Target CPA ($)</label>
+              <label className="text-[11px] font-mono text-muted block mb-1">Target CPA ($)</label>
               <input
                 type="number"
                 value={targetCpaInput}
                 onChange={e => setTargetCpaInput(Number(e.target.value))}
-                className="w-full p-2.5 bg-black/60 border border-zinc-800 rounded-xl text-xs text-white"
+                className="w-full p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-xl text-xs text-[var(--sigma-text)]"
               />
             </div>
 
-            <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-1 text-xs">
-              <div className="text-amber-400 font-bold flex items-center gap-1">
+            <div className="p-3 bg-amber-500/5 border border-[var(--sigma-accent-amber)]/20 rounded-xl space-y-1 text-xs">
+              <div className="text-amber-accent font-bold flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Negative Keyword Sentinel
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed">
                 Automatically injects 420+ B2B negative exclusions (e.g. "free", "login", "jobs", "templates") to protect ad spend.
               </p>
             </div>
@@ -2135,44 +2135,44 @@ export default function PaidAdsPage() {
             <button
               onClick={handleGenerateRsa}
               disabled={isGeneratingRsa}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10 disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-[var(--sigma-inverse-text)] font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10 disabled:opacity-50"
             >
               <Sparkles className={cn("w-4 h-4", isGeneratingRsa && "animate-spin")} />
               {isGeneratingRsa ? 'Generating RSA Variations...' : 'Generate Responsive Search Ad'}
             </button>
           </div>
 
-          <div className="lg:col-span-2 p-6 bg-surface border border-white/10 rounded-2xl space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <div className="lg:col-span-2 p-6 bg-surface border border-[var(--sigma-border)] rounded-2xl space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)]/60 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">Responsive Search Ad Draft</h3>
-                <div className="text-xs font-mono text-zinc-400 mt-0.5">
+                <h3 className="font-bold text-[var(--sigma-text)] text-sm">Responsive Search Ad Draft</h3>
+                <div className="text-xs font-mono text-muted mt-0.5">
                   {rsaDraft
                     ? `Engine: ${rsaDraft.engine === 'gemini' ? 'configured model' : 'local template (no model key)'}`
                     : 'No draft generated yet'}
                 </div>
               </div>
-              <span className="px-2.5 py-1 bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 text-xs font-mono rounded-lg">
+              <span className="px-2.5 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] text-muted text-xs font-mono rounded-lg">
                 Status: Local draft — not pushed to Google
               </span>
             </div>
 
             {rsaDraft ? (
-              <div className="p-4 bg-black/80 border border-zinc-800 rounded-xl space-y-2 font-sans">
-                <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                  <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[11px]">Draft</span>
+              <div className="p-4 bg-[var(--sigma-canvas)]/80 border border-[var(--sigma-border)] rounded-xl space-y-2 font-sans">
+                <div className="flex items-center gap-2 text-[11px] text-muted">
+                  <span className="font-bold text-[var(--sigma-text)] bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 rounded text-[11px]">Draft</span>
                   <span>{utmUrl}</span>
                 </div>
-                <pre className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap font-sans max-h-96 overflow-y-auto">
+                <pre className="text-xs text-[var(--sigma-text-soft)] leading-relaxed whitespace-pre-wrap font-sans max-h-96 overflow-y-auto">
                   {rsaDraft.content}
                 </pre>
-                <p className="text-[11px] text-zinc-500 pt-1">
+                <p className="text-[11px] text-muted pt-1">
                   Copy is editable above and lives in this session only. Pushing it to Google Ads requires a connected ad
                   account; no campaign was created by generating this draft.
                 </p>
               </div>
             ) : (
-              <div className="p-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+              <div className="p-6 text-center text-xs text-muted border border-dashed border-[var(--sigma-border)] rounded-xl">
                 Enter target keywords and run "Generate Responsive Search Ad" to draft RSA copy locally.
                 {rsaDraft ? '' : ' Nothing is pushed to Google — this studio does not create live campaigns yet.'}
               </div>
@@ -2184,18 +2184,18 @@ export default function PaidAdsPage() {
       {/* Media Plan Creation Modal */}
       <AnimatePresence>
         {isPlanModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--sigma-canvas)]/85 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/15 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6"
+              className="bg-surface border border-[var(--sigma-border-strong)] rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <h3 className="text-lg font-bold silver-text">Create Multi-Channel Media Plan</h3>
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
+                <h3 className="text-lg font-bold text-[var(--sigma-text)]">Create Multi-Channel Media Plan</h3>
                 <button
                   onClick={() => setIsPlanModalOpen(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg text-muted hover:text-white"
+                  className="p-1 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-muted hover:text-[var(--sigma-text)]"
                 >
                   ✕
                 </button>
@@ -2210,7 +2210,7 @@ export default function PaidAdsPage() {
                     value={newPlanName}
                     onChange={(e) => setNewPlanName(e.target.value)}
                     placeholder="e.g. Q1 SaaS Demand Capture Flight"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white"
+                    className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)]"
                   />
                 </div>
 
@@ -2220,7 +2220,7 @@ export default function PaidAdsPage() {
                     <select
                       value={newPlanObjective}
                       onChange={(e) => setNewPlanObjective(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)]"
                     >
                       <option value="Direct Revenue Capture">Direct Revenue Capture</option>
                       <option value="B2B Pipeline Generation">B2B Pipeline Generation</option>
@@ -2236,7 +2236,7 @@ export default function PaidAdsPage() {
                       required
                       value={newPlanBudget}
                       onChange={(e) => setNewPlanBudget(Number(e.target.value))}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono"
                     />
                   </div>
                 </div>
@@ -2249,7 +2249,7 @@ export default function PaidAdsPage() {
                       required
                       value={newPlanCac}
                       onChange={(e) => setNewPlanCac(Number(e.target.value))}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono"
                     />
                   </div>
 
@@ -2261,7 +2261,7 @@ export default function PaidAdsPage() {
                       required
                       value={newPlanRoas}
                       onChange={(e) => setNewPlanRoas(Number(e.target.value))}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono"
                     />
                   </div>
                 </div>
@@ -2273,7 +2273,7 @@ export default function PaidAdsPage() {
                       type="date"
                       value={newPlanStart}
                       onChange={(e) => setNewPlanStart(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono"
                     />
                   </div>
 
@@ -2283,22 +2283,22 @@ export default function PaidAdsPage() {
                       type="date"
                       value={newPlanEnd}
                       onChange={(e) => setNewPlanEnd(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white font-mono"
+                      className="w-full bg-black/50 border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 flex justify-end gap-3 border-t border-white/10">
+                <div className="pt-2 flex justify-end gap-3 border-t border-[var(--sigma-border)]">
                   <button
                     type="button"
                     onClick={() => setIsPlanModalOpen(false)}
-                    className="px-5 py-2.5 bg-white/5 text-muted hover:text-white rounded-xl text-xs font-mono font-bold"
+                    className="px-5 py-2.5 bg-[var(--sigma-surface-subtle)] text-muted hover:text-[var(--sigma-text)] rounded-xl text-xs font-mono font-bold"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-accent text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 amber-glow"
+                    className="px-6 py-2.5 bg-[var(--sigma-accent)] text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 amber-glow"
                   >
                     Initialize Media Plan
                   </button>
@@ -2312,26 +2312,26 @@ export default function PaidAdsPage() {
       {/* Upload Media Plan AI Extraction Modal (Req 6.g) */}
       <AnimatePresence>
         {isUploadPlanModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--sigma-canvas)]/80 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+              className="w-full max-w-lg bg-zinc-900 border border-[var(--sigma-border)] rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <div className="flex items-center justify-between p-5 border-b border-[var(--sigma-border)]/60">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 flex items-center justify-center text-amber-accent">
                     <FileUp size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white text-base">Upload Media Plan & Extract with AI</h3>
-                    <p className="text-xs text-zinc-400">Auto-identifies budgets, flight dates, channel mix, and CAC targets</p>
+                    <h3 className="font-bold text-[var(--sigma-text)] text-base">Upload Media Plan & Extract with AI</h3>
+                    <p className="text-xs text-muted">Auto-identifies budgets, flight dates, channel mix, and CAC targets</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsUploadPlanModalOpen(false)}
-                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                  className="p-1.5 text-muted hover:text-[var(--sigma-text)] rounded-lg hover:bg-[var(--sigma-surface-subtle)] transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -2340,13 +2340,13 @@ export default function PaidAdsPage() {
               <div className="p-6 space-y-4">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-8 border-2 border-dashed border-white/20 hover:border-amber-400/50 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-black/40 hover:bg-amber-400/[0.02]"
+                  className="p-8 border-2 border-dashed border-[var(--sigma-border-strong)] hover:border-[var(--sigma-accent-amber)]/60/50 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-accent-amber)]/[0.04]"
                 >
-                  <Upload size={36} className="text-amber-400 mb-3" />
-                  <div className="font-bold text-sm text-white">Click to upload or drag & drop media plan</div>
-                  <div className="text-xs text-zinc-500 mt-1">Supports CSV, XLSX, PDF, or JSON exports from agency/internal planning</div>
+                  <Upload size={36} className="text-amber-accent mb-3" />
+                  <div className="font-bold text-sm text-[var(--sigma-text)]">Click to upload or drag & drop media plan</div>
+                  <div className="text-xs text-muted mt-1">Supports CSV, XLSX, PDF, or JSON exports from agency/internal planning</div>
                   {uploadedFileName && (
-                    <div className="mt-3 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full font-mono text-xs">
+                    <div className="mt-3 px-3 py-1 bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 text-amber-accent rounded-full font-mono text-xs">
                       Selected: {uploadedFileName}
                     </div>
                   )}
@@ -2360,13 +2360,13 @@ export default function PaidAdsPage() {
                 </div>
 
                 {isUploadingPlan ? (
-                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-3 text-amber-400 font-mono text-xs">
-                    <RefreshCw size={16} className="animate-spin text-amber-400" />
+                  <div className="p-4 bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/30 rounded-xl flex items-center gap-3 text-amber-accent font-mono text-xs">
+                    <RefreshCw size={16} className="animate-spin text-amber-accent" />
                     <span>AI parsing media plan structure, budget tables, and channel weightings...</span>
                   </div>
                 ) : (
-                  <div className="p-3 bg-zinc-800/40 rounded-xl text-xs space-y-1.5 font-mono text-zinc-400">
-                    <div className="text-white font-bold">AI Extraction Capabilities:</div>
+                  <div className="p-3 bg-[var(--sigma-surface-subtle)]/40 rounded-xl text-xs space-y-1.5 font-mono text-muted">
+                    <div className="text-[var(--sigma-text)] font-bold">AI Extraction Capabilities:</div>
                     <div>• Automatically detects flight start/end dates and total budget envelope</div>
                     <div>• Maps channel weights to Google Ads, Meta Ads, and LinkedIn ABM</div>
                     <div>• Ingests benchmark CAC targets and expected conversion volumes</div>
@@ -2377,14 +2377,14 @@ export default function PaidAdsPage() {
                   <button
                     type="button"
                     onClick={() => setIsUploadPlanModalOpen(false)}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-xl text-xs font-mono"
+                    className="px-4 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] rounded-xl text-xs font-mono"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-5 py-2 bg-accent text-background font-black text-xs uppercase tracking-wider rounded-xl amber-glow"
+                    className="px-5 py-2 bg-[var(--sigma-accent)] text-background font-black text-xs uppercase tracking-wider rounded-xl amber-glow"
                   >
                     Select File
                   </button>

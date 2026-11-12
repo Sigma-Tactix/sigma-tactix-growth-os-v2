@@ -98,6 +98,9 @@ export default function EcosystemStatusBar({
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>('sec-agents');
   const [expandedFixId, setExpandedFixId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Element ids an operator has been routed to remediate. Used to show "awaiting
+  // verification" instead of re-offering the fix — the panel never claims a fix
+  // was verified, because it has no health endpoint to verify against.
   const [remediatedIds, setRemediatedIds] = useState<Record<string, boolean>>({});
   const demoMode = isDemoSeedEnabled();
 
@@ -394,35 +397,46 @@ export default function EcosystemStatusBar({
     }
   ] : []);
 
-  // Handle 1-click Quick Fix
+  // "Apply Quick Fix" has no remediation backend to call. It routes the operator
+  // to the tool that can actually perform the fix and marks the element as
+  // awaiting verification. Claiming "health verified" here would fabricate a
+  // state the panel has no evidence for.
   const handleApplyQuickFix = (elementId: string) => {
-    setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
-    let remediatedName = 'Ecosystem Element';
+    let target: { name: string; element: EcosystemElement; route?: string } | null = null;
     setSections(prevSections => prevSections.map(sec => ({
       ...sec,
       subSections: sec.subSections.map(sub => ({
         ...sub,
         elements: sub.elements.map(el => {
           if (el.id === elementId) {
-            remediatedName = el.name;
+            target = {
+              name: el.name,
+              element: el,
+              route: el.howToFix?.targetRoute
+            };
             return {
               ...el,
-              status: 'OPERATIONAL',
-              diagnosticDetail: `Remediated: Actionable step completed successfully. Health verified.`,
-              latency: '14ms',
-              lastHeartbeat: 'Just now'
+              status: 'WARNING',
+              diagnosticDetail: 'Remediation routed to the responsible tool. Awaiting operator verification — this panel has no health endpoint to confirm it.'
             };
           }
           return el;
         })
       }))
     })));
-
-    notifySuccess(
-      'Issue Remediated Successfully',
-      `${remediatedName} returned to OPERATIONAL status. Zero error flags remaining.`,
-      { category: 'SYSTEM' }
-    );
+    if (target && 'element' in target) {
+      // `setSections` runs its updater synchronously in React 19, so the lookup
+      // above is complete before we act on it.
+      if (target.element?.howToFix?.targetRoute) {
+        navigate(target.element.howToFix.targetRoute);
+      }
+      setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
+      notifyInfo(
+        'Remediation Routed',
+        `${target.name} was routed to its responsible tool. No fix was applied and no health verification was performed.`,
+        { category: 'SYSTEM' }
+      );
+    }
   };
 
   // Run full health refresh
