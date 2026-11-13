@@ -1,8 +1,18 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-11-12
-> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes + final UI polish pass)
+> **Last updated**: 2026-11-13
+> **Version**: v0.2.18-dev (DM Suite honest-state hardening + dashboard/app-shell brand polish pass, Sigma Tactix design-system index applied)
 > **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+
+## Dashboard + App-Shell Brand Polish (Sigma Tactix Design-System Index applied) — 2026-11-13
+
+Uncommitted batch on `task/dmsuite-consolidation-and-fixes`, applied against the "Sigma Tactix Design System Index Aug'26" brand guide (Sigma Orange #FF481B anchor, 8px spacing, radius/elevation tokens, do/don't rules: no decorative status dots, no dead controls, semantic accents only):
+
+- **`src/pages/Dashboard.tsx` — Topline Report surface**: header moved onto the `.sigma-page-header` material (radial brand wash + inset highlight, no flat H1 against the canvas); KPI strip restructured with an overline label, a `Benchmark reference` context line, and hairline `divide-x` separators instead of four equal cells; media-mode + range controls switched to the shared `sigma-segmented` tokens (`aria-pressed`); channel-benchmarks card header simplified (decorative accent stripe removed, title carries hierarchy); activity-feed header dropped its dead `MoreVertical` icon and non-state dot, empty state copy now names the cause (no ledger events yet). All copy em-dash-free per the copy rules.
+- **`src/components/Layout.tsx` — app shell**: compact `SigmaTactixLogo` mark added at the top-left of `.sigma-topbar` (brand anchor next to quick search; sidebar keeps the full lockup); `ThemeToggle` is now always visible in the top bar instead of hidden below `xl` (light/dark/system via `AppearanceContext`, persisted to `localStorage`).
+- **Verification discipline**: temporary `src/preview.tsx` + `preview.html` harness (mounts `Layout` + `Dashboard` under the real providers, bypassing only the Supabase `AuthGate`) used to verify rendering in both themes in the Browser pane; harness deleted after the check.
+
+Verification: `npm run build` exit 0; `npm run lint` (`tsc --noEmit`) exit 0; `npm test` 88/90 files / 596 tests pass — the 2 failing files are the same pre-existing sandbox-blocked server-route files (`aiSettingsRoutes`, `mcpRoutes`, `listen EPERM` on 127.0.0.1), confirmed by a clean-baseline stash-and-retest; this batch touches neither. Note: a running production server serves the pre-edit `dist/` bundle until it is restarted after `npm run build` (rebuild 2026-11-13 06:11 now contains the shell changes).
 
 ## Final UI Polish Pass (Design-System Tokens, Honest States, A11y) — 2026-11-12
 
