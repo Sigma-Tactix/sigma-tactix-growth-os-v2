@@ -454,6 +454,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={18} />
           </button>
 
+          {/* Brand mark — top-left anchor for the app header */}
+          <SigmaTactixLogo
+            variant="mark"
+            size={30}
+            onClick={() => navigate('/')}
+            className="shrink-0 md:mr-2"
+          />
+
           {/* Quick Search */}
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-xs 2xl:max-w-md relative">
              <div className="w-full relative group">
@@ -651,7 +659,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}>STATUS</span>
             </button>
 
-            <div className="hidden xl:block"><ThemeToggle /></div>
+            <ThemeToggle />
             <div className="hidden h-5 w-px sigma-divider border-l mx-0.5 sm:block" />
             
             {/* Role Switcher — click-toggle (was hover-only, which fails WCAG 2.1.1) */}

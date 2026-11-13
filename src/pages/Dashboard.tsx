@@ -359,44 +359,44 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6" data-tutorial-id="tut-dashboard-hero">
-            <div>
-              <div className="text-xs text-[var(--sigma-text-muted)] mb-2 flex items-center gap-2 font-mono no-export">
-                <span>Executive Reporting</span>
-                <span className="opacity-40">/</span>
-                <span className="text-[var(--sigma-text)] font-semibold">{currentWorkspace.name}</span>
-                <Badge variant="outline" size="sm">ICP ARCHETYPE</Badge>
+          <div className="sigma-page-header p-6 sm:p-7 relative no-export" data-tutorial-id="tut-dashboard-hero">
+            <div className="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+              <div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] mb-2 flex items-center gap-2 font-mono no-export">
+                  <span>Executive Reporting</span>
+                  <span className="opacity-40">/</span>
+                  <span className="text-[var(--sigma-text)] font-semibold">{currentWorkspace.name}</span>
+                  <Badge variant="outline" size="sm">ICP Archetype</Badge>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <h1 className="sigma-page-title !text-[34px] sm:!text-[40px] font-display">
+                    Topline Report
+                  </h1>
+                  <Badge variant={hasLiveMetrics ? "success" : hasVerifiedConnectors ? "info" : "warning"} dot pulse={!hasLiveMetrics}>
+                    {hasLiveMetrics ? `Live ${mediaMode} provider metrics` : hasVerifiedConnectors ? `Verified ${mediaMode} connectors` : `${mediaMode} benchmark mode`}
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2.5 font-mono flex items-center gap-2 flex-wrap">
+                  <div className={cn("w-2 h-2 rounded-full", hasLiveMetrics ? "bg-emerald-400" : hasVerifiedConnectors ? "bg-sky-400" : "bg-[var(--sigma-primary)]")} aria-hidden="true" />
+                  <span>Format: <strong className="text-[var(--sigma-text)]">{selectedIndustry.name}</strong></span>
+                  <span className="opacity-30" aria-hidden="true">•</span>
+                  <span>Target ICP: <span className="text-[var(--sigma-text-soft)]">{selectedIndustry.targetIcp}</span></span>
+                  <span className="opacity-30" aria-hidden="true">•</span>
+                  <span>Updated: {format(new Date(), 'MMM dd, yyyy, HH:mm')}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 flex-wrap">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight text-[var(--sigma-text)]">
-                  Topline Report
-                </h1>
-                <Badge variant={hasLiveMetrics ? "success" : hasVerifiedConnectors ? "info" : "warning"} dot>
-                  {hasLiveMetrics ? `Live ${mediaMode} provider metrics` : hasVerifiedConnectors ? `Verified ${mediaMode} connectors` : `${mediaMode} benchmark mode`}
-                </Badge>
-              </div>
-              <div className="text-xs text-[var(--sigma-text-muted)] mt-2.5 font-mono flex items-center gap-2 flex-wrap">
-                <div className={cn("w-2 h-2 rounded-full", hasLiveMetrics ? "bg-emerald-400" : hasVerifiedConnectors ? "bg-sky-400" : "bg-[var(--sigma-primary)]")} />
-                <span>Format: <strong className="text-[var(--sigma-text)]">{selectedIndustry.name}</strong></span>
-                <span className="opacity-30">•</span>
-                <span>Target ICP: <span className="text-[var(--sigma-text-soft)]">{selectedIndustry.targetIcp}</span></span>
-                <span className="opacity-30">•</span>
-                <span>Updated: {format(new Date(), 'MMM dd, yyyy • HH:mm')}</span>
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2.5 no-export">
+
+              <div className="flex flex-wrap items-center gap-2.5">
               {/* Media Mode Toggle */}
-              <div className="flex rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-1" role="group" aria-label="Dashboard media mode">
+              <div className="sigma-segmented" role="group" aria-label="Dashboard media mode">
                 {(['organic', 'paid'] as const).map(mode => (
                   <button
                     key={mode}
                     onClick={() => setMediaMode(mode)}
+                    aria-pressed={mediaMode === mode}
                     className={cn(
-                      'px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors cursor-pointer',
-                      mediaMode === mode 
-                        ? 'bg-[var(--sigma-primary)] text-white shadow-sm' 
-                        : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
+                      'sigma-segment capitalize',
+                      mediaMode === mode && 'sigma-segment-active'
                     )}
                   >
                     {mode}
@@ -581,6 +581,7 @@ export default function Dashboard() {
                     )}
                  </AnimatePresence>
               </div>
+              </div>
             </div>
           </div>
 
@@ -599,7 +600,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-                  <span>{hasLiveMetrics ? "Live Metrics Active" : hasVerifiedConnectors ? "Connectors Verified — Awaiting Metrics" : "Industry Benchmark Mode"}</span>
+                  <span>{hasLiveMetrics ? "Live Metrics Active" : hasVerifiedConnectors ? "Connectors Verified, Awaiting Metrics" : "Industry Benchmark Mode"}</span>
                   <Badge variant="outline" size="sm">
                     {selectedIndustry.name}
                   </Badge>
@@ -651,26 +652,26 @@ export default function Dashboard() {
           )}
 
           {/* Industry-Specific KPI Summary */}
-          <GlassCard className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5" spotlight>
-            <div className="space-y-1">
-              <div className="text-xs font-mono text-[var(--sigma-text-muted)]">{selectedIndustry.metrics.primaryKpiName}</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.primaryKpiValue}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Template reference</div>
+          <GlassCard className="p-5 sm:p-6" spotlight>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <div className="flex items-baseline gap-2.5 min-w-0">
+                <span className="text-[11px] font-mono font-semibold uppercase tracking-[0.09em] text-[var(--sigma-accent)] shrink-0">Benchmark reference</span>
+                <span className="text-[11px] text-[var(--sigma-text-muted)] truncate">Illustrative values from the {selectedIndustry.name} template, not measured client performance</span>
+              </div>
             </div>
-            <div className="space-y-1">
-              <div className="text-xs font-mono text-[var(--sigma-text-muted)]">{selectedIndustry.metrics.secondaryKpiName}</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.secondaryKpiValue}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Template reference</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs font-mono text-[var(--sigma-text-muted)]">CAC Benchmark</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.cacBenchmark}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Sector acquisition cost</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs font-mono text-[var(--sigma-text-muted)]">ROAS Target</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[var(--sigma-text)]">{selectedIndustry.metrics.roasBenchmark}</div>
-              <div className="text-[11px] text-[var(--sigma-text-muted)]">Return benchmark</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 lg:gap-x-0 lg:divide-x lg:divide-[var(--sigma-border)] mt-5">
+              {[
+                { name: selectedIndustry.metrics.primaryKpiName, value: selectedIndustry.metrics.primaryKpiValue, sub: 'Template reference', wide: true },
+                { name: selectedIndustry.metrics.secondaryKpiName, value: selectedIndustry.metrics.secondaryKpiValue, sub: 'Template reference', wide: false },
+                { name: 'CAC Benchmark', value: selectedIndustry.metrics.cacBenchmark, sub: 'Sector acquisition cost', wide: false },
+                { name: 'ROAS Target', value: selectedIndustry.metrics.roasBenchmark, sub: 'Sector return benchmark', wide: false },
+              ].map((kpi) => (
+                <div key={kpi.name} className={cn('min-w-0', kpi.wide && 'lg:pl-6 first:pl-0')}>
+                  <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] truncate" title={kpi.name}>{kpi.name}</div>
+                  <div className="text-2xl sm:text-[26px] font-bold font-mono tabular-nums tracking-tight text-[var(--sigma-text)] mt-1.5 leading-none break-all">{kpi.value}</div>
+                  <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2">{kpi.sub}</div>
+                </div>
+              ))}
             </div>
           </GlassCard>
 
@@ -704,7 +705,7 @@ export default function Dashboard() {
                           ? undefined
                           : { value: selectedIndustry.metrics.conversionRate, trend: 'neutral' as const, label: `${selectedIndustry.name} benchmark` }
                       }
-                      subtext={hasLiveMetrics ? "Live sessions verified — no prior-period delta available from the connector feed" : `${selectedIndustry.name} baseline`}
+                      subtext={hasLiveMetrics ? "Live sessions verified; the connector feed has no prior-period delta to compare against." : `${selectedIndustry.name} baseline`}
                       icon={<Rocket size={16} className="text-[var(--sigma-primary)]" />}
                     />
                   </motion.div>
@@ -751,11 +752,11 @@ export default function Dashboard() {
                     </div>
                     <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
                       {hasLiveMetrics
-                        ? `Illustrative shape from connector-supplied period totals — the feed returns period aggregates, not a per-day series. Live figures are in the KPI tiles below.`
+                        ? `Illustrative shape from connector-supplied period totals; the feed returns period aggregates, not a per-day series. Live figures are in the KPI tiles below.`
                         : 'Industry benchmark trend (illustrative reference, not measured performance)'} for {selectedPresetLabel} ({format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd')})
                     </p>
                   </div>
-                  <div className="flex bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
+                  <div className="sigma-segmented !p-1" role="group" aria-label="Chart range preset">
                     {[
                       { label: '30D', preset: 'Last 30 Days' },
                       { label: '90D', preset: 'This Quarter' },
@@ -763,8 +764,8 @@ export default function Dashboard() {
                     ].map((t) => {
                       const isActive = selectedPresetLabel === t.preset;
                       return (
-                        <button 
-                          key={t.label} 
+                        <button
+                          key={t.label}
                           onClick={() => {
                             const targetPreset = datePresets.find(p => p.label === t.preset);
                             if (targetPreset) {
@@ -772,11 +773,10 @@ export default function Dashboard() {
                               setDateRange(targetPreset.get());
                             }
                           }}
+                          aria-pressed={isActive}
                           className={cn(
-                            "px-2.5 py-1 rounded-md text-xs font-semibold transition-all font-mono cursor-pointer",
-                            isActive 
-                              ? "bg-[var(--sigma-primary)] text-white shadow-sm" 
-                              : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
+                            "sigma-segment !min-h-[30px] !px-2.5 font-mono !text-[11px]",
+                            isActive && "sigma-segment-active"
                           )}
                         >
                           {t.label}
@@ -851,15 +851,12 @@ export default function Dashboard() {
             {/* Bottom Table: Top Performance Segments */}
             {visibleWidgets.segments && (
               <GlassCard className="col-span-12 lg:col-span-8 p-0 overflow-hidden" spotlight={false}>
-                <div className="p-5 border-b border-[var(--sigma-border)] flex justify-between items-center bg-[var(--sigma-surface-subtle)]">
-                  <div className="flex items-center gap-3">
-                     <div className="w-1.5 h-5 rounded-full bg-[var(--sigma-primary)]" />
-                     <div>
-                       <h2 className="text-base font-bold text-[var(--sigma-text)]">Channel Benchmarks & Performance</h2>
-                       <p className="text-xs text-[var(--sigma-text-muted)]">
-                         {selectedIndustry.name} • {selectedIndustry.targetIcp} • illustrative reference values — not measured client performance
-                       </p>
-                     </div>
+                <div className="p-5 sm:p-6 border-b border-[var(--sigma-border)] flex justify-between items-center gap-4 bg-[var(--sigma-surface-subtle)]/60">
+                  <div>
+                    <h2 className="sigma-section-title">Channel Benchmarks & Performance</h2>
+                    <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
+                      {selectedIndustry.name} • {selectedIndustry.targetIcp} • illustrative reference values, not measured client performance
+                    </p>
                   </div>
                   <button 
                     onClick={() => navigate('/paid-ads')}
@@ -949,17 +946,14 @@ export default function Dashboard() {
             {/* Right Panel: Activity Feed */}
             {visibleWidgets.signals && (
               <GlassCard className="col-span-12 lg:col-span-4 p-6 flex flex-col" spotlight>
-                 <div className="flex items-center justify-between mb-6">
-                    <div className="text-xs font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-                       <span className="w-2 h-2 rounded-full bg-[var(--sigma-primary)]" />
-                       Activity Feed
-                    </div>
-                    <MoreVertical size={16} className="text-[var(--sigma-text-muted)]" />
+                 <div className="mb-5">
+                    <h2 className="text-sm font-semibold text-[var(--sigma-text)]">Activity Feed</h2>
+                    <p className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Verified runs, approvals, and deliveries</p>
                  </div>
 
-                 <div className="rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] p-5 text-center">
+                 <div className="rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] p-5 text-center flex-1 flex flex-col justify-center">
                     <p className="text-sm font-semibold text-[var(--sigma-text)]">No recorded activity</p>
-                    <p className="mt-1 text-xs leading-5 text-[var(--sigma-text-muted)]">Verified runs, approvals, and deliveries will appear here when ledger events exist.</p>
+                    <p className="mt-1.5 text-xs leading-5 text-[var(--sigma-text-muted)]">Agent runs, HITL approvals, and connector deliveries will appear here once ledger events exist for this workspace.</p>
                  </div>
               </GlassCard>
             )}
