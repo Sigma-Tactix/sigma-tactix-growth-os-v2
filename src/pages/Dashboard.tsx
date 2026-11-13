@@ -284,6 +284,26 @@ export default function Dashboard() {
     return selectedIndustry.chartData;
   }, [hasLiveMetrics, totalSpend, selectedIndustry]);
 
+  // Live ROAS vs. the industry benchmark target. The benchmark string is a
+  // target multiple (e.g. "5.2x"); compare the connector-supplied live ROAS to
+  // it so the delta is a real gap, not an invented number.
+  const roasBenchmarkTarget = useMemo(() => {
+    const parsed = parseFloat(String(selectedIndustry.metrics.roasBenchmark).replace(/[^0-9.]/g, ''));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [selectedIndustry]);
+
+  const roasDelta = useMemo(() => {
+    if (!hasLiveMetrics || roasBenchmarkTarget == null) {
+      return { value: 'Benchmark', trend: 'neutral' as const, label: 'Industry target' };
+    }
+    const atOrAbove = liveMetrics.roas >= roasBenchmarkTarget;
+    return {
+      value: atOrAbove ? `Above ${roasBenchmarkTarget}x target` : `Below ${roasBenchmarkTarget}x target`,
+      trend: (atOrAbove ? 'up' : 'down') as 'up' | 'down',
+      label: 'vs industry benchmark',
+    };
+  }, [hasLiveMetrics, liveMetrics.roas, roasBenchmarkTarget]);
+
   // Default widgets based on role
   useEffect(() => {
     const defaults: Record<UserRole, any> = {
@@ -359,10 +379,10 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Header */}
-          <div className="sigma-page-header p-6 sm:p-7 relative no-export" data-tutorial-id="tut-dashboard-hero">
+          <div className="sigma-page-header p-6 sm:p-7 relative" data-tutorial-id="tut-dashboard-hero">
             <div className="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
               <div>
-                <div className="text-[11px] text-[var(--sigma-text-muted)] mb-2 flex items-center gap-2 font-mono no-export">
+                <div className="text-xs text-[var(--sigma-text-muted)] mb-2 flex items-center gap-2 font-mono">
                   <span>Executive Reporting</span>
                   <span className="opacity-40">/</span>
                   <span className="text-[var(--sigma-text)] font-semibold">{currentWorkspace.name}</span>
@@ -372,12 +392,12 @@ export default function Dashboard() {
                   <h1 className="sigma-page-title !text-[34px] sm:!text-[40px] font-display">
                     Topline Report
                   </h1>
-                  <Badge variant={hasLiveMetrics ? "success" : hasVerifiedConnectors ? "info" : "warning"} dot pulse={!hasLiveMetrics}>
+                  <Badge variant={hasLiveMetrics ? "success" : hasVerifiedConnectors ? "info" : "warning"} dot>
                     {hasLiveMetrics ? `Live ${mediaMode} provider metrics` : hasVerifiedConnectors ? `Verified ${mediaMode} connectors` : `${mediaMode} benchmark mode`}
                   </Badge>
                 </div>
-                <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2.5 font-mono flex items-center gap-2 flex-wrap">
-                  <div className={cn("w-2 h-2 rounded-full", hasLiveMetrics ? "bg-emerald-400" : hasVerifiedConnectors ? "bg-sky-400" : "bg-[var(--sigma-primary)]")} aria-hidden="true" />
+                <div className="text-xs text-[var(--sigma-text-muted)] mt-2.5 font-mono flex items-center gap-2 flex-wrap">
+                  <div className={cn("w-2 h-2 rounded-full", hasLiveMetrics ? "bg-emerald-accent" : hasVerifiedConnectors ? "bg-sky-accent" : "bg-[var(--sigma-primary)]")} aria-hidden="true" />
                   <span>Format: <strong className="text-[var(--sigma-text)]">{selectedIndustry.name}</strong></span>
                   <span className="opacity-30" aria-hidden="true">•</span>
                   <span>Target ICP: <span className="text-[var(--sigma-text-soft)]">{selectedIndustry.targetIcp}</span></span>
@@ -386,7 +406,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5 no-export">
               {/* Media Mode Toggle */}
               <div className="sigma-segmented" role="group" aria-label="Dashboard media mode">
                 {(['organic', 'paid'] as const).map(mode => (
@@ -640,8 +660,8 @@ export default function Dashboard() {
                    onClick={() => toggleWidget(id)}
                    className={cn(
                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                     visibleWidgets[id] 
-                       ? "bg-[var(--sigma-primary)] text-white" 
+                     visibleWidgets[id]
+                       ? "bg-[var(--sigma-primary)] text-[var(--sigma-on-primary)]"
                        : "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] line-through"
                    )}
                  >
@@ -655,21 +675,21 @@ export default function Dashboard() {
           <GlassCard className="p-5 sm:p-6" spotlight>
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <div className="flex items-baseline gap-2.5 min-w-0">
-                <span className="text-[11px] font-mono font-semibold uppercase tracking-[0.09em] text-[var(--sigma-accent)] shrink-0">Benchmark reference</span>
-                <span className="text-[11px] text-[var(--sigma-text-muted)] truncate">Illustrative values from the {selectedIndustry.name} template, not measured client performance</span>
+                <span className="text-xs font-mono font-semibold uppercase tracking-[0.09em] text-[var(--sigma-accent)] shrink-0">Benchmark reference</span>
+                <span className="text-xs text-[var(--sigma-text-muted)] truncate">Illustrative values from the {selectedIndustry.name} template, not measured client performance</span>
               </div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 lg:gap-x-0 lg:divide-x lg:divide-[var(--sigma-border)] mt-5">
               {[
-                { name: selectedIndustry.metrics.primaryKpiName, value: selectedIndustry.metrics.primaryKpiValue, sub: 'Template reference', wide: true },
-                { name: selectedIndustry.metrics.secondaryKpiName, value: selectedIndustry.metrics.secondaryKpiValue, sub: 'Template reference', wide: false },
-                { name: 'CAC Benchmark', value: selectedIndustry.metrics.cacBenchmark, sub: 'Sector acquisition cost', wide: false },
-                { name: 'ROAS Target', value: selectedIndustry.metrics.roasBenchmark, sub: 'Sector return benchmark', wide: false },
+                { name: selectedIndustry.metrics.primaryKpiName, value: selectedIndustry.metrics.primaryKpiValue, sub: 'Template reference' },
+                { name: selectedIndustry.metrics.secondaryKpiName, value: selectedIndustry.metrics.secondaryKpiValue, sub: 'Template reference' },
+                { name: 'CAC Benchmark', value: selectedIndustry.metrics.cacBenchmark, sub: 'Sector acquisition cost' },
+                { name: 'ROAS Target', value: selectedIndustry.metrics.roasBenchmark, sub: 'Sector return benchmark' },
               ].map((kpi) => (
-                <div key={kpi.name} className={cn('min-w-0', kpi.wide && 'lg:pl-6 first:pl-0')}>
-                  <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] truncate" title={kpi.name}>{kpi.name}</div>
-                  <div className="text-2xl sm:text-[26px] font-bold font-mono tabular-nums tracking-tight text-[var(--sigma-text)] mt-1.5 leading-none break-all">{kpi.value}</div>
-                  <div className="text-[11px] text-[var(--sigma-text-muted)] mt-2">{kpi.sub}</div>
+                <div key={kpi.name} className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+                  <div className="text-xs font-mono text-[var(--sigma-text-muted)] truncate" title={kpi.name}>{kpi.name}</div>
+                  <div className="text-2xl sm:text-[26px] font-bold font-mono tabular-nums tracking-[-0.01em] text-[var(--sigma-text)] mt-1.5 leading-none break-all">{kpi.value}</div>
+                  <div className="text-xs text-[var(--sigma-text-muted)] mt-2">{kpi.sub}</div>
                 </div>
               ))}
             </div>
@@ -715,11 +735,7 @@ export default function Dashboard() {
                     <MetricWidget 
                       label={mediaMode === 'organic' ? "Organic Conversions" : "Blended ROAS"}
                       value={mediaMode === 'organic' ? formatNumber(organicSnapshot.conversions) : (hasLiveMetrics ? `${liveMetrics.roas.toFixed(1)}x` : selectedIndustry.metrics.roasBenchmark)}
-                      delta={{
-                        value: hasLiveMetrics ? "3.8x Target" : "Benchmark",
-                        trend: hasLiveMetrics ? 'up' : 'neutral',
-                        label: 'Efficiency index'
-                      }}
+                      delta={mediaMode === 'paid' ? roasDelta : undefined}
                       subtext={hasLiveMetrics ? "Attributed multichannel return" : "Requires normalized spend payload"}
                       icon={<TrendingUp size={16} className="text-[var(--sigma-primary)]" />}
                     />
@@ -775,7 +791,7 @@ export default function Dashboard() {
                           }}
                           aria-pressed={isActive}
                           className={cn(
-                            "sigma-segment !min-h-[30px] !px-2.5 font-mono !text-[11px]",
+                            "sigma-segment !min-h-[30px] !px-2.5 font-mono !text-xs",
                             isActive && "sigma-segment-active"
                           )}
                         >
@@ -795,8 +811,8 @@ export default function Dashboard() {
                     <AreaChart data={filteredChartData}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FF481B" stopOpacity={0.28}/>
-                          <stop offset="95%" stopColor="#FF481B" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="var(--sigma-primary)" stopOpacity={0.28}/>
+                          <stop offset="95%" stopColor="var(--sigma-primary)" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--sigma-border)" />
@@ -809,10 +825,10 @@ export default function Dashboard() {
                       />
                       <YAxis hide />
                       <Tooltip content={<CustomTooltip />} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#FF481B" 
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="var(--sigma-primary)"
                         strokeWidth={2.5}
                         fillOpacity={1} 
                         fill="url(#colorValue)" 
@@ -948,12 +964,12 @@ export default function Dashboard() {
               <GlassCard className="col-span-12 lg:col-span-4 p-6 flex flex-col" spotlight>
                  <div className="mb-5">
                     <h2 className="text-sm font-semibold text-[var(--sigma-text)]">Activity Feed</h2>
-                    <p className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Verified runs, approvals, and deliveries</p>
+                    <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">Verified runs, approvals, and deliveries</p>
                  </div>
 
                  <div className="rounded-xl border border-dashed border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] p-5 text-center flex-1 flex flex-col justify-center">
                     <p className="text-sm font-semibold text-[var(--sigma-text)]">No recorded activity</p>
-                    <p className="mt-1.5 text-xs leading-5 text-[var(--sigma-text-muted)]">Agent runs, HITL approvals, and connector deliveries will appear here once ledger events exist for this workspace.</p>
+                    <p className="mt-1.5 text-xs leading-5 text-[var(--sigma-text-muted)]">Agent runs, HITL approvals, and connector deliveries will appear here once ledger events exist for this Client Enclave.</p>
                  </div>
               </GlassCard>
             )}

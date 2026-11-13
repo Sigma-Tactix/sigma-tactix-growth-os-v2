@@ -3,6 +3,7 @@ import express from 'express';
 import type { Server } from 'node:http';
 import { createMcpRouter } from './mcpRoutes.js';
 import { withMcpConnection } from '../mcp/mcpClient.js';
+import { canUseLocalSockets } from '../../test/socketProbe.js';
 
 const listeners: Server[] = [];
 afterEach(async () => { await Promise.all(listeners.splice(0).map(server => new Promise<void>((resolve, reject) => {
@@ -29,7 +30,7 @@ async function start(enabled = true, objective?: string) {
   return `http://127.0.0.1:${address.port}/mcp`;
 }
 
-describe('read-only inbound MCP endpoint', () => {
+describe.skipIf(await canUseLocalSockets().then(ok => !ok))('read-only inbound MCP endpoint', () => {
   it('serves HTML-like tool output as JSON and preserves empty notification acknowledgments', async () => {
     const objective = '<img src=x onerror=alert(1)>';
     const url = await start(true, objective);

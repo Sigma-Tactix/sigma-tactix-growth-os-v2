@@ -12,7 +12,8 @@ export function GlassCard({
   children,
   className,
   spotlight = false,
-  spotlightColor = 'rgba(255, 72, 27, 0.08)',
+  // Theme-flipping vermilion wash so the hover spotlight matches the brand primary in both themes.
+  spotlightColor = 'var(--sigma-primary-subtle)',
   elevation = 'flat',
   interactive = false,
   onMouseMove,

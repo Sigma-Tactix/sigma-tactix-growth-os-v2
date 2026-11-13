@@ -8,7 +8,6 @@
  */
 
 import { jsPDF } from 'jspdf';
-import crypto from 'crypto';
 import type { ReportSnapshot } from './reportSnapshot';
 
 export interface BrandProfile {
@@ -27,6 +26,13 @@ export interface RenderResult {
   artifactHash: string;
   pageCount: number;
   tenantId: string;
+}
+
+async function computeSha256Hex(buffer: Uint8Array): Promise<string> {
+  const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', buffer as unknown as ArrayBuffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -342,7 +348,7 @@ export async function renderExecutiveReportPDF(
   const pdfArray = doc.output('arraybuffer');
   const pdfBuffer = new Uint8Array(pdfArray);
   const byteSize = pdfBuffer.byteLength;
-  const artifactHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
+  const artifactHash = await computeSha256Hex(pdfBuffer);
 
   return {
     pdfBuffer,
