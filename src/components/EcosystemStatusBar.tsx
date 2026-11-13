@@ -29,7 +29,25 @@ import { useToast } from '@/src/contexts/ToastContext';
 import QuickFixAssistant, { QuickFixData } from '@/src/components/QuickFixAssistant';
 import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 
-export type EcosystemItemStatus = 'OPERATIONAL' | 'WARNING' | 'OFFLINE';
+export type EcosystemItemStatus = 'OPERATIONAL' | 'WARNING' | 'OFFLINE' | 'UNCHECKED';
+
+/**
+ * Honest fallback inventory for non-demo workspaces. No live health endpoint is
+ * wired into this panel yet, so we must NOT claim any subsystem is OPERATIONAL
+ * (that would be a fabricated metric the remediation plan bans). What we CAN
+ * state without evidence is which subsystems are *configured* and where to open
+ * them. Every entry below is therefore UNCHECKED, not "operational".
+ */
+const STATIC_SUBSYSTEMS: { name: string; route: string; detail: string }[] = [
+  { name: 'Growth Dashboard', route: '/', detail: 'Executive scorecards and anomaly alerts.' },
+  { name: 'Agent Cockpit & Approvals', route: '/agents', detail: 'Scoped swarms, DAG execution and HITL gates.' },
+  { name: 'Agent Reach Router', route: '/agent-reach', detail: '15-channel external research; needs the agent-reach CLI installed on the server.' },
+  { name: 'Report Scheduler', route: '/scheduler', detail: 'Recurring executive report generation.' },
+  { name: 'Executive Reports', route: '/reports', detail: 'PDF/CSV exports traced to vault and ledger cells.' },
+  { name: 'Second Brain Vaults', route: '/vaults', detail: '10 permissioned knowledge vaults with RLS.' },
+  { name: 'Living System (VANTA)', route: '/living-system', detail: 'Neural voice and system map; held behind the VANTA release gate.' },
+  { name: 'Connectors & Integrations', route: '/connectors', detail: 'Pipeline connectors feeding the Second Brain.' },
+];
 
 export interface EcosystemElement {
   id: string;
@@ -80,6 +98,9 @@ export default function EcosystemStatusBar({
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>('sec-agents');
   const [expandedFixId, setExpandedFixId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Element ids an operator has been routed to remediate. Used to show "awaiting
+  // verification" instead of re-offering the fix — the panel never claims a fix
+  // was verified, because it has no health endpoint to verify against.
   const [remediatedIds, setRemediatedIds] = useState<Record<string, boolean>>({});
   const demoMode = isDemoSeedEnabled();
 
@@ -376,35 +397,46 @@ export default function EcosystemStatusBar({
     }
   ] : []);
 
-  // Handle 1-click Quick Fix
+  // "Apply Quick Fix" has no remediation backend to call. It routes the operator
+  // to the tool that can actually perform the fix and marks the element as
+  // awaiting verification. Claiming "health verified" here would fabricate a
+  // state the panel has no evidence for.
   const handleApplyQuickFix = (elementId: string) => {
-    setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
-    let remediatedName = 'Ecosystem Element';
+    let target: { name: string; element: EcosystemElement; route?: string } | null = null;
     setSections(prevSections => prevSections.map(sec => ({
       ...sec,
       subSections: sec.subSections.map(sub => ({
         ...sub,
         elements: sub.elements.map(el => {
           if (el.id === elementId) {
-            remediatedName = el.name;
+            target = {
+              name: el.name,
+              element: el,
+              route: el.howToFix?.targetRoute
+            };
             return {
               ...el,
-              status: 'OPERATIONAL',
-              diagnosticDetail: `Remediated: Actionable step completed successfully. Health verified.`,
-              latency: '14ms',
-              lastHeartbeat: 'Just now'
+              status: 'WARNING',
+              diagnosticDetail: 'Remediation routed to the responsible tool. Awaiting operator verification — this panel has no health endpoint to confirm it.'
             };
           }
           return el;
         })
       }))
     })));
-
-    notifySuccess(
-      'Issue Remediated Successfully',
-      `${remediatedName} returned to OPERATIONAL status. Zero error flags remaining.`,
-      { category: 'SYSTEM' }
-    );
+    if (target && 'element' in target) {
+      // `setSections` runs its updater synchronously in React 19, so the lookup
+      // above is complete before we act on it.
+      if (target.element?.howToFix?.targetRoute) {
+        navigate(target.element.howToFix.targetRoute);
+      }
+      setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
+      notifyInfo(
+        'Remediation Routed',
+        `${target.name} was routed to its responsible tool. No fix was applied and no health verification was performed.`,
+        { category: 'SYSTEM' }
+      );
+    }
   };
 
   // Run full health refresh
@@ -578,9 +610,37 @@ export default function EcosystemStatusBar({
 
       {/* Accordion Tree of Sections -> Subsections -> Elements */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
-        {filteredSections.length === 0 ? (
+        {totalCount === 0 ? (
+          <div className="space-y-3 p-2">
+            <div className="rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-3.5 text-xs leading-relaxed text-[var(--sigma-text-muted)]">
+              <div className="font-bold text-[var(--sigma-text)]">No live health checks connected yet</div>
+              <p className="mt-1.5">
+                This panel does not fabricate status. Until a health-check endpoint is wired in, it lists the
+                subsystems that are configured and where to open them — each marked
+                <span className="mx-1 font-mono text-[10px] font-bold uppercase">Unverified</span>
+                rather than “operational”.
+              </p>
+            </div>
+            {STATIC_SUBSYSTEMS.map((sub) => (
+              <button
+                key={sub.name}
+                type="button"
+                onClick={() => navigate(sub.route)}
+                className="w-full rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface)] p-3 text-left text-xs transition-all hover:border-[var(--sigma-border-strong)] hover:bg-[var(--sigma-surface-raised)]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[var(--sigma-text)]">{sub.name}</span>
+                  <span className="rounded bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-[var(--sigma-text-muted)]">
+                    Unverified
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] text-[var(--sigma-text-muted)]">{sub.detail}</div>
+              </button>
+            ))}
+          </div>
+        ) : filteredSections.length === 0 ? (
           <div className="p-8 text-center text-[var(--sigma-text-muted)] text-sm">
-            {totalCount === 0 ? 'No runtime health checks have been recorded for this workspace.' : 'No matching ecosystem elements found.'}
+            No matching ecosystem elements found.
           </div>
         ) : (
           filteredSections.map(section => {
@@ -588,15 +648,15 @@ export default function EcosystemStatusBar({
             const sectionHasIssue = section.subSections.some(sub => sub.elements.some(e => e.status !== 'OPERATIONAL'));
 
             return (
-              <div key={section.id} className="rounded-xl border border-white/5 bg-surface/50 overflow-hidden">
+              <div key={section.id} className="rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] overflow-hidden">
                 {/* Section Header */}
                 <button
                   onClick={() => setExpandedSectionId(isSectionExpanded ? null : section.id)}
-                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-white/5 transition-all text-left"
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-[var(--sigma-surface-raised)] transition-all text-left"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <section.icon size={15} className={sectionHasIssue ? "text-amber-400" : "text-accent"} />
-                    <span className="text-xs font-bold text-zinc-200 truncate">{section.name}</span>
+                    <span className="text-xs font-bold text-[var(--sigma-text)] truncate">{section.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {sectionHasIssue && (
@@ -608,16 +668,16 @@ export default function EcosystemStatusBar({
 
                 {/* Subsections & Elements list */}
                 {isSectionExpanded && (
-                  <div className="px-2 pb-2 space-y-2.5 border-t border-white/5 pt-2">
+                  <div className="px-2 pb-2 space-y-2.5 border-t border-[var(--sigma-border)] pt-2">
                     {section.subSections.map(sub => (
-                      <div key={sub.id} className="space-y-1.5 pl-2 border-l border-white/10">
+                      <div key={sub.id} className="space-y-1.5 pl-2 border-l border-[var(--sigma-border)]">
                         <div className="flex items-center justify-between pr-2">
                           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
                             {sub.title}
                           </span>
                           <button
                             onClick={() => navigate(sub.route)}
-                            className="text-[11px] font-mono text-zinc-400 hover:text-accent flex items-center gap-1 hover:underline"
+                            className="text-[11px] font-mono text-[var(--sigma-text-muted)] hover:text-accent flex items-center gap-1 hover:underline"
                           >
                             <span>Open</span>
                             <ArrowRight size={10} />
@@ -628,6 +688,7 @@ export default function EcosystemStatusBar({
                         <div className="space-y-1.5">
                           {sub.elements.map(el => {
                             const isOperational = el.status === 'OPERATIONAL';
+                            const wasRouted = Boolean(remediatedIds[el.id]);
                             const isExpandedFix = expandedFixId === el.id;
 
                             return (
@@ -636,7 +697,7 @@ export default function EcosystemStatusBar({
                                 className={cn(
                                   "p-2.5 rounded-lg border transition-all text-xs font-mono",
                                   isOperational
-                                    ? "bg-black/20 border-white/5 hover:border-white/15"
+                                    ? "bg-[var(--sigma-surface)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)]"
                                     : "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50"
                                 )}
                               >
@@ -645,11 +706,11 @@ export default function EcosystemStatusBar({
                                     <div className="flex items-center gap-2">
                                       <span className={cn(
                                         "w-2 h-2 rounded-full shrink-0",
-                                        isOperational ? "bg-green-400" : "bg-amber-400 animate-pulse"
+                                        isOperational ? "bg-green-400" : wasRouted ? "bg-amber-400" : "bg-amber-400 animate-pulse"
                                       )} />
-                                      <span className="font-bold text-white truncate text-xs">{el.name}</span>
+                                      <span className="font-bold text-[var(--sigma-text)] truncate text-xs">{el.name}</span>
                                     </div>
-                                    <p className="text-[10px] text-zinc-400 mt-1 leading-snug font-sans">
+                                    <p className="text-[10px] text-[var(--sigma-text-muted)] mt-1 leading-snug font-sans">
                                       {el.diagnosticDetail}
                                     </p>
                                   </div>
@@ -679,15 +740,28 @@ export default function EcosystemStatusBar({
                                         </button>
                                       </QuickFixAssistant>
                                     ) : (
-                                      <span className={cn(
-                                        "text-[11px] font-bold px-1.5 py-0.5 rounded uppercase block",
-                                        isOperational ? "bg-green-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
-                                      )}>
-                                        {el.status}
-                                      </span>
+                                      /* An element the operator routed to its tool
+                                         shows "awaiting verification", not a
+                                         WARNING badge — the panel has no health
+                                         endpoint to clear it back to OPERATIONAL. */
+                                      wasRouted ? (
+                                        <span
+                                          className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase block bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)] border border-[var(--sigma-border)]"
+                                          title="Routed to its responsible tool; no fix was applied and none was verified."
+                                        >
+                                          Awaiting verification
+                                        </span>
+                                      ) : (
+                                        <span className={cn(
+                                          "text-[11px] font-bold px-1.5 py-0.5 rounded uppercase block",
+                                          isOperational ? "bg-green-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                                        )}>
+                                          {el.status}
+                                        </span>
+                                      )
                                     )}
                                     {el.latency && (
-                                      <span className="text-[11px] text-zinc-500 mt-0.5 block font-mono">
+                                      <span className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5 block font-mono">
                                         {el.latency}
                                       </span>
                                     )}
@@ -713,13 +787,13 @@ export default function EcosystemStatusBar({
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        className="space-y-2 text-[10px] bg-black/40 p-2 rounded-md border border-amber-500/20"
+                                        className="space-y-2 text-[10px] bg-[var(--sigma-surface-raised)] p-2 rounded-md border border-amber-500/20"
                                       >
-                                        <div className="text-amber-200 font-sans font-medium">
+                                        <div className="text-[var(--sigma-text)] font-sans font-medium">
                                           {el.howToFix.issueSummary}
                                         </div>
 
-                                        <ul className="space-y-1 text-zinc-300 font-mono text-[11px] list-disc list-inside">
+                                        <ul className="space-y-1 text-[var(--sigma-text-soft)] font-mono text-[11px] list-disc list-inside">
                                           {el.howToFix.actionableSteps.map((step, sIndex) => (
                                             <li key={sIndex} className="leading-tight">{step}</li>
                                           ))}
@@ -732,7 +806,7 @@ export default function EcosystemStatusBar({
                                                 navigate(el.howToFix.targetRoute);
                                               }
                                             }}
-                                            className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[11px] font-mono text-zinc-300 hover:text-white flex items-center gap-1"
+                                            className="px-2 py-1 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] rounded text-[11px] font-mono text-[var(--sigma-text-soft)] hover:text-[var(--sigma-text)] flex items-center gap-1"
                                           >
                                             <span>Open Tool</span>
                                             <ExternalLink size={10} />

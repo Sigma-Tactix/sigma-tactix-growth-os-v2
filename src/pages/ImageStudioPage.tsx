@@ -413,17 +413,17 @@ export default function ImageStudioPage() {
       status: 'SUCCESS',
       moduleOrigin: 'AI Creative Image Studio',
       inputSummary: `Sovereign Canvas: ${prompt.slice(0, 70)}...`,
-      outputSummary: `Rendered resilient ${ratio} sovereign marketing graphic during model spike.`,
+      outputSummary: `Local vector fallback (${ratio}) generated — not a provider image.`,
       imageUrl: svgData,
-      fullOutput: `Engine: Sovereign Brand Canvas\nRatio: ${ratio}\nResolution: 1920x1080 Vector`,
+      fullOutput: `Engine: Sovereign Brand Canvas (local vector template)\nRatio: ${ratio}\nResolution: 1920x1080 Vector`,
       metrics: [
-        { label: 'Engine', value: 'Sovereign Vector' },
+        { label: 'Engine', value: 'Local vector template' },
         { label: 'Resolution', value: ratio },
-        { label: 'Availability', value: '100% Offline Capable' }
+        { label: 'Source', value: 'Generated on-device' }
       ]
     };
     setRunHistory(prev => [fallbackRun, ...prev]);
-    notifySuccess('Sovereign Graphic Generated', 'Synthesized resilient brand canvas asset.');
+    notifySuccess('Local Graphic Generated', 'On-device vector fallback created. This is a local template, not a provider image.');
   };
 
   // User-Selectable Download Handler (.PNG & .JPG)

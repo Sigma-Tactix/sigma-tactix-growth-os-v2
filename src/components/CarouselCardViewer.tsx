@@ -45,14 +45,9 @@ export default function CarouselCardViewer({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const totalSlides = slides.length;
-  const currentSlide = slides[currentSlideIndex] || slides[0] || {
-    slideNumber: 1,
-    badge: 'STRATEGIC AUDIT',
-    title: topic,
-    subtitle: 'Autonomous Growth Architecture',
-    contentPoints: ['Continuous pipeline qualification', 'Zero-knowledge-loss Second Brain', 'Human-in-the-loop governance'],
-    takeaway: 'Client-owned systems compound. Rented retainers evaporate.'
-  };
+  // No fabricated placeholder slide: when the deck is empty the viewer
+  // renders an honest empty state instead of invented content.
+  const currentSlide = slides[currentSlideIndex];
 
   useEffect(() => {
     // Whenever slides update, immediately reset to slide 0 so new slides are displayed
@@ -74,6 +69,24 @@ export default function CarouselCardViewer({
   const goToPrev = () => {
     if (currentSlideIndex > 0) {
       setCurrentSlideIndex(prev => prev - 1);
+    }
+  };
+
+  // Keyboard navigation on the stage: arrows step slides, digits jump.
+  // (Slide reset on prop change is already handled by the slides effect above.)
+  const handleStageKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goToNext();
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goToPrev();
+    } else if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      const idx = Number(event.key);
+      if (idx >= 1 && idx <= totalSlides) {
+        setCurrentSlideIndex(idx - 1);
+      }
     }
   };
 
@@ -640,11 +653,25 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
     }
   };
 
+  // Honest empty state: a fresh tenant with no generated slides gets a clear
+  // instruction, not a fabricated placeholder slide.
+  if (slides.length === 0 || !currentSlide) {
+    return (
+      <div className="sigma-panel p-10 text-center space-y-2">
+        <Layers className="w-5 h-5 text-[var(--sigma-text-muted)] mx-auto" />
+        <p className="text-sm text-[var(--sigma-text-soft)]">No slides to preview yet.</p>
+        <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed">
+          Generate a provider-backed carousel or repurpose a source via Agent Reach to render the visual deck here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Top Toolbar: Aspect Ratio, Theme, and Bulk Actions */}
       <div className="sigma-panel flex flex-wrap items-center justify-between gap-3 p-3.5">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 min-w-0">
           <div className="flex items-center gap-1.5 bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
             <span className="text-[11px] font-mono text-[var(--sigma-text-muted)] px-2">Ratio:</span>
             <button
@@ -714,7 +741,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <button
             onClick={handleCopySlideText}
             className="sigma-button-secondary px-2.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
@@ -734,7 +761,7 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={() => handleExportSlidePng(currentSlideIndex)}
             disabled={isExporting}
-            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-2.5 py-1.5 bg-amber-accent/10 hover:bg-amber-accent/20 text-amber-accent border border-amber-accent/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
             Slide PNG
@@ -743,36 +770,42 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           <button
             onClick={handleExportPdf}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-red-500/20 to-orange-500/20 hover:from-red-500/30 hover:to-orange-500/30 text-red-300 border border-red-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
             title="Download multi-slide PDF document"
           >
-            <FileDown className="w-3.5 h-3.5 text-red-400" />
+            <FileDown className="w-3.5 h-3.5 text-rose-accent" />
             Download PDF
           </button>
 
           <button
             onClick={handleExportPptx}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-accent border border-amber-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+            className="sigma-button-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
             title="Download editable PowerPoint PPTX deck"
           >
-            <Presentation className="w-3.5 h-3.5 text-orange-400" />
+            <Presentation className="w-3.5 h-3.5 text-amber-accent" />
             Download PPTX
           </button>
 
           <button
             onClick={handleExportAllSlides}
             disabled={isExporting}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/20"
+            className="px-3 py-1.5 bg-[var(--sigma-primary)] hover:bg-[var(--sigma-primary-hover)] text-[var(--sigma-inverse-text)] font-semibold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5 fill-black" />
+            <Download className="w-3.5 h-3.5" />
             Export All PNGs
           </button>
         </div>
       </div>
 
       {/* Main Slide Card Stage */}
-      <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl relative overflow-hidden">
+      <div
+        className="flex flex-col items-center justify-center p-4 sm:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-2xl relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--sigma-primary)]"
+        tabIndex={0}
+        role="group"
+        aria-label={`Slide ${currentSlide.slideNumber} of ${totalSlides}. Use arrow keys or number keys to navigate.`}
+        onKeyDown={handleStageKeyDown}
+      >
         {/* Navigation Arrow Left */}
         <button
           onClick={goToPrev}
@@ -898,20 +931,25 @@ ${s.takeaway ? `Key Takeaway: ${s.takeaway}` : ''}`
           </div>
         </div>
 
-        {/* Slide Counter Dots / Filmstrip */}
-        <div className="flex items-center gap-1.5 mt-5">
+        {/* Slide Counter Dots / Filmstrip — generous hit areas for the small dots */}
+        <div className="flex items-center gap-1 mt-5">
           {slides.map((s, idx) => (
             <button
               key={s.slideNumber}
               onClick={() => setCurrentSlideIndex(idx)}
-              className={cn(
-                "transition-all cursor-pointer",
-                currentSlideIndex === idx
-                  ? "w-8 h-2 rounded-full bg-[var(--sigma-primary)]"
-                  : "w-2 h-2 rounded-full bg-[var(--sigma-border-strong)] hover:bg-[var(--sigma-text-muted)]"
-              )}
               aria-label={`Go to slide ${s.slideNumber}`}
-            />
+              aria-current={currentSlideIndex === idx ? 'true' : undefined}
+              className="p-1.5 cursor-pointer"
+            >
+              <span
+                className={cn(
+                  "block transition-all",
+                  currentSlideIndex === idx
+                    ? "w-8 h-2 rounded-full bg-[var(--sigma-primary)]"
+                    : "w-2 h-2 rounded-full bg-[var(--sigma-border-strong)] hover:bg-[var(--sigma-text-muted)]"
+                )}
+              />
+            </button>
           ))}
         </div>
       </div>

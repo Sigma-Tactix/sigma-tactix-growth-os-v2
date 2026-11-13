@@ -900,7 +900,7 @@ export default function DataSources() {
             size="sm"
             onClick={handleSyncAll}
             disabled={isSyncingAll || activeConnections.length === 0}
-            icon={<RefreshCw size={13} className={cn(isSyncingAll && "animate-spin text-[#ff481b]")} />}
+            icon={<RefreshCw size={13} className={cn(isSyncingAll && "animate-spin text-[var(--sigma-primary)]")} />}
           >
             {isSyncingAll ? "Checking accounts..." : "Check All Accounts"}
           </Button>
@@ -978,21 +978,21 @@ export default function DataSources() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left p-4 bg-[var(--sigma-surface-subtle)] rounded-xl border border-[var(--sigma-border)]">
                   <div className="space-y-1">
                     <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">1</span>
+                      <span className="w-4 h-4 rounded-full bg-[var(--sigma-primary)]/20 text-[var(--sigma-primary)] flex items-center justify-center text-[10px]">1</span>
                       Select Platform
                     </div>
                     <p className="text-[11px] text-[var(--sigma-text-muted)]">Choose Google Ads, Meta Ads, HubSpot, GA4, or any MCP adapter.</p>
                   </div>
                   <div className="space-y-1">
                     <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">2</span>
+                      <span className="w-4 h-4 rounded-full bg-[var(--sigma-primary)]/20 text-[var(--sigma-primary)] flex items-center justify-center text-[10px]">2</span>
                       Provide Evidence
                     </div>
                     <p className="text-[11px] text-[var(--sigma-text-muted)]">Enter your official Account Name and Property ID to establish provenance.</p>
                   </div>
                   <div className="space-y-1">
                     <div className="text-xs font-mono font-bold text-[var(--sigma-text)] flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-[#ff481b]/20 text-[#ff481b] flex items-center justify-center text-[10px]">3</span>
+                      <span className="w-4 h-4 rounded-full bg-[var(--sigma-primary)]/20 text-[var(--sigma-primary)] flex items-center justify-center text-[10px]">3</span>
                       Verify Handshake
                     </div>
                     <p className="text-[11px] text-[var(--sigma-text-muted)]">Run a live provider verification. A channel becomes Live only after provider metrics are synchronized.</p>
@@ -1037,7 +1037,7 @@ export default function DataSources() {
                   <GlassCard key={conn.id} spotlight className="p-5 group relative overflow-hidden flex flex-col justify-between space-y-4">
                      <div>
                        <div className="flex justify-between items-start mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center text-[#ff481b]">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center text-[var(--sigma-primary)]">
                              <Database size={18} />
                           </div>
                           <div className="flex items-center gap-2">
@@ -1052,8 +1052,8 @@ export default function DataSources() {
                        </div>
 
                        <div className="mb-3">
-                         <div className="text-[10px] font-mono text-[#ff481b] uppercase font-bold tracking-wider">{conn.platform}</div>
-                         <h3 className="text-base font-semibold text-[var(--sigma-text)] tracking-tight group-hover:text-[#ff481b] transition-colors">{conn.name}</h3>
+                         <div className="text-[10px] font-mono text-[var(--sigma-primary)] uppercase font-bold tracking-wider">{conn.platform}</div>
+                         <h3 className="text-base font-semibold text-[var(--sigma-text)] tracking-tight group-hover:text-[var(--sigma-primary)] transition-colors">{conn.name}</h3>
                        </div>
 
                        {/* Verified Account Evidence Badges */}
@@ -1064,7 +1064,7 @@ export default function DataSources() {
                          </div>
                          <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
                            <span className="text-[var(--sigma-text-muted)] font-mono">Property / CID</span>
-                           <span className="text-[#ff481b] font-mono font-bold tracking-wider">{conn.propertyId || 'PRP-LIVE-01'}</span>
+                           <span className="text-[var(--sigma-primary)] font-mono font-bold tracking-wider">{conn.propertyId || 'Not provided'}</span>
                          </div>
                          <div className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
                            <span className="text-[var(--sigma-text-muted)] font-mono">Protocol</span>
@@ -1082,19 +1082,19 @@ export default function DataSources() {
                        {/* Vault Target & Handshake */}
                        <div className="pt-2.5 border-t border-[var(--sigma-border)] mb-2.5 flex items-center justify-between text-[11px] font-mono">
                          <div className="text-[var(--sigma-text-muted)]">Target Vault: <span className="text-[var(--sigma-text)] font-medium">{conn.targetVault}</span></div>
-                         <div className="text-[var(--sigma-text-muted)]">{conn.latencyMs ? `${conn.latencyMs}ms` : '14ms'} • {conn.lastPing || 'Just now'}</div>
+                         <div className="text-[var(--sigma-text-muted)]">{conn.latencyMs ? `${conn.latencyMs}ms` : 'No ping recorded'} • {conn.lastPing || 'Not verified'}</div>
                        </div>
 
                        {/* Assigned AI Agents */}
                        <div className="pt-2 border-t border-[var(--sigma-border)] mb-2.5 space-y-1.5">
                          <div className="flex items-center justify-between text-[10px] font-mono text-[var(--sigma-text-muted)] uppercase">
                            <span className="flex items-center gap-1.5 text-[var(--sigma-text)] font-semibold">
-                             <Bot size={12} className="text-[#ff481b]" /> Assigned Agents ({conn.allocatedAgents?.length || 0})
+                             <Bot size={12} className="text-[var(--sigma-primary)]" /> Assigned Agents ({conn.allocatedAgents?.length || 0})
                            </span>
                            <button
                              type="button"
                              onClick={() => openAgentModal(conn)}
-                             className="text-[10px] text-[#ff481b] hover:underline font-bold cursor-pointer"
+                             className="text-[10px] text-[var(--sigma-primary)] hover:underline font-bold cursor-pointer"
                            >
                              Configure Access
                            </button>
@@ -1141,7 +1141,7 @@ export default function DataSources() {
                            size="xs"
                            onClick={() => handlePingSingle(conn.id, conn.platform, conn.accountName)}
                            disabled={syncingConnectionId === conn.id}
-                           icon={<RefreshCw size={11} className={cn(syncingConnectionId === conn.id && "animate-spin text-[#ff481b]")} />}
+                           icon={<RefreshCw size={11} className={cn(syncingConnectionId === conn.id && "animate-spin text-[var(--sigma-primary)]")} />}
                            title="Run live latency ping"
                          >
                            {syncingConnectionId === conn.id ? 'Pinging' : 'Ping'}
@@ -1163,13 +1163,13 @@ export default function DataSources() {
                 
                 {/* Connect New Card */}
                 <div 
-                  className="border-2 border-dashed border-[var(--sigma-border)] hover:border-[#ff481b]/50 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-[#ff481b]/[0.02] transition-all group cursor-pointer min-h-[260px]" 
+                  className="border-2 border-dashed border-[var(--sigma-border)] hover:border-[var(--sigma-primary)]/50 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-[var(--sigma-primary)]/[0.02] transition-all group cursor-pointer min-h-[260px]" 
                   onClick={() => openSetupModal()}
                 >
-                   <div className="w-10 h-10 rounded-full border border-[var(--sigma-border)] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-[#ff481b] group-hover:text-[#ff481b] text-[var(--sigma-text-muted)] transition-all">
+                   <div className="w-10 h-10 rounded-full border border-[var(--sigma-border)] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-[var(--sigma-primary)] group-hover:text-[var(--sigma-primary)] text-[var(--sigma-text-muted)] transition-all">
                       <Plus size={18} />
                    </div>
-                   <div className="text-sm font-semibold text-[var(--sigma-text)] group-hover:text-[#ff481b] transition-colors">Connect New Pipeline</div>
+                   <div className="text-sm font-semibold text-[var(--sigma-text)] group-hover:text-[var(--sigma-primary)] transition-colors">Connect New Pipeline</div>
                    <div className="text-[10px] text-[var(--sigma-text-muted)] font-mono uppercase tracking-widest mt-1">Configure Account & Property Evidence</div>
                 </div>
               </div>
@@ -1179,7 +1179,7 @@ export default function DataSources() {
             <div className="space-y-3.5">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-3.5 bg-[#ff481b] rounded-full" />
+                    <div className="w-1 h-3.5 bg-[var(--sigma-primary)] rounded-full" />
                     <h3 className="text-xs font-semibold text-[var(--sigma-text)] uppercase tracking-tight font-mono">Real-Time Ingestion Throughput</h3>
                   </div>
                   <Badge variant="neutral" size="xs">
@@ -1195,7 +1195,8 @@ export default function DataSources() {
                       <div className="text-[var(--sigma-text-soft)]">Connect a pipeline from the Connector Hub or Setup Modal to view live throughput.</div>
                     </div>
                   ) : (
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-left">
                       <thead className="bg-[var(--sigma-surface-subtle)] text-[10px] uppercase font-mono tracking-widest font-bold text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)]">
                         <tr>
                           <th className="px-5 py-3">Data Stream & Property</th>
@@ -1208,7 +1209,7 @@ export default function DataSources() {
                       </thead>
                       <tbody className="divide-y divide-[var(--sigma-border)]">
                         {activeConnections.map((conn) => (
-                          <tr key={conn.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <tr key={conn.id} className="group hover:bg-[var(--sigma-surface-subtle)] transition-colors">
                              <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-lg bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] flex items-center justify-center shrink-0">
@@ -1224,10 +1225,14 @@ export default function DataSources() {
                              <td className="px-6 py-4 text-xs font-mono text-secondary font-bold">{conn.targetVault}</td>
                              <td className="px-6 py-4 text-xs font-mono text-[var(--sigma-text-soft)]">{conn.lastPing}</td>
                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                  <span className="text-xs font-mono text-emerald-accent font-bold">{conn.latencyMs}ms</span>
-                                </div>
+                                {conn.latencyMs ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-xs font-mono text-emerald-accent font-bold">{conn.latencyMs}ms</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs font-mono text-[var(--sigma-text-muted)]">No handshake yet</span>
+                                )}
                              </td>
                              <td className="px-6 py-4 text-right">
                                 <button 
@@ -1243,6 +1248,7 @@ export default function DataSources() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   )}
                </GlassCard>
             </div>
@@ -1266,12 +1272,12 @@ export default function DataSources() {
                     className={cn(
                       "w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-mono transition-all flex items-center justify-between group cursor-pointer",
                       selectedCategory === cat.id 
-                        ? "bg-[#ff481b]/10 border border-[#ff481b]/30 text-[#ff481b] font-bold" 
+                        ? "bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/30 text-[var(--sigma-primary)] font-bold" 
                         : "text-[var(--sigma-text-muted)] hover:bg-[var(--sigma-surface-subtle)] hover:text-[var(--sigma-text)]"
                     )}
                   >
                     <div className="flex items-center gap-2.5">
-                       <cat.icon size={14} className={selectedCategory === cat.id ? "text-[#ff481b]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]"} />
+                       <cat.icon size={14} className={selectedCategory === cat.id ? "text-[var(--sigma-primary)]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]"} />
                        <span className="truncate">{cat.name}</span>
                     </div>
                   </button>
@@ -1287,7 +1293,7 @@ export default function DataSources() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search 500+ secure data nodes, APIs, ad accounts..." 
-                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl py-2.5 pl-10 pr-4 text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[#ff481b] transition-colors"
+                    className="w-full bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl py-2.5 pl-10 pr-4 text-xs font-mono text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-primary)] transition-colors"
                   />
                 </div>
 
@@ -1361,14 +1367,17 @@ export default function DataSources() {
       {/* Setup & Edit Modal */}
       <AnimatePresence>
         {isSetupModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsSetupModalOpen(false); }}>
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pipeline-setup-title"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface border border-white/15 rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8"
+              className="bg-surface border border-[var(--sigma-border)] rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
                     <Database size={20} className="text-accent" />

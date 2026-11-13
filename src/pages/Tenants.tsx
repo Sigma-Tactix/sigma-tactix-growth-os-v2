@@ -49,6 +49,7 @@ import {
 } from '@/src/lib/api';
 import { TokenTelemetrySummary, AIKeyConfig, ClientWorkspace } from '@/src/types';
 import { calculateTokenCost, computeProfitability, TIER_RETAINERS, MODEL_PRICING, ALL_AI_MODELS } from '@/src/lib/tokenCostEngine';
+import { ALL_SUPPORTED_PROVIDERS } from '@/src/data/aiProviderCatalog';
 import { useWorkspace } from '@/src/contexts/WorkspaceContext';
 import { Button, GlassCard, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
@@ -63,17 +64,9 @@ export type ActiveTab =
   | 'TENANTS' 
   | 'AUDIT_LOGS';
 
-const ALL_SUPPORTED_PROVIDERS = [
-  { provider: 'google', name: 'Google Cloud (Gemini)', defaultModel: 'gemini-2.5-flash', live: true, priceRange: '$0.075 – $1.25 / 1M' },
-  { provider: 'anthropic', name: 'Anthropic (Claude)', defaultModel: 'claude-3-5-sonnet', live: false, priceRange: '$0.80 – $15.00 / 1M' },
-  { provider: 'openai', name: 'OpenAI (GPT & o-Series)', defaultModel: 'gpt-4o', live: false, priceRange: '$0.15 – $15.00 / 1M' },
-  { provider: 'xai', name: 'xAI (Grok)', defaultModel: 'grok-2-1212', live: false, priceRange: '$2.00 – $5.00 / 1M' },
-  { provider: 'qwen', name: 'Alibaba Cloud (Qwen)', defaultModel: 'qwen-2.5-72b', live: false, priceRange: '$0.05 – $1.60 / 1M' },
-  { provider: 'deepseek', name: 'DeepSeek AI', defaultModel: 'deepseek-v3', live: false, priceRange: '$0.14 – $0.55 / 1M' },
-  { provider: 'glm', name: 'Zhipu AI (GLM)', defaultModel: 'glm-4-plus', live: false, priceRange: '$0.01 – $1.40 / 1M' },
-  { provider: 'opusmax', name: 'OpusMax Gateway (Claude family)', defaultModel: 'claude-opus-5-5', live: false, priceRange: '$0.80 – $15.00 / 1M (per gateway tier)' },
-  { provider: 'openai-account', name: 'OpenAI Account (ChatGPT / Codex)', defaultModel: 'openai-account', live: false, priceRange: 'Subscription (no per-token cost)' },
-];
+// The client provider catalog lives in src/data/aiProviderCatalog.ts (shared,
+// and parity-checked against server.ts by aiProviderCatalog.test.ts) so a just-
+// saved key can never silently drop on refresh.
 
 export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {}) {
   const { 
@@ -147,30 +140,34 @@ export default function Tenants({ defaultTab }: { defaultTab?: ActiveTab } = {})
     try {
       const [telemData, provData, tierData, allTiers] = await Promise.all([
         getTokenTelemetry().catch(() => null),
-        getAIProviderKeys().catch(() => []),
+        getAIProviderKeys().catch(() => null),
         getWorkspaceTier().catch(() => null),
         getBillingTiers().catch(() => []),
       ]);
 
       if (telemData) setTelemetry(telemData);
-      
-      // Merge retrieved keys with complete 7-provider catalog
-      const mergedProviders: AIKeyConfig[] = ALL_SUPPORTED_PROVIDERS.map(sp => {
-        const found = (provData || []).find((p: any) => 
-          p.provider.toLowerCase() === sp.provider.toLowerCase() || 
-          (sp.provider === 'google' && p.provider.toLowerCase() === 'gemini')
-        );
-        if (found) {
-          return { ...found, provider: sp.provider, live: found.live ?? sp.live };
-        }
-        return {
-          provider: sp.provider,
-          configured: sp.live,
-          model: sp.defaultModel,
-          live: sp.live
-        };
-      });
-      setProviders(mergedProviders);
+
+      // A transient keys-fetch failure must NOT clobber the on-screen provider
+      // list with a full unconfigured catalog — that is what made "I just saved
+      // a key and it disappeared" feel real. Keep the previous list on null.
+      if (provData) {
+        const mergedProviders: AIKeyConfig[] = ALL_SUPPORTED_PROVIDERS.map(sp => {
+          const found = (provData || []).find((p: any) =>
+            p.provider.toLowerCase() === sp.provider.toLowerCase() ||
+            (sp.provider === 'google' && p.provider.toLowerCase() === 'gemini')
+          );
+          if (found) {
+            return { ...found, provider: sp.provider, live: found.live ?? sp.live };
+          }
+          return {
+            provider: sp.provider,
+            configured: false,
+            model: sp.defaultModel,
+            live: false
+          };
+        });
+        setProviders(mergedProviders);
+      }
 
       if (tierData?.tier_key) {
         setActiveTier(tierData.tier_key);

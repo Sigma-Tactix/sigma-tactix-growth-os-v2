@@ -31,6 +31,35 @@ const table = (headers, rows) =>
   `| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |\n` +
   rows.map(r => `| ${r.join(' | ')} |`).join('\n');
 
+function agentSop(agent) {
+  const readers = agent.subAgents.filter(s => s.plane === 'read').map(s => `\`${s.id}\``).join(', ');
+  const writers = agent.subAgents.filter(s => s.plane === 'write').map(s => `\`${s.id}\``).join(', ');
+  const writeStep = writers.length > 0
+    ? `4. **Execute** — the dispatch DAG materialises and runs from the entry node \`${agent.entrySubAgent}\`. Read-plane nodes (${readers || 'none'}) run autonomously inside their granted vaults and tools. Write-plane nodes (${writers}) park in \`execution_approvals\`: their output is a draft, not a delivery — a human approves before anything takes effect.\n`
+    : `4. **Execute** — the dispatch DAG materialises and runs from the entry node \`${agent.entrySubAgent}\`. All nodes are read-plane: they run autonomously inside their granted vaults and tools and produce evidence only.\n`;
+  return `## SOP — Standard Operating Procedure\n\n` +
+    `1. **Dispatch** — VANTA routes work to ${agent.id} only through the decision engine's category map (${agent.categories.map(c => `\`${c}\``).join(', ')}); the model never picks the agent.\n` +
+    `2. **Queue** — \`POST /api/workspace/run-agent\` creates the task as \`Pending Approval\`. Nothing executes until a human approves it; the vault scope is computed server-side from this agent's policy, never from client input.\n` +
+    `3. **Approve** — an owner/admin calls \`POST /api/workspace/run-agent/:id/approve\`. Where a second approver exists, the requester cannot approve their own run.\n` +
+    writeStep +
+    `5. **Record** — every node emits a ledger \`node_attempt\`; task status, steps and output are written back to the task record. User-visible claims cite ledger cells or carry an \`evidenceContract\` reference / \`simulated: true\`.\n` +
+    `6. **Fail closed** — out-of-scope requests are rejected before the run; an empty resolved scope aborts the task rather than running it ungrounded.\n`;
+}
+
+function agentAop(agent) {
+  return `## AOP — Autonomy Policy\n\n` +
+    table(['Sub-agent', 'Plane', 'Autonomy', 'Granted tools', 'Timeout'], agent.subAgents.map(s => [
+      `\`${s.id}\``,
+      s.plane,
+      s.plane === 'write' ? 'Drafts only — parks until a human approves' : 'Autonomous within granted vaults + tools',
+      s.permittedTools.map(t => `\`${t}\``).join(' ') || 'vault reads only',
+      `${s.timeoutMs} ms`,
+    ])) +
+    `\n**Invariants** — vault scope is capped at: ${agent.vaultScope.map(v => `\`${v}\``).join(', ')}. ` +
+    `Executive and Credentials vaults are blocked for this agent and every sub-agent it spawns. ` +
+    `No sub-agent holds a delivery or connector-write grant: any external effect is out-of-band and human-performed.\n`;
+}
+
 function agentFile(agent) {
   const subs = agent.subAgents.map(s =>
     `### ${s.id}\n\n` +
@@ -54,6 +83,8 @@ function agentFile(agent) {
     `> Secret vaults (Executive, Credentials) are blocked for this agent and every\n` +
     `> sub-agent it spawns. A sub-agent inherits this scope and may never widen it.\n\n` +
     `## Sub-agents\n\n${subs.join('\n')}\n\n` +
+    `${agentSop(agent)}\n` +
+    `${agentAop(agent)}\n` +
     `## Operating rules\n\n` +
     `1. This agent plans; it does not execute writes directly.\n` +
     `2. Every task decomposes into the sub-agents above — there is no direct execution path.\n` +
@@ -74,6 +105,21 @@ function subAgentFile(owner, sub) {
       ['Approval', sub.plane === 'write' ? '**Required** — parks until a human approves' : 'Not required'],
       ['Timeout', `${sub.timeoutMs} ms`],
       ['Vault scope', `Inherited from ${owner.id}, minus Executive and Credentials`],
+    ]) +
+    `\n## SOP — Standard Operating Procedure\n\n` +
+    `1. **Receive** — the owning agent's dispatch DAG hands this node its input contract (${sub.inputContract}) plus any upstream node results from earlier in the run.\n` +
+    `2. **Read** — grounded only in inherited vault scope and the tools granted below (${sub.permittedTools.length ? sub.permittedTools.map(t => `\`${t}\``).join(', ') : 'vault reads'}). Nothing else.\n` +
+    `3. **Produce** — emit the output contract (${sub.outputContract}) within ${sub.timeoutMs} ms. On timeout or failure, the node's \`node_attempt\` records the error and the run aborts; no partial result is published.\n` +
+    (sub.plane === 'write'
+      ? `4. **Park** — write-plane output is a draft: it parks in \`execution_approvals\` and only takes effect after a human approves.\n`
+      : `4. **Return** — read-plane output is evidence and recommendations only; it never triggers a write or delivery.\n`) +
+    `\n## AOP — Autonomy Policy\n\n` +
+    table(['Property', 'Value'], [
+      ['Plane', sub.plane === 'write' ? '`write` — draft-only, human approval required' : '`read` — autonomous within grants'],
+      ['Granted tools', sub.permittedTools.map(t => `\`${t}\``).join(' ') || 'vault reads only (no tool grants)'],
+      ['Vault scope', `Inherited from ${owner.id} ${owner.name}, minus Executive and Credentials`],
+      ['Timeout', `${sub.timeoutMs} ms`],
+      ['Delivery / connector writes', 'None — any external effect is out-of-band and human-performed'],
     ]) +
     `\n## Rules\n\n` +
     `1. Do exactly the mission above. No adjacent work.\n` +
@@ -107,7 +153,19 @@ const files = {
     `                    -> narrate outcomes from the ledger\n\`\`\`\n\n` +
     `## Vault visibility\n\n` +
     `Metadata only: ${registry.MASTER_AGENT.vaultScope.join(', ')}\n\n` +
-    `Blocked always: ${registry.MASTER_AGENT.blocked.join(', ')}\n`,
+    `Blocked always: ${registry.MASTER_AGENT.blocked.join(', ')}\n\n` +
+    `## SOP — Standard Operating Procedure\n\n` +
+    `1. **Classify** — the decision engine routes the request to one owning agent by category; VANTA never picks an agent by model judgment.\n` +
+    `2. **Decompose** — the owning agent's entry sub-agent and DAG nodes are derived from the registry, not free-form.\n` +
+    `3. **Gate** — every write-plane node parks in \`execution_approvals\`; VANTA explains why approval is required and cannot grant it.\n` +
+    `4. **Narrate** — VANTA reports outcomes from the execution ledger (node_attempts, statuses), and attaches \`simulated: true\` to anything the ledger does not back.\n\n` +
+    `## AOP — Autonomy Policy (delegation matrix)\n\n` +
+    table(['Agent', 'Entry node', 'Write-plane nodes (need approval)'], registry.SYSTEM_AGENTS.map(a => [
+      `\`${a.id}\` ${a.name}`,
+      `\`${a.entrySubAgent}\``,
+      a.subAgents.filter(s => s.plane === 'write').map(s => `\`${s.id}\``).join(', ') || 'none — read-only',
+    ])) +
+    `\nVANTA itself holds no execution, write, or authorization capability — every effect flows through an owning agent's nodes and the human gate above.\n`,
 };
 
 for (const agent of registry.SYSTEM_AGENTS) {

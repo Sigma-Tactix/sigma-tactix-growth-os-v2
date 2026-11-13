@@ -341,7 +341,7 @@ export default function GrowthDiagnostics() {
             <div className="rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-surface)] p-6">
               <div className="text-xs text-[var(--sigma-text-muted)]">Highest-priority signal</div>
               <h2 className="mt-2 text-xl font-semibold text-[var(--sigma-text)]">{topFinding?.title || 'Review diagnostic findings'}</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--sigma-text-secondary)]">
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--sigma-text-soft)]">
                 {topFinding?.insight || topFinding?.text || 'Open the evidence below to review the diagnostic.'}
               </p>
               {topFinding && (
@@ -399,7 +399,7 @@ export default function GrowthDiagnostics() {
                     <Sparkles size={14} /> Recommended swarm mix
                   </div>
                   <h2 className="mt-2 text-xl font-semibold text-[var(--sigma-text)]">{selectedStrategy.title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--sigma-text-secondary)]">{selectedStrategy.objective}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--sigma-text-soft)]">{selectedStrategy.objective}</p>
                   <div className="mt-3 text-xs text-[var(--sigma-text-muted)]">
                     Measure: <span className="font-medium text-[var(--sigma-text)]">{selectedStrategy.successMetric}</span>
                   </div>
@@ -442,7 +442,7 @@ export default function GrowthDiagnostics() {
               })}
             </div>
 
-            <div className="border-t border-[var(--sigma-border)] bg-[var(--sigma-bg-subtle)] px-5 py-4 sm:px-6">
+            <div className="border-t border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-5 py-4 sm:px-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-2 text-xs text-[var(--sigma-text-muted)]">
                   <Lock size={13} /> Tasks enter the approval ledger. No agent runs from this screen.
@@ -490,7 +490,7 @@ export default function GrowthDiagnostics() {
                       <h3 className="text-sm font-semibold text-[var(--sigma-text)]">{finding.title}</h3>
                       <Badge variant={finding.dataSource === 'live' ? 'success' : 'warning'} size="xs">{finding.dataSource}</Badge>
                     </div>
-                    <p className="mt-2 max-w-4xl text-xs leading-relaxed text-[var(--sigma-text-secondary)]">{finding.text}</p>
+                    <p className="mt-2 max-w-4xl text-xs leading-relaxed text-[var(--sigma-text-soft)]">{finding.text}</p>
                     {finding.quickSteps.length > 0 && <p className="mt-2 text-xs text-[var(--sigma-text-muted)]">Next: {finding.quickSteps[0]}</p>}
                   </article>
                 ))}

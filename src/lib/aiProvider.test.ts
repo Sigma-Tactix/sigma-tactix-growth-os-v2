@@ -2,6 +2,58 @@ import { describe, it, expect, vi } from "vitest";
 import { resolveProviderBaseUrl, executeAgentReActLoop, AIProviderConfig } from "./aiProvider.js";
 
 describe("aiProvider - Unified Agent AI Gateway & ReAct Execution", () => {
+  it('executes Anthropic tool calls using Messages API rather than the OpenAI wire format', async () => {
+    const originalFetch = globalThis.fetch;
+    const bodies: any[] = [];
+    globalThis.fetch = vi.fn(async (url, options) => {
+      expect(url).toBe('https://api.anthropic.com/v1/messages');
+      expect(options?.headers).toMatchObject({ 'x-api-key': 'saved-anthropic-key' });
+      const body = JSON.parse(options?.body as string);
+      bodies.push(body);
+      return { ok: true, json: async () => ({
+        content: bodies.length === 1
+          ? [{ type: 'tool_use', id: 'call-a', name: 'fetch_site_content', input: { url: 'https://example.com' } },
+             { type: 'tool_use', id: 'call-b', name: 'fetch_site_content', input: { url: 'https://example.org' } }]
+          : [{ type: 'text', text: 'Grounded answer' }],
+        usage: { input_tokens: 10, output_tokens: 5 },
+      }) } as Response;
+    });
+    const executeTool = vi.fn(async () => ({ evidence: 'fixture' }));
+    try {
+      const result = await executeAgentReActLoop({
+        agentName: 'Evidence Collector', goal: 'Read public evidence', scopedContext: 'Synthetic context',
+        config: { provider: 'anthropic', model: 'claude-test', apiKey: 'saved-anthropic-key' },
+        allowedTools: ['fetch_site_content'], executeTool,
+      });
+      expect(result.output).toBe('Grounded answer');
+      expect(result.totalTokens).toBe(30);
+      expect(executeTool).toHaveBeenCalledTimes(2);
+      expect(bodies[0].tools[0]).toHaveProperty('input_schema');
+      expect(bodies[1].messages.at(-1)).toMatchObject({ role: 'user', content: [
+        { type: 'tool_result', tool_use_id: 'call-a' }, { type: 'tool_result', tool_use_id: 'call-b' },
+      ] });
+    } finally { globalThis.fetch = originalFetch; }
+  });
+
+  it.each(['xai', 'glm', 'omniroute', 'opencode', 'opusmax', 'openrouter', 'deepseek', 'qwen', 'openai'] as const)(
+    'uses explicit saved credentials and base URL for %s', async provider => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn(async (url, options) => {
+        expect(url).toBe('https://approved.example/v1/chat/completions');
+        expect(options?.headers).toMatchObject({ Authorization: 'Bearer provider-specific-key' });
+        return { ok: true, json: async () => ({ choices: [{ message: { role: 'assistant', content: 'Done' } }] }) } as Response;
+      });
+      try {
+        const result = await executeAgentReActLoop({ agentName: 'Test', goal: 'Test', scopedContext: '',
+          config: { provider, model: 'test-model', apiKey: 'provider-specific-key', baseUrl: 'https://approved.example/v1' },
+          allowedTools: [], executeTool: vi.fn(),
+        });
+        expect(result.providerUsed).toBe(provider);
+        expect(result.output).toBe('Done');
+      } finally { globalThis.fetch = originalFetch; }
+    },
+  );
+
   it("resolves correct default base URLs for each provider", () => {
     expect(resolveProviderBaseUrl("ollama")).toBe("http://127.0.0.1:11434/v1");
     expect(resolveProviderBaseUrl("lmstudio")).toBe("http://127.0.0.1:1234/v1");

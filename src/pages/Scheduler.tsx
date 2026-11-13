@@ -150,10 +150,10 @@ export default function Scheduler() {
                 Distribution Hub
               </Badge>
             </div>
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
               Reporting Scheduler
             </h1>
-            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-2xl leading-relaxed">
               Automate recurring intelligence delivery. Generate multi-format executive exports (PDF, PPTX) synchronized with Second Brain metrics.
             </p>
           </div>
@@ -191,27 +191,27 @@ export default function Scheduler() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="text-[var(--sigma-vermilion)]" size={18} />
-              <h2 className="text-base font-bold text-white">Active Schedules ({schedules.length})</h2>
+              <h2 className="text-base font-bold text-[var(--sigma-text)]">Active Schedules ({schedules.length})</h2>
             </div>
           </div>
           
           <GlassCard elevation="raised" className="overflow-hidden border border-[var(--sigma-border)]">
             <div className="p-4 bg-[var(--sigma-surface)]/80 border-b border-[var(--sigma-border)] flex items-center justify-between px-6">
               <div className="flex items-center gap-3 flex-1 max-w-sm">
-                <Search size={14} className="text-zinc-500" />
+                <Search size={14} className="text-[var(--sigma-text-muted)]" />
                 <input 
                   type="text" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter schedules by name or category..." 
-                  className="bg-transparent border-none focus:outline-none text-xs w-full text-white placeholder:text-zinc-500 font-mono" 
+                  className="bg-transparent border-none focus:outline-none text-xs w-full text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] font-mono" 
                 />
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/30 text-[11px] uppercase font-mono tracking-widest text-zinc-500 border-b border-[var(--sigma-border)]">
+                <thead className="bg-[var(--sigma-surface-subtle)] text-[11px] uppercase font-mono tracking-widest text-[var(--sigma-text-muted)] border-b border-[var(--sigma-border)]">
                   <tr>
                     <th className="px-6 py-4">Report Name</th>
                     <th className="px-6 py-4 text-center">Format</th>
@@ -221,37 +221,50 @@ export default function Scheduler() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--sigma-border)]">
-                  {filteredSchedules.map((s) => (
-                    <tr key={s.id} className="group hover:bg-white/[0.02] transition-colors">
+                  {filteredSchedules.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-10 text-center">
+                        <div className="text-sm text-[var(--sigma-text)]">
+                          {schedules.length === 0 ? 'No schedules configured yet' : 'No schedules match your filter'}
+                        </div>
+                        <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] mt-1.5">
+                          {schedules.length === 0
+                            ? 'Create one with "New Schedule" to automate a recurring executive export.'
+                            : 'Clear the filter to see all configured schedules.'}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredSchedules.map((s) => (
+                    <tr key={s.id} className="group hover:bg-[var(--sigma-surface-subtle)] transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-sm text-white">{s.name}</div>
-                        <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{s.category}</div>
+                        <div className="font-semibold text-sm text-[var(--sigma-text)]">{s.name}</div>
+                        <div className="text-[11px] text-[var(--sigma-text-muted)] font-mono mt-0.5">{s.category}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <Badge variant="outline" size="sm">
                           {s.format}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-zinc-400">
+                      <td className="px-6 py-4 text-xs font-mono text-[var(--sigma-text-muted)]">
                         <div className="flex items-center gap-1.5">
-                          <Clock size={12} className="text-zinc-500" /> {s.frequency}
+                          <Clock size={12} className="text-[var(--sigma-text-muted)]" /> {s.frequency}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-zinc-400">{s.lastRun}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-[var(--sigma-text-muted)]">{s.lastRun}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button 
                             onClick={() => handleRunNow(s)}
                             disabled={runningScheduleId === s.id}
                             title="Run Now"
-                            className="p-2 hover:bg-[var(--sigma-vermilion)]/15 hover:text-[var(--sigma-vermilion)] rounded-lg text-zinc-400 transition-colors disabled:opacity-50"
+                            className="p-2 hover:bg-[var(--sigma-vermilion)]/15 hover:text-[var(--sigma-vermilion)] rounded-lg text-[var(--sigma-text-muted)] transition-colors disabled:opacity-50"
                           >
                             {runningScheduleId === s.id ? <RefreshCw size={14} className="animate-spin text-[var(--sigma-vermilion)]" /> : <Play size={14} />}
                           </button>
                           <button 
                             onClick={() => handleDeleteSchedule(s.id)}
                             title="Delete Schedule"
-                            className="p-2 hover:bg-rose-500/20 hover:text-rose-accent rounded-lg text-zinc-400 transition-colors"
+                            className="p-2 hover:bg-rose-500/15 hover:text-rose-accent rounded-lg text-[var(--sigma-text-muted)] transition-colors"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -267,25 +280,49 @@ export default function Scheduler() {
           {/* Recent History */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Clock className="text-zinc-500" size={16} />
-              <h3 className="text-sm font-bold text-white">Recent Execution History</h3>
+              <Clock className="text-[var(--sigma-text-muted)]" size={16} />
+              <h3 className="text-sm font-bold text-[var(--sigma-text)]">Recent Execution History</h3>
             </div>
+            {history.length === 0 ? (
+              <div className="p-5 border border-dashed border-[var(--sigma-border)] rounded-xl text-center">
+                <div className="text-sm text-[var(--sigma-text)]">No recorded runs yet</div>
+                <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] mt-1">Runs appear here once a schedule is triggered and its delivery is recorded.</div>
+              </div>
+            ) : (
             <div className="space-y-2">
-              {history.map((h) => (
-                <div key={h.id} className="p-3.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-white/15 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
-                      <CheckCircle2 size={15} />
+              {history.map((h) => {
+                const isCompleted = h.status === 'completed';
+                const isQueued = h.status === 'queued';
+                return (
+                  <div key={h.id} className="p-3.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl flex items-center justify-between group hover:border-[var(--sigma-border-strong)] transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center border shrink-0',
+                        isCompleted ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-accent'
+                          : isQueued ? 'bg-amber-500/15 border-amber-500/30 text-amber-accent'
+                          : 'bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)]'
+                      )}>
+                        {isCompleted ? <CheckCircle2 size={15} /> : isQueued ? <Clock size={15} /> : <AlertCircle size={15} />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-xs text-[var(--sigma-text)]">{h.title}</span>
+                          <span className={cn(
+                            'text-[10px] font-mono uppercase',
+                            isCompleted ? 'text-emerald-accent' : isQueued ? 'text-amber-accent' : 'text-[var(--sigma-text-muted)]'
+                          )}>
+                            {h.status}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-[var(--sigma-text-muted)]">{h.desc}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-xs text-white">{h.title}</div>
-                      <div className="text-[11px] text-zinc-500">{h.desc}</div>
-                    </div>
+                    <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] shrink-0 ml-3">{h.time}</div>
                   </div>
-                  <div className="text-[11px] font-mono text-zinc-500">{h.time}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            )}
           </div>
         </div>
 
@@ -295,40 +332,43 @@ export default function Scheduler() {
             <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
               <div className="flex items-center gap-2">
                 <Cpu size={18} className="text-[var(--sigma-vermilion)]" />
-                <h3 className="text-sm font-bold text-white">Cron Engine Status</h3>
+                <h3 className="text-sm font-bold text-[var(--sigma-text)]">Cron Engine Status</h3>
               </div>
-              <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 bg-amber-400 rounded-full" />
+                <span className="text-[10px] font-mono uppercase text-amber-accent">In-app only</span>
+              </div>
             </div>
 
             <div className="space-y-3.5 text-xs font-mono">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Scheduler Engine:</span>
-                <span className="text-zinc-200">In-app queue (no worker daemon)</span>
+                <span className="text-[var(--sigma-text-muted)]">Scheduler Engine:</span>
+                <span className="text-[var(--sigma-text-soft)]">In-app queue (no worker daemon)</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Worker Node:</span>
-                <span className="text-amber-400">Not provisioned</span>
+                <span className="text-[var(--sigma-text-muted)]">Worker Node:</span>
+                <span className="text-amber-accent">Not provisioned</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Queue Backend:</span>
-                <span className="text-amber-400">Local state only</span>
+                <span className="text-[var(--sigma-text-muted)]">Queue Backend:</span>
+                <span className="text-amber-accent">Local state only</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Remote Dispatch:</span>
-                <span className="text-amber-400">Requires SMTP/Slack credentials</span>
+                <span className="text-[var(--sigma-text-muted)]">Remote Dispatch:</span>
+                <span className="text-amber-accent">Requires SMTP/Slack credentials</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Next Scheduled Run:</span>
-                <span className="text-zinc-400">Pending scheduler activation</span>
+                <span className="text-[var(--sigma-text-muted)]">Next Scheduled Run:</span>
+                <span className="text-[var(--sigma-text-muted)]">Pending scheduler activation</span>
               </div>
             </div>
 
             <div className="pt-4 border-t border-[var(--sigma-border)]">
-              <div className="flex justify-between items-end mb-2 text-[11px] font-mono text-zinc-500 uppercase">
+              <div className="flex justify-between items-end mb-2 text-[11px] font-mono text-[var(--sigma-text-muted)] uppercase">
                 <span>Recorded Queue Depth</span>
-                <span className="text-zinc-300">{history.filter(h => h.status === 'queued').length} Queued</span>
+                <span className="text-[var(--sigma-text-soft)]">{history.filter(h => h.status === 'queued').length} Queued</span>
               </div>
-              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="h-1.5 bg-[var(--sigma-surface-subtle)] rounded-full overflow-hidden border border-[var(--sigma-border)]">
                 <div className="h-full bg-[var(--sigma-vermilion)]" style={{ width: history.length > 0 ? `${Math.round((history.filter(h => h.status === 'completed').length / history.length) * 100)}%` : '0%' }} />
               </div>
             </div>
@@ -350,11 +390,11 @@ export default function Scheduler() {
                 <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
                   <div className="flex items-center gap-2.5">
                     <Calendar size={18} className="text-[var(--sigma-vermilion)]" />
-                    <h3 className="text-base font-bold text-white">Create Automated Schedule</h3>
+                    <h3 className="text-base font-bold text-[var(--sigma-text)]">Create Automated Schedule</h3>
                   </div>
                   <button
                     onClick={() => setIsNewModalOpen(false)}
-                    className="p-1 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+                    className="p-1 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all"
                   >
                     <X size={18} />
                   </button>
@@ -371,11 +411,11 @@ export default function Scheduler() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-mono uppercase text-zinc-400">Format</label>
+                      <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Format</label>
                       <select
                         value={newFormat}
                         onChange={(e) => setNewFormat(e.target.value)}
-                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-vermilion)]"
                       >
                         <option value="PDF">PDF Executive Document</option>
                         <option value="PPTX">PPTX Board Deck</option>
@@ -384,11 +424,11 @@ export default function Scheduler() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-mono uppercase text-zinc-400">Cadence / Frequency</label>
+                      <label className="text-xs font-mono uppercase text-[var(--sigma-text-muted)]">Cadence / Frequency</label>
                       <select
                         value={newFrequency}
                         onChange={(e) => setNewFrequency(e.target.value)}
-                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[var(--sigma-vermilion)]"
+                        className="w-full bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl p-3 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-[var(--sigma-vermilion)]"
                       >
                         <option value="Daily (07:00)">Daily (07:00 AM)</option>
                         <option value="Weekly (Mon)">Weekly (Every Monday)</option>

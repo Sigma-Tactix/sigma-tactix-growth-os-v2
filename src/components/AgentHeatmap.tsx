@@ -430,21 +430,24 @@ export default function AgentHeatmap({
   }, [heatmapData]);
 
   return (
-    <div className="bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl space-y-6">
+    <div className="bg-[#0b0b0d] border border-white/10 rounded-2xl p-6 lg:p-8 shadow-[var(--sigma-shadow-lg)] space-y-6">
+      {/* Deliberately-dark D3 console: the heatmap cells, summary strip, and drill-down
+          render in static dark shades, so the card stays on a fixed dark surface rather
+          than flipping with the page theme. */}
       {/* Heatmap Header & Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Activity size={18} className="text-accent" />
-            <h3 className="text-xl font-bold silver-text tracking-tight">
-              Agent Execution & Load Heatmap
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              Agent Execution &amp; Load Heatmap
             </h3>
             <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px] font-mono font-bold border border-zinc-700">
               Dynamic Scale
             </span>
           </div>
           {ledgerUnavailable ? (
-            <p className="text-xs text-amber-300">
+            <p className="text-xs text-amber-accent" role="status">
               Execution ledger unavailable — verified load and success cannot be shown.
               Apply migration 0017 and reload. Simulated benchmarks below are not verified work.
             </p>
@@ -460,6 +463,7 @@ export default function AgentHeatmap({
           {/* Action Buttons: Dispatch Simulated Benchmark & Reset */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handleDispatchTestTelemetry}
               disabled={isDispatching}
               className="px-3 py-1.5 rounded-xl bg-accent text-background font-black text-xs uppercase tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-all amber-glow disabled:opacity-50"
@@ -487,8 +491,9 @@ export default function AgentHeatmap({
           </div>
 
           {/* Metric Selector */}
-          <div className="sigma-segmented font-mono">
+          <div className="sigma-segmented font-mono" role="group" aria-label="Heatmap metric">
             <button
+              type="button"
               onClick={() => setMetricMode('load')}
               className={cn(
                 "sigma-segment flex items-center gap-1.5",
@@ -502,6 +507,7 @@ export default function AgentHeatmap({
             </button>
 
             <button
+              type="button"
               onClick={() => setMetricMode('success')}
               className={cn(
                 "sigma-segment flex items-center gap-1.5",
@@ -515,6 +521,7 @@ export default function AgentHeatmap({
             </button>
 
             <button
+              type="button"
               onClick={() => setMetricMode('composite')}
               className={cn(
                 "sigma-segment flex items-center gap-1.5",
@@ -529,7 +536,7 @@ export default function AgentHeatmap({
           </div>
 
           {/* Time Window Switcher */}
-          <div className="sigma-segmented font-mono">
+          <div className="sigma-segmented font-mono" role="group" aria-label="Heatmap time window">
             {[
               { id: '24h', label: '24 Hours' },
               { id: 'peak', label: 'Peak Window' },
@@ -537,6 +544,7 @@ export default function AgentHeatmap({
             ].map(w => (
               <button
                 key={w.id}
+                type="button"
                 onClick={() => setTimeWindow(w.id as TimeWindow)}
                 className={cn(
                   "sigma-segment",

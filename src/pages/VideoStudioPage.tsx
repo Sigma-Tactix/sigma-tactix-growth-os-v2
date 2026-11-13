@@ -36,8 +36,6 @@ import { cn } from '@/src/lib/utils';
 
 type AspectRatio = '9:16' | '16:9' | '1:1';
 type VideoMode = 'NORMAL' | 'MOTION_FX';
-type VideoQuality = '720p' | '1080p' | '4k';
-type VoiceoverSpeed = '0.75x' | '1.0x' | '1.25x';
 
 const LAST_RENDER_STORAGE_KEY = 'sigma.video-studio.last-render';
 
@@ -134,7 +132,10 @@ export default function VideoStudioPage() {
 
   // Video Mode: Normal Video Generation vs Motion FX Storytelling Video
   const [videoMode, setVideoMode] = useState<VideoMode>('NORMAL');
-  const [selectedModel, setSelectedModel] = useState<string>('wan-2.1-14b');
+  // Only the HyperFrames governed renderer is actually wired. The open-weights
+  // list is reference only — defaulting to it would imply a model that is not
+  // connected. So the active selection is the deterministic HyperFrames engine.
+  const [selectedModel, setSelectedModel] = useState<string>('hyperframes-governed');
   
   // Specifications
   const [title, setTitle] = useState('Sigma Tactix Growth OS');
@@ -142,8 +143,6 @@ export default function VideoStudioPage() {
   const [cta, setCta] = useState('Visit now');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
   const [durationSeconds, setDurationSeconds] = useState(8);
-  const [quality, setQuality] = useState<VideoQuality>('1080p');
-  const [voiceSpeed, setVoiceSpeed] = useState<VoiceoverSpeed>('0.75x');
 
   // Motion FX Assets
   const [motionFxAssets, setMotionFxAssets] = useState<Array<{ name: string; size: string; previewUrl: string; targetScene: number }>>([]);
@@ -252,6 +251,9 @@ export default function VideoStudioPage() {
     try {
       const activeModelObj = AI_VIDEO_MODELS.find(m => m.id === selectedModel);
       const isMotionFx = videoMode === 'MOTION_FX';
+      // The HyperFrames renderer takes only aspectRatio + durationSeconds:
+      // resolution follows the ratio (delivery quality) and the local voice
+      // pipeline is fixed at 0.75x pace. Neither is a live parameter.
       
       const compositeSubtitle = isMotionFx
         ? `${subtitle.trim()} [Motion FX Assets: ${motionFxAssets.length > 0 ? motionFxAssets.map(a => a.name).join(', ') : 'Kinetic overlays'} | Explainer Mode: Scene 1 Hook, Scene 2 Explainer, Scene 3 Ending Frame with Sigma Tactix Logo, www.sigmatactix.com, and CTA "Visit now"]`
@@ -271,26 +273,28 @@ export default function VideoStudioPage() {
       const newRun: AgentRunRecord = {
         id: result.task.id,
         agentName: isMotionFx ? 'Motion FX Storytelling Agent' : 'AI Video Director Agent',
-        agentRole: isMotionFx ? 'B2B Interactive Motion Synthesizer' : 'Open Video Synthesizer',
+        agentRole: isMotionFx ? 'B2B Interactive Motion Synthesizer' : 'Governed MP4 Synthesizer',
         timestamp: 'Just now',
         status: 'SUCCESS',
         moduleOrigin: 'Video & Motion Studio',
-        inputSummary: `${activeModelObj?.name} • ${aspectRatio} • ${durationSeconds}s • ${quality}`,
-        outputSummary: `Queued ${videoMode} render via ${activeModelObj?.name}. Approval gate initialized.`,
-        fullOutput: `Model: ${activeModelObj?.name}\nMode: ${videoMode}\nAspect Ratio: ${aspectRatio}\nDuration: ${durationSeconds}s\nQuality: ${quality}\nVoice Pace: ${voiceSpeed}\nEnding Frame: Sigma Tactix Logo + www.sigmatactix.com + CTA "Visit now"`,
+        // Attribute to the renderer that actually runs (HyperFrames), not the
+        // reference model the user scrolled past.
+        inputSummary: `${aspectRatio} • ${durationSeconds}s • HyperFrames governed render`,
+        outputSummary: `Queued ${videoMode} render via the HyperFrames governed renderer. Approval gate initialized; MP4 renders only after owner approval.`,
+        fullOutput: `Renderer: HyperFrames (deterministic 3-scene MP4)\nMode: ${videoMode}\nAspect Ratio: ${aspectRatio}\nDuration: ${durationSeconds}s\nVoice pace: fixed 0.75x local TTS\nResolution: delivery (follows aspect ratio)\nEnding Frame: Sigma Tactix Logo + www.sigmatactix.com + CTA "Visit now"`,
         metrics: [
           { label: 'Mode', value: videoMode },
-          { label: 'Model', value: activeModelObj?.name?.split(' ')[0] || 'Wan2.1' },
+          { label: 'Renderer', value: 'HyperFrames' },
           { label: 'Ratio', value: aspectRatio },
           { label: 'Duration', value: `${durationSeconds}s` },
-          { label: 'Quality', value: quality }
+          { label: 'Voice', value: '0.75x fixed' }
         ]
       };
       setRunHistory(prev => [newRun, ...prev]);
 
       notifySuccess(
         isMotionFx ? 'Motion FX Explainer Queued' : 'Video Render Queued',
-        `${result.task.id} scheduled with 0.75x paced voiceover and ending frame CTA.`
+        `${result.task.id} queued via HyperFrames. It renders to an MP4 only after owner approval; voiceover is a fixed 0.75x local pace.`
       );
     } catch (error: any) {
       notifyError('Could not queue render', error?.message || 'The video renderer is unavailable.');
@@ -360,38 +364,46 @@ export default function VideoStudioPage() {
               </span>
             </div>
             {/* Dynamic Section Name strictly reflecting selected Aspect Ratio */}
-            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white md:text-3xl">
-              <Video className="h-7 w-7 text-[var(--sigma-vermilion)]" />
-              Video &amp; Motion Studio — Motion Video ({aspectRatio})
+            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-[var(--sigma-text)] min-w-0 md:text-3xl">
+              <Video className="h-7 w-7 shrink-0 text-[var(--sigma-vermilion)]" />
+              <span>Video &amp; Motion Studio — Motion Video ({aspectRatio})</span>
             </h1>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-400">
-              Synthesize storytelling explainers and open-weights AI videos with Wan2.1, LTX-Video, CogVideoX, and HyperFrames. Features 0.75x paced voiceover and ending frame branding for www.sigmatactix.com.
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
+              Storytelling explainers and open-weights reference stacks routed through the governed HyperFrames renderer: 0.75x paced voiceover and ending frame branding for www.sigmatactix.com.
             </p>
           </div>
 
           {/* Mode Switcher Tabs: Separate Normal Video vs Motion FX Video */}
-          <div className="flex items-center gap-2 bg-black/60 p-1.5 rounded-xl border border-white/10 shrink-0">
+          <div
+            role="tablist"
+            aria-label="Video mode"
+            className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl border border-[var(--sigma-border-strong)] bg-[var(--sigma-surface-subtle)] shrink-0"
+          >
             <button
+              role="tab"
+              aria-selected={videoMode === 'NORMAL'}
               onClick={() => setVideoMode('NORMAL')}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
+                "px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
                 videoMode === 'NORMAL'
-                  ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] shadow-md"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
-              <Video className="w-4 h-4" /> Normal Video Generation
+              <Video className="w-4 h-4" /> Normal Video
             </button>
             <button
+              role="tab"
+              aria-selected={videoMode === 'MOTION_FX'}
               onClick={() => setVideoMode('MOTION_FX')}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
+                "px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all",
                 videoMode === 'MOTION_FX'
-                  ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-blue-accent text-white shadow-md"
+                  : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
               )}
             >
-              <Sparkles className="w-4 h-4 text-purple-300" /> Motion FX Storytelling Video
+              <Sparkles className="w-4 h-4" /> Motion FX
             </button>
           </div>
         </div>
@@ -400,42 +412,65 @@ export default function VideoStudioPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Left Column: Model Selection, Prompting, Variations & Settings */}
         <section className="space-y-5 rounded-2xl border border-white/10 bg-[#0F0F12] p-5 lg:col-span-5">
-          {/* AI Video Model Selector */}
+          {/* AI Video Model Selector — only HyperFrames is a wired renderer.
+              The open-weights stack is shown for reference; selecting one
+              does NOT route the render through that model (the deterministic
+              HyperFrames engine produces every render here). */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 <Cpu className="h-4 w-4 text-amber-400" /> AI Video Model Architecture
               </h2>
-              <span className="text-[10px] text-amber-400 font-medium">Open Source Stack</span>
+              <span className="text-[10px] text-amber-400/80 font-medium">Reference stack — HyperFrames renders all output</span>
             </div>
-            
+
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {AI_VIDEO_MODELS.map(model => (
-                <button
-                  key={model.id}
-                  onClick={() => setSelectedModel(model.id)}
-                  className={cn(
-                    "w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between",
-                    selectedModel === model.id
-                      ? "bg-amber-500/10 border-amber-500/50 text-white shadow-md shadow-amber-500/5"
-                      : "bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/15 hover:text-slate-200"
-                  )}
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-xs text-slate-100 truncate">{model.name}</span>
-                      <span className="text-[11px] px-1.5 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5 shrink-0">
-                        {model.provider}
-                      </span>
+              {AI_VIDEO_MODELS.map(model => {
+                const isHyperframes = model.id === 'hyperframes-governed';
+                const wired = isHyperframes;
+                return (
+                  <button
+                    key={model.id}
+                    onClick={() => wired && setSelectedModel(model.id)}
+                    disabled={!wired}
+                    aria-pressed={wired && selectedModel === model.id}
+                    className={cn(
+                      "w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between",
+                      selectedModel === model.id && wired
+                        ? "bg-amber-500/10 border-amber-500/50 text-white shadow-md shadow-amber-500/5"
+                        : "bg-white/[0.02] border-white/5 text-slate-400",
+                      !wired && "opacity-60 cursor-not-allowed hover:border-white/10"
+                    )}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-xs text-slate-100 truncate">{model.name}</span>
+                        <span className="text-[11px] px-1.5 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5 shrink-0">
+                          {model.provider}
+                        </span>
+                        {!wired && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/5 text-zinc-500 border border-white/5 shrink-0 font-mono uppercase">
+                            not wired
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{model.description}</p>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{model.description}</p>
-                  </div>
-                  <span className="text-[11px] font-semibold text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
-                    {model.badge}
-                  </span>
-                </button>
-              ))}
+                    <span className={cn(
+                      "text-[11px] font-semibold px-2 py-0.5 rounded-full border shrink-0",
+                      wired
+                        ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                        : "text-zinc-500 bg-white/[0.02] border-white/5"
+                    )}>
+                      {wired ? model.badge : 'Not yet connected'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-[10px] text-zinc-500 font-mono leading-relaxed">
+              Only the HyperFrames governed MP4 engine is live. The open-weights models above are reference architectures; renders from this studio are produced by HyperFrames, not by a selected neural video model.
+            </p>
           </div>
 
           {/* Headline Variations */}
@@ -522,31 +557,26 @@ export default function VideoStudioPage() {
               </select>
             </label>
 
-            <label className="text-xs font-medium text-slate-300">
+            {/* Resolution follows the aspect ratio at the renderer's delivery
+                quality; it is not a live parameter, so show it as a fixed
+                readout rather than a working selector. */}
+            <div className="text-xs font-medium text-slate-300">
               Resolution Output
-              <select 
-                value={quality} 
-                onChange={event => setQuality(event.target.value as VideoQuality)} 
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-slate-200 focus:border-amber-500"
-              >
-                <option value="720p">720p HD</option>
-                <option value="1080p">1080p Full HD (Recommended)</option>
-                <option value="4k">4K Ultra HD</option>
-              </select>
-            </label>
+              <div className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-500 flex items-center justify-between">
+                <span>Follows ratio (delivery)</span>
+                <span className="text-[10px] font-mono uppercase">Fixed</span>
+              </div>
+            </div>
 
-            <label className="text-xs font-medium text-slate-300">
-              Voiceover Speed
-              <select 
-                value={voiceSpeed} 
-                onChange={event => setVoiceSpeed(event.target.value as VoiceoverSpeed)} 
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-slate-200 focus:border-amber-500"
-              >
-                <option value="0.75x">0.75x Slow &amp; Authoritative (Default)</option>
-                <option value="1.0x">1.0x Standard Pacing</option>
-                <option value="1.25x">1.25x Dynamic Speed</option>
-              </select>
-            </label>
+            {/* The local voice pipeline is a fixed 0.75x pace — not adjustable
+                from this studio. Shown as a readout, not a working selector. */}
+            <div className="text-xs font-medium text-slate-300">
+              Voiceover Pace
+              <div className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-500 flex items-center justify-between">
+                <span>0.75x local TTS</span>
+                <span className="text-[10px] font-mono uppercase">Fixed</span>
+              </div>
+            </div>
           </div>
 
           {/* Motion FX Assets Upload (Available in both, prominent in Motion FX Mode) */}
@@ -638,7 +668,7 @@ export default function VideoStudioPage() {
                 {videoMode === 'MOTION_FX' ? 'Motion FX Storyboard & Output' : 'Video Output Viewport'}
               </h2>
               <p className="mt-1 text-xs text-zinc-500">
-                Resolution: {aspectRatio} • Quality: {quality} • Cadence: {voiceSpeed}
+                {aspectRatio} • HyperFrames delivery • 0.75x fixed voice pace
               </p>
             </div>
             <span className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-black/40 px-2.5 py-1 rounded-md border border-white/10">
@@ -669,7 +699,7 @@ export default function VideoStudioPage() {
                   download={`sigma-video-${aspectRatio.replace(':', 'x')}-${Date.now()}.mp4`}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 transition-all"
                 >
-                  <Download className="h-4 w-4" /> Download .MP4 Video ({quality})
+                  <Download className="h-4 w-4" /> Download .MP4 Video (delivery)
                 </a>
               </div>
             </div>
@@ -683,7 +713,7 @@ export default function VideoStudioPage() {
                   SIGMA TACTIX / {videoMode} PREVIEW ({aspectRatio})
                 </div>
                 <div className="mt-1 text-[11px] text-zinc-400 font-mono">
-                  {selectedModel.toUpperCase()} • VOICE PACING: {voiceSpeed}
+                  HYPERFRAMES RENDERER • VOICE PACING: 0.75x FIXED
                 </div>
               </div>
 

@@ -1,8 +1,57 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-10-30
-> **Version**: v0.2.14-dev (GitHub Management & Code Security Gate Enforcement)
-> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); local implementation verified with clean compilation (`tsc --noEmit` 0 errors); production build (`npm run build`) passing; test suite passing 83/83 test files (567/567 tests); GitHub CI quality gate, Dependabot schedule, PR template, CODEOWNERS, security policy, and local pre-commit safety verification script (`npm run verify:safety`) operationalized.
+> **Last updated**: 2026-11-12
+> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes + final UI polish pass)
+> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+
+## Final UI Polish Pass (Design-System Tokens, Honest States, A11y) — 2026-11-12
+
+13 commits on top of the DM-suite consolidation (`5bc0e98`..`92db675`), plus a simulator follow-up (`f612718`), covering the production-polish plan:
+
+- **Design-system token + primitive final pass (`5bc0e98`)**: `src/index.css` + `src/components/ui/*` — fixed WCAG-contrast token values (muted-text / accent tonals on light+dark), added focus-visible rings on interactive primitives, introduced a documented type scale, and completed `Dialog`/`Sheet`/`Input`/`Select`/`Tabs`/`Button`/`ThemeToggle` hit-area + font-size tokens. `AppearanceContext` reviewed, no change needed.
+- **Theme-token sweep across suite pages (salvage + round-2/round-3 commits)**: converted raw `zinc-*`/`white`/`black`/`amber-400` surface+status literals on theme-flipping panels to the `sigma-*` semantic tokens + `*-accent` utilities, so the 7-space suite renders correctly in light, dark, and system appearance.
+- **Honest-state KPI / empty-state fixes (`81b5124`, `6f91235`, `f5bb0ba`, `9b4e6a4`, `92db675`)**: fabricated Dashboard series deltas now reflect connector reality (no invented `+2.4%`); the SEO/AEO KPI strip is demo-gated behind `isDemoSeedEnabled()` with a "Not measured" real-mode state; `CarouselCardViewer` renders an honest empty state instead of an invented placeholder slide; `ScheduleSocialPostModal` copy now says "No provider connected / queued until a live gateway" rather than implying a live execution.
+- **Accessibility roles (`9b4e6a4`, `92db675`)**: `tablist`/`tab`/`aria-pressed`/`aria-current` on the schedule modal + carousel filmstrip; keyboard (arrow/digit) navigation + `focus-visible` ring on the slide stage; `aria-label`s on close buttons and datetime inputs.
+- **Growth-diagnostics token correction (`5196fde`)**: undefined `--sigma-text-secondary`/`--sigma-bg-subtle` references mapped to the real `--sigma-text-soft`/`--sigma-surface-subtle` tokens.
+- **Test hygiene (`be46611`)**: excluded `.harness-worktrees/` from vitest and `.gitignore` so agent worktrees no longer pollute the test glob or `git status`.
+
+Verification: `npm run build` (client+server) exit 0; `npm run lint` (`tsc --noEmit`) exit 0; `npm test` 88/90 files / 596 tests pass. The 2 failing files (`src/lib/aiSettingsRoutes.test.ts`, `src/server/routes/mcpRoutes.test.ts`) fail only on `listen EPERM` (sandbox blocks a real socket bind on 127.0.0.1); no polish commit touches them — they are the network/CI-only release check.
+
+## DM Suite Honest-State Hardening, Audit Fixes & Agent SOP/AOP — 2026-11-12
+
+Follow-up pass on `task/dmsuite-consolidation-and-fixes` (PR #33), 15 commits on top of the consolidation:
+
+- **Production-readiness audit hardening (`4b2c82f`)**: dev-guarded the `?vantaLab=1` VANTA bypass so it can no longer open the unreleased surface in a production build; made the `/living-system` held-page theme-token-compliant; the Agent Reach service now derives its CLI probe paths from `process.env.HOME` (no hard-coded `/Users/mac`), reads `cliVersion` from the CLI doctor output instead of asserting `1.5.0`, and the not-installed banner reflects the real probe order; the Ecosystem status trigger dot is green only in demo-seed mode (neutral in real mode, matching the "Not checked" panel).
+- **No-AI-slop honest-state sweep across the suite** (AGENTS §3.5): creative studios stop attributing renders to unwired video models; social listening + carousels gate demo mentions/seeds behind the demo flag and label them; competitor intelligence stops claiming unexecuted scrapes; email & lifecycle drop fabricated send/DNS/spam claims and demo-gate seeds; paid ads stop claiming executed optimizer runs / live campaigns; SEO/AEO demo-gate seeds; outreach stops seeding fabricated pipeline data; editorial wires "generate" to the real endpoint and drops fabricated sample + scores; intake persists the questionnaire to the Second Brain via a real endpoint.
+- **Landing-artifact engine (`dfdaada`)**: high-fidelity, domain-tailored landing-page draft builder (`src/lib/landingArtifact.ts`) with UI mockups, before/after comparison matrices and 3-step architecture diagrams for the Blueberry (ERP) and Fleetroot (logistics) candidates; provenance + SHA-256 integrity preserved, no fabricated conversion claims.
+- **Agent SOP/AOP docs (`1e441a4`)**: standard operating + anti-operational procedures generated for every agent from the registry (`scripts/generateAgentDocs.mjs`).
+
+## Digital Marketing Suite Consolidation & Reported-Defect Fixes — 2026-10-30
+
+- **Suite consolidation (global-department mapping):** 14 working modules grouped into 7 concise spaces mirroring standard marketing departments — Creative Studio (Content + Image + Video), Social Publishing Hub (Carousels + Listening), Search & Conversion (SEO/AEO + CRO), Demand Engine (Intake + Outreach), Paid & Retention (Ads + Email), Market Intelligence (Competitors + Simulator), Measurement (Attribution). Single source of truth `src/data/suiteHubConfig.ts` + tests; tabbed surface `src/pages/SuiteHubPage.tsx` reuses existing module pages unchanged; `/suite` redirects to `/suite/creative`. All 14 old routes remain live; `Layout.tsx` sidebar now shows 7 suite items and `isDigitalMarketingRoute` includes `/suite/*` plus the previously-missed `/competitors` and `/market-simulator` (theme container fix).
+- **VANTA + 2D/3D brain map ("not working"):** both live on the VANTA-gated `/living-system` surface; gate (`VITE_VANTA_ENABLED`) off ⇒ sidebar item was hidden, reading as missing. Fixed: item now always visible with `Gated` badge (`VANTA_GATED_BADGE` in `vantaFeatureFlag.ts`); held-page lists the 4 concrete enablement steps (migration 0015, provider key, flag, `?vantaLab=1` dev preview). Data path (`getLivingSystemGraph` → `buildMapsBrainGraph` → `MapsBrainOrbit`) is intact and presentation-only.
+- **Ecosystem Status ("not working"):** content was demo-seed-only (`VITE_SEED_DEMO_WORKSPACE`), leaving a dead empty panel in real workspaces. Fixed with an honest, navigable "No live health checks connected yet" inventory — configured subsystems listed as **Unverified**, never fabricated OPERATIONAL states (AGENTS.md no-AI-slop rule).
+- **Agent Reach / Doctor ("not working"):** root cause is the external `agent-reach` CLI not installed on the host (server shells out via `execFileAsync`; hardcoded foreign path `/Users/mac/...` removed). UI now shows an honest "runtime not installed — channels correctly report offline" banner instead of an unexplained wall of errors. Code already degrades gracefully; no doctor-path bugs.
+- **API-key updates ("not working"):** save path itself was sound (commit `4d69d6d`); real defects were (a) client provider catalog missing 5 of the server's 14 providers so saved keys silently dropped on refresh, and (b) a failed keys-fetch wiping the on-screen provider list. Fixed via `src/data/aiProviderCatalog.ts` (server-mirrored, 14 providers) + regression test that parses `server.ts` and fails on drift + null-safe refresh in `Tenants.tsx`.
+- **Docs:** full mapping, root-cause table and ranked next steps in `docs/digital-marketing-suite-consolidation-2026-10-30.md`. Follow-ups: enable VANTA on a real env (migration 0015 + provider verify + flag), wire Ecosystem Status to a real health endpoint, install Agent Reach CLI for live channels.
+
+## High-Fidelity Visual Proposal Redesign & Skills Integration — 2026-10-30
+
+- **Skills Ecosystem Discovery (`/find-skills`):**
+  - Evaluated community leaderboard and installed `anthropics/skills@frontend-design` and `vercel-labs/agent-skills@web-design-guidelines` via Skills CLI (`npx skills add`).
+  - Incorporated design lead principles: eliminated AI aesthetic tells (over-tracked uppercase eyebrows, negative squished letter spacing, middle dots, repetitive cards with identical placeholder copy), introduced generous whitespace breathing room (`padding: 84px 0`, line-height `1.65`, comfortable font hierarchy).
+- **Domain-Tailored CRO Proposal Architecture (`src/lib/landingArtifact.ts`):**
+  - **Candidate A (Blueberry ERP — Linkinsoft LLC, Dubai):**
+    - Built **Contractor Margin Control Tower UI Mockup**: Live site telemetry window showing active UAE construction projects (Dubai South Hub Ph-2, Business Bay Tower C, JAFZA Cold Warehouse), subcontractor timesheet logs (Al-Etihad MEP, Gulf Earthmoving), overtime variance flags, and FTA tax compliance badges.
+    - **Operational Friction Comparison**: Status Quo (WhatsApp shift cards, disputed BOQ variation orders, 45-day billing lag) vs. Blueberry Governed OS (mobile biometric clock-in, automatic BOQ rate card validation, one-click FTA e-invoicing and WPS Central Bank SIF export).
+    - **3-Step Visual Architecture Flow**: Biometric site log ingest -> Automated rate & BOQ contract engine -> Certified invoice and bank remittance.
+  - **Candidate B (Fleetroot — Connected Mobility, Dubai):**
+    - Built **Connected Fleet Telematics & SLA Control Tower UI Mockup**: 342 active vehicles on road, 98.4% on-time SLA window, 0 cold-chain temperature deviations, live GCC corridor SVG route map (DXB Cargo Hub -> Dubai Hills -> Downtown -> Dubai Marina), and live order telemetry feed.
+    - **Operational Friction Comparison**: Legacy manual phone/WhatsApp dispatch & lost paper PODs vs. Dynamic multi-drop algorithmic dispatch, IoT BLE temperature telemetry, and geofenced photo POD.
+    - **3-Step Visual Architecture Flow**: Telematics & order ingest -> Dynamic route optimization solver -> Verified delivery handshake & digital POD.
+- **Database & Integrity Verification:**
+  - Synchronized both proposals to Supabase `landing_artifacts` table with exact byte counts (Blueberry: 30,081 bytes; Fleetroot: 31,332 bytes), deterministic SHA-256 evidence hashes, and RLS enforcement.
+  - Verified 100% test pass rate across all 83 test files (567 tests) and local pre-commit safety gate (`npm run verify:safety`).
 
 ## GitHub Management, CI Quality Gates & Code Security Hardening — 2026-10-30
 
@@ -676,6 +725,24 @@ Deferred until demonstrated product need: wholesale skill-pack imports, HyperFra
 | Second Brain (Vaults) | `/vaults` | `SecondBrain.tsx` | 10 specialized knowledge vaults, 22-extension auto-routing, RAG embeddings |
 
 ### Digital Marketing Suite
+
+> **Consolidated 2026-10-30:** the 14 working modules are grouped into 7 concise
+> spaces that mirror global marketing departments (Creative Studio, Social
+> Publishing Hub, Search & Conversion, Demand Engine, Paid & Retention, Market
+> Intelligence, Measurement). Single source of truth: `src/data/suiteHubConfig.ts`
+> (tested), shared surface `src/pages/SuiteHubPage.tsx` (modules as tabs, `?tab=`
+> deep links). The standalone routes below remain live for deep links/reports;
+> details in `docs/digital-marketing-suite-consolidation-2026-10-30.md`.
+
+| Suite space | Route | Consolidated modules (old routes) |
+| --- | --- | --- |
+| Creative Studio | `/suite/creative` | Editorial Content (`/content`), Image Studio (`/image-studio`), Video Studio (`/video-studio`) |
+| Social Publishing Hub | `/suite/social` | Social Carousels (`/social-carousels`), Social Listening (`/social-listening`) |
+| Search & Conversion | `/suite/search` | SEO & AEO (`/seo-aeo`), CRO Studio (`/cro-studio`) |
+| Demand Engine | `/suite/demand` | Intake Engine (`/intake`), Outreach & Leads (`/outreach`) |
+| Paid & Retention | `/suite/paid` | Paid Ads Manager (`/paid-ads`), Email Marketing (`/email-marketing`) |
+| Market Intelligence | `/suite/intelligence` | Competitor Research (`/competitors`), Market Simulator (`/market-simulator`) |
+| Measurement | `/suite/attribution` | Attribution & ROI (`/attribution`) |
 
 | Module | Route | Component | Description |
 | --- | --- | --- | --- |

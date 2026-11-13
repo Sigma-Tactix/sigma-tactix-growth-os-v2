@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/src/contexts/ToastContext';
-import { ScheduleSocialPostModal } from './ScheduleSocialPostModal';
+import { ScheduleSocialPostModal, shouldTreatAsMock } from './ScheduleSocialPostModal';
 import { SocialDistributionControl } from '../connectors/SocialDistributionControl';
 
 vi.mock('@/src/lib/api', () => ({
@@ -53,6 +53,14 @@ describe('Social Distribution Components', () => {
 
     expect(html).not.toContain('Schedule via Social Hub');
     expect(html).not.toContain('Hidden post');
+  });
+
+  it('treats mock/offline and unloaded statuses as mock so fake success is impossible', () => {
+    expect(shouldTreatAsMock({ mode: 'mock_offline', configured: false, active: false, connectedChannelsCount: 0, supportedPlatforms: [] })).toBe(true);
+    expect(shouldTreatAsMock(null)).toBe(true);
+    expect(
+      shouldTreatAsMock({ mode: 'live', configured: true, active: true, connectedChannelsCount: 2, supportedPlatforms: ['linkedin'] })
+    ).toBe(false);
   });
 
   it('renders SocialDistributionControl with gateway details', () => {

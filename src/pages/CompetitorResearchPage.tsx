@@ -35,6 +35,7 @@ import {
   CompetitorProfile, 
   CreativeComparisonItem 
 } from '@/src/data/marketingModulesData';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 import {
@@ -45,13 +46,19 @@ import {
 } from '@/src/lib/api';
 
 export default function CompetitorResearchPage() {
-  const { notifySuccess, notifyInfo, notifyError } = useToast();
+  const { notifySuccess, notifyInfo, notifyWarning, notifyError } = useToast();
   const navigate = useNavigate();
 
-  const [competitors, setCompetitors] = useState<CompetitorProfile[]>(SEED_COMPETITORS);
-  const [creativeComparisons, setCreativeComparisons] = useState<CreativeComparisonItem[]>(SEED_CREATIVE_COMPARISONS);
-  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorProfile>(SEED_COMPETITORS[0]);
-  const [selectedCreativeComparison, setSelectedCreativeComparison] = useState<CreativeComparisonItem>(SEED_CREATIVE_COMPARISONS[0]);
+  // Demo seeds are gated like every other module: a fresh tenant opens with an
+  // empty tracker. Seeded profiles/creative comparisons only show behind
+  // VITE_SEED_DEMO_WORKSPACE, and even then they are labelled as sample data.
+  const seededCompetitors = isDemoSeedEnabled() ? SEED_COMPETITORS : [];
+  const [competitors, setCompetitors] = useState<CompetitorProfile[]>(seededCompetitors);
+  const seededComparisons = isDemoSeedEnabled() ? SEED_CREATIVE_COMPARISONS : [];
+  const [creativeComparisons, setCreativeComparisons] = useState<CreativeComparisonItem[]>(seededComparisons);
+  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorProfile | null>(seededCompetitors[0] ?? null);
+  const [selectedCreativeComparison, setSelectedCreativeComparison] = useState<CreativeComparisonItem | null>(seededComparisons[0] ?? null);
+  const showSampleBanner = isDemoSeedEnabled();
   
   type TabType = 'WEB_INTELLIGENCE' | 'CREATIVE_MATRIX' | 'PROFILES' | 'COUNTER_ATTACK';
   const [activeTab, setActiveTab] = useState<TabType>('WEB_INTELLIGENCE');
@@ -98,26 +105,10 @@ export default function CompetitorResearchPage() {
     return () => { active = false; };
   }, []);
 
-  // Agent Run History
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-comp-01',
-      agentName: 'Spectre-06 Ad Spy Swarm',
-      agentRole: 'Rival Funnel & Creative Spy Specialist',
-      timestamp: 'Today at 04:20 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Competitor Intelligence',
-      inputSummary: 'Target: omnivanguard.io (Meta Ad Library & Google Ads Transparency)',
-      outputSummary: 'Scraped 42 ad creatives. Flagged creative fatigue on 3 core angles.',
-      fullOutput: 'Identified $45k/mo estimated spend. Positioned counter-hooks into Second Brain Customer Vault.',
-      metrics: [
-        { label: 'Rival Tracked', value: 'OmniVanguard' },
-        { label: 'Ads Extracted', value: '42' },
-        { label: 'Vulnerabilities', value: '4 High Impact' },
-        { label: 'Counter-Playbook', value: 'Generated' }
-      ]
-    }
-  ]);
+  // Agent Run History — starts empty. Entries are only added after a real
+  // TinyFish search/fetch succeeds. A fresh workspace must not show a
+  // fabricated "completed ad-spy run".
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
   const handleSearchWeb = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -138,12 +129,12 @@ export default function CompetitorResearchPage() {
         status: 'SUCCESS',
         moduleOrigin: 'Competitor Intelligence',
         inputSummary: `Query: "${searchQuery}"`,
-        outputSummary: `Retrieved ${results.length} competitor evidence items with cryptographic source hashes.`,
+        outputSummary: `Retrieved ${results.length} competitor evidence items from the web-intelligence gateway.`,
         fullOutput: JSON.stringify(results, null, 2),
         metrics: [
           { label: 'Results', value: `${results.length}` },
           { label: 'Provider', value: 'TinyFish' },
-          { label: 'Latency', value: `${results[0]?.latencyMs || 45}ms` }
+          ...(results[0]?.latencyMs != null ? [{ label: 'Latency', value: `${results[0].latencyMs}ms` }] : [])
         ]
       };
       setRunHistory(prev => [newRun, ...prev]);
@@ -173,11 +164,10 @@ export default function CompetitorResearchPage() {
         status: 'SUCCESS',
         moduleOrigin: 'Competitor Intelligence',
         inputSummary: `Target URL: ${target}`,
-        outputSummary: `Extracted ${doc?.content?.length || 0} characters of markdown pricing & messaging structure.`,
+        outputSummary: `Extracted ${doc?.content?.length || 0} characters of markdown from the fetched page.`,
         fullOutput: doc?.content || '',
         metrics: [
           { label: 'Source', value: doc?.sourceUrl || target },
-          { label: 'Status', value: '200 OK' },
           { label: 'Format', value: 'Markdown' }
         ]
       };
@@ -189,14 +179,19 @@ export default function CompetitorResearchPage() {
     }
   };
 
+    // No vault-commit endpoint exists for arbitrary text yet, so this stages the
+  // snapshot locally in-session and says exactly that — it does not claim an
+  // immutable SHA-256 write to Zone 2 (no API call is made).
   const handleCommitToMarketingVault = (doc: any) => {
     setCommittedVaultUrl(doc.sourceUrl);
-    notifySuccess(
-      'Committed to Marketing Vault',
-      `Saved immutable snapshot for "${doc.title || doc.sourceUrl}" into Zone 2 (Marketing Vault) with SHA-256 provenance.`
+    notifyInfo(
+      'Snapshot Staged',
+      `"${doc.title || doc.sourceUrl}" marked for Marketing Vault in this session. No vault write was made — commit persistence is not wired yet.`
     );
   };
 
+  // Honest "planned action": no ad-library scraping backend exists yet. This
+  // records a queued plan and never claims a completed scrape or a vault write.
   const handleDeploySpyAgent = () => {
     setIsDeployingSpy(true);
     setTimeout(() => {
@@ -206,23 +201,23 @@ export default function CompetitorResearchPage() {
         agentName: 'Spectre-06 Ad Spy Swarm',
         agentRole: 'Rival Funnel & Creative Spy Specialist',
         timestamp: 'Just now',
-        status: 'SUCCESS',
+        status: 'PARTIAL',
         moduleOrigin: 'Competitor Intelligence',
-        inputSummary: 'Dispatched full counter-attack playbook against tracked rivals',
-        outputSummary: 'Synthesized 12 rival counter-hooks directly into Second Brain vaults.',
-        fullOutput: 'Committed 12 new hooks to ZONE_2_MARKETING. Counter-messaging active.',
+        inputSummary: 'Counter-attack plan requested against tracked rivals',
+        outputSummary: 'Plan queued. No ad-library scraping backend is configured, so nothing was scraped and nothing was committed to vaults.',
+        fullOutput: 'PLANNED ACTION — counter-attack plan only. Wire Spectre-06 to a real ad-transparency source to execute.',
         metrics: [
-          { label: 'Counter-Hooks', value: '12 Active' },
-          { label: 'Channels', value: 'Meta, Google, X' },
-          { label: 'Status', value: 'Synchronized' }
+          { label: 'Plan Items', value: '3' },
+          { label: 'Channels', value: 'Meta, Google, X (planned)' },
+          { label: 'Status', value: 'Queued — not executed' }
         ]
       };
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess(
-        'Spectre-06 Ad Spy Swarm Dispatched',
-        'Scraped Meta Ad Library & Google Ads Transparency Center. Committed 12 new rival hooks to Second Brain Customer Vault.'
+      notifyWarning(
+        'Counter-Attack Plan Queued',
+        'The playbook is staged as a plan. No ad libraries were scraped and no hooks were committed — connect a scraping source to execute for real.'
       );
-    }, 1400);
+    }, 400);
   };
 
   return (
@@ -233,7 +228,7 @@ export default function CompetitorResearchPage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Badge variant="vermilion">INTELLIGENCE LAYER</Badge>
-              <span className="text-zinc-600 text-xs">•</span>
+              <span className="text-[var(--sigma-text-soft)] text-xs">•</span>
               <Badge variant={tinyFishState === 'unconfigured' ? 'warning' : 'success'}>
                 {tinyFishState === 'fixture'
                   ? 'TINYFISH FIXTURE (ACTIVE)'
@@ -242,11 +237,11 @@ export default function CompetitorResearchPage() {
                   : 'SETUP REQUIRED'}
               </Badge>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
               <Trophy className="w-7 h-7 text-[var(--sigma-vermilion)]" />
               Competitor Intelligence & Live Web Discovery
             </h1>
-            <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
+            <p className="text-muted text-sm mt-1 max-w-2xl leading-relaxed">
               Track rival pricing changes, positioning pivots, and ad funnels with live web intelligence and market simulation.
             </p>
           </div>
@@ -256,7 +251,7 @@ export default function CompetitorResearchPage() {
               <Button
                 variant="outline"
                 size="sm"
-                icon={<Swords className="w-4 h-4 text-amber-400" />}
+                icon={<Swords className="w-4 h-4 text-amber-accent" />}
               >
                 Open Market Simulator (MiroFish) <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
               </Button>
@@ -269,7 +264,7 @@ export default function CompetitorResearchPage() {
               isLoading={isDeployingSpy}
               icon={<Bot className="w-4 h-4" />}
             >
-              {isDeployingSpy ? 'Deploying Swarm...' : 'Deploy Counter-Attack Swarm'}
+              {isDeployingSpy ? 'Staging Plan...' : 'Stage Counter-Attack Plan'}
             </Button>
           </div>
         </div>
@@ -280,28 +275,26 @@ export default function CompetitorResearchPage() {
         <MetricWidget
           label="Tracked Rivals"
           value={`${competitors.length} Competitors`}
-          subtext="107 active ad creatives tracked"
+          subtext={competitors.length > 0 ? (showSampleBanner ? "Sample profiles — no live tracking yet" : "In tracker") : "No rivals tracked yet"}
         />
 
         <MetricWidget
           label="Web Intelligence"
-          value="TinyFish Active"
-          delta={{ value: "Live", trend: "up" }}
-          subtext="Headless markdown extraction"
+          value={tinyFishState === 'verified' ? 'TinyFish Live' : tinyFishState === 'fixture' ? 'TinyFish Fixture' : 'Setup Required'}
+          delta={tinyFishState === 'verified' ? { value: "Live", trend: "up" } : undefined}
+          subtext="Server-side search & markdown extraction"
         />
 
         <MetricWidget
-          label="Primary Vulnerability"
-          value="Rented Headcount"
-          delta={{ value: "High Risk", trend: "down" }}
-          subtext="High retainers, zero client memory"
+          label="Counter-Positioning"
+          value="Playbook Ready"
+          subtext="Modeled counter-angles — not a measured CTR result"
         />
 
         <MetricWidget
-          label="Counter-Ad Win Rate"
-          value="3.4x Higher CTR"
-          delta={{ value: "+240%", trend: "up" }}
-          subtext="Verified on LinkedIn & Meta"
+          label="Verified Claims"
+          value="None Yet"
+          subtext="No ad-platform or lift data is connected; win rates are modeled estimates only"
         />
       </div>
 
@@ -321,13 +314,13 @@ export default function CompetitorResearchPage() {
       {activeTab === 'WEB_INTELLIGENCE' && (
         <div className="space-y-6">
           <GlassCard elevation="raised" className="p-6 space-y-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[var(--sigma-border)] pb-4">
               <div>
-                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold text-[var(--sigma-text)] flex items-center gap-2">
                   <Globe className="w-5 h-5 text-sky-accent" />
                   Live Web Intelligence Search & Snapshot Engine
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-muted mt-0.5">
                   Discover public competitor changes, pricing adjustments, and product updates via server-side TinyFish.
                 </p>
               </div>
@@ -338,9 +331,9 @@ export default function CompetitorResearchPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Tool A: Search Sources */}
-              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                <div className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-sky-400" /> Search Competitor Web Sources
+              <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] space-y-3">
+                <div className="text-xs font-semibold text-[var(--sigma-text)] uppercase tracking-wider flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-sky-accent" /> Search Competitor Web Sources
                 </div>
                 <form onSubmit={handleSearchWeb} className="flex gap-2">
                   <input
@@ -348,7 +341,7 @@ export default function CompetitorResearchPage() {
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search competitor positioning, pricing..."
-                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400/50"
+                    className="flex-1 bg-[var(--sigma-input)] border border-[var(--sigma-border)] rounded-lg px-3 py-2 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-sky-accent/50"
                   />
                   <Button
                     type="submit"
@@ -366,19 +359,19 @@ export default function CompetitorResearchPage() {
                     {searchResults.map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs space-y-1.5"
+                        className="p-3 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-lg text-xs space-y-1.5"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-white truncate max-w-[240px]">{item.title}</span>
-                          <span className="text-[10px] font-mono text-zinc-500">{item.latencyMs}ms</span>
+                          <span className="font-semibold text-[var(--sigma-text)] truncate max-w-[240px]">{item.title}</span>
+                          <span className="text-[10px] font-mono text-muted">{item.latencyMs}ms</span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 leading-relaxed">{item.excerpt}</p>
+                        <p className="text-[11px] text-muted leading-relaxed">{item.excerpt}</p>
                         <div className="flex items-center justify-between pt-1">
                           <a
                             href={item.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[11px] text-sky-400 hover:underline flex items-center gap-1 truncate max-w-[180px]"
+                            className="text-[11px] text-sky-accent hover:underline flex items-center gap-1 truncate max-w-[180px]"
                           >
                             {item.sourceUrl} <ExternalLink className="w-2.5 h-2.5" />
                           </a>
@@ -400,9 +393,9 @@ export default function CompetitorResearchPage() {
               </div>
 
               {/* Tool B: Fetch Snapshot */}
-              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                <div className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 text-amber-400" /> Fetch Full Page Markdown Snapshot
+              <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] space-y-3">
+                <div className="text-xs font-semibold text-[var(--sigma-text)] uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5 text-amber-accent" /> Fetch Full Page Markdown Snapshot
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -410,7 +403,7 @@ export default function CompetitorResearchPage() {
                     value={fetchUrl}
                     onChange={e => setFetchUrl(e.target.value)}
                     placeholder="https://competitor.com/pricing"
-                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400/50"
+                    className="flex-1 bg-[var(--sigma-input)] border border-[var(--sigma-border)] rounded-lg px-3 py-2 text-xs text-[var(--sigma-text)] focus:outline-none focus:border-amber-accent/50"
                   />
                   <Button
                     variant="secondary"
@@ -425,7 +418,7 @@ export default function CompetitorResearchPage() {
 
                 {fetchedContent ? (
                   <div className="space-y-3 pt-2">
-                    <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-lg max-h-52 overflow-y-auto font-mono text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                    <div className="p-3 bg-[var(--sigma-input)]/80 border border-[var(--sigma-border)] rounded-lg max-h-52 overflow-y-auto font-mono text-[11px] text-[var(--sigma-text-soft)] whitespace-pre-wrap leading-relaxed">
                       {fetchedContent.content}
                     </div>
 
@@ -435,7 +428,7 @@ export default function CompetitorResearchPage() {
                         size="xs"
                         disabled={committedVaultUrl === fetchedContent.sourceUrl}
                         onClick={() => handleCommitToMarketingVault(fetchedContent)}
-                        icon={committedVaultUrl === fetchedContent.sourceUrl ? <Check className="w-3 h-3 text-emerald-400" /> : <Database className="w-3 h-3" />}
+                        icon={committedVaultUrl === fetchedContent.sourceUrl ? <Check className="w-3 h-3 text-emerald-accent" /> : <Database className="w-3 h-3" />}
                       >
                         {committedVaultUrl === fetchedContent.sourceUrl ? 'Committed to Vault' : 'Commit to Marketing Vault'}
                       </Button>
@@ -446,14 +439,14 @@ export default function CompetitorResearchPage() {
                         onClick={() => {
                           navigate('/market-simulator');
                         }}
-                        icon={<Swords className="w-3 h-3 text-amber-400" />}
+                        icon={<Swords className="w-3 h-3 text-amber-accent" />}
                       >
                         Rehearse with MiroFish
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-lg">
+                  <div className="p-6 text-center text-xs text-muted border border-dashed border-[var(--sigma-border)] rounded-lg">
                     Enter a URL above to extract structured markdown evidence with TinyFish.
                   </div>
                 )}
@@ -466,6 +459,17 @@ export default function CompetitorResearchPage() {
       {/* TAB 2: CREATIVE COMPARISONS MATRIX */}
       {activeTab === 'CREATIVE_MATRIX' && (
         <div className="space-y-6">
+          {showSampleBanner && (
+            <div className="rounded-xl border border-[var(--sigma-accent-amber)]/30 bg-[var(--sigma-accent-amber)]/10 px-4 py-2.5 text-xs text-amber-accent">
+              Sample creative comparisons from a demo seed — not scraped ad data. Connect a live ad-library source to replace them with tracked creatives.
+            </div>
+          )}
+          {creativeComparisons.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[var(--sigma-border)] p-8 text-center text-xs text-muted">
+              No creative comparisons yet. Run a Live Web Intelligence search and fetch a rival ad page to build the matrix, or enable the demo seed.
+            </div>
+          ) : (
+            <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {creativeComparisons.map(item => (
               <button
@@ -474,27 +478,28 @@ export default function CompetitorResearchPage() {
                 onClick={() => setSelectedCreativeComparison(item)}
                 className={cn(
                   "p-4 rounded-xl border text-left transition-all cursor-pointer",
-                  selectedCreativeComparison.id === item.id
-                    ? "bg-amber-400/10 border-amber-400/40 text-white shadow-lg shadow-amber-500/5"
-                    : "bg-zinc-900/30 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                  selectedCreativeComparison?.id === item.id
+                    ? "bg-[var(--sigma-accent-amber)]/10 border-[var(--sigma-accent-amber)]/40 text-[var(--sigma-text)] shadow-lg "
+                    : "bg-[var(--sigma-surface-subtle)]/40 border-[var(--sigma-border)] text-muted hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text-soft)]"
                 )}
               >
                 <div className="flex items-center justify-between text-[11px] font-mono mb-1">
-                  <span className="text-amber-400 font-bold">{item.channel}</span>
-                  <span className="text-zinc-500">{item.creativeType}</span>
+                  <span className="text-amber-accent font-bold">{item.channel}</span>
+                  <span className="text-muted">{item.creativeType}</span>
                 </div>
-                <div className="font-semibold text-xs text-white truncate">{item.competitorName}</div>
-                <div className="text-[11px] text-zinc-500 mt-1 line-clamp-2">"{item.adHeadline}"</div>
+                <div className="font-semibold text-xs text-[var(--sigma-text)] truncate">{item.competitorName}</div>
+                <div className="text-[11px] text-muted mt-1 line-clamp-2">"{item.adHeadline}"</div>
               </button>
             ))}
           </div>
 
           {/* Detailed Side-by-Side Comparison */}
+          {selectedCreativeComparison ? (
           <GlassCard elevation="raised" className="p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
               <div>
-                <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Side-by-Side Analysis</span>
-                <h2 className="text-lg font-bold text-white mt-1">
+                <span className="text-xs font-mono text-muted uppercase tracking-wider">Side-by-Side Analysis</span>
+                <h2 className="text-lg font-bold text-[var(--sigma-text)] mt-1">
                   {selectedCreativeComparison.competitorName} vs. Sigma Counter-Positioning
                 </h2>
               </div>
@@ -503,58 +508,76 @@ export default function CompetitorResearchPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Rival Ad */}
-              <div className="p-5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-4">
+              <div className="p-5 rounded-xl bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] space-y-4">
                 <div className="flex items-center justify-between text-xs">
                   <Badge variant="neutral">RIVAL AD ({selectedCreativeComparison.channel})</Badge>
-                  <span className="text-rose-400 font-mono text-[11px] flex items-center gap-1">
+                  <span className="text-rose-accent font-mono text-[11px] flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" /> Vulnerable Angle
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-zinc-500">Headline</div>
-                  <div className="text-sm font-semibold text-zinc-200">"{selectedCreativeComparison.adHeadline}"</div>
+                  <div className="text-xs font-mono text-muted">Headline</div>
+                  <div className="text-sm font-semibold text-[var(--sigma-text-soft)]">"{selectedCreativeComparison.adHeadline}"</div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-zinc-500">Body Copy</div>
-                  <p className="text-xs text-zinc-400 leading-relaxed italic">"{selectedCreativeComparison.adCopy}"</p>
+                  <div className="text-xs font-mono text-muted">Body Copy</div>
+                  <p className="text-xs text-muted leading-relaxed italic">"{selectedCreativeComparison.adCopy}"</p>
                 </div>
-                <div className="pt-2 border-t border-zinc-800/80 space-y-1">
-                  <div className="text-[11px] font-mono text-rose-400 font-semibold">Flagged Hook Angle</div>
-                  <p className="text-xs text-zinc-300">{selectedCreativeComparison.hookAngle}</p>
+                <div className="pt-2 border-t border-[var(--sigma-border)] space-y-1">
+                  <div className="text-[11px] font-mono text-rose-accent font-semibold">Flagged Hook Angle</div>
+                  <p className="text-xs text-[var(--sigma-text-soft)]">{selectedCreativeComparison.hookAngle}</p>
                 </div>
               </div>
 
               {/* Sigma Counter-Ad */}
-              <div className="p-5 rounded-xl bg-amber-400/5 border border-amber-400/30 space-y-4">
+              <div className="p-5 rounded-xl bg-[var(--sigma-accent-amber)]/5 border border-[var(--sigma-accent-amber)]/30 space-y-4">
                 <div className="flex items-center justify-between text-xs">
                   <Badge variant="vermilion">SIGMA COUNTER-ATTACK</Badge>
-                  <span className="text-emerald-400 font-mono text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Deployed Angle
+                  <span className="text-emerald-accent font-mono text-[11px] flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Proposed Counter-Angle
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-amber-400/80">Counter-Headline</div>
-                  <div className="text-sm font-semibold text-white">"{selectedCreativeComparison.sigmaTactixCounterAd.headline}"</div>
+                  <div className="text-xs font-mono text-amber-accent/80">Counter-Headline</div>
+                  <div className="text-sm font-semibold text-[var(--sigma-text)]">"{selectedCreativeComparison.sigmaTactixCounterAd.headline}"</div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-amber-400/80">Counter-Body</div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">"{selectedCreativeComparison.sigmaTactixCounterAd.copy}"</p>
+                  <div className="text-xs font-mono text-amber-accent/80">Counter-Body</div>
+                  <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">"{selectedCreativeComparison.sigmaTactixCounterAd.copy}"</p>
                 </div>
-                <div className="pt-2 border-t border-amber-400/20 space-y-1">
-                  <div className="text-[11px] font-mono text-emerald-400 font-semibold">Strategic Advantage</div>
-                  <p className="text-xs text-zinc-200">{selectedCreativeComparison.sigmaTactixCounterAd.strategicAdvantage}</p>
+                <div className="pt-2 border-t border-[var(--sigma-accent-amber)]/20 space-y-1">
+                  <div className="text-[11px] font-mono text-emerald-accent font-semibold">Strategic Advantage</div>
+                  <p className="text-xs text-[var(--sigma-text-soft)]">{selectedCreativeComparison.sigmaTactixCounterAd.strategicAdvantage}</p>
                 </div>
               </div>
             </div>
           </GlassCard>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[var(--sigma-border)] p-6 text-center text-xs text-muted">
+              Select a comparison on the left to see the side-by-side analysis.
+            </div>
+          )}
+          </>
+          )}
         </div>
       )}
 
       {/* TAB 3: PROFILES */}
       {activeTab === 'PROFILES' && (
+        <div className="space-y-4">
+          {showSampleBanner && (
+            <div className="rounded-xl border border-[var(--sigma-accent-amber)]/30 bg-[var(--sigma-accent-amber)]/10 px-4 py-2.5 text-xs text-amber-accent">
+              Sample competitor profiles from a demo seed — spend, ad counts and traffic are estimates, not live intelligence.
+            </div>
+          )}
+          {competitors.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[var(--sigma-border)] p-8 text-center text-xs text-muted">
+              No competitor profiles in the tracker yet. Add rivals via Live Web Intelligence, or enable the demo seed to browse sample profiles.
+            </div>
+          ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-2">Tracked Competitors</span>
+            <span className="text-xs font-mono text-muted uppercase tracking-wider block mb-2">Tracked Competitors</span>
             {competitors.map(comp => (
               <button
                 key={comp.id}
@@ -562,31 +585,32 @@ export default function CompetitorResearchPage() {
                 onClick={() => setSelectedCompetitor(comp)}
                 className={cn(
                   "w-full p-4 rounded-xl border text-left transition-all cursor-pointer",
-                  selectedCompetitor.id === comp.id
-                    ? "bg-amber-400/10 border-amber-400/40 text-white"
-                    : "bg-zinc-900/30 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                  selectedCompetitor?.id === comp.id
+                    ? "bg-[var(--sigma-accent-amber)]/10 border-[var(--sigma-accent-amber)]/40 text-[var(--sigma-text)]"
+                    : "bg-[var(--sigma-surface-subtle)]/40 border-[var(--sigma-border)] text-muted hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text-soft)]"
                 )}
               >
-                <div className="font-semibold text-sm text-white">{comp.name}</div>
-                <div className="text-xs text-zinc-500 mt-0.5">{comp.domain}</div>
+                <div className="font-semibold text-sm text-[var(--sigma-text)]">{comp.name}</div>
+                <div className="text-xs text-muted mt-0.5">{comp.domain}</div>
                 <div className="flex items-center gap-2 mt-3 text-[11px] font-mono">
-                  <span className="text-zinc-400">{comp.adCreativesCount} Active Ads</span>
-                  <span className="text-zinc-600">•</span>
-                  <span className="text-amber-400 font-bold">{comp.estimatedAdSpend}</span>
+                  <span className="text-muted">{comp.adCreativesCount} Active Ads</span>
+                  <span className="text-[var(--sigma-text-soft)]">•</span>
+                  <span className="text-amber-accent font-bold">{comp.estimatedAdSpend}</span>
                 </div>
               </button>
             ))}
           </div>
 
-          <div className="md:col-span-2 p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+          {selectedCompetitor ? (
+          <div className="md:col-span-2 p-6 bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4">
               <div>
-                <h3 className="text-xl font-bold text-white">{selectedCompetitor.name}</h3>
-                <a 
-                  href={`https://${selectedCompetitor.domain}`} 
-                  target="_blank" 
+                <h3 className="text-xl font-bold text-[var(--sigma-text)]">{selectedCompetitor.name}</h3>
+                <a
+                  href={`https://${selectedCompetitor.domain}`}
+                  target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-amber-400 hover:underline flex items-center gap-1 mt-0.5"
+                  className="text-xs text-amber-accent hover:underline flex items-center gap-1 mt-0.5"
                 >
                   {selectedCompetitor.domain} <ExternalLink className="w-3 h-3" />
                 </a>
@@ -595,45 +619,52 @@ export default function CompetitorResearchPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-black/40 border border-zinc-800 rounded-xl space-y-1">
-                <span className="text-xs font-mono text-zinc-500">Estimated Monthly Ad Spend</span>
-                <div className="text-lg font-bold text-white font-mono">{selectedCompetitor.estimatedAdSpend}</div>
+              <div className="p-4 bg-[var(--sigma-canvas)]/50 border border-[var(--sigma-border)] rounded-xl space-y-1">
+                <span className="text-xs font-mono text-muted">Estimated Monthly Ad Spend</span>
+                <div className="text-lg font-bold text-[var(--sigma-text)] font-mono">{selectedCompetitor.estimatedAdSpend}</div>
               </div>
-              <div className="p-4 bg-black/40 border border-zinc-800 rounded-xl space-y-1">
-                <span className="text-xs font-mono text-zinc-500">Active Ad Creatives</span>
-                <div className="text-lg font-bold text-white font-mono">{selectedCompetitor.adCreativesCount}</div>
+              <div className="p-4 bg-[var(--sigma-canvas)]/50 border border-[var(--sigma-border)] rounded-xl space-y-1">
+                <span className="text-xs font-mono text-muted">Active Ad Creatives</span>
+                <div className="text-lg font-bold text-[var(--sigma-text)] font-mono">{selectedCompetitor.adCreativesCount}</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-xs font-mono font-bold text-rose-400 uppercase">Primary Vulnerabilities</div>
-              <p className="text-xs text-zinc-300 leading-relaxed p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl">
+              <div className="text-xs font-mono font-bold text-rose-accent uppercase">Primary Vulnerabilities</div>
+              <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl">
                 {selectedCompetitor.vulnerabilities.join(', ')}
               </p>
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-zinc-800">
-              <div className="text-xs font-mono font-bold text-zinc-400 uppercase">Detected Tech Stack</div>
+            <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)]">
+              <div className="text-xs font-mono font-bold text-muted uppercase">Detected Tech Stack</div>
               <div className="flex flex-wrap gap-2">
                 {selectedCompetitor.techStack.map((tech, i) => (
-                  <span key={i} className="px-2.5 py-1 bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded-lg font-mono">
+                  <span key={i} className="px-2.5 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border-strong)] text-[var(--sigma-text-soft)] text-xs rounded-lg font-mono">
                     {tech}
                   </span>
                 ))}
               </div>
             </div>
           </div>
+          ) : (
+            <div className="md:col-span-2 rounded-xl border border-dashed border-[var(--sigma-border)] p-6 text-center text-xs text-muted">
+              Select a competitor on the left to see its profile.
+            </div>
+          )}
+        </div>
+          )}
         </div>
       )}
 
       {/* TAB 4: COUNTER-ATTACK PLAYBOOK */}
       {activeTab === 'COUNTER_ATTACK' && (
-        <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Target className="w-5 h-5 text-amber-400" />
+        <div className="p-6 bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl space-y-4">
+          <h3 className="text-base font-bold text-[var(--sigma-text)] flex items-center gap-2">
+            <Target className="w-5 h-5 text-amber-accent" />
             Strategic Counter-Attack Playbook
           </h3>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-muted">
             Systematic rules executed by Nexus-03 (Content) and Vortex-02 (Paid Ads) to capture market share from incumbent agencies.
           </p>
 
@@ -642,12 +673,12 @@ export default function CompetitorResearchPage() {
               {
                 rule: 'Pillory the Rented Headcount Model',
                 detail: 'Whenever a competitor advertises team size ("our 50-person agency"), deploy counter-ads highlighting permanent client asset ownership and zero context loss.',
-                status: 'ACTIVE IN VORTEX-02'
+                status: 'PLANNED — VORTEX-02'
               },
               {
                 rule: 'Target Competitor Brand Search with Comparison Teardowns',
                 detail: 'Bid on "[Competitor Name] alternatives" and "[Competitor Name] review" with deep architectural teardowns hosted on high-speed static landing pages.',
-                status: 'ACTIVE IN GOOGLE ADS'
+                status: 'PLANNED — GOOGLE ADS'
               },
               {
                 rule: 'Exploit Slow Iteration Cycles',
@@ -655,12 +686,12 @@ export default function CompetitorResearchPage() {
                 status: 'READY FOR DISPATCH'
               }
             ].map((play, idx) => (
-              <div key={idx} className="p-4 bg-black/60 border border-zinc-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div key={idx} className="p-4 bg-[var(--sigma-canvas)]/50 border border-[var(--sigma-border)] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                 <div className="space-y-1">
-                  <div className="font-bold text-white">{play.rule}</div>
-                  <p className="text-zinc-400 text-[11px] leading-relaxed">{play.detail}</p>
+                  <div className="font-bold text-[var(--sigma-text)]">{play.rule}</div>
+                  <p className="text-muted text-[11px] leading-relaxed">{play.detail}</p>
                 </div>
-                <span className="px-2.5 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 font-mono text-[11px] rounded-lg self-end md:self-center whitespace-nowrap">
+                <span className="px-2.5 py-1 bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/20 text-amber-accent font-mono text-[11px] rounded-lg self-end md:self-center whitespace-nowrap">
                   {play.status}
                 </span>
               </div>

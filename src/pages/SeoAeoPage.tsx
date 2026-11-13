@@ -43,6 +43,7 @@ import {
 } from '@/src/data/marketingModulesData';
 import SearchConsoleTrends from '@/src/components/SearchConsoleTrends';
 import { getGSCConnectionStatus, connectGSC, GSCConnectionStatus } from '@/src/lib/searchConsoleApi';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { GlassCard, Button, Badge, MetricWidget, Tabs } from '@/src/components/ui';
 
@@ -276,9 +277,15 @@ export const SCHEMA_DEFINITIONS: Record<SchemaType, {
 export default function SeoAeoPage() {
   const navigate = useNavigate();
   const { notifySuccess, notifyInfo, notifyError, notifyWarning } = useToast();
-  const [clusters, setClusters] = useState<KeywordCluster[]>(SEED_KEYWORD_CLUSTERS);
-  const [aeoBenchmarks, setAeoBenchmarks] = useState<AeoCitationBenchmark[]>(SEED_AEO_BENCHMARKS);
-  const [selectedCluster, setSelectedCluster] = useState<KeywordCluster>(SEED_KEYWORD_CLUSTERS[0]);
+  // Seeded clusters + AEO benchmarks are demo data (modeled volumes, difficulty,
+  // CPC, citation rates), not measured Search Console / LLM-citation intel. A
+  // fresh tenant starts empty; the samples show only behind the demo-seed flag.
+  const seededClusters = isDemoSeedEnabled() ? SEED_KEYWORD_CLUSTERS : [];
+  const seededBenchmarks = isDemoSeedEnabled() ? SEED_AEO_BENCHMARKS : [];
+  const [clusters, setClusters] = useState<KeywordCluster[]>(seededClusters);
+  const [aeoBenchmarks, setAeoBenchmarks] = useState<AeoCitationBenchmark[]>(seededBenchmarks);
+  const [selectedCluster, setSelectedCluster] = useState<KeywordCluster | null>(seededClusters[0] ?? null);
+  const showSampleBanner = isDemoSeedEnabled();
   const [activeTab, setActiveTab] = useState<'CLUSTERS' | 'SEARCH_CONSOLE' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>('SEARCH_CONSOLE');
   
   // AEO Live Query Test State
@@ -312,52 +319,68 @@ export default function SeoAeoPage() {
   // Agent trigger state
   const [isDeployingAgent, setIsDeployingAgent] = useState(false);
 
-  // Agent Run Records
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-seo-01',
-      agentName: 'Aurora-01 Authority Agent',
-      agentRole: 'Topical Graph & Schema Enforcer',
-      timestamp: 'Today at 04:00 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'SEO & AEO Authority',
-      inputSummary: 'Target Entity: AI-Native Growth OS (Pillar 1)',
-      outputSummary: 'Generated JSON-LD TechArticle schema and verified citation indexing in Perplexity and Claude.',
-      fullOutput: 'Indexed 4 spoke nodes. Citation rate increased to 83.4%. Verified against Google Search Console sitemap.',
-      metrics: [
-        { label: 'AEO Citation Rate', value: '83.4%' },
-        { label: 'Schema Health', value: '98.5%' },
-        { label: 'Organic Clicks', value: '+24.8%' },
-        { label: 'Indexed Pages', value: '142' }
-      ]
-    }
-  ]);
+  // Agent Run Records — start empty. A fresh workspace has not indexed or
+  // audited anything yet; entries are only appended after a real action.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
 
+  // No live LLM-citation-tracking API is connected (no Semrush/Ahrefs AEO
+  // source, and the "test" must not invent a citation rate). This records a
+  // queued plan and says plainly that no engines were queried. The seeded
+  // benchmark cards stay labelled as samples.
   const handleRunAeoTest = () => {
     setIsTestingAeo(true);
     setTimeout(() => {
       setIsTestingAeo(false);
-      setAeoBenchmarks(prev => prev.map(b => ({
-        ...b,
-        brandCitationRate: Math.min(100, b.brandCitationRate + Math.floor(Math.random() * 4)),
-        lastTested: 'Just now'
-      })));
-      notifySuccess(
-        'AEO Citation Audit Complete',
-        'Queried ChatGPT Search, Perplexity AI, Claude 3.7, and Google Gemini. Brand cited in 88% of generated answers.'
+      const newRun: AgentRunRecord = {
+        id: `run-aeo-${Date.now()}`,
+        agentName: 'AEO Citation Tester',
+        agentRole: 'Generative-Engine Citation Auditor',
+        timestamp: 'Just now',
+        status: 'PARTIAL',
+        moduleOrigin: 'SEO & AEO Authority',
+        inputSummary: `AEO citation test requested for: "${testQuery.trim()}"`,
+        outputSummary: 'Plan queued only. No live LLM citation-tracking source is connected, so ChatGPT/Perplexity/Claude/Gemini were NOT queried and no citation rate was measured.',
+        fullOutput: 'PLANNED ACTION — connect a generative-engine citation source (or run the on-page AEO readiness audit) to measure real citation share.',
+        metrics: [
+          { label: 'Engines Queried', value: '0 (no source)' },
+          { label: 'Stage', value: 'Queued plan' }
+        ]
+      };
+      setRunHistory(prev => [newRun, ...prev]);
+      notifyWarning(
+        'AEO Test Queued — No Citation Source',
+        'No live LLM citation-tracking source is connected, so no engines were queried and no citation rate was measured. The benchmark cards shown are sample data.'
       );
-    }, 1800);
+    }, 400);
   };
 
+  // The authority agent has no dispatch backend wired yet: "deploy" records a
+  // queued plan and never claims articles were constructed or schema committed.
   const handleDeployAuthorityAgent = () => {
     setIsDeployingAgent(true);
     setTimeout(() => {
       setIsDeployingAgent(false);
-      notifySuccess(
-        'Aurora-01 Authority Agent Dispatched',
-        'Constructed 4 new spoke articles and committed JSON-LD semantic entities to Second Brain Authority Vault.'
+      const newRun: AgentRunRecord = {
+        id: `run-aurora-${Date.now()}`,
+        agentName: 'Aurora-01 Authority Agent',
+        agentRole: 'Topical Graph & Schema Enforcer',
+        timestamp: 'Just now',
+        status: 'PARTIAL',
+        moduleOrigin: 'SEO & AEO Authority',
+        inputSummary: 'Full SEO / authority run requested',
+        outputSummary: 'Plan queued only. No agent dispatch backend is connected, so no spoke articles were written and no schema was committed to the Authority Vault.',
+        fullOutput: 'PLANNED ACTION — wire Aurora-01 to the write-plane execution path (HITL) to construct spokes and commit JSON-LD for real.',
+        metrics: [
+          { label: 'Spokes Written', value: '0 (not executed)' },
+          { label: 'Stage', value: 'Queued plan' }
+        ]
+      };
+      setRunHistory(prev => [newRun, ...prev]);
+      notifyWarning(
+        'Aurora-01 Run Queued — Not Executed',
+        'No agent backend is connected, so nothing was constructed or committed. This records the plan only.'
       );
-    }, 1500);
+    }, 400);
   };
 
   const activeSchemaObj = SCHEMA_DEFINITIONS[selectedSchemaType]?.schemaData || SCHEMA_DEFINITIONS.FAQ.schemaData;
@@ -382,10 +405,15 @@ export default function SeoAeoPage() {
     notifySuccess('Schema Downloaded', `Exported ${selectedSchemaType.toLowerCase()}-schema.jsonld successfully.`);
   };
 
+  // No text-to-vault persistence endpoint exists yet (the vault stores
+  // uploaded files), so this stages the schema locally and says exactly that
+  // — it does not claim an indexed write to the Authority Vault.
   const handleCommitToAuthorityVault = () => {
-    notifySuccess(
-      'Committed to Authority Vault',
-      `Saved ${SCHEMA_DEFINITIONS[selectedSchemaType].name} to Second Brain Authority Vault with 1,536-dim vector indexing.`,
+    const json = JSON.stringify(activeSchemaObj, null, 2);
+    void navigator.clipboard.writeText(json).catch(() => undefined);
+    notifyInfo(
+      'Schema Staged Locally',
+      `${SCHEMA_DEFINITIONS[selectedSchemaType].name} copied to your clipboard for manual injection. No vault write was made — schema persistence is not wired yet.`,
       { category: 'SYSTEM' }
     );
   };
@@ -494,7 +522,7 @@ export default function SeoAeoPage() {
               disabled={isTestingAeo}
               leftIcon={<RefreshCw className={cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isTestingAeo && "animate-spin")} />}
             >
-              {isTestingAeo ? 'Auditing AI Engines...' : 'Run Live AEO Audit'}
+              {isTestingAeo ? 'Queuing AEO Test...' : 'Queue AEO Test'}
             </Button>
 
             <Button
@@ -510,33 +538,57 @@ export default function SeoAeoPage() {
         </div>
       </GlassCard>
 
-      {/* Metric Highlights Strip */}
+      {/* Metric Highlights Strip — demo figures are demo-gated; a real
+          workspace renders measured states, never invented KPIs. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricWidget
-          label="Blended AEO Citation Rate"
-          value="83.4%"
-          delta={{ value: "+18.2% vs last mo", trend: "up" }}
-          subtext="Cited in 4 of 5 major LLMs"
-        />
-
-        <MetricWidget
-          label="Tracked Keyword Clusters"
-          value="3 Pillars / 11 Spokes"
-          subtext="Total search volume: 39.2k/mo"
-        />
-
-        <MetricWidget
-          label="Top Citation Engine"
-          value="Perplexity AI"
-          subtext="Rank #1.4 average position"
-        />
-
-        <MetricWidget
-          label="Structured Schema Health"
-          value="98.5%"
-          delta={{ value: "Valid", trend: "up" }}
-          subtext="JSON-LD valid & indexed"
-        />
+        {showSampleBanner ? (
+          <>
+            <MetricWidget
+              label="Blended AEO Citation Rate (Demo)"
+              value="83.4%"
+              delta={{ value: "+18.2% vs last mo", trend: "up" }}
+              subtext="Modeled demo figure, not measured"
+            />
+            <MetricWidget
+              label="Tracked Keyword Clusters (Demo)"
+              value="3 Pillars / 11 Spokes"
+              subtext="Modeled demo volume: 39.2k/mo"
+            />
+            <MetricWidget
+              label="Top Citation Engine (Demo)"
+              value="Perplexity AI"
+              subtext="Modeled demo rank #1.4, not measured"
+            />
+            <MetricWidget
+              label="Structured Schema Health (Demo)"
+              value="98.5%"
+              subtext="Illustrative benchmark, not a live audit"
+            />
+          </>
+        ) : (
+          <>
+            <MetricWidget
+              label="Blended AEO Citation Rate"
+              value="Not measured"
+              subtext="No LLM citation source connected"
+            />
+            <MetricWidget
+              label="Tracked Keyword Clusters"
+              value={clusters.length > 0 ? `${clusters.length} tracked` : "None yet"}
+              subtext="Connect Search Console to build clusters"
+            />
+            <MetricWidget
+              label="Top Citation Engine"
+              value="Not measured"
+              subtext="No citation source connected"
+            />
+            <MetricWidget
+              label="Structured Schema Templates"
+              value={Object.keys(SCHEMA_DEFINITIONS).length}
+              subtext="Local JSON-LD templates, not a live audit"
+            />
+          </>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -554,7 +606,18 @@ export default function SeoAeoPage() {
 
       {/* TAB 1: KEYWORD CLUSTERS */}
       {activeTab === 'CLUSTERS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
+          {showSampleBanner && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+              Sample keyword clusters from a demo seed — volumes, difficulty and CPC are modeled figures, not live Search Console data.
+            </div>
+          )}
+          {clusters.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500">
+              No topical clusters tracked yet. Connect Google Search Console to build clusters from live keyword data, or enable the demo seed to browse sample clusters.
+            </div>
+          ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Pillar List */}
           <div className="space-y-3">
             <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
@@ -567,7 +630,7 @@ export default function SeoAeoPage() {
                 onClick={() => setSelectedCluster(cluster)}
                 className={cn(
                   "p-4 rounded-xl border transition-all cursor-pointer text-left",
-                  selectedCluster.id === cluster.id
+                  selectedCluster?.id === cluster.id
                     ? "bg-amber-500/10 border-amber-500/40 text-white shadow-lg shadow-amber-500/5"
                     : "bg-zinc-900/30 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/40"
                 )}
@@ -590,6 +653,7 @@ export default function SeoAeoPage() {
           </div>
 
           {/* Spokes Deep Dive */}
+          {selectedCluster ? (
           <div className="lg:col-span-2 p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-5">
             <div className="flex items-start justify-between">
               <div>
@@ -605,7 +669,7 @@ export default function SeoAeoPage() {
                 className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Zap className="w-3.5 h-3.5 fill-black" />
-                Generate Spokes
+                Plan Spokes
               </button>
             </div>
 
@@ -654,6 +718,13 @@ export default function SeoAeoPage() {
               </div>
             </div>
           </div>
+          ) : (
+            <div className="lg:col-span-2 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-500">
+              Select a cluster on the left to see its breakdown.
+            </div>
+          )}
+          </div>
+          )}
         </div>
       )}
 
@@ -666,15 +737,16 @@ export default function SeoAeoPage() {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Bot className="w-5 h-5 text-amber-400" />
-                  Live Generative Engine Citation Tester
+                  Generative Engine Citation Tester
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Test whether AI models cite your domain, case studies, and positioning when buyers ask high-intent questions.
+                  No LLM citation-tracking source is connected yet, so running the test queues a plan instead of
+                  querying ChatGPT, Perplexity, Claude or Gemini. Cards below are sample data until a source is wired.
                 </p>
               </div>
 
-              <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono rounded-lg">
-                Active Corpus: 182 Query Vectors
+              <span className="px-2.5 py-1 bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 text-xs font-mono rounded-lg">
+                No Citation Source Connected
               </span>
             </div>
 
@@ -702,6 +774,12 @@ export default function SeoAeoPage() {
           </div>
 
           {/* AI Engine Benchmark Cards */}
+          {aeoBenchmarks.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500 space-y-1">
+              <div>No AI-engine benchmark cards tracked yet.</div>
+              <div>Connect a generative-engine citation source to measure real brand citation rates — or enable the demo seed to browse sample cards.</div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {aeoBenchmarks.map((bench, i) => (
               <div key={i} className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
@@ -743,6 +821,12 @@ export default function SeoAeoPage() {
               </div>
             ))}
           </div>
+          )}
+          {showSampleBanner && aeoBenchmarks.length > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+              These AI-engine cards are sample data from a demo seed, not measured citations. Enable a live citation source to replace them.
+            </div>
+          )}
         </div>
       )}
 
@@ -755,7 +839,7 @@ export default function SeoAeoPage() {
                 Semantic Schemas ({Object.keys(SCHEMA_DEFINITIONS).length})
               </div>
               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-mono">
-                AEO Optimized
+                Answer-Engine Ready
               </span>
             </div>
 
@@ -780,7 +864,7 @@ export default function SeoAeoPage() {
                   <div className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</div>
                   <div className="text-[10px] font-mono text-emerald-400 mt-1.5 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
-                    {item.citationLift}
+                    <span title="Illustrative target, not a measured result.">Design target: {item.citationLift}</span>
                   </div>
                 </button>
               ))}
@@ -791,7 +875,10 @@ export default function SeoAeoPage() {
                 <ShieldCheck className="w-4 h-4" /> Why Structured Schema Matters for AEO
               </div>
               <p className="text-zinc-400 text-[11px] leading-relaxed">
-                Generative AI agents parse raw HTML with high computational cost. Providing pre-digested JSON-LD schemas gives crawler bots immediate entity certainty, boosting answer citation probabilities by over +62%.
+                Generative AI agents parse raw HTML with high computational cost. Providing pre-digested JSON-LD schemas
+                gives crawlers explicit entity structure, which is the documented path to eligibility for answer
+                citations. Exact citation lift varies by query, engine and domain — the targets shown on each card are
+                design goals, not measured results.
               </p>
             </div>
           </div>
@@ -836,8 +923,8 @@ export default function SeoAeoPage() {
 
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 px-1">
               <span>Target: &lt;script type="application/ld+json"&gt;</span>
-              <span className="text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Syntax Verified (0 errors)
+              <span className="text-zinc-400 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Valid JSON (rendered locally)
               </span>
             </div>
 
@@ -877,19 +964,19 @@ export default function SeoAeoPage() {
               <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
                 <div className="font-bold text-white">Sub-Agent 1: AURORA-SUB-1</div>
                 <div className="text-zinc-400 text-[11px]">SERP Topic Extractor & Entity Mapper</div>
-                <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (78 tasks completed)</div>
+                <div className="text-zinc-400 font-mono text-[10px]">Status: IDLE — no runs in this workspace yet</div>
               </div>
 
               <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
                 <div className="font-bold text-white">Sub-Agent 2: AURORA-SUB-2</div>
                 <div className="text-zinc-400 text-[11px]">LLM Visibility & Citation Auditor</div>
-                <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (42 tasks completed)</div>
+                <div className="text-zinc-400 font-mono text-[10px]">Status: IDLE — no runs in this workspace yet</div>
               </div>
 
               <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
                 <div className="font-bold text-white">Sub-Agent 3: AURORA-SUB-3</div>
                 <div className="text-zinc-400 text-[11px]">Backlink Quality & Entity Hunter</div>
-                <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (22 tasks completed)</div>
+                <div className="text-zinc-400 font-mono text-[10px]">Status: IDLE — no runs in this workspace yet</div>
               </div>
             </div>
           </div>

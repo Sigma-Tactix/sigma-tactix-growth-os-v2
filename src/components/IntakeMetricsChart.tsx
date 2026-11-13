@@ -69,11 +69,15 @@ const monthlyData = [
 type TimeRange = '24H' | '7D' | '30D';
 type ViewMode = 'OVERVIEW' | 'SOURCES' | 'VECTOR_CORRELATION';
 
+// Tooltip is an overlay surface: it floats above a theme-flipping panel, so it
+// must use the raised/subtle surface tokens (which flip with the theme), not a
+// static dark console shade. 10–11px mono microcopy is intentional console
+// styling — only the colors are tokenized.
 const CustomIntakeTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0e0e12] border border-white/15 rounded-xl p-4 shadow-2xl backdrop-blur-xl font-sans min-w-[200px]">
-        <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400 mb-2 border-b border-white/10 pb-1.5 flex items-center justify-between">
+      <div className="bg-[var(--sigma-surface-raised)] border border-[var(--sigma-border)] rounded-xl p-4 shadow-2xl backdrop-blur-xl font-sans min-w-[200px]">
+        <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--sigma-text-muted)] mb-2 border-b border-[var(--sigma-border)] pb-1.5 flex items-center justify-between">
           <span>{label}</span>
           <span className="text-accent flex items-center gap-1">
             <Zap size={10} /> Second Brain Ingest
@@ -87,17 +91,17 @@ const CustomIntakeTooltip = ({ active, payload, label }: any) => {
                   className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
                   style={{ backgroundColor: entry.color, color: entry.color }}
                 />
-                <span className="text-zinc-300 capitalize text-[11px] font-mono">{entry.name}:</span>
+                <span className="text-[var(--sigma-text-soft)] capitalize text-[11px] font-mono">{entry.name}:</span>
               </div>
-              <span className="font-mono font-bold text-white">
+              <span className="font-mono font-bold text-[var(--sigma-text)]">
                 {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
               </span>
             </div>
           ))}
         </div>
-        <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-zinc-400">
+        <div className="mt-2.5 pt-2 border-t border-[var(--sigma-border)] flex items-center justify-between text-[11px] font-mono text-[var(--sigma-text-muted)]">
           <span>Routing:</span>
-          <span className="text-secondary font-bold">10 Partitioned Vaults</span>
+          <span className="text-[var(--sigma-text)] font-bold">10 Partitioned Vaults</span>
         </div>
       </div>
     );
@@ -189,7 +193,7 @@ export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolea
   }, [chartData]);
 
   return (
-    <div className="bg-surface border border-white/10 rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden space-y-6">
+    <div className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden space-y-6">
       {/* Background Accent Grid */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -200,7 +204,7 @@ export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolea
       />
 
       {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/5 pb-6 relative z-10">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[var(--sigma-border)] pb-6 relative z-10">
         <div>
           <div className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-accent flex items-center gap-2 mb-1.5">
             <Radio size={14} className="text-accent" /> Data intake overview
@@ -209,12 +213,12 @@ export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolea
             <h3 className="text-2xl font-heading font-black silver-text tracking-tight">
               Incoming Data Intake Metrics
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-accent border border-emerald-500/20 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-accent" />
               {isLive ? 'Live stream' : 'Sample dataset'}
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1 max-w-xl">
+          <p className="text-xs text-[var(--sigma-text-muted)] mt-1 max-w-xl">
             {isLive ? 'Current connector telemetry for data intake and indexing.' : 'Interactive sample data for planning. Connect a verified ingestion source to display current telemetry.'}
           </p>
         </div>
@@ -276,42 +280,42 @@ export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolea
 
       {/* Topline KPI Mini-Pills */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
-        <div className="p-4 rounded-xl bg-black/30 border border-white/5">
-          <div className="text-[10px] font-mono uppercase text-muted tracking-wider">Total Intake Events</div>
-          <div className="text-xl font-heading font-black silver-text mt-1">
+        <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+          <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Total Intake Events</div>
+          <div className="text-xl font-heading font-black text-[var(--sigma-text)] mt-1">
             {totalEventsSum.toLocaleString()}
           </div>
-          <div className="text-[10px] font-mono text-green-400 mt-0.5 flex items-center gap-1">
+          <div className="text-[10px] font-mono text-emerald-accent mt-0.5 flex items-center gap-1">
             <ArrowUpRight size={12} /> {isLive ? 'Current period' : 'Illustrative'}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-black/30 border border-white/5">
-          <div className="text-[10px] font-mono uppercase text-muted tracking-wider">Vectors Embedded</div>
-          <div className="text-xl font-heading font-black text-secondary mt-1">
+        <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+          <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Vectors Embedded</div>
+          <div className="text-xl font-heading font-black text-[var(--sigma-text-soft)] mt-1">
             {totalVectorsSum.toLocaleString()}
           </div>
-          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
+          <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">
             1536-dim pgvector
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-black/30 border border-white/5">
-          <div className="text-[10px] font-mono uppercase text-muted tracking-wider">Avg Throughput</div>
+        <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+          <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Avg Throughput</div>
           <div className="text-xl font-heading font-black text-accent mt-1">
             {avgThroughput} MB/hr
           </div>
-          <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
+          <div className="text-[10px] font-mono text-[var(--sigma-text-muted)] mt-0.5">
             {isLive ? 'Reported throughput' : 'Sample throughput'}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-black/30 border border-white/5">
-          <div className="text-[10px] font-mono uppercase text-muted tracking-wider">Parsing Success</div>
-          <div className="text-xl font-heading font-black text-emerald-400 mt-1">
+        <div className="p-4 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]">
+          <div className="text-[10px] font-mono uppercase text-[var(--sigma-text-muted)] tracking-wider">Parsing Success</div>
+          <div className="text-xl font-heading font-black text-emerald-accent mt-1">
             {isLive ? '—' : '99.94%'}
           </div>
-          <div className="text-[10px] font-mono text-emerald-500/80 mt-0.5">
+          <div className="text-[10px] font-mono text-emerald-accent/80 mt-0.5">
             {isLive ? 'Awaiting source field' : 'Illustrative rate'}
           </div>
         </div>
@@ -428,17 +432,17 @@ export default function IntakeMetricsChart({ isLive = false }: { isLive?: boolea
       </div>
 
       {/* Footer Info Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/5 text-xs font-mono relative z-10">
-        <div className="flex items-center gap-2.5 text-zinc-400">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-[var(--sigma-border)] text-xs font-mono relative z-10">
+        <div className="flex items-center gap-2.5 text-[var(--sigma-text-muted)]">
           <Server size={14} className="text-accent" />
           <span>Destination: <strong>PostgreSQL + pgvector</strong></span>
         </div>
-        <div className="flex items-center gap-2.5 text-zinc-400">
-          <Cpu size={14} className="text-secondary" />
+        <div className="flex items-center gap-2.5 text-[var(--sigma-text-muted)]">
+          <Cpu size={14} className="text-[var(--sigma-text-soft)]" />
           <span>Embedding: <strong>text-embedding-004 (1536d)</strong></span>
         </div>
-        <div className="flex items-center gap-2.5 text-zinc-400 md:justify-end">
-          <CheckCircle2 size={14} className="text-green-400" />
+        <div className="flex items-center gap-2.5 text-[var(--sigma-text-muted)] md:justify-end">
+          <CheckCircle2 size={14} className="text-emerald-accent" />
           <span>Data status: <strong>{isLive ? 'Connector supplied' : 'Sample data'}</strong></span>
         </div>
       </div>

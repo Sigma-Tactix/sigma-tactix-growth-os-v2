@@ -238,9 +238,9 @@ export default function AlignedExecutiveCharts({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
         {/* Main Chart Card (8 Cols) */}
-        <div className="lg:col-span-8 bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-8 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-6 shadow-[var(--sigma-shadow-lg)] flex flex-col justify-between relative overflow-hidden">
           {/* Card Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--sigma-border)] pb-4 mb-4">
             <div>
               <div className="flex items-center gap-2">
                 <IconComponent size={18} className="text-accent" />
@@ -248,7 +248,7 @@ export default function AlignedExecutiveCharts({
                   {config.title}
                 </h4>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">
                 {config.subtitle}
               </p>
             </div>
@@ -315,7 +315,7 @@ export default function AlignedExecutiveCharts({
                             <span>{config.primaryMetricLabel}:</span>
                             <strong className="text-white">${(data.revenue || 0).toLocaleString()}</strong>
                           </div>
-                          <div className="flex items-center justify-between gap-4 text-secondary">
+                          <div className="flex items-center justify-between gap-4 text-[var(--sigma-text-soft)]">
                             <span>{config.secondaryMetricLabel}:</span>
                             <strong className="text-white">
                               {typeof data.adSpend === 'number' && data.adSpend > 1000 ? `$${data.adSpend.toLocaleString()}` : data.adSpend}
@@ -368,23 +368,23 @@ export default function AlignedExecutiveCharts({
           </div>
 
           {/* Chart Footer Legend & Key Markers */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/5 text-xs font-mono text-zinc-400">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--sigma-border)] text-xs font-mono text-[var(--sigma-text-muted)]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-accent" />
-                <span className="text-white">{config.primaryMetricLabel}</span>
+                <span className="text-[var(--sigma-text)]">{config.primaryMetricLabel}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-secondary" />
-                <span className="text-white">{config.secondaryMetricLabel}</span>
+                <div className="w-3 h-3 rounded-full bg-cyan-accent" />
+                <span className="text-[var(--sigma-text)]">{config.secondaryMetricLabel}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-1 bg-emerald-400" />
-                <span className="text-white">{config.roasLabel}</span>
+                <div className="w-3 h-1 bg-emerald-accent rounded-full" />
+                <span className="text-[var(--sigma-text)]">{config.roasLabel}</span>
               </div>
             </div>
 
-            <div className="text-[11px] text-emerald-400 flex items-center gap-1 font-bold">
+            <div className="text-[11px] text-emerald-accent flex items-center gap-1 font-bold">
               <TrendingUp size={13} />
               <span>{config.trendPill}</span>
             </div>
@@ -392,16 +392,16 @@ export default function AlignedExecutiveCharts({
         </div>
 
         {/* Donut Card (4 Cols) */}
-        <div className="lg:col-span-4 bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between relative">
+        <div className="lg:col-span-4 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-6 shadow-[var(--sigma-shadow-lg)] flex flex-col justify-between relative">
           <div>
-            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+            <div className="flex items-center justify-between border-b border-[var(--sigma-border)] pb-4 mb-4">
               <div className="flex items-center gap-2">
                 <PieIcon size={18} className="text-accent" />
                 <h4 className="text-base font-bold silver-text tracking-tight">
                   {config.donutTitle}
                 </h4>
               </div>
-              <span className="text-[10px] font-mono text-zinc-400">{config.donutTotalLabel}</span>
+              <span className="text-[10px] font-mono text-[var(--sigma-text-muted)]">{config.donutTotalLabel}</span>
             </div>
 
             {/* Donut Chart */}
@@ -449,29 +449,29 @@ export default function AlignedExecutiveCharts({
 
               {/* Center Donut Label */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] uppercase font-mono text-zinc-400">Total</span>
-                <span className="text-base font-black text-white font-mono">{config.donutCenterValue}</span>
+                <span className="text-[10px] uppercase font-mono text-[var(--sigma-text-muted)]">Total</span>
+                <span className="text-base font-black text-[var(--sigma-text)] font-mono">{config.donutCenterValue}</span>
               </div>
             </div>
           </div>
 
           {/* Breakdown Legend List */}
-          <div className="space-y-2 pt-2 border-t border-white/5 text-xs font-mono">
+          <div className="space-y-2 pt-2 border-t border-[var(--sigma-border)] text-xs font-mono">
             {config.donutData.map((ch) => (
               <div
                 key={ch.name}
                 className={cn(
                   "flex items-center justify-between p-1.5 rounded-lg transition-colors",
-                  activeChannelHover === ch.name ? "bg-white/10" : "hover:bg-white/[0.02]"
+                  activeChannelHover === ch.name
+                    ? "bg-[var(--sigma-surface-subtle)]"
+                    : "hover:bg-[var(--sigma-surface-subtle)]"
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ch.fill }} />
-                  <span className="text-zinc-300 text-[11px] truncate max-w-[140px]">{ch.name}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: ch.fill }} />
+                  <span className="text-[var(--sigma-text-soft)] text-[11px] truncate max-w-[140px]">{ch.name}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-bold text-[11px]">{ch.share}</span>
-                </div>
+                <span className="text-[var(--sigma-text)] font-bold text-[11px] shrink-0">{ch.share}</span>
               </div>
             ))}
           </div>
@@ -480,49 +480,49 @@ export default function AlignedExecutiveCharts({
       </div>
 
       {/* Aligned Grid Row 2: CPA Efficiency & Pacing Gauges */}
-      <div className="bg-surface border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-4">
-          <div className="flex items-center gap-2">
+      <div className="bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-2xl p-6 shadow-[var(--sigma-shadow-lg)] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--sigma-border)] pb-4">
+          <div className="flex flex-wrap items-center gap-2">
             <Activity size={18} className="text-accent" />
             <h4 className="text-base font-bold silver-text tracking-tight">
               {config.matrixTitle}
             </h4>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-bold border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded bg-emerald-accent/10 text-emerald-accent text-[10px] font-mono font-bold border border-emerald-accent/30">
               {config.matrixBadge}
             </span>
           </div>
-          <span className="text-xs font-mono text-zinc-400">
+          <span className="text-xs font-mono text-[var(--sigma-text-muted)]">
             {config.matrixSubtitle}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-2">
           {config.pacingData.map((item: any) => (
-            <div key={item.label} className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white font-sans truncate">{item.label}</span>
-                <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            <div key={item.label} className="p-4 bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] rounded-xl space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[var(--sigma-text)] font-sans truncate">{item.label}</span>
+                <span className="text-[10px] font-mono text-emerald-accent font-bold bg-emerald-accent/10 px-1.5 py-0.5 rounded shrink-0">
                   {item.diff}
                 </span>
               </div>
 
               <div>
-                <div className="text-xl font-black text-white font-mono">
+                <div className="text-xl font-black text-[var(--sigma-text)] font-mono">
                   {item.metric === '$' ? `$${item.actual.toFixed(2)}` : `${item.actual}${item.metric}`}
                 </div>
-                <div className="text-[10px] font-mono text-zinc-400">
+                <div className="text-[10px] font-mono text-[var(--sigma-text-muted)]">
                   Target: {item.metric === '$' ? `$${item.target.toFixed(2)}` : `${item.target}${item.metric}`}
                 </div>
               </div>
 
-              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-[var(--sigma-border-strong)] overflow-hidden">
                 <div
-                  className="h-full bg-emerald-400 rounded-full"
+                  className="h-full bg-emerald-accent rounded-full"
                   style={{ width: `${Math.min(100, (item.actual / (item.target || 1)) * 100)}%` }}
                 />
               </div>
 
-              <div className="text-[11px] font-mono text-zinc-500 truncate">
+              <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] truncate">
                 {item.note}
               </div>
             </div>

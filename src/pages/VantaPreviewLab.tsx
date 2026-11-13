@@ -218,12 +218,12 @@ export default function VantaPreviewLab() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold tracking-wider text-white uppercase">VANTA</h1>
+              <h1 className="text-sm font-bold tracking-wider text-[var(--sigma-text)] uppercase">VANTA</h1>
               <span className="rounded-full bg-gradient-to-r from-[var(--sigma-vermilion)] to-orange-500 px-2 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
                 Visual Lab
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[var(--sigma-text-muted)]">
               {activeTab === 'synaptic-3d'
                 ? '5-Frame Synaptic Brain Orb & Second Brain Vault Layers'
                 : '2D Canvas ThinkingOrb & VoiceBeam Dock'}
@@ -232,14 +232,16 @@ export default function VantaPreviewLab() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-2 bg-black/40 p-1 rounded-xl border border-white/10">
+        <div className="flex items-center gap-2 bg-[var(--sigma-surface-subtle)] p-1 rounded-xl border border-[var(--sigma-border)]" role="tablist" aria-label="Lab view">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'synaptic-3d'}
             onClick={() => setActiveTab('synaptic-3d')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               activeTab === 'synaptic-3d'
                 ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
             }`}
           >
             <Orbit size={13} />
@@ -247,11 +249,13 @@ export default function VantaPreviewLab() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'thinking-2d'}
             onClick={() => setActiveTab('thinking-2d')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               activeTab === 'thinking-2d'
                 ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
             }`}
           >
             <Zap size={13} />
@@ -373,9 +377,9 @@ export default function VantaPreviewLab() {
           </div>
 
           {/* 3D Canvas Stage + Side Info Panel */}
-          <div className="flex flex-1 min-h-0 relative">
+          <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative overflow-y-auto lg:overflow-hidden">
             {/* 3D Canvas */}
-            <div className="flex-1 h-full min-h-[460px] relative">
+            <div className="flex-1 h-[460px] lg:h-full min-h-[460px] relative">
               <VantaSynapticBrainOrb
                 sequenceFrame={sequenceFrame}
                 audioLevel={effectiveAudio}
@@ -407,7 +411,7 @@ export default function VantaPreviewLab() {
             </div>
 
             {/* Right Vault File Explorer & HUD */}
-            <aside className="w-80 border-l border-white/10 bg-black/50 backdrop-blur-xl flex flex-col min-h-0">
+            <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/50 backdrop-blur-xl flex flex-col min-h-0 max-h-72 lg:max-h-none overflow-y-auto">
               <div className="p-3.5 border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -541,9 +545,9 @@ export default function VantaPreviewLab() {
           </div>
 
           {/* Main Content */}
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
             {/* Left: 2D Orb + VoiceBeam Dock */}
-            <div className="flex flex-1 flex-col items-center justify-between py-8 px-6">
+            <div className="flex-1 flex flex-col items-center justify-between py-8 px-6">
               <div className="flex flex-1 flex-col items-center justify-center gap-6">
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -651,7 +655,7 @@ export default function VantaPreviewLab() {
             </div>
 
             {/* Right: BotAvatars Swarm */}
-            <aside className="w-72 border-l border-white/10 bg-black/40 flex flex-col">
+            <aside className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/40 flex flex-col max-h-64 lg:max-h-none overflow-y-auto">
               <div className="p-4 border-b border-white/10">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-white">Bot Avatars</h3>
                 <p className="text-[10px] text-zinc-500">Swarm agents from `bot-avatars`</p>

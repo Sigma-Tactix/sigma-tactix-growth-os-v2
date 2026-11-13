@@ -29,6 +29,7 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
   const [fileError, setFileError] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -37,6 +38,50 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
     setFileError('');
     setUploadedFileName('');
   }, [isOpen, initialDomain]);
+
+  // Modal a11y: move focus into the panel, close on Escape, trap Tab focus
+  // inside the dialog, and lock body scroll while open.
+  useEffect(() => {
+    if (!isOpen) return;
+    const panel = panelRef.current;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panel?.focus();
+
+    const getFocusable = () => {
+      if (!panel) return [] as HTMLElement[];
+      return Array.from(panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea'))
+        .filter((element) => !element.hasAttribute('disabled') && element.offsetParent !== null);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      if (event.shiftKey && (current === first || current === panel)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && current === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isOpen, onClose]);
 
   const unreviewed = useMemo(() => Object.entries(draft.sources).filter(([, source]) => source?.status === 'suggested'), [draft.sources]);
   const identityReady = Boolean(draft.companyName.trim() && normalizeDomain(draft.domain));
@@ -92,7 +137,14 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
 
   return (
     <div className="sigma-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
-      <section role="dialog" aria-modal="true" aria-labelledby="client-onboarding-title" className="sigma-modal flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden">
+      <section
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="client-onboarding-title"
+        tabIndex={-1}
+        className="sigma-modal flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden outline-none"
+      >
         <header className="flex items-start justify-between gap-4 border-b border-[var(--sigma-border)] px-5 py-4 sm:px-7 sm:py-5">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold text-[var(--sigma-primary)]">Client onboarding</p>
@@ -134,7 +186,7 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
                     {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}{isAnalyzing ? 'Analyzing document…' : 'Choose file'}
                   </button>
                   <p className="mt-3 text-xs text-[var(--sigma-text-muted)]">PDF, text, Markdown, CSV, or JSON. Spreadsheet uploads are temporarily unavailable. Max 15 MB.</p>
-                  {fileError && <p role="alert" className="mt-3 text-sm text-red-600">{fileError}</p>}
+                  {fileError && <p role="alert" className="mt-3 text-sm text-rose-accent">{fileError}</p>}
                 </div>
               </div>
             </div>
@@ -187,7 +239,7 @@ export default function ClientOnboardingWizard({ isOpen, onClose, onComplete, in
 
         <footer className="flex items-center justify-between gap-3 border-t border-[var(--sigma-border)] px-5 py-4 sm:px-7">
           <button type="button" onClick={() => step === 0 ? onClose() : setStep((current) => current - 1)} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--sigma-text-soft)] hover:bg-[var(--sigma-surface-subtle)]">{step > 0 && <ArrowLeft size={16} />}{step === 0 ? 'Cancel' : 'Back'}</button>
-          {step < steps.length - 1 ? <button type="button" onClick={() => setStep((current) => current + 1)} disabled={step === 0 && !identityReady} className="flex items-center gap-2 rounded-xl bg-[var(--sigma-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Continue <ArrowRight size={16} /></button> : <button type="button" onClick={finish} disabled={!identityReady || unreviewed.length > 0} className="flex items-center gap-2 rounded-xl bg-[var(--sigma-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"><Check size={16} /> Create workspace draft</button>}
+          {step < steps.length - 1 ? <button type="button" onClick={() => setStep((current) => current + 1)} disabled={step === 0 && !identityReady} className="flex items-center gap-2 rounded-xl bg-[var(--sigma-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--sigma-on-primary)] disabled:cursor-not-allowed disabled:opacity-40">Continue <ArrowRight size={16} /></button> : <button type="button" onClick={finish} disabled={!identityReady || unreviewed.length > 0} className="flex items-center gap-2 rounded-xl bg-[var(--sigma-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--sigma-on-primary)] disabled:cursor-not-allowed disabled:opacity-40"><Check size={16} /> Create workspace draft</button>}
         </footer>
       </section>
     </div>
@@ -199,7 +251,7 @@ function ReviewField({ field, label, value, source, onChange, onReview, multilin
   return <div className={`rounded-xl ${suggested ? 'border border-amber-500/40 bg-amber-500/5 p-3' : ''}`}>
     <div className="mb-1.5 flex items-center justify-between gap-2"><label className="text-xs font-semibold text-[var(--sigma-text-soft)]">{label}{required ? ' *' : ''}</label>{source && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${suggested ? 'bg-amber-500/15 text-amber-700 dark:text-amber-accent' : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-muted)]'}`}>{suggested ? 'File suggestion · review' : source.kind === 'file' ? 'File · confirmed' : 'Entered manually'}</span>}</div>
     {multiline ? <textarea className={`${fieldClass} min-h-24 resize-y`} value={value} onChange={(event) => onChange(event.target.value)} /> : <input className={fieldClass} value={value} onChange={(event) => onChange(event.target.value)} />}
-    {suggested && <div className="mt-2 flex gap-2"><button type="button" className="rounded-lg bg-[var(--sigma-primary)] px-3 py-1.5 text-xs font-semibold text-white" onClick={() => onReview(field, true)}>Confirm</button><button type="button" className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--sigma-text)]" onClick={() => onReview(field, false)}>Clear</button></div>}
+    {suggested && <div className="mt-2 flex gap-2"><button type="button" className="rounded-lg bg-[var(--sigma-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--sigma-on-primary)]" onClick={() => onReview(field, true)}>Confirm</button><button type="button" className="rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--sigma-text)]" onClick={() => onReview(field, false)}>Clear</button></div>}
   </div>;
 }
 

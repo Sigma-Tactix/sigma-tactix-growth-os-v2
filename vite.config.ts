@@ -23,6 +23,7 @@ export default defineConfig(({mode}) => {
         '**/.kilo/**',
         '**/dist/**',
         '**/worktrees/**',
+        '**/.harness-worktrees/**',
         '**/hive/**',
         '**/.agent/**',
         '**/tools/**',

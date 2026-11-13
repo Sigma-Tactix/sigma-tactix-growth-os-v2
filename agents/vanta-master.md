@@ -52,3 +52,23 @@ classifyActionRisk() -> risk + HITL for the run
 Metadata only: Brand Vault, Customer Vault, Marketing Vault, Website Vault, Authority Vault, Operations Vault, Audit Vault, AI Workflow Vault
 
 Blocked always: Executive Vault, Credentials Vault
+
+## SOP — Standard Operating Procedure
+
+1. **Classify** — the decision engine routes the request to one owning agent by category; VANTA never picks an agent by model judgment.
+2. **Decompose** — the owning agent's entry sub-agent and DAG nodes are derived from the registry, not free-form.
+3. **Gate** — every write-plane node parks in `execution_approvals`; VANTA explains why approval is required and cannot grant it.
+4. **Narrate** — VANTA reports outcomes from the execution ledger (node_attempts, statuses), and attaches `simulated: true` to anything the ledger does not back.
+
+## AOP — Autonomy Policy (delegation matrix)
+
+| Agent | Entry node | Write-plane nodes (need approval) |
+| --- | --- | --- |
+| `A1` Audit Diagnostic Agent | `evidence-collector` | `audit-score-composer`, `roadmap-synthesizer` |
+| `A2` Marketing Agent | `spend-efficiency-scorer` | `budget-allocator`, `bid-strategist` |
+| `A3` SEO & Authority Agent | `keyword-gap-finder` | `schema-emitter`, `content-brief-writer` |
+| `A4` Creative Director Agent | `creative-variant` | `carousel-architect`, `video-storyboarder`, `creative-variant`, `visual-prompt-engineer`, `repurposer` |
+| `A5` AI SDR (Sales Agent) | `lead-qualifier` | `sequence-drafter`, `handoff-composer` |
+| `A6` Customer Success Agent | `health-scorer` | `save-play-designer`, `qbr-composer` |
+| `A7` Operations Agent | `policy-auditor` | `workflow-template-author`, `schedule-planner`, `kb-vectorizer` |
+VANTA itself holds no execution, write, or authorization capability — every effect flows through an owning agent's nodes and the human gate above.

@@ -50,20 +50,20 @@ export function SocialDistributionControl() {
   };
 
   return (
-    <GlassCard elevation="flat" className="p-5 border border-white/10 bg-[#0C0B0A]/90 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+    <GlassCard elevation="flat" className="p-5 border border-[var(--sigma-border)] space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--sigma-border)] pb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-accent/30 text-amber-accent">
             <Share2 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-white">Omnichannel Social Distribution Gateway</h4>
+              <h4 className="text-sm font-bold text-[var(--sigma-text)]">Omnichannel Social Distribution Gateway</h4>
               <Badge variant={status?.mode === 'live' ? 'success' : 'warning'} size="xs">
                 {status?.mode === 'live' ? 'Live Connected' : 'Offline Mock Mode'}
               </Badge>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">
               Autonomous multi-platform distribution engine for carousels, video shorts, and thought leadership threads.
             </p>
           </div>
@@ -73,7 +73,7 @@ export function SocialDistributionControl() {
           type="button"
           onClick={handlePing}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] text-xs font-mono text-[var(--sigma-text-soft)] hover:text-[var(--sigma-text)] transition-colors cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Sync Status</span>
@@ -82,9 +82,9 @@ export function SocialDistributionControl() {
 
       {/* Channel Badges Grid */}
       <div className="space-y-2">
-        <div className="text-[11px] font-mono text-zinc-400 flex items-center justify-between">
+        <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] flex items-center justify-between">
           <span>Configured Publishing Targets ({channels.length})</span>
-          <span className="text-zinc-500 text-[10px]">
+          <span className="text-[var(--sigma-text-muted)] text-[10px]">
             {status?.mode === 'live' ? 'Connected to live sidecar daemon' : 'Running zero-friction local mocks'}
           </span>
         </div>
@@ -92,30 +92,30 @@ export function SocialDistributionControl() {
           {channels.map((chan) => (
             <div
               key={chan.id}
-              className="p-2.5 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between gap-2"
+              className="p-2.5 rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] flex items-center justify-between gap-2 min-w-0"
             >
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-zinc-200 truncate capitalize">
+                <div className="text-xs font-semibold text-[var(--sigma-text)] truncate capitalize">
                   {chan.platform}
                 </div>
-                <div className="text-[10px] text-zinc-500 font-mono truncate">
+                <div className="text-[10px] text-[var(--sigma-text-muted)] font-mono truncate">
                   {chan.handle || chan.name}
                 </div>
               </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="Ready for dispatch" />
+              <span className="w-2 h-2 rounded-full bg-emerald-accent shrink-0" title="Ready for dispatch" />
             </div>
           ))}
         </div>
       </div>
 
       {/* Security & Config Footnote */}
-      <div className="text-[11px] font-mono text-zinc-500 border-t border-white/5 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-zinc-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+      <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] border-t border-[var(--sigma-border)] pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[var(--sigma-text-soft)]">
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-accent" />
           <span>OAuth tokens sealed in sovereign sidecar credential store.</span>
         </div>
         <div>
-          Env vars: <code className="text-amber-300/80">SOCIAL_SCHEDULER_API_URL</code> & <code className="text-amber-300/80">SOCIAL_SCHEDULER_API_KEY</code>
+          Env vars: <code className="text-amber-accent/80">SOCIAL_SCHEDULER_API_URL</code> & <code className="text-amber-accent/80">SOCIAL_SCHEDULER_API_KEY</code>
         </div>
       </div>
     </GlassCard>

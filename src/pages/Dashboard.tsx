@@ -67,12 +67,6 @@ const rawData = [
   { timestamp: now.getTime(), name: format(now, 'MMM dd'), value: 6400 },
 ];
 
-const defaultSegmentsData = [
-  { name: 'Direct & Organic', spend: 0, conv: '4.8%', roas: '∞', status: 'SCALING', color: '#10B981' },
-  { name: 'Paid Brand Search', spend: 1200, conv: '3.4%', roas: '4.2x', status: 'STABLE', color: '#F59E0B' },
-  { name: 'B2B Enterprise Outreach', spend: 3500, conv: '5.1%', roas: '5.8x', status: 'SCALING', color: '#6366F1' },
-];
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -271,6 +265,14 @@ export default function Dashboard() {
       };
     });
   }, [selectedIndustry, hasLiveMetrics, totalSpend]);
+
+  // CVR bars encode the panel's benchmark CVR value as a relative share of the
+  // highest benchmark row — the bars visualize the benchmark figures, they do
+  // not measure client conversion performance.
+  const maxBenchmarkCvr = useMemo(
+    () => segmentsData.reduce((max, s) => Math.max(max, parseFloat(s.conv) || 0), 0),
+    [segmentsData],
+  );
 
   const filteredChartData = useMemo(() => {
     if (hasLiveMetrics) {
@@ -697,12 +699,12 @@ export default function Dashboard() {
                     <MetricWidget 
                       label={mediaMode === 'organic' ? "Active Users" : "Conversion Rate"}
                       value={mediaMode === 'organic' ? formatNumber(organicSnapshot.activeUsers) : `${liveMetrics.conversion.toFixed(2)}%`}
-                      delta={{
-                        value: hasLiveMetrics ? "+2.4%" : selectedIndustry.metrics.conversionRate,
-                        trend: 'up',
-                        label: hasLiveMetrics ? 'vs prior' : `${selectedIndustry.name} benchmark`
-                      }}
-                      subtext={hasLiveMetrics ? "Live sessions verified" : `${selectedIndustry.name} baseline`}
+                      delta={
+                        hasLiveMetrics
+                          ? undefined
+                          : { value: selectedIndustry.metrics.conversionRate, trend: 'neutral' as const, label: `${selectedIndustry.name} benchmark` }
+                      }
+                      subtext={hasLiveMetrics ? "Live sessions verified — no prior-period delta available from the connector feed" : `${selectedIndustry.name} baseline`}
                       icon={<Rocket size={16} className="text-[var(--sigma-primary)]" />}
                     />
                   </motion.div>
@@ -748,7 +750,9 @@ export default function Dashboard() {
                       </Badge>
                     </div>
                     <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
-                      {hasLiveMetrics ? 'Connector-supplied performance' : 'Industry benchmark trend'} for {selectedPresetLabel} ({format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd')})
+                      {hasLiveMetrics
+                        ? `Illustrative shape from connector-supplied period totals — the feed returns period aggregates, not a per-day series. Live figures are in the KPI tiles below.`
+                        : 'Industry benchmark trend (illustrative reference, not measured performance)'} for {selectedPresetLabel} ({format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd')})
                     </p>
                   </div>
                   <div className="flex bg-[var(--sigma-surface-subtle)] p-1 rounded-lg border border-[var(--sigma-border)]">
@@ -782,6 +786,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* In live mode the metrics endpoint returns period totals only,
+                    not a per-day series. The area below is an illustrative shape
+                    scaled from those totals — the KPI chips under it carry the
+                    real, connector-supplied numbers. */}
                 <div className="flex-1 min-h-[300px] relative z-10">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={filteredChartData}>
@@ -825,10 +833,10 @@ export default function Dashboard() {
                       </div>
                    </div>
                    <div>
-                      <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Sync Health</div>
-                      <div className="text-base font-bold font-mono text-emerald-accent flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                        {hasLiveMetrics ? 'Live Feed' : 'Benchmark'}
+                      <div className="text-xs text-[var(--sigma-text-muted)] mb-1">Series basis</div>
+                      <div className="text-base font-bold font-mono text-[var(--sigma-text-soft)] flex items-center gap-1.5">
+                        <span className={cn("w-2 h-2 rounded-full", hasLiveMetrics ? "bg-[var(--sigma-primary)]" : "bg-[var(--sigma-text-muted)]")} />
+                        {hasLiveMetrics ? 'Connector totals' : 'Benchmark model'}
                       </div>
                    </div>
                 </div>
@@ -848,7 +856,9 @@ export default function Dashboard() {
                      <div className="w-1.5 h-5 rounded-full bg-[var(--sigma-primary)]" />
                      <div>
                        <h2 className="text-base font-bold text-[var(--sigma-text)]">Channel Benchmarks & Performance</h2>
-                       <p className="text-xs text-[var(--sigma-text-muted)]">{selectedIndustry.name} • {selectedIndustry.targetIcp}</p>
+                       <p className="text-xs text-[var(--sigma-text-muted)]">
+                         {selectedIndustry.name} • {selectedIndustry.targetIcp} • illustrative reference values — not measured client performance
+                       </p>
                      </div>
                   </div>
                   <button 
@@ -871,7 +881,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--sigma-border)]">
-                      {segmentsData.map((seg, i) => (
+                      {segmentsData.map((seg) => (
                         <tr key={seg.name} className="hover:bg-[var(--sigma-surface-subtle)]/50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
@@ -886,8 +896,12 @@ export default function Dashboard() {
                           </td>
                           <td className="px-5 py-4 text-center">
                              <div className="text-xs font-semibold font-mono tabular-nums text-[var(--sigma-text)]">{seg.conv}</div>
-                             <div className="w-16 h-1 bg-[var(--sigma-border)] rounded-full mx-auto mt-1.5 overflow-hidden">
-                                <div className="h-full bg-emerald-400 rounded-full" style={{ width: i === 0 ? '80%' : i === 1 ? '65%' : '45%' }} />
+                              <div className="w-16 h-1 bg-[var(--sigma-border)] rounded-full mx-auto mt-1.5 overflow-hidden">
+                                <div
+                                  className="h-full bg-emerald-400 rounded-full"
+                                  title={`Illustrative benchmark share (CVR ${seg.conv} relative to the highest benchmark row)`}
+                                  style={{ width: `${maxBenchmarkCvr > 0 ? Math.round(((parseFloat(seg.conv) || 0) / maxBenchmarkCvr) * 100) : 0}%` }}
+                                />
                              </div>
                           </td>
                           <td className="px-5 py-4 text-center">

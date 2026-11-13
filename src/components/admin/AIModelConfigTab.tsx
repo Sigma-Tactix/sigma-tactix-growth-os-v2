@@ -27,7 +27,7 @@ import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { ALL_AI_MODELS, ModelInfo, ModelProvider } from '@/src/lib/tokenCostEngine';
 import { AIKeyConfig } from '@/src/types';
-import { saveAIProviderKey, testModelInference, pingLocalLLM, checkOpusMaxKeyStatus, fetchProviderModels } from '@/src/lib/api';
+import { saveAIProviderKey, selectAgentAIModel, testModelInference, pingLocalLLM, checkOpusMaxKeyStatus, fetchProviderModels } from '@/src/lib/api';
 import { useToast } from '@/src/contexts/ToastContext';
 
 interface AIModelConfigTabProps {
@@ -100,18 +100,17 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
   const [opusmaxFetchingModels, setOpusmaxFetchingModels] = useState(false);
 
   // Active Global Model override
-  const [activeGlobalModel, setActiveGlobalModel] = useState<string>('gemini-3.8-flash-high');
-  const [agentModelAssignments, setAgentModelAssignments] = useState<Record<string, string>>({
-    'agent-orchestrator': 'gemini-3.8-flash-high',
-    'agent-authority': 'gpt-5-omni',
-    'agent-performance': 'chatgpt-astra-multimodal',
-    'agent-content': 'claude-fable-5-0',
-    'agent-ops': 'qwen-3-coder',
-    'agent-diagnostic': 'gemini-3.0-pro',
-    'agent-competitor': 'claude-4-opus',
-    'agent-outreach': 'qwen-3-235b-moe',
-    'agent-listening': 'grok-3-reasoning'
-  });
+  const selectedAgentProvider = providers.find(provider => provider.selected);
+  const activeGlobalModel = selectedAgentProvider?.selectedModel || selectedAgentProvider?.model || '';
+  const [isSelectingModel, setIsSelectingModel] = useState(false);
+  const savedProvider = providers.find(provider => provider.provider === selectedProvider);
+  useEffect(() => {
+    const saved = providers.find(provider => provider.provider === selectedProvider);
+    setSelectedModel((saved?.selected ? saved.selectedModel : undefined) || saved?.model || ALL_AI_MODELS.find(model => model.provider === selectedProvider)?.id || '');
+    setCustomBaseUrl(saved?.baseUrl || '');
+    setApiKeyInput('');
+  }, [selectedProvider, savedProvider?.model, savedProvider?.baseUrl, savedProvider?.selectedModel]);
+  useEffect(() => { setInferenceResult(null); setInferenceError(null); }, [selectedProvider]);
 
   // Filtered models
   const filteredModels = useMemo(() => {
@@ -169,14 +168,17 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
   };
 
   // One-Click Model Apply Handler
-  const handleOneClickApply = (model: ModelInfo) => {
-    const targetAgentId = model.oneClickAgentTarget || 'agent-orchestrator';
-    setActiveGlobalModel(model.id);
-    setAgentModelAssignments(prev => ({
-      ...prev,
-      [targetAgentId]: model.id
-    }));
-    notifySuccess(`Applied ${model.name} as active engine for ${model.recommendedRole}!`);
+  const handleOneClickApply = async (model: Pick<ModelInfo, 'id' | 'provider' | 'name'>) => {
+    setIsSelectingModel(true);
+    try {
+      await selectAgentAIModel(model.provider, model.id);
+      await onRefreshProviders();
+      notifySuccess(`Selected ${model.name} for future approved agent runs and agent pipelines.`);
+    } catch (error: any) {
+      notifyWarning(error.message || 'Could not select model.');
+    } finally {
+      setIsSelectingModel(false);
+    }
   };
 
   // Handle saving API Key
@@ -249,6 +251,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
     try {
       const res = await testModelInference(selectedProvider, selectedModel, testPrompt, customBaseUrl || undefined);
       setInferenceResult(res);
+      await onRefreshProviders();
       notifySuccess(`Inference succeeded on ${res.model} in ${res.durationMs}ms`);
     } catch (err: any) {
       setInferenceError(err.message || 'Inference test failed');
@@ -260,18 +263,24 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
 
   return (
     <div className="space-y-10">
+      <div className="sigma-card sigma-text rounded-xl p-4 text-sm">
+        Model selection applies to future approved agent runs and agent pipelines. VANTA, voice,
+        diagnostic studios and creative features retain their own Gemini/provider configuration.
+        Save credentials before testing. A successful text test does not verify tool compatibility.
+        Local endpoints run on the API server—not on the browser’s computer.
+      </div>
       {/* Top Quick Status Metric Pills */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-surface/80 border border-white/10 rounded-2xl p-5 relative overflow-hidden group hover:border-accent/40 transition-all shadow-xl">
           <div className="flex items-center justify-between text-muted mb-2 font-mono text-[10px] uppercase tracking-wider">
-            <span>Active Global Engine</span>
+            <span>Selected Agent Model</span>
             <Cpu size={16} className="text-accent" />
           </div>
           <div className="text-xl font-heading font-black text-white truncate">
             {ALL_AI_MODELS.find(m => m.id === activeGlobalModel)?.name || activeGlobalModel}
           </div>
           <div className="text-[11px] text-emerald-400 font-mono mt-2 flex items-center gap-1.5">
-            <CheckCircle2 size={12} /> Frontier 2026 Verified
+            <CheckCircle2 size={12} /> {selectedAgentProvider?.verified ? 'Inference verified (not tool compatibility)' : 'Not inference-verified'}
           </div>
         </div>
 
@@ -430,14 +439,16 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
 
               <button
                 type="button"
-                onClick={() => {
-                  const localModelId = localProvider === 'lmstudio' ? 'local-lmstudio' : 'local-ollama-llama3';
-                  setActiveGlobalModel(localModelId);
-                  notifySuccess(`Activated ${localProvider.toUpperCase()} as primary platform inference engine!`);
+                disabled={isSelectingModel || !localModelName}
+                onClick={async () => {
+                  try {
+                    await saveAIProviderKey(localProvider, '', localModelName, { baseUrl: localBaseUrl });
+                    await handleOneClickApply({ provider: localProvider, id: localModelName, name: localModelName });
+                  } catch (error: any) { notifyWarning(error.message || 'Could not save local configuration.'); }
                 }}
                 className="px-4 py-3 bg-accent text-background font-black uppercase text-xs tracking-wider rounded-xl hover:opacity-90 transition-all cursor-pointer shadow-lg shrink-0"
               >
-                Use For All Tasks
+                Select for agent runs
               </button>
             </div>
 
@@ -568,7 +579,6 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                   setSelectedProvider(p.id as ModelProvider);
                   const matching = ALL_AI_MODELS.filter(m => m.provider === p.id);
                   if (matching.length > 0) setSelectedModel(matching[0].id);
-                  if (p.id === 'opusmax' && !customBaseUrl) setCustomBaseUrl('https://api.opusmax.pro');
                 }}
                 className={cn(
                   "p-3 rounded-2xl border cursor-pointer transition-all relative overflow-hidden flex flex-col justify-between",
@@ -581,9 +591,10 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                   {p.name}
                 </div>
                 <div className="mt-2 flex items-center justify-between text-[10px] font-mono">
-                  {keyConfig?.configured || p.id === 'google' || p.id === 'lmstudio' || p.id === 'ollama' ? (
+                  {keyConfig?.configured ? (
                     <span className="text-emerald-400 font-bold flex items-center gap-1">
-                      <CheckCircle2 size={10} /> Ready
+                      <CheckCircle2 size={10} />
+                      {keyConfig.verified ? 'Verified' : 'Saved / available, unverified'}
                     </span>
                   ) : (
                     <span className="text-zinc-500">Unconfigured</span>
@@ -627,7 +638,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 {selectedProvider === 'opusmax'
                   ? 'OpusMax Pro accepts sk-ant-... Anthropic-format keys (OpenAI & Anthropic wire formats).'
                   : selectedProvider === 'openai-account'
-                    ? 'Optional fallback — OpenAI account sign-in is the primary credential.'
+                    ? 'Account OAuth is not implemented. Use the OpenAI API-key provider for agent runs.'
                     : 'Leave blank to retain currently saved key.'}
               </span>
 
@@ -637,7 +648,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                   onClick={() => window.open('https://chatgpt.com', '_blank', 'noopener,noreferrer')}
                   className="mt-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
                 >
-                  <ExternalLink size={11} /> Sign in with OpenAI Account (ChatGPT / Codex)
+                  <ExternalLink size={11} /> Open ChatGPT (does not connect this app)
                 </button>
               )}
 
@@ -652,23 +663,26 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                 placeholder="e.g. https://openrouter.ai/api/v1 or custom proxy"
                 className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
               />
-              <span className="text-[10px] text-zinc-500 font-mono">Override standard host for enterprise gateways.</span>
+              <span className="text-[10px] text-zinc-500 font-mono">Hosted endpoints require public HTTPS. Gemini endpoint overrides are not supported.</span>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-mono text-muted uppercase">Default Target Model</label>
-              <select
+              <input
+                type="text"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
+                list="ai-provider-models"
                 className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent font-mono"
-              >
+              />
+              <datalist id="ai-provider-models">
                 {ALL_AI_MODELS.filter(m => m.provider === selectedProvider).map(m => (
                   <option key={m.id} value={m.id}>
                     {m.name} ({m.contextWindow} • ${m.promptPer1M}/${m.candidatePer1M})
                   </option>
                 ))}
-              </select>
-              <span className="text-[10px] text-zinc-500 font-mono">Target model assigned for requests.</span>
+              </datalist>
+              <span className="text-[10px] text-zinc-500 font-mono">Use a model ID supported by your provider; catalog entries are suggestions, not availability guarantees.</span>
             </div>
           </div>
 
@@ -678,6 +692,11 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
             </div>
 
             <div className="flex items-center gap-3">
+              <button type="button" disabled={isSelectingModel || !selectedModel || selectedProvider === 'openai-account'}
+                onClick={() => handleOneClickApply({ provider: selectedProvider, id: selectedModel, name: selectedModel })}
+                className="sigma-control rounded-lg px-3 py-2 text-xs">
+                Select for agent runs
+              </button>
               <button
                 type="button"
                 onClick={handleTestInference}
@@ -797,7 +816,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
               <Cpu className="text-accent" size={24} /> September 2026 Frontier Models & Use Case Recommendations
             </h3>
             <p className="text-zinc-400 text-xs mt-1">
-              Every model includes verified architectural use cases. Click '1-Click Apply' to instantly bind it to that agent role.
+              Catalog entries are suggestions, not verified availability. Apply persists one model for future approved agent runs and pipelines, not per-role assignments.
             </p>
           </div>
 
@@ -846,9 +865,8 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
         {/* Model Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModels.map((model) => {
-            const isGloballyActive = activeGlobalModel === model.id;
-            const targetAgent = model.oneClickAgentTarget || 'agent-orchestrator';
-            const isAssignedToAgent = agentModelAssignments[targetAgent] === model.id;
+            const isGloballyActive = activeGlobalModel === model.id && selectedAgentProvider?.provider === model.provider;
+            const isAssignedToAgent = false;
 
             return (
               <div
@@ -931,6 +949,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleOneClickApply(model)}
+                      disabled={isSelectingModel || providers.find(provider => provider.provider === model.provider)?.agentSupported === false}
                       className={cn(
                         "w-full py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md",
                         isGloballyActive || isAssignedToAgent
@@ -940,7 +959,7 @@ export default function AIModelConfigTab({ providers, onRefreshProviders }: AIMo
                     >
                       {isGloballyActive || isAssignedToAgent ? (
                         <>
-                          <Check size={14} /> Active for {model.oneClickAgentTarget || 'Workspace'}
+                          <Check size={14} /> Selected for agent runs
                         </>
                       ) : (
                         <>

@@ -126,6 +126,40 @@ export async function queueDeterministicRender(params: { title: string; subtitle
   return data as { success: true; task: { id: string; status: string } };
 }
 
+export interface GenerateTextParams {
+  topic: string;
+  format?: string;
+  targetAudience?: string;
+  antiSlop?: boolean;
+}
+
+export interface GenerateTextResult {
+  content: string;
+  title: string;
+  format: string;
+  audience: string;
+  /** 'gemini' = model output; 'local-template' = deterministic local template. */
+  engine: 'gemini' | 'local-template';
+}
+
+export async function generateTextContent(params: GenerateTextParams): Promise<GenerateTextResult> {
+  const res = await apiFetch('/api/creative/generate-text', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || typeof data.content !== 'string') {
+    throw new Error(data.error || 'Text generation did not return content.');
+  }
+  return {
+    content: data.content,
+    title: data.title || params.topic,
+    format: data.format || params.format || 'LONG_FORM',
+    audience: data.audience || params.targetAudience || '',
+    engine: data.engine === 'gemini' ? 'gemini' : 'local-template',
+  };
+}
+
 export async function generateSocialCampaign(params: GenerateSocialParams): Promise<GenerateSocialResult> {
   const res = await apiFetch('/api/creative/generate-social', {
     method: 'POST',

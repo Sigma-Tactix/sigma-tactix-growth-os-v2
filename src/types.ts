@@ -612,6 +612,11 @@ export interface AIKeyConfig {
   model: string;
   updatedAt?: string | null;
   live: boolean;
+  verified?: boolean;
+  verifiedAt?: string | null;
+  selected?: boolean;
+  selectedModel?: string;
+  agentSupported?: boolean;
   /** Optional gateway/proxy override host saved with the key (e.g. https://api.opusmax.pro). */
   baseUrl?: string;
   /** True when the provider is connected via account sign-in (OAuth) rather than a raw API key. */

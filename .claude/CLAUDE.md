@@ -1,3 +1,5 @@
+# Claude Code rules (pointer)
+
 ## vexp - Context-Aware AI Coding <!-- vexp v3.3.8 -->
 
 ### Context strategy: call run_pipeline ONCE at task start
@@ -18,3 +20,15 @@ On `status: "degraded"` or 0 pivots the index is still building - use your own t
 For literal string sweeps use your native search - do NOT route text sweeps through vexp.
 Repo SOURCE only: logs, dist/, node_modules/ and files outside the repo are NOT indexed.
 <!-- /vexp -->
+
+## Project rules
+
+The single source of truth for all project rules (architecture, domain language,
+security invariants, verification gates) lives in [`AGENTS.md`](../AGENTS.md).
+Read and follow it in full — do not duplicate or fork its rules.
+
+@AGENTS.md
+
+**Claude Code-specific notes:**
+- Branch-per-task on any tool; run `npm run verify` before merge.
+- Never touch `.env` (gitignored, holds secrets) or `.vexp/` (live index).

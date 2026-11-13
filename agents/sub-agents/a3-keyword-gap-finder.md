@@ -28,6 +28,22 @@ Diff client keywords against competitors
 | Approval | Not required |
 | Timeout | 30000 ms |
 | Vault scope | Inherited from A3, minus Executive and Credentials |
+## SOP — Standard Operating Procedure
+
+1. **Receive** — the owning agent's dispatch DAG hands this node its input contract (client + competitor keyword sets) plus any upstream node results from earlier in the run.
+2. **Read** — grounded only in inherited vault scope and the tools granted below (`fetch_site_content`, `search_second_brain`). Nothing else.
+3. **Produce** — emit the output contract (gap list) within 30000 ms. On timeout or failure, the node's `node_attempt` records the error and the run aborts; no partial result is published.
+4. **Return** — read-plane output is evidence and recommendations only; it never triggers a write or delivery.
+
+## AOP — Autonomy Policy
+
+| Property | Value |
+| --- | --- |
+| Plane | `read` — autonomous within grants |
+| Granted tools | `fetch_site_content` `search_second_brain` |
+| Vault scope | Inherited from A3 SEO & Authority Agent, minus Executive and Credentials |
+| Timeout | 30000 ms |
+| Delivery / connector writes | None — any external effect is out-of-band and human-performed |
 ## Rules
 
 1. Do exactly the mission above. No adjacent work.

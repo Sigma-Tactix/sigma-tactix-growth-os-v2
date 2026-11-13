@@ -40,6 +40,15 @@ export async function getTokenTelemetry(): Promise<TokenTelemetrySummary> {
 }
 
 // AI Model & Provider Key Configuration
+export async function selectAgentAIModel(provider: string, model: string): Promise<void> {
+  const res = await apiFetch('/api/workspace/admin/ai/selection', {
+    method: 'POST', body: JSON.stringify({ provider, model }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Could not select agent model.');
+  }
+}
 export async function getAIProviderKeys(): Promise<AIKeyConfig[]> {
   const res = await apiFetch('/api/workspace/admin/ai-keys');
   if (!res.ok) {

@@ -121,8 +121,8 @@ export const CAPTION_PRESETS = [
   },
   {
     id: 'caption-teardown',
-    label: 'Data-Driven Diagnostic Teardown Format',
-    text: `Empirical B2B Funnel Teardown 📊\n\nWe analyzed $1.4M in monthly ad spend across 42 B2B tech companies.\n\nThe brutal reality:\n• 82% of buyer journeys originate in dark social & AI answer engines\n• Inbound qualification conversion drops 10x after the first 5 minutes\n• Creative fatigue sets in at 4.8x frequency, tanking CTR by 28%\n\nSwipe through the carousel above for the exact infrastructure changes top 1% operators make to seal these leaks.\n\nSave this deck for your next QBR. 📑\n\n#CRO #DemandGeneration #DataDriven #SigmaTactix`
+    label: 'Diagnostic Teardown Format (template — cite your own data)',
+    text: `Empirical B2B Funnel Teardown 📊\n\nStructure: open with the scope you actually measured (channels, spend, period), then the three findings your own analytics produced:\n• Where intent originates that last-click attribution misses\n• Where qualification latency or creative fatigue is costing you conversion\n• The single infrastructure fix with the clearest expected payoff\n\nSwipe through the carousel above for the breakdown. Replace each bullet with a finding from your own data before publishing — no invented numbers. 📑\n\n#CRO #DemandGeneration #DataDriven #SigmaTactix`
   },
   {
     id: 'caption-contrarian',
@@ -294,9 +294,11 @@ export default function SocialCarouselsPage() {
   const [isRepurposing, setIsRepurposing] = useState(false);
   const [repurposedMeta, setRepurposedMeta] = useState<RepurposedCarouselAndThread | null>(null);
 
-  // Active Slides & Campaign Data — initialize with verified template slides so Visual viewer is never empty
-  const [slides, setSlides] = useState<CarouselSlide[]>(DEMO_INITIAL_LINKEDIN_SLIDES);
-  const [threadTweets, setThreadTweets] = useState<TweetItem[]>(DEMO_INITIAL_THREAD_TWEETS);
+  // Active Slides & Campaign Data — a fresh tenant starts empty; the demo
+  // slides stay reachable behind VITE_SEED_DEMO_WORKSPACE only (INITIAL_*
+  // constants at the bottom of this file).
+  const [slides, setSlides] = useState<CarouselSlide[]>(INITIAL_LINKEDIN_SLIDES);
+  const [threadTweets, setThreadTweets] = useState<TweetItem[]>(INITIAL_THREAD_TWEETS);
 
   // Run History
   const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
@@ -321,8 +323,8 @@ export default function SocialCarouselsPage() {
       }
     }
     if (preset.id === 'topic-leaks') {
-      setSlides(DEMO_INITIAL_LINKEDIN_SLIDES);
-      setThreadTweets(DEMO_INITIAL_THREAD_TWEETS);
+      setSlides(INITIAL_LINKEDIN_SLIDES);
+      setThreadTweets(INITIAL_THREAD_TWEETS);
     }
   };
 
@@ -523,7 +525,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {TOPIC_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -557,7 +559,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {AUDIENCE_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -622,7 +624,7 @@ export default function SocialCarouselsPage() {
                 className="sigma-input w-full px-3 py-2 text-xs mb-2 bg-[var(--sigma-surface-raised)] border-[var(--sigma-border)] font-medium text-[var(--sigma-text)] rounded-lg cursor-pointer"
               >
                 {CAPTION_PRESETS.map(opt => (
-                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold text-amber-400 bg-neutral-900' : 'bg-neutral-900 text-neutral-200'}>
+                  <option key={opt.id} value={opt.id} className={opt.isRecommended ? 'font-bold' : undefined}>
                     {opt.label}
                   </option>
                 ))}
@@ -688,11 +690,18 @@ export default function SocialCarouselsPage() {
           {channel === 'X_Thread' ? (
             /* Twitter Thread View */
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
-                  <Twitter className="w-4 h-4 text-sky-accent" />
-                  X / Twitter Thread ({threadTweets.length} Tweets)
-                </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <h3 className="text-sm font-semibold text-[var(--sigma-text)] flex items-center gap-2">
+                    <Twitter className="w-4 h-4 text-sky-accent" />
+                    X / Twitter Thread ({threadTweets.length} Tweets)
+                  </h3>
+                  {isDemoSeedEnabled() && threadTweets.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25">
+                      demo seed
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     const fullThread = threadTweets.map(t => t.text).join('\n\n---\n\n');
@@ -732,14 +741,19 @@ export default function SocialCarouselsPage() {
             /* Visual Carousel Card Viewer */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--sigma-text)]">Visual Slide Deck Preview</h3>
                   <span className="text-xs text-[var(--sigma-text-muted)]">{slides.length} slides, 4:5 portrait</span>
+                  {isDemoSeedEnabled() && slides.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-accent/10 text-amber-accent border border-amber-accent/25">
+                      demo seed
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsScheduleModalOpen(true)}
-                    className="px-3 py-1.5 text-xs flex items-center gap-1.5 bg-amber-400 text-black font-semibold rounded-lg hover:bg-amber-300 transition-all cursor-pointer shadow-sm"
+                    className="px-3 py-1.5 text-xs flex items-center gap-1.5 bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] font-semibold rounded-lg hover:bg-[var(--sigma-primary-hover)] transition-all cursor-pointer shadow-sm"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     <span>Schedule via Social Hub</span>
@@ -936,6 +950,6 @@ export default function SocialCarouselsPage() {
 // must render none of them; they stay reachable behind
 // VITE_SEED_DEMO_WORKSPACE for a sales demo environment only.
 // ---------------------------------------------------------------------------
-const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
-const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];
+export const INITIAL_LINKEDIN_SLIDES = isDemoSeedEnabled() ? DEMO_INITIAL_LINKEDIN_SLIDES : [];
+export const INITIAL_THREAD_TWEETS = isDemoSeedEnabled() ? DEMO_INITIAL_THREAD_TWEETS : [];
 

@@ -65,10 +65,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={id}
             style={style}
             className={cn(
-              'w-full appearance-none rounded-xl border bg-[var(--sigma-input)] pr-9 font-mono text-xs text-[var(--sigma-text)]',
+              'w-full appearance-none rounded-xl border bg-[var(--sigma-input)] pl-3.5 pr-9 font-mono text-sm text-[var(--sigma-text)]',
               'border-[var(--sigma-border)] shadow-[var(--sigma-shadow-sm)]',
               'transition-all duration-150 focus:outline-none focus:border-[var(--sigma-primary)] focus:ring-2 focus:ring-[var(--sigma-primary)]/20',
-              compact ? 'h-8 pl-3 text-[11px]' : 'h-10 pl-3.5'
+              compact ? 'h-8 text-[11px]' : 'h-10'
             )}
             {...props}
           >

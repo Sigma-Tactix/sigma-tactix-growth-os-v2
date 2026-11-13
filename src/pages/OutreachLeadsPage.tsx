@@ -41,10 +41,8 @@ import WhatsAppLeadIntelligenceStudio from '@/src/components/outreach/WhatsAppLe
 import DealDocumentsStudio from '@/src/components/outreach/DealDocumentsStudio';
 import AgentRunResults, { AgentRunRecord } from '@/src/components/AgentRunResults';
 import { Button, GlassCard, Badge, Tabs, MetricWidget } from '@/src/components/ui';
-import { 
-  SEED_LEAD_PROSPECTS, 
-  LeadProspect 
-} from '@/src/data/marketingModulesData';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
+import { SEED_LEAD_PROSPECTS, type LeadProspect } from '@/src/data/marketingModulesData';
 
 export type LeadStage = 'NEW_INBOUND' | 'ENRICHED' | 'OUTREACH_QUEUED' | 'REPLIED_WARM' | 'CALL_BOOKED' | 'CLOSED_WON';
 
@@ -59,7 +57,8 @@ export interface SovereignLeadItem {
   stage: LeadStage;
   sourceVector: string;
   estimatedArr?: string;
-  icpScore: number;
+  /** Present only when a real scoring/enrichment source produced it. */
+  icpScore?: number;
   notes?: string;
   capturedAt: string;
 }
@@ -76,16 +75,25 @@ const STAGE_CONFIG: Record<LeadStage, { label: string; color: string; bg: string
 const STAGES: LeadStage[] = ['NEW_INBOUND', 'ENRICHED', 'OUTREACH_QUEUED', 'REPLIED_WARM', 'CALL_BOOKED', 'CLOSED_WON'];
 
 export default function OutreachLeadsPage() {
-  const { notifySuccess, notifyInfo } = useToast();
+  const { notifySuccess, notifyInfo, notifyWarning } = useToast();
   const { currentWorkspace } = useWorkspace();
   const [activeTab, setActiveTab] = useState<'PIPELINE' | 'DEAL_DOCUMENTS' | 'WHATSAPP_INTELLIGENCE' | 'CAPTURE_DOCK' | 'PROSPECTS' | 'SEQUENCES' | 'SDR_AGENT'>('PIPELINE');
-  const [selectedLeadForDocsId, setSelectedLeadForDocsId] = useState<string>('lead-101');
+  // Which pipeline lead the Deal Documents studio opens on — set from the
+  // real pipeline (the "Docs" button); undefined until a lead exists.
+  const [selectedLeadForDocsId, setSelectedLeadForDocsId] = useState<string | undefined>(undefined);
 
   // Leads & Pipeline State
   const [pipelineLeads, setPipelineLeads] = useState<SovereignLeadItem[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<LeadProspect>(SEED_LEAD_PROSPECTS[0]);
+  // Prospect selection starts empty: the seed list is demo-only, and an
+  // invented prospect rendered as "your top target" is a fabricated claim.
+  const [selectedLead, setSelectedLead] = useState<LeadProspect | null>(
+    isDemoSeedEnabled() ? SEED_LEAD_PROSPECTS[0] : null
+  );
+  // The tab's data source: the demo list only when the demo flag is on,
+  // otherwise an honest empty state (never invented accounts).
+  const prospects = isDemoSeedEnabled() ? SEED_LEAD_PROSPECTS : [];
   const [isEnriching, setIsEnriching] = useState(false);
   const [isDeployingSdr, setIsDeployingSdr] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
@@ -94,31 +102,13 @@ export default function OutreachLeadsPage() {
   const [newLeadName, setNewLeadName] = useState('');
   const [newLeadEmail, setNewLeadEmail] = useState('');
 
-  // Agent Run Results
-  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([
-    {
-      id: 'run-outreach-01',
-      agentName: 'SDR Outbound Swarm',
-      agentRole: 'B2B Account Researcher & Sequence Dispatcher',
-      timestamp: 'Today at 04:35 AM',
-      status: 'SUCCESS',
-      moduleOrigin: 'Cold Outreach & ABM',
-      inputSummary: 'Enriched 25 Series A/B SaaS accounts from Apollo vector',
-      outputSummary: 'Verified 25 corporate emails, found 18 LinkedIn profiles, queued tailored 3-step sequence.',
-      fullOutput: 'Enrichment complete. Zero bounce risk detected. Dispatched 14 high-intent outbound touchpoints.',
-      metrics: [
-        { label: 'Accounts Enriched', value: '25' },
-        { label: 'Verified Contacts', value: '100%' },
-        { label: 'Predicted Reply Rate', value: '18.4%' },
-        { label: 'ICP Match', value: '94.2%' }
-      ]
-    }
-  ]);
+  // Agent Run Results — starts empty: a fresh workspace has no SDR runs yet.
+  const [runHistory, setRunHistory] = useState<AgentRunRecord[]>([]);
   const [newLeadCompany, setNewLeadCompany] = useState('');
   const [newLeadDomain, setNewLeadDomain] = useState('');
-  const [newLeadTitle, setNewLeadTitle] = useState('Founder / CEO');
+  const [newLeadTitle, setNewLeadTitle] = useState('');
   const [newLeadSource, setNewLeadSource] = useState('Direct Inbound');
-  const [newLeadArr, setNewLeadArr] = useState('$3.5M');
+  const [newLeadArr, setNewLeadArr] = useState('');
   const [newLeadNotes, setNewLeadNotes] = useState('');
 
   // Live Conversion Dock Test Form State
@@ -128,116 +118,31 @@ export default function OutreachLeadsPage() {
   const [testDockNeeds, setTestDockNeeds] = useState('Growth Diagnostic Audit');
   const [isSubmittingDock, setIsSubmittingDock] = useState(false);
 
-  // Email Sequence Editor
+  // Email Sequence Editor — seeded from the selected prospect only when one
+  // is actually selected; never from an invented default.
   const [emailSubject, setEmailSubject] = useState(
-    `Why ${selectedLead.companyName}'s growth stalled on rented headcount`
+    selectedLead ? `Why ${selectedLead.companyName}'s growth stalled on rented headcount` : ''
   );
-  const [emailBody, setEmailBody] = useState(selectedLead.personalizedOutreachCopy);
+  const [emailBody, setEmailBody] = useState(selectedLead?.personalizedOutreachCopy ?? '');
 
-  // Fetch leads on mount from server or local store
+  // Fetch leads on mount. The pipeline is whatever the server store holds —
+  // empty for a fresh workspace (the demo leads only exist when the server
+  // runs with SEED_DEMO_WORKSPACE=true). No client-side fallback seeds:
+  // invented prospects must not read as live pipeline.
   const fetchLeads = async () => {
     setIsLoadingLeads(true);
     try {
       const res = await apiFetch('/api/leads');
       if (res.ok) {
         const data = await res.json();
-        if (data.leads && Array.isArray(data.leads)) {
-          setPipelineLeads(data.leads);
-          setIsLoadingLeads(false);
-          return;
-        }
+        setPipelineLeads(data.leads && Array.isArray(data.leads) ? data.leads : []);
+      } else {
+        setPipelineLeads([]);
       }
     } catch {
-      // Fallback to local storage or defaults
+      // Failed/offline: the honest state is "no leads", not invented ones.
+      setPipelineLeads([]);
     }
-
-    const cached = localStorage.getItem('sigmatactix_sovereign_leads');
-    if (cached) {
-      try {
-        setPipelineLeads(JSON.parse(cached));
-        setIsLoadingLeads(false);
-        return;
-      } catch {}
-    }
-
-    // Default Seed Leads
-    const defaults: SovereignLeadItem[] = [
-      {
-        id: 'lead-101',
-        name: 'Sarah Chen',
-        email: 'sarah@hyperdrive.ai',
-        company: 'HyperDrive AI',
-        domain: 'hyperdrive.ai',
-        title: 'Head of Growth',
-        linkedinUrl: 'https://linkedin.com/in/sarahchen-growth',
-        stage: 'REPLIED_WARM',
-        sourceVector: 'Cold SDR (Mercury-07)',
-        estimatedArr: '$4.2M',
-        icpScore: 94,
-        notes: 'Replied asking about our 90-day ROI guarantee. Wants diagnostic audit run on their signup funnel.',
-        capturedAt: '2 hours ago'
-      },
-      {
-        id: 'lead-102',
-        name: 'Marcus Vance',
-        email: 'marcus@omnicore.io',
-        company: 'OmniCore Software',
-        domain: 'omnicore.io',
-        title: 'Founder & CEO',
-        linkedinUrl: 'https://linkedin.com/in/marcusvance',
-        stage: 'CALL_BOOKED',
-        sourceVector: 'Conversion Dock (Embed)',
-        estimatedArr: '$8.5M',
-        icpScore: 98,
-        notes: 'Booked diagnostic teardown call for Thursday 2 PM. High priority B2B enterprise SaaS.',
-        capturedAt: '5 hours ago'
-      },
-      {
-        id: 'lead-103',
-        name: 'David Reynolds',
-        email: 'david@strataflow.com',
-        company: 'StrataFlow Systems',
-        domain: 'strataflow.com',
-        title: 'VP Marketing',
-        stage: 'OUTREACH_QUEUED',
-        sourceVector: 'Performance Ads (Google RSA)',
-        estimatedArr: '$2.8M',
-        icpScore: 88,
-        notes: 'Clicked Google RSA ad on /growth-os keyword. Verified domain speed leak (FCP 3.1s).',
-        capturedAt: '1 day ago'
-      },
-      {
-        id: 'lead-104',
-        name: 'Elena Rostova',
-        email: 'elena@novapulse.tech',
-        company: 'NovaPulse Technologies',
-        domain: 'novapulse.tech',
-        title: 'Chief Revenue Officer',
-        stage: 'CLOSED_WON',
-        sourceVector: 'SEO & AEO Authority',
-        estimatedArr: '$12.0M',
-        icpScore: 96,
-        notes: 'Signed $5,000/mo retainer. Onboarded into Sovereign Enclave with full Second Brain ingestion.',
-        capturedAt: '3 days ago'
-      },
-      {
-        id: 'lead-105',
-        name: 'Jordan Miller',
-        email: 'jordan@finscale.co',
-        company: 'FinScale Protocol',
-        domain: 'finscale.co',
-        title: 'Growth Director',
-        stage: 'ENRICHED',
-        sourceVector: 'Apollo ICP Scraper',
-        estimatedArr: '$3.5M',
-        icpScore: 91,
-        notes: 'Enriched verified email and mobile tech stack. Elementor site with 0 JSON-LD schemas detected.',
-        capturedAt: 'Just now'
-      }
-    ];
-
-    setPipelineLeads(defaults);
-    localStorage.setItem('sigmatactix_sovereign_leads', JSON.stringify(defaults));
     setIsLoadingLeads(false);
   };
 
@@ -289,8 +194,10 @@ export default function OutreachLeadsPage() {
       title: newLeadTitle.trim(),
       stage: 'NEW_INBOUND',
       sourceVector: newLeadSource,
-      estimatedArr: newLeadArr,
-      icpScore: Math.floor(82 + Math.random() * 16),
+      // Manual entry does not produce an ICP score — a fabricated random
+      // number would badge as fact. Scored only when a real source sets it.
+      estimatedArr: newLeadArr || undefined,
+      icpScore: undefined,
       notes: newLeadNotes.trim() || 'Manually entered into Sovereign Pipeline.',
       capturedAt: 'Just now'
     };
@@ -323,17 +230,20 @@ export default function OutreachLeadsPage() {
     if (!testDockName.trim() || !testDockEmail.trim()) return;
 
     setIsSubmittingDock(true);
+    // We don't fabricate a domain/ARR/ICP for a test capture: the captured lead
+    // is unscored and the domain is only derived from the company the user typed.
+    const typedDomain = testDockCompany.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     const newCapturedLead: SovereignLeadItem = {
       id: `dock-${Date.now()}`,
       name: testDockName.trim(),
       email: testDockEmail.trim().toLowerCase(),
-      company: (testDockCompany.trim() || 'CloudVector Technologies'),
-      domain: (testDockCompany.trim() || 'cloudvector').toLowerCase().replace(/[^a-z0-9]/g, '') + '.io',
-      title: 'Founder & CEO',
+      company: (testDockCompany.trim() || 'Unspecified Company'),
+      domain: typedDomain ? `${typedDomain}.com` : undefined,
+      title: '',
       stage: 'NEW_INBOUND',
       sourceVector: 'Conversion Dock (Embed)',
-      estimatedArr: '$3.2M',
-      icpScore: 93,
+      estimatedArr: undefined,
+      icpScore: undefined,
       notes: `Captured via embed dock: "${testDockNeeds}". Zero 3rd-party CRM needed.`,
       capturedAt: 'Just now'
     };
@@ -347,7 +257,7 @@ export default function OutreachLeadsPage() {
         body: JSON.stringify({
           name: testDockName,
           email: testDockEmail,
-          company: testDockCompany || 'Test Corporation',
+          company: testDockCompany || 'Unspecified Company',
           sourceVector: 'Conversion Dock (Embed)',
           needs: testDockNeeds
         })
@@ -362,26 +272,29 @@ export default function OutreachLeadsPage() {
     notifySuccess('Inbound Lead Captured!', `${newCapturedLead.name} (${newCapturedLead.company}) instantly entered the Sovereign CRM under "New / Inbound".`);
   };
 
+  // No enrichment/SDR execution engine is wired end-to-end yet: these must not
+  // fake a "Success" with invented counts. They surface the honest state and
+  // point at what's required to run for real.
   const handleEnrichLeads = () => {
-    setIsEnriching(true);
-    setTimeout(() => {
-      setIsEnriching(false);
-      notifySuccess(
-        'Lead Signals Enriched',
-        'Updated verified email addresses, LinkedIn URLs, and hiring signals for all active prospects.'
-      );
-    }, 1200);
+    if (pipelineLeads.length === 0) {
+      notifyWarning('Nothing to Enrich', 'The pipeline is empty. Add a prospect or capture a lead first.');
+      return;
+    }
+    notifyWarning(
+      'Enrichment Not Wired',
+      `${pipelineLeads.length} lead(s) in pipeline, but no enrichment source (e.g. a connected ICP/scraping connector) is configured. Connect one to enrich for real — no signals were changed.`
+    );
   };
 
   const handleDeploySdr = () => {
-    setIsDeployingSdr(true);
-    setTimeout(() => {
-      setIsDeployingSdr(false);
-      notifySuccess(
-        'Mercury-07 AI SDR Swarm Active',
-        'Enqueued 18 hyper-personalized emails and 12 LinkedIn touchpoints into the HITL approval ledger.'
-      );
-    }, 1200);
+    if (pipelineLeads.length === 0) {
+      notifyWarning('Nothing to Deploy', 'The pipeline is empty, so the SDR has no accounts to run against.');
+      return;
+    }
+    notifyWarning(
+      'SDR Not Dispatched',
+      'No outbound sequence engine is connected, so nothing was enqueued. Add a dispatch backend (or a configured connector) to run Mercury-07 for real.'
+    );
   };
 
   // Pipeline Metrics Calculation
@@ -476,24 +389,22 @@ export default function OutreachLeadsPage() {
 
         <MetricWidget
           label="Total Pipeline ARR"
-          value={`$${totalPipelineValue.toFixed(1)}M`}
-          subtext="Sum of weighted qualified leads"
+          value={totalPipelineValue > 0 ? `$${totalPipelineValue.toFixed(1)}M` : '—'}
+          subtext={totalPipelineValue > 0 ? 'Sum of estimated ARR bands recorded on pipeline leads' : 'No ARR recorded yet — estimated ARR is only counted when a lead carries one'}
           icon={<DollarSign className="w-4 h-4 text-[var(--sigma-vermilion)]" />}
         />
 
         <MetricWidget
           label="Won / Contracted ARR"
-          value={`$${wonARR.toFixed(1)}M`}
-          delta={{ value: '+12.4%', trend: 'up' }}
-          subtext="5 Closed Retainers Target"
+          value={wonARR > 0 ? `$${wonARR.toFixed(1)}M` : '—'}
+          subtext={wonARR > 0 ? `${pipelineLeads.filter(l => l.stage === 'CLOSED_WON').length} closed retainers in pipeline` : 'No won ARR recorded yet — move a lead to "Won / Retainer Signed"'}
           icon={<TrendingUp className="w-4 h-4 text-emerald-accent" />}
         />
 
         <MetricWidget
           label="Cold Reply Rate"
-          value="18.4%"
-          delta={{ value: '+4.2%', trend: 'up' }}
-          subtext="Driven by empirical audit teardowns"
+          value="No data"
+          subtext="Replies aren't tracked yet — a real rate appears once sequences run with reply logging"
           icon={<CheckCircle2 className="w-4 h-4 text-sky-accent" />}
         />
       </div>
@@ -545,7 +456,7 @@ export default function OutreachLeadsPage() {
                               <div className="text-[11px] text-[var(--sigma-muted)]">{lead.name}</div>
                             </div>
                             <Badge variant="success" size="xs">
-                              {lead.icpScore}%
+                              {lead.icpScore != null ? `${lead.icpScore}%` : 'Unscored'}
                             </Badge>
                           </div>
 
@@ -742,16 +653,29 @@ export default function OutreachLeadsPage() {
         </div>
       )}
 
-      {/* TAB 3: PROSPECTS & ICP SCORING */}
+      {/* TAB 3: PROSPECTS & ICP SCORING — demo research list. Invented
+          accounts are shown ONLY behind VITE_SEED_DEMO_WORKSPACE, and then
+          with a visible demo badge so they never read as the tenant's targets. */}
       {activeTab === 'PROSPECTS' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Prospect List */}
           <div className="space-y-3">
-            <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
-              Active Target Accounts ({SEED_LEAD_PROSPECTS.length})
+            <div className="flex items-center justify-between px-1">
+              <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                {isDemoSeedEnabled() ? 'Demo Target Accounts' : 'Target Accounts'} ({prospects.length})
+              </div>
+              {isDemoSeedEnabled() && (
+                <Badge variant="warning" size="xs">Demo data — replace with real accounts</Badge>
+              )}
             </div>
 
-            {SEED_LEAD_PROSPECTS.map(lead => (
+            {!isDemoSeedEnabled() && (
+              <div className="p-4 rounded-xl border border-dashed border-zinc-700/60 bg-zinc-900/30 text-[11px] font-mono text-zinc-500 leading-relaxed">
+                No target accounts yet. Inbound and manually added pipeline leads show in the CRM Pipeline tab; connect a research/enrichment source to build an ICP-scored target list.
+              </div>
+            )}
+
+            {prospects.map(lead => (
               <div
                 key={lead.id}
                 onClick={() => {
@@ -761,7 +685,7 @@ export default function OutreachLeadsPage() {
                 }}
                 className={cn(
                   "p-4 rounded-xl border transition-all cursor-pointer text-left space-y-2",
-                  selectedLead.id === lead.id
+                  selectedLead?.id === lead.id
                     ? "bg-amber-400/10 border-amber-400/40 text-white shadow-lg shadow-amber-500/5"
                     : "bg-zinc-900/30 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/40"
                 )}
@@ -788,6 +712,12 @@ export default function OutreachLeadsPage() {
 
           {/* Lead Detail & Enrichment Profile */}
           <div className="lg:col-span-2 space-y-4">
+            {!selectedLead && (
+              <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-xs font-mono text-zinc-500 leading-relaxed">
+                Select a target account on the left to inspect its enrichment profile and AI-synthesized outreach draft.
+              </div>
+            )}
+            {selectedLead && (
             <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
                 <div>
@@ -850,6 +780,7 @@ export default function OutreachLeadsPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}
@@ -864,8 +795,8 @@ export default function OutreachLeadsPage() {
                 4-touch cadence engineered to convert cold enterprise prospects by demonstrating empirical proof of their revenue leakage.
               </p>
             </div>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 font-bold">
-              Average Reply Rate: 18.4%
+            <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20 font-bold">
+              Reply rate: no data yet
             </span>
           </div>
 
@@ -906,27 +837,29 @@ export default function OutreachLeadsPage() {
               className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
               <Play className="w-3.5 h-3.5 fill-black" />
-              {isDeployingSdr ? 'Executing...' : 'Dispatch Batch (25 Leads)'}
+              {isDeployingSdr ? 'Executing...' : `Dispatch Batch (${pipelineLeads.length} leads)`}
             </button>
           </div>
 
+          {/* The swarm components exist by design; without a dispatch backend
+              none of them have run, so no counters are shown as fact. */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
             <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
               <div className="font-bold text-white">Sub-Agent 1: MERCURY-SUB-1</div>
               <div className="text-zinc-400 text-[11px]">ICP Intent & Signal Scraper</div>
-              <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (184 enriched)</div>
+              <div className="text-zinc-500 font-mono text-[10px]">Status: Not running (0 enriched)</div>
             </div>
 
             <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
               <div className="font-bold text-white">Sub-Agent 2: MERCURY-SUB-2</div>
               <div className="text-zinc-400 text-[11px]">Objection Prediction & Copywriter</div>
-              <div className="text-emerald-400 font-mono text-[10px]">Status: IDLE (210 drafts synthesized)</div>
+              <div className="text-zinc-500 font-mono text-[10px]">Status: Not running (0 drafts synthesized)</div>
             </div>
 
             <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs space-y-1">
               <div className="font-bold text-white">Sub-Agent 3: MERCURY-SUB-3</div>
               <div className="text-zinc-400 text-[11px]">Deliverability & Spam Sentinel</div>
-              <div className="text-emerald-400 font-mono text-[10px]">Status: MONITORING (0 domain flags)</div>
+              <div className="text-zinc-500 font-mono text-[10px]">Status: Not connected</div>
             </div>
           </div>
         </div>

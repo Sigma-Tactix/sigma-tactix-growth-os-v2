@@ -62,34 +62,24 @@ export default function DealDocumentsStudio({
   const { notifySuccess, notifyInfo, notifyError } = useToast();
   const printContainerRef = useRef<HTMLDivElement>(null);
 
-  // Selected Lead State
+  // Selected Lead State — resolves to a REAL pipeline lead only. The old
+  // hardcoded "Sarah Chen / HyperDrive AI" fallback fabricated a target when
+  // the pipeline was empty; now the studio shows an honest empty state.
   const activeLead = useMemo(() => {
     if (currentLeadId) {
       const found = leads.find(l => l.id === currentLeadId);
       if (found) return found;
     }
-    return leads[0] || {
-      id: 'default-lead',
-      name: 'Sarah Chen',
-      email: 'sarah@hyperdrive.ai',
-      company: 'HyperDrive AI',
-      domain: 'hyperdrive.ai',
-      title: 'Head of Growth',
-      stage: 'REPLIED_WARM',
-      sourceVector: 'Cold SDR (HERMES-07)',
-      estimatedArr: '$4.2M',
-      icpScore: 94,
-      notes: 'Replied asking about 90-day ROI guarantee.',
-      capturedAt: '2 hours ago'
-    };
+    return leads[0] || null;
   }, [leads, currentLeadId]);
 
   // Stage Tab Filter
   const [selectedStageTab, setSelectedStageTab] = useState<DocumentStage>(() => {
-    if (activeLead.stage === 'NEW_INBOUND' || activeLead.stage === 'ENRICHED' || activeLead.stage === 'OUTREACH_QUEUED') {
+    const stage = activeLead?.stage;
+    if (stage === 'NEW_INBOUND' || stage === 'ENRICHED' || stage === 'OUTREACH_QUEUED') {
       return 'PROSPECTING';
     }
-    if (activeLead.stage === 'REPLIED_WARM' || activeLead.stage === 'CALL_BOOKED') {
+    if (stage === 'REPLIED_WARM' || stage === 'CALL_BOOKED') {
       return 'DISCUSSING';
     }
     return 'CLOSING';
@@ -127,8 +117,10 @@ export default function DealDocumentsStudio({
 
   const activeSenderMailbox = agentMailboxes.find(m => m.agentId === selectedSenderAgentId) || agentMailboxes[0];
 
-  // Auto-generate markdown content when lead, docType, or terms change
+  // Auto-generate markdown content when lead, docType, or terms change.
+  // Nothing is generated until a real pipeline lead is selected.
   const defaultGeneratedMarkdown = useMemo(() => {
+    if (!activeLead) return '';
     return generateDocumentMarkdown(
       selectedDocType,
       {
@@ -172,8 +164,10 @@ export default function DealDocumentsStudio({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Open Email Dispatch Modal
+  // Open Email Dispatch Modal — requires a real pipeline lead (no fallback
+  // account anymore).
   const handleOpenEmailModal = () => {
+    if (!activeLead) return;
     const activeDocMeta = STAGE_DOCUMENT_TEMPLATES.find(d => d.id === selectedDocType);
     setEmailSubject(`${activeDocMeta?.title || 'Deal Package'}: ${activeLead.company} & Sigma Tactix`);
     setEmailIntroNotes(
@@ -184,6 +178,7 @@ export default function DealDocumentsStudio({
 
   // Dispatch Email via Assigned Agent Corporate Mailbox
   const handleDispatchEmail = async () => {
+    if (!activeLead) return;
     setIsSendingEmail(true);
 
     try {
@@ -228,6 +223,19 @@ export default function DealDocumentsStudio({
   };
 
   const activeDocMeta = STAGE_DOCUMENT_TEMPLATES.find(d => d.id === selectedDocType) || STAGE_DOCUMENT_TEMPLATES[0];
+
+  // Alias used throughout the JSX: only set when a real lead is selected,
+  // so every render below can check for the empty-pipeline state.
+  const lead = activeLead;
+
+  if (!lead) {
+    return (
+      <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-xs font-mono text-zinc-500 leading-relaxed space-y-2">
+        <div className="text-sm font-bold text-white">No pipeline leads yet</div>
+        <div>Deal documents generate against a real CRM lead. Add a prospect in the Lead Engine (or capture an inbound lead) and return here to draft and dispatch agreements.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -315,7 +323,7 @@ export default function DealDocumentsStudio({
             </div>
 
             <select
-              value={activeLead.id}
+              value={lead.id}
               onChange={(e) => onSelectLead && onSelectLead(e.target.value)}
               className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-400"
             >
@@ -328,16 +336,16 @@ export default function DealDocumentsStudio({
 
             <div className="p-3 bg-black/60 border border-zinc-800/80 rounded-xl space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white">{activeLead.name}</span>
+                <span className="font-bold text-white">{lead.name}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                  {activeLead.title || 'Executive'}
+                  {lead.title || 'Executive'}
                 </span>
               </div>
-              <div className="text-zinc-400 text-[11px] font-mono">{activeLead.email}</div>
+              <div className="text-zinc-400 text-[11px] font-mono">{lead.email}</div>
               <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-zinc-500">
-                <span>ARR: <strong className="text-amber-400">{activeLead.estimatedArr || '$3.5M'}</strong></span>
+                <span>ARR: <strong className="text-amber-400">{lead.estimatedArr || '$3.5M'}</strong></span>
                 <span>•</span>
-                <span>Vector: <strong className="text-zinc-300">{activeLead.sourceVector}</strong></span>
+                <span>Vector: <strong className="text-zinc-300">{lead.sourceVector}</strong></span>
               </div>
             </div>
           </div>
@@ -608,7 +616,7 @@ export default function DealDocumentsStudio({
               <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2 text-white font-bold">
                   <Mail className="w-4 h-4 text-amber-400" />
-                  Dispatch Deal Package to {activeLead.company}
+                  Dispatch Deal Package to {lead.company}
                 </div>
                 <button
                   onClick={() => setIsEmailModalOpen(false)}
@@ -640,7 +648,7 @@ export default function DealDocumentsStudio({
                     <input
                       type="text"
                       disabled
-                      value={`${activeLead.name} (${activeLead.company})`}
+                      value={`${lead.name} (${lead.company})`}
                       className="w-full mt-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 text-xs"
                     />
                   </div>
@@ -649,7 +657,7 @@ export default function DealDocumentsStudio({
                     <input
                       type="email"
                       disabled
-                      value={activeLead.email}
+                      value={lead.email}
                       className="w-full mt-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 font-mono text-xs"
                     />
                   </div>

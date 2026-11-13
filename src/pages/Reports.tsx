@@ -408,7 +408,7 @@ export default function Reports() {
 
           <button
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="p-1 hover:bg-[var(--sigma-surface-hover)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
+            className="p-1 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
             title={isLeftSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isLeftSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
@@ -433,7 +433,7 @@ export default function Reports() {
                         "w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-between group",
                         isSelected 
                           ? "bg-[var(--sigma-vermilion)]/15 text-[var(--sigma-vermilion)] font-semibold border border-[var(--sigma-vermilion)]/30" 
-                          : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)]"
+                          : "text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)]"
                       )}
                     >
                       <span className="truncate">{tpl.name}</span>
@@ -455,7 +455,7 @@ export default function Reports() {
                     <button
                       key={item.name}
                       onClick={() => setActiveViewSection(item.targetSection as any)}
-                      className="flex items-center gap-2.5 p-2.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl hover:border-[var(--sigma-vermilion)]/40 hover:bg-[var(--sigma-surface-hover)] transition-all text-left group"
+                      className="flex items-center gap-2.5 p-2.5 bg-[var(--sigma-surface)] border border-[var(--sigma-border)] rounded-xl hover:border-[var(--sigma-vermilion)]/40 hover:bg-[var(--sigma-surface-subtle)] transition-all text-left group"
                     >
                       <item.icon size={15} className="text-[var(--sigma-muted)] group-hover:text-[var(--sigma-vermilion)] transition-colors" />
                       <span className="text-xs font-medium text-[var(--sigma-text)] truncate">
@@ -533,7 +533,7 @@ export default function Reports() {
 
                     <button 
                       onClick={handleExportSummaryCSV}
-                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
+                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-subtle)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
                         <FileSpreadsheet size={16} className="text-emerald-accent" />
@@ -547,7 +547,7 @@ export default function Reports() {
 
                     <button 
                       onClick={handleExportSummaryPDF}
-                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center justify-between group transition-colors"
+                      className="w-full text-left px-3 py-2.5 hover:bg-[var(--sigma-surface-subtle)] rounded-xl flex items-center justify-between group transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
                         <FileText size={16} className="text-rose-accent" />
@@ -565,15 +565,15 @@ export default function Reports() {
 
                     <button 
                       onClick={handleExportCanvasPDF}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-subtle)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
                     >
-                      <LayoutIcon size={14} className="text-secondary" />
+                      <LayoutIcon size={14} className="text-[var(--sigma-primary)]" />
                       <span>Visual Canvas (PDF)</span>
                     </button>
 
                     <button 
                       onClick={handleExportPPTX}
-                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-hover)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
+                      className="w-full text-left px-3 py-2 hover:bg-[var(--sigma-surface-subtle)] rounded-xl flex items-center gap-2.5 text-xs font-medium text-[var(--sigma-text)]"
                     >
                       <FileJson size={14} className="text-[var(--sigma-vermilion)]" />
                       <span>Presentation Deck (HTML / PDF)</span>
@@ -689,7 +689,7 @@ export default function Reports() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Layers size={16} className="text-secondary" />
+                  <Layers size={16} className="text-[var(--sigma-primary)]" />
                   <h3 className="text-sm font-bold uppercase tracking-widest silver-text font-mono">
                     Omnichannel Campaign Attribution Table
                   </h3>
@@ -742,7 +742,7 @@ export default function Reports() {
             </div>
             <button 
               onClick={() => setIsRightSidebarOpen(false)}
-              className="p-1 rounded-md text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-hover)] transition-colors"
+              className="p-1 rounded-md text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-colors"
             >
               <X size={15} />
             </button>
@@ -866,7 +866,7 @@ export default function Reports() {
                 </div>
                 <button
                   onClick={() => setIsShareModalOpen(false)}
-                  className="p-1 hover:bg-[var(--sigma-surface-hover)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
+                  className="p-1 hover:bg-[var(--sigma-surface-subtle)] rounded-lg text-[var(--sigma-muted)] hover:text-[var(--sigma-text)] transition-colors"
                 >
                   <X size={18} />
                 </button>

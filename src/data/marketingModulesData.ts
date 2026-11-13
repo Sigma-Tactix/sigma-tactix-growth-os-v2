@@ -163,6 +163,8 @@ export interface SocialMention {
   contentSnippet?: string;
   channel?: string;
   reachEstimate?: string;
+  /** True when this row is a demo fixture, not a live channel capture. */
+  isSeeded?: boolean;
 }
 
 export interface LeadProspect {
@@ -778,7 +780,8 @@ export const SEED_SOCIAL_MENTIONS: SocialMention[] = [
     suggestedAction: 'AMPLIFY',
     aiDraftReply: 'Appreciate the conviction, Tariq! Fixing that Perplexity citation gap with semantic schema and topical clusters will yield compounding pipeline. Our Authority agent is ready to dispatch the next sprint.',
     aiResponseDraft: 'Appreciate the conviction, Tariq! Fixing that Perplexity citation gap with semantic schema and topical clusters will yield compounding pipeline. Our Authority agent is ready to dispatch the next sprint.',
-    requiresAttention: false
+    requiresAttention: false,
+    isSeeded: true
   },
   {
     id: 'men-2',
@@ -797,7 +800,8 @@ export const SEED_SOCIAL_MENTIONS: SocialMention[] = [
     suggestedAction: 'ENGAGE',
     aiDraftReply: 'Great architectural question Elena! Two non-negotiable guardrails: 1) Strict RBAC prompt scoping prevents agents from reading credentials or out-of-scope vaults. 2) Explicit Human-in-the-Loop state machines require admin approval for any budget change >$1,000 or public publish.',
     aiResponseDraft: 'Great architectural question Elena! Two non-negotiable guardrails: 1) Strict RBAC prompt scoping prevents agents from reading credentials or out-of-scope vaults. 2) Explicit Human-in-the-Loop state machines require admin approval for any budget change >$1,000 or public publish.',
-    requiresAttention: true
+    requiresAttention: true,
+    isSeeded: true
   },
   {
     id: 'men-3',
@@ -816,7 +820,8 @@ export const SEED_SOCIAL_MENTIONS: SocialMention[] = [
     suggestedAction: 'RESOLVE',
     aiDraftReply: 'Mass uncalibrated cold email is burning TAM across B2B tech. The solution is switching to an ICP-scored Second Brain that personalizes based on deep customer pain vectors rather than scraped superficial keywords.',
     aiResponseDraft: 'Mass uncalibrated cold email is burning TAM across B2B tech. The solution is switching to an ICP-scored Second Brain that personalizes based on deep customer pain vectors rather than scraped superficial keywords.',
-    requiresAttention: true
+    requiresAttention: true,
+    isSeeded: true
   }
 ];
 

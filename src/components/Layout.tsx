@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -63,7 +63,9 @@ import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
-import { isVantaReleaseEnabled, resolveVantaNavigationTarget } from '@/src/lib/vantaFeatureFlag';
+import { isVantaReleaseEnabled, resolveVantaNavigationTarget, VANTA_GATED_BADGE } from '@/src/lib/vantaFeatureFlag';
+import { isDemoSeedEnabled } from '@/src/lib/demoSeed';
+import { useActionQueue } from '@/src/lib/actionQueueStore';
 
 interface NavSection {
   title: string;
@@ -82,15 +84,19 @@ const vantaNavigationTarget = resolveVantaNavigationTarget({
   development: developmentEnv?.DEV === true,
 });
 
-const vantaNavigationItems: NavSection['items'] = vantaNavigationTarget
-  ? [{
-      label: 'Living System',
-      href: vantaNavigationTarget.href,
-      icon: BrainCircuit,
-      roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
-      badge: vantaNavigationTarget.badge,
-    }]
-  : [];
+// The Living System entry point is always discoverable. When the VANTA release
+// gate is off (and not in a dev preview) it still shows — with a "Gated" badge
+// — so the surface and the 2D/3D system map are not mistaken for "missing" or
+// "broken"; opening it explains exactly what to enable.
+const vantaNavigationItems: NavSection['items'] = [
+  {
+    label: 'Living System',
+    href: (vantaNavigationTarget?.href ?? '/living-system') as string,
+    icon: BrainCircuit,
+    roles: ['ADMIN', 'SUB_ADMIN', 'USER'],
+    badge: vantaNavigationTarget?.badge ?? VANTA_GATED_BADGE,
+  },
+];
 
 const navSections: NavSection[] = [
   {
@@ -105,20 +111,13 @@ const navSections: NavSection[] = [
   {
     title: 'Digital Marketing Suite',
     items: [
-      { label: 'SEO & AEO Authority', href: '/seo-aeo', icon: Globe, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'GSC + AI' },
-      { label: 'Performance Ads & ROAS', href: '/paid-ads', icon: Megaphone, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Editorial Content Engine', href: '/content', icon: FileText, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Social & Carousels', href: '/social-carousels', icon: Share2, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'LinkedIn' },
-      { label: 'AI Creative Image Studio', href: '/image-studio', icon: ImageIcon, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Flux Pro' },
-      { label: 'Video & Motion Studio', href: '/video-studio', icon: Video, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'HyperFrames' },
-      { label: 'Email & Lifecycle', href: '/email-marketing', icon: Mail, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'CRO & Landing Pages', href: '/cro-studio', icon: Target, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Inbound Leads & WhatsApp', href: '/intake', icon: Zap, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Sub-60s' },
-      { label: 'Cold Outreach & ABM', href: '/outreach', icon: Send, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Social Listening & Radar', href: '/social-listening', icon: Ear, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
-      { label: 'Competitor Intelligence', href: '/competitors', icon: Trophy, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'TinyFish' },
-      { label: 'Market Simulator', href: '/market-simulator', icon: Swords, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'MiroFish' },
-      { label: 'Attribution & Blended CAC', href: '/attribution', icon: BarChart3, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
+      { label: 'Creative Studio', href: '/suite/creative', icon: FileText, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Text · Image · Video' },
+      { label: 'Social Publishing Hub', href: '/suite/social', icon: Share2, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Publish + Listen' },
+      { label: 'Search & Conversion', href: '/suite/search', icon: Globe, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'SEO · AEO · CRO' },
+      { label: 'Demand Engine', href: '/suite/demand', icon: Zap, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Inbound + Outbound' },
+      { label: 'Paid & Retention', href: '/suite/paid', icon: Megaphone, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Ads + Email' },
+      { label: 'Market Intelligence', href: '/suite/intelligence', icon: Trophy, roles: ['ADMIN', 'SUB_ADMIN', 'USER'], badge: 'Competitors + MiroFish' },
+      { label: 'Attribution & Blended CAC', href: '/suite/attribution', icon: BarChart3, roles: ['ADMIN', 'SUB_ADMIN', 'USER'] },
     ]
   },
   {
@@ -157,6 +156,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isPlaybookDropdownOpen, setIsPlaybookDropdownOpen] = useState(false);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const roleMenuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const { items: queueItems, stats: queueStats } = useActionQueue();
+
+  // The bell menu is driven by the real Action Queue store — no fixture alerts.
+  // Only items awaiting operator attention surface here; RUNNING items are not
+  // actionable from the shell.
+  const notificationItems = useMemo(
+    () => queueItems.filter(i => i.status === 'PENDING_APPROVAL' || i.status === 'ALERT'),
+    [queueItems],
+  );
+  const hasUnreadNotifications = queueStats.pendingCount + queueStats.alertCount > 0;
+
+  // Back the ⌘K / Ctrl+K hint on the quick-search field: it focuses the input.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Notifications menu: close on outside-click and Escape (click-toggle, not hover)
+  useEffect(() => {
+    if (!isNotificationsOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsNotificationsOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isNotificationsOpen]);
 
   const handleQuickSearchSelect = (href: string) => {
     navigate(href);
@@ -188,14 +231,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? allNavItems.filter(i => i.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
-  const isDigitalMarketingRoute = [
-    '/seo-aeo', '/paid-ads', '/content', '/content-engine', '/social-carousels',
-    '/image-studio', '/video-studio', '/email-marketing', '/cro-studio', '/intake',
-    '/outreach', '/social-listening', '/attribution',
-  ].includes(location.pathname);
+  const isDigitalMarketingRoute =
+    location.pathname.startsWith('/suite') ||
+    ['/seo-aeo', '/paid-ads', '/content', '/content-engine', '/social-carousels',
+     '/image-studio', '/video-studio', '/email-marketing', '/cro-studio', '/intake',
+     '/outreach', '/social-listening', '/attribution', '/competitors', '/market-simulator'
+    ].includes(location.pathname);
 
   return (
-    <div className="sigma-app flex min-h-[100dvh] bg-background overflow-hidden selection:bg-accent/20 selection:text-zinc-950">
+    <div className="sigma-app flex min-h-[100dvh] bg-background overflow-hidden selection:bg-accent/20 selection:text-[var(--sigma-text)]">
       {isSidebarOpen && (
         <button
           type="button"
@@ -262,29 +306,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 aria-label="Open ecosystem status evidence"
                 className={cn(
                   "w-full px-3 py-2 rounded-xl flex items-center justify-between group transition-all cursor-pointer border text-xs shadow-xs",
-                  "px-3 py-2 rounded-xl flex items-center justify-between group transition-all cursor-pointer border text-xs shadow-xs",
                   isEcosystemStatusOpen && isEcosystemStatusDocked
-                    ? "bg-[var(--sigma-primary)] text-white border-[var(--sigma-primary)] font-semibold"
+                    ? "bg-[var(--sigma-primary)] text-[var(--sigma-on-primary)] border-[var(--sigma-primary)] font-semibold"
                     : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] text-[var(--sigma-text)]"
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Activity size={14} className={cn("shrink-0", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-primary)]")} />
+                  <Activity size={14} className={cn("shrink-0", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-[var(--sigma-on-primary)]" : "text-[var(--sigma-primary)]")} />
                   <div className="truncate">
                     <div className="font-semibold truncate flex items-center gap-1.5">
                       <span>Ecosystem Status</span>
                       <span className={cn(
                         "text-[11px] px-1.5 py-0.2 rounded font-medium",
-                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
+                        isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-[var(--sigma-inverse)]/20 text-[var(--sigma-on-primary)]" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
                       )}>STATUS</span>
                     </div>
                     <div className={cn(
                       "text-[11px] truncate",
-                      isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white/80" : "text-[var(--sigma-text-muted)]"
+                      isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-[var(--sigma-on-primary)]/80" : "text-[var(--sigma-text-muted)]"
                     )}>Runtime evidence and checks</div>
                   </div>
                 </div>
-                <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
+                <ChevronRight size={13} className={cn("transition-transform group-hover:translate-x-0.5", isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-[var(--sigma-on-primary)]" : "text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]")} />
               </button>
             </div>
           )}
@@ -300,7 +343,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="relative p-2.5 mx-auto bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] hover:border-[var(--sigma-border-strong)] rounded-xl flex items-center justify-center text-[var(--sigma-primary)] transition-all group cursor-pointer"
             >
               <Activity size={16} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              {/* A steady green reads as "healthy" and would fabricate a signal at
+                  the outermost surface of the status system. In a real workspace the
+                  panel honestly reports "Not checked", so the dot is neutral; it is
+                  green only in demo mode, where sample telemetry actually exists. */}
+              <span className={cn(
+                "absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full",
+                isDemoSeedEnabled() ? "bg-emerald-400" : "bg-[var(--sigma-text-muted)] opacity-60"
+              )} />
             </button>
           )}
         </div>
@@ -366,18 +416,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="px-4 py-4 border-t border-white/5 space-y-2">
-          <button 
+        <div className="px-4 py-4 border-t border-[var(--sigma-border)] space-y-2">
+          <button
+            type="button"
             onClick={toggleSidebar}
-            className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-muted hover:text-zinc-950 hover:bg-zinc-100 transition-all group"
+            className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] hover:bg-[var(--sigma-surface-subtle)] transition-all group cursor-pointer"
           >
             <div className="w-6 flex justify-center">
-               <ChevronRight 
-                 size={18} 
+               <ChevronRight
+                 size={18}
                  className={cn("transition-transform duration-300", isSidebarOpen && "rotate-180")}
                />
             </div>
-            {isSidebarOpen && <span className="font-bold text-[11px] uppercase tracking-widest text-zinc-400 group-hover:text-white">Collapse Sidebar</span>}
+            {isSidebarOpen && <span className="font-bold text-[11px] uppercase tracking-widest text-[var(--sigma-text-muted)] group-hover:text-[var(--sigma-text)]">Collapse Sidebar</span>}
           </button>
         </div>
       </aside>
@@ -407,8 +458,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-xs 2xl:max-w-md relative">
              <div className="w-full relative group">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sigma-text-muted)] group-focus-within:text-[var(--sigma-primary)] transition-colors" size={15} />
-                <input 
-                  type="text" 
+                <input
+                  ref={searchInputRef}
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -508,7 +560,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                          setIsWorkspaceDropdownOpen(false);
                          setIsOnboardingOpen(true);
                        }}
-                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-[var(--sigma-primary)]/10 hover:bg-[var(--sigma-primary)] text-[var(--sigma-primary)] hover:text-white border border-[var(--sigma-primary)]/30 rounded-xl text-xs font-semibold uppercase transition-all cursor-pointer"
+                       className="w-full flex items-center justify-center gap-1.5 py-2 bg-[var(--sigma-primary)]/10 hover:bg-[var(--sigma-primary)] text-[var(--sigma-primary)] hover:text-[var(--sigma-on-primary)] border border-[var(--sigma-primary)]/30 rounded-xl text-xs font-semibold uppercase transition-all cursor-pointer"
                      >
                        <Plus size={13} />
                        <span>Onboard New Client</span>
@@ -553,7 +605,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {!isActive && (
               <button
                 onClick={startTutorial}
-                className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 text-[11px] font-medium transition-all cursor-pointer"
+                className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--sigma-accent)]/30 bg-[var(--sigma-accent)]/10 hover:bg-[var(--sigma-accent)]/20 text-[var(--sigma-accent)] hover:text-[var(--sigma-accent)]/80 text-[11px] font-medium transition-all cursor-pointer"
                 title={hasEverStarted ? (isCompleted ? "Replay Guided Tutorial" : "Resume Guided Tutorial") : "Start Guided Tutorial"}
               >
                 <GraduationCap size={14} />
@@ -587,15 +639,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer",
                 isEcosystemStatusOpen && isEcosystemStatusDocked
-                  ? "bg-[var(--sigma-primary)] text-white border-[var(--sigma-primary)] font-semibold shadow-xs"
+                  ? "bg-[var(--sigma-primary)] text-[var(--sigma-on-primary)] border-[var(--sigma-primary)] font-semibold shadow-xs"
                   : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text)] hover:border-[var(--sigma-border-strong)]"
               )}
             >
-              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-white" : "text-[var(--sigma-primary)]"} />
+              <Activity size={13} className={isEcosystemStatusOpen && isEcosystemStatusDocked ? "text-[var(--sigma-on-primary)]" : "text-[var(--sigma-primary)]"} />
               <span className="hidden 2xl:inline">Ecosystem</span>
               <span className={cn(
                 "px-1.5 py-0.2 rounded text-[11px] font-bold font-mono",
-                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-black/20 text-white" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
+                isEcosystemStatusOpen && isEcosystemStatusDocked ? "bg-[var(--sigma-inverse)]/20 text-[var(--sigma-on-primary)]" : "bg-[var(--sigma-surface)] text-[var(--sigma-text-soft)]"
               )}>STATUS</span>
             </button>
 
@@ -635,43 +687,94 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                )}
             </div>
 
-            {/* Notifications Button */}
-            <div className="relative">
+            {/* Notifications Button — driven by the real Action Queue store */}
+            <div ref={notificationsRef} className="relative">
               <button
                 type="button"
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                aria-haspopup="true"
+                aria-haspopup="menu"
                 aria-expanded={isNotificationsOpen}
                 aria-label="System notifications"
                 className="text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] relative p-2 rounded-xl hover:bg-[var(--sigma-surface-subtle)] transition-all cursor-pointer"
               >
                 <Bell size={17} aria-hidden="true" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--sigma-primary)] rounded-full border-2 border-[var(--sigma-surface)]" />
+                {hasUnreadNotifications && (
+                  <span
+                    className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--sigma-primary)] rounded-full border-2 border-[var(--sigma-surface)]"
+                    aria-label={`${notificationItems.length} items need attention`}
+                  />
+                )}
               </button>
 
               {/* Notifications Dropdown */}
               {isNotificationsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-80 sigma-menu p-4 shadow-xl z-50 space-y-3">
-                  <div className="flex items-center justify-between border-b sigma-divider pb-2">
-                    <span className="text-xs font-semibold text-[var(--sigma-text)]">System Alerts</span>
-                    <span className="text-[11px] font-mono font-bold text-[var(--sigma-primary)] bg-[var(--sigma-primary)]/10 px-1.5 py-0.5 rounded">3 New</span>
+                <div role="menu" className="absolute top-full right-0 mt-2 w-80 sigma-menu p-3 shadow-xl z-50 space-y-2">
+                  <div className="flex items-center justify-between border-b sigma-divider pb-2 px-1">
+                    <span className="text-xs font-semibold text-[var(--sigma-text)]">Action Queue</span>
+                    <span className={cn(
+                      "text-[11px] font-mono font-bold px-1.5 py-0.5 rounded",
+                      notificationItems.length > 0
+                        ? "text-[var(--sigma-primary)] bg-[var(--sigma-primary)]/10"
+                        : "text-[var(--sigma-text-muted)] bg-[var(--sigma-surface-subtle)]"
+                    )}>
+                      {notificationItems.length > 0 ? `${notificationItems.length} open` : 'Up to date'}
+                    </span>
                   </div>
-                  <div className="space-y-2 text-xs">
+                  {notificationItems.length === 0 ? (
+                    <p className="px-1 py-3 text-xs leading-relaxed text-[var(--sigma-text-muted)]">
+                      Nothing needs operator attention. Pending approvals and module alerts from the Action Queue will appear here.
+                    </p>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto custom-scrollbar space-y-1.5">
+                      {notificationItems.slice(0, 8).map(item => {
+                        const ItemIcon = item.moduleIcon ?? Globe;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => { navigate(item.moduleRoute); setIsNotificationsOpen(false); }}
+                            className={cn(
+                              "w-full p-2.5 rounded-xl border cursor-pointer transition-all text-left",
+                              item.status === 'PENDING_APPROVAL'
+                                ? "bg-[var(--sigma-primary)]/10 border-[var(--sigma-primary)]/20 hover:bg-[var(--sigma-primary)]/15"
+                                : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] hover:bg-[var(--sigma-surface-raised)]"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ItemIcon size={13} className={item.status === 'ALERT' ? "text-amber-accent shrink-0" : "text-[var(--sigma-primary)] shrink-0"} />
+                              <span className="text-xs font-semibold text-[var(--sigma-text)] truncate">{item.title}</span>
+                            </div>
+                            <div className="mt-1 pl-5 text-[11px] leading-snug text-[var(--sigma-text-muted)] line-clamp-2">{item.summary}</div>
+                            <div className="mt-1 pl-5 flex items-center gap-1.5 text-[11px] font-mono text-[var(--sigma-text-muted)]">
+                              <span className="uppercase font-bold">
+                                {item.status === 'PENDING_APPROVAL' ? 'Awaiting HITL approval' : 'Module alert'}
+                              </span>
+                              <span className="opacity-40">·</span>
+                              <span>{item.timestamp}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      {notificationItems.length > 8 && (
+                        <button
+                          type="button"
+                          onClick={() => { navigate('/agents'); setIsNotificationsOpen(false); }}
+                          className="w-full py-1.5 text-[11px] font-mono text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all cursor-pointer"
+                        >
+                          View the remaining {notificationItems.length - 8} in the Action Queue
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="px-1 pt-1 border-t sigma-divider">
                     <button
                       type="button"
+                      role="menuitem"
                       onClick={() => { navigate('/agents'); setIsNotificationsOpen(false); }}
-                      className="w-full p-2.5 rounded-xl bg-[var(--sigma-primary)]/10 border border-[var(--sigma-primary)]/20 cursor-pointer hover:bg-[var(--sigma-primary)]/15 transition-all text-left"
+                      className="w-full py-1.5 text-[11px] font-mono text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)] transition-all cursor-pointer"
                     >
-                      <div className="font-semibold text-[var(--sigma-text)]">HITL Approval Required</div>
-                      <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Performance Re-allocator proposed $6,200 shift</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { navigate('/diagnostics'); setIsNotificationsOpen(false); }}
-                      className="w-full p-2.5 rounded-xl bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] cursor-pointer hover:bg-[var(--sigma-surface-raised)] transition-all text-left"
-                    >
-                      <div className="font-semibold text-[var(--sigma-text)]">Growth Diagnostic Completed</div>
-                      <div className="text-[11px] text-[var(--sigma-text-muted)] mt-0.5">Overall Growth Score: 78/100</div>
+                      Open Agent Cockpit &amp; Approvals
                     </button>
                   </div>
                 </div>

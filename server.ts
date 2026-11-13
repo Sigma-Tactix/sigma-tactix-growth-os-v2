@@ -70,7 +70,9 @@ import { inspectArtifactBytes } from "./src/lib/artifactInspection.js";
 import { saveDocument, searchDocuments, indexPerformanceHook } from "./src/lib/rag.js";
 import { canonicalDocumentVaultId } from "./src/lib/secondBrainDocuments.js";
 import { GROWTH_OS_AGENT_TOOLS, executeAgentToolCall, type AgentToolName } from "./src/lib/agentTools.js";
-import { executeAgentReActLoop, type SupportedProvider } from "./src/lib/aiProvider.js";
+import { canonicalAIProvider, providerEntry, providerStatus, selectAgentModel, resolveAgentAIConfig } from "./src/lib/aiSettings.js";
+import { assertPublicHost } from "./src/server/agentReachService.js";
+import { executeAgentReActLoop, type AIProviderConfig } from "./src/lib/aiProvider.js";
 import { AUDIT_CATEGORIES, runCategoryAgent, runSynthesisAgent } from "./src/lib/growthAuditAgents.js";
 import { computeAuditScore } from "./src/lib/auditScoring.js";
 import { BoundedWorkflowGraph } from "./src/lib/boundedWorkflowGraph.js";
@@ -351,7 +353,7 @@ function getGeminiClient(overrideKey?: string): GoogleGenAI {
 // process.env.GEMINI_API_KEY inside getGeminiClient) if none is configured.
 async function resolveEffectiveGeminiKey(res: Response): Promise<string | undefined> {
   const db = await getDB(res);
-  const stored = (db as any).aiProviderKeys?.gemini?.encrypted as string | undefined;
+  const stored = providerEntry(db as any, "google")?.encrypted as string | undefined;
   if (!stored) return undefined;
   try {
     const decrypted = decryptCredentials(stored) as { apiKey?: string };
@@ -371,7 +373,7 @@ const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
 // effect the next time any AI feature runs.
 async function resolveEffectiveGeminiModel(res: Response): Promise<string> {
   const db = await getDB(res);
-  return (db as any).aiProviderKeys?.gemini?.model || DEFAULT_GEMINI_MODEL;
+  return providerEntry(db as any, "google")?.model || DEFAULT_GEMINI_MODEL;
 }
 
 // Gemini errors from an invalid/placeholder key and a genuinely bad request
@@ -966,7 +968,8 @@ Format: Write directly in clear GitHub markdown with headers, bullet points, and
         content: response.text,
         title: topic,
         format,
-        audience
+        audience,
+        engine: "gemini"
       });
       return;
     } catch (err: any) {
@@ -994,7 +997,8 @@ By deploying an AI-native growth infrastructure directly into your cloud, your b
 The future belongs to founders who own their intelligence engine rather than rent it.`,
     title: topic,
     format,
-    audience
+    audience,
+    engine: "local-template"
   });
 });
 
@@ -1141,12 +1145,23 @@ interface SovereignLead {
   stage: 'NEW_INBOUND' | 'ENRICHED' | 'OUTREACH_QUEUED' | 'REPLIED_WARM' | 'CALL_BOOKED' | 'CLOSED_WON';
   sourceVector: string;
   estimatedArr?: string;
-  icpScore: number;
+  /**
+   * ICP score is only present when a real scoring/enrichment source produced
+   * it. Leads entered manually or captured inbound start "unscored" — a
+   * random number here would read as fact in the pipeline KPIs.
+   */
+  icpScore?: number;
   notes?: string;
   capturedAt: string;
 }
 
-const inMemorySovereignLeads: SovereignLead[] = [
+// The sovereign pipeline starts EMPTY for a fresh workspace. The five demo
+// leads below are reachable ONLY behind SEED_DEMO_WORKSPACE=true (the same
+// server switch that seeds the demo Second Brain) — fabricated prospects
+// never ship as live pipeline data.
+const inMemorySovereignLeads: SovereignLead[] =
+  process.env.SEED_DEMO_WORKSPACE === "true"
+    ? [
   {
     id: 'lead-101',
     name: 'Sarah Chen',
@@ -1219,7 +1234,8 @@ const inMemorySovereignLeads: SovereignLead[] = [
     notes: 'Enriched verified email and mobile tech stack. Elementor site with 0 JSON-LD schemas detected.',
     capturedAt: new Date(Date.now() - 3600000 * 4).toISOString()
   }
-];
+  ]
+    : [];
 
 // Public Capture Lead API for Embeddable Conversion Dock (No auth needed)
 app.post("/api/public/capture-lead", async (req: Request, res: Response) => {
@@ -1241,8 +1257,8 @@ app.post("/api/public/capture-lead", async (req: Request, res: Response) => {
     domain: domain ? domain.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').trim() : undefined,
     stage: 'NEW_INBOUND',
     sourceVector: sourceVector || 'Conversion Dock (Embed)',
-    estimatedArr: '$1M - $5M',
-    icpScore: 85,
+    // No ARR band or ICP score is invented on capture: the lead is unscored
+    // until a real enrichment source produces one.
     notes: notes || needs || 'Captured via public Conversion Dock widget.',
     capturedAt: new Date().toISOString()
   };
@@ -1271,7 +1287,7 @@ app.get(["/api/leads", "/api/workspace/leads"], async (req: Request, res: Respon
 });
 
 app.post(["/api/leads/create", "/api/workspace/leads/create"], async (req: Request, res: Response) => {
-  const { name, email, company, domain, title, linkedinUrl, stage, sourceVector, estimatedArr, notes } = req.body;
+  const { name, email, company, domain, title, linkedinUrl, stage, sourceVector, estimatedArr, icpScore, notes } = req.body;
   if (!name || !name.trim() || !email || !email.trim()) {
     res.status(400).json({ error: "Name and email are mandatory." });
     return;
@@ -1287,8 +1303,12 @@ app.post(["/api/leads/create", "/api/workspace/leads/create"], async (req: Reque
     linkedinUrl: linkedinUrl?.trim(),
     stage: stage || 'NEW_INBOUND',
     sourceVector: sourceVector || 'Manual Entry',
-    estimatedArr: estimatedArr || '$2.0M',
-    icpScore: Math.floor(80 + Math.random() * 18),
+    estimatedArr: estimatedArr || undefined,
+    // ICP score is only recorded when a caller supplies a real one; a
+    // fabricated random number would otherwise badge as fact in the UI.
+    icpScore: typeof icpScore === 'number' && Number.isFinite(icpScore)
+      ? Math.max(0, Math.min(100, Math.round(icpScore)))
+      : undefined,
     notes: notes?.trim(),
     capturedAt: new Date().toISOString()
   };
@@ -3226,6 +3246,90 @@ app.post("/api/workspace/launch-intake", async (req: Request, res: Response) => 
   res.json({ success: true, steps, secondBrain: db.secondBrain, intakeTask, emailSent: emailResult.sent });
 });
 
+// Intake questionnaire -> real (#dm-suite audit fix). The Intake Engine page
+// used to "complete" after a client-side timer and claim vaults were updated
+// that nothing ever wrote. This route persists the questionnaire into the
+// Second Brain vaults (the same store the rest of the OS reads), honestly,
+// field-by-field — only non-empty answers are written, and the response says
+// exactly which fields landed where.
+app.post("/api/workspace/intake/questionnaire", async (req: Request, res: Response) => {
+  const body = req.body as Record<string, string> | undefined;
+  const companyName = (body?.companyName || "").trim();
+  const primaryICP = (body?.primaryICP || "").trim();
+  const websiteUrl = (body?.websiteUrl || "").trim();
+  const monthlyRevenue = (body?.monthlyRevenue || "").trim();
+  const primaryChannel = (body?.primaryChannel || "").trim();
+  const monthlyAdSpend = (body?.monthlyAdSpend || "").trim();
+  const primaryBottleneck = (body?.primaryBottleneck || "").trim();
+  const brandVoiceTone = (body?.brandVoiceTone || "").trim();
+  const competitorDifferentiator = (body?.competitorDifferentiator || "").trim();
+
+  if (!companyName || !primaryICP) {
+    res.status(400).json({ error: "Company name and target ICP are required." });
+    return;
+  }
+  if (websiteUrl) {
+    try {
+      const u = new URL(websiteUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("bad protocol");
+    } catch {
+      res.status(400).json({ error: "Website URL must be a valid http(s) URL." });
+      return;
+    }
+  }
+
+  const db = await getDB(res);
+  const written: Array<{ vault: string; field: string }> = [];
+
+  if (websiteUrl) {
+    db.secondBrain.websiteVault.siteUrl = websiteUrl;
+    written.push({ vault: "Website Vault", field: "siteUrl" });
+  }
+  if (brandVoiceTone) {
+    db.secondBrain.brandVault.voiceAndTone = brandVoiceTone;
+    written.push({ vault: "Brand Vault", field: "voiceAndTone" });
+  }
+  if (competitorDifferentiator) {
+    db.secondBrain.brandVault.corePositioning = competitorDifferentiator;
+    written.push({ vault: "Brand Vault", field: "corePositioning" });
+  }
+  if (primaryICP) {
+    db.secondBrain.customerVault.idealCustomerProfile = primaryICP;
+    written.push({ vault: "Customer Vault", field: "idealCustomerProfile" });
+  }
+  if (primaryChannel) {
+    db.secondBrain.marketingVault.currentChannels = [
+      ...new Set([...(db.secondBrain.marketingVault.currentChannels || []), primaryChannel]),
+    ];
+    written.push({ vault: "Marketing Vault", field: "currentChannels" });
+  }
+  // Free-text context the vaults have no dedicated column for: recorded
+  // verbatim in the vaults they concern. No metric is derived from them
+  // here — a CAC baseline only exists once real spend+conversion data lands.
+  if (monthlyRevenue || monthlyAdSpend) {
+    db.secondBrain.executiveVault.financialsOverview =
+      `${db.secondBrain.executiveVault.financialsOverview || ""} Intake (${new Date().toISOString().split("T")[0]}): revenue band ${monthlyRevenue || "unspecified"}; media spend ${monthlyAdSpend || "unspecified"}.`.trim();
+    written.push({ vault: "Executive Vault", field: "financialsOverview" });
+  }
+  if (primaryBottleneck) {
+    db.secondBrain.auditVault.findings.funnelQuality = primaryBottleneck;
+    written.push({ vault: "Audit Vault", field: "funnelQuality (reported bottleneck)" });
+  }
+
+  await saveDB(res, db);
+
+  res.json({
+    success: true,
+    written,
+    unanswered: [
+      ...(monthlyRevenue ? [] : ["monthlyRevenue"]),
+      ...(monthlyAdSpend ? [] : ["monthlyAdSpend"]),
+      ...(primaryBottleneck ? [] : ["primaryBottleneck"]),
+    ],
+    secondBrain: db.secondBrain,
+  });
+});
+
 // Workspace & Team (#15) — real invite/accept/role/remove, replacing the old
 // fully-local db.teamMembers/db.invitations fakery. Roster + pending invites
 // come from the get_workspace_team/list RPCs and a direct table read (RLS
@@ -3428,15 +3532,7 @@ app.use(
 );
 
 
-// Admin > AI Model Config (#pricing task 6). Keys are stored the same way
-// ConnectorsCenter stores connector credentials — AES-encrypted via
-// credentialCrypto, inside the workspace_state JSON blob — never returned
-// to the client once saved. "gemini" is the only provider actually wired to
-// a live call site today (getGeminiClient/resolveEffectiveGeminiKey above);
-// openai/anthropic are accepted and stored for forward-compat but have no
-// SDK client in this codebase yet, so setting them has no effect on any
-// running feature until a client is added — this is surfaced honestly in
-// the admin UI copy, not hidden behind a fake "connected" state.
+// Provider credentials are workspace-scoped and encrypted; verification is separate from saving.
 // Complete multi-provider AI model catalog & orchestration across all providers + Local & Smart Routers
 const SUPPORTED_AI_PROVIDERS = [
   "gemini",
@@ -3476,7 +3572,7 @@ const UI_PRIMARY_PROVIDERS = [
 
 async function resolveEffectiveProviderKey(res: Response, provider: string): Promise<string | undefined> {
   if (provider === "gemini" || provider === "google") {
-    return resolveEffectiveGeminiKey(res);
+    return (await resolveEffectiveGeminiKey(res)) || process.env.GEMINI_API_KEY;
   }
   if (provider === "lmstudio" || provider === "ollama") {
     return "local-on-device";
@@ -3519,7 +3615,7 @@ async function resolveStoredProviderConfig(res: Response, provider: string): Pro
   accountAuth?: boolean;
 }> {
   const db = await getDB(res);
-  const stored = (db as any).aiProviderKeys?.[provider];
+  const stored = providerEntry(db as any, provider);
   if (!stored?.encrypted) {
     return { baseUrl: stored?.baseUrl || undefined, accountAuth: stored?.accountAuth };
   }
@@ -3572,7 +3668,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     }
     const response = await client.models.generateContent({
       model: model || 'gemini-2.5-flash',
-      contents
+      contents, config: { abortSignal: AbortSignal.timeout(45_000) }
     });
     const text = response.text || '';
     const durationMs = Date.now() - startTime;
@@ -3596,10 +3692,10 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const messages = [];
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
-      body: JSON.stringify({ model: model || 'gpt-4o', messages, temperature: options.temperature ?? 0.7 })
+      body: JSON.stringify({ model: model || 'gpt-4o', messages, ...(options.temperature !== undefined ? { temperature: options.temperature } : {}) })
     });
     if (!r.ok) {
       const errText = await r.text();
@@ -3631,8 +3727,8 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
       messages: [{ role: 'user', content: prompt }]
     };
     if (systemPrompt) body.system = systemPrompt;
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://api.anthropic.com/v1').replace(/\/$/, '')}/messages`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': effectiveKey,
@@ -3667,8 +3763,8 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const messages = [];
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
-    const r = await fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://api.x.ai/v1').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'grok-2-1212', messages })
     });
@@ -3699,8 +3795,8 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const messages = [];
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
-    const r = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://api.deepseek.com/v1').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'deepseek-v3', messages })
     });
@@ -3731,8 +3827,8 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const messages = [];
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
-    const r = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'qwen-2.5-72b', messages })
     });
@@ -3763,8 +3859,8 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const messages = [];
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
-    const r = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-      method: 'POST',
+    const r = await fetch(`${(baseUrl || 'https://open.bigmodel.cn/api/paas/v4').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'glm-4-plus', messages })
     });
@@ -3798,7 +3894,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
+        method: 'POST', redirect: 'error',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey || 'local'}` },
         body: JSON.stringify({ model: model || 'local-model', messages, temperature: options.temperature ?? 0.7 }),
         signal: controller.signal
@@ -3841,7 +3937,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
+        method: 'POST', redirect: 'error',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: model || 'llama3.3', messages, temperature: options.temperature ?? 0.7 }),
         signal: controller.signal
@@ -3883,7 +3979,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
     const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST',
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'omniroute-auto', messages })
     });
@@ -3916,7 +4012,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
     const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST',
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${effectiveKey}` },
       body: JSON.stringify({ model: model || 'opencode-agent', messages })
     });
@@ -3949,7 +4045,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
     const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST',
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: { 
         'Content-Type': 'application/json', 
         Authorization: `Bearer ${effectiveKey}`,
@@ -4007,7 +4103,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
       msgs.push({ role: 'user', content: prompt });
       body = JSON.stringify({ model: omModel, messages: msgs, temperature: options.temperature ?? 0.7 });
     }
-    const r = await fetch(inferUrl, { method: 'POST', headers, body });
+    const r = await fetch(inferUrl, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000), headers, body });
     if (!r.ok) {
       const errText = await r.text();
       throw new Error(`OpusMax error (${r.status}): ${errText}`);
@@ -4041,7 +4137,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
     const r = await fetch(`${targetUrl.replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST',
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45_000),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${effectiveKey}`,
@@ -4074,20 +4170,7 @@ async function executeUniversalAICompletion(options: UniversalCompletionOptions)
 
 app.get("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => {
   const db = await getDB(res);
-  const stored = (db as any).aiProviderKeys || {};
-  const providers = UI_PRIMARY_PROVIDERS.map(provider => {
-    const keyData = stored[provider] || (provider === "google" ? stored["gemini"] : undefined);
-    const isGoogle = provider === "google";
-    return {
-      provider,
-      configured: !!keyData?.encrypted || (isGoogle && !!process.env.GEMINI_API_KEY),
-      model: keyData?.model || (isGoogle ? DEFAULT_GEMINI_MODEL : ""),
-      baseUrl: keyData?.baseUrl || undefined,
-      accountAuth: keyData?.accountAuth || undefined,
-      updatedAt: keyData?.updatedAt || null,
-      live: isGoogle || !!keyData?.encrypted,
-    };
-  });
+  const providers = UI_PRIMARY_PROVIDERS.map(provider => providerStatus(db as any, provider, process.env));
   res.json({ success: true, providers });
 });
 
@@ -4096,26 +4179,37 @@ app.post("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => 
     res.status(403).json({ error: "You must be an owner or admin to configure AI provider keys." });
     return;
   }
-  const { provider, apiKey, model, baseUrl, accountAuth } = req.body as {
+  let { provider, apiKey, model, baseUrl, accountAuth } = req.body as {
     provider?: string; apiKey?: string; model?: string; baseUrl?: string; accountAuth?: boolean;
   };
   if (!provider || !SUPPORTED_AI_PROVIDERS.includes(provider as AIProvider)) {
     res.status(400).json({ error: `provider must be one of: ${SUPPORTED_AI_PROVIDERS.join(", ")}` });
     return;
   }
+  if ((apiKey !== undefined && typeof apiKey !== 'string') || (model !== undefined && typeof model !== 'string') || (baseUrl !== undefined && typeof baseUrl !== 'string')) {
+    res.status(400).json({ error: 'Key, model and endpoint must be strings.' }); return;
+  }
+  provider = canonicalAIProvider(provider);
+  try { if (baseUrl) await validateAIEndpoint(provider, baseUrl); }
+  catch (error: any) { res.status(400).json({ error: error.message }); return; }
   const db = await getDB(res);
   (db as any).aiProviderKeys = (db as any).aiProviderKeys || {};
 
   const existing = (db as any).aiProviderKeys[provider] || (provider === "google" ? (db as any).aiProviderKeys["gemini"] : undefined);
+  if (provider === 'google' && existing) {
+    (db as any).aiProviderKeys.google = existing;
+    delete (db as any).aiProviderKeys.gemini;
+  }
 
-  if (!apiKey || !apiKey.trim()) {
+  if ((!apiKey || !apiKey.trim()) && provider !== 'ollama' && provider !== 'lmstudio') {
     if (existing?.encrypted && (model?.trim() || baseUrl?.trim())) {
       if (model?.trim()) existing.model = model.trim();
       if (baseUrl?.trim()) existing.baseUrl = baseUrl.trim().replace(/\/$/, "");
+      if (existing.model !== existing.verifiedModel || (existing.baseUrl || "") !== existing.verifiedBaseUrl) delete existing.verifiedAt;
       existing.accountAuth = !!accountAuth;
       existing.updatedAt = new Date().toISOString();
       await saveDB(res, db);
-      res.json({ success: true, provider, configured: true, live: true });
+      res.json({ success: true, provider, configured: true, live: false });
       return;
     }
     // OpenAI account login: the raw API key is optional — an account sign-in
@@ -4126,7 +4220,7 @@ app.post("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => 
       if (baseUrl?.trim()) existing.baseUrl = baseUrl.trim().replace(/\/$/, "");
       existing.updatedAt = new Date().toISOString();
       await saveDB(res, db);
-      res.json({ success: true, provider, configured: true, live: true, accountAuth: true });
+      res.json({ success: true, provider, configured: true, live: false, accountAuth: true });
       return;
     }
     res.status(400).json({ error: "apiKey is required" });
@@ -4134,14 +4228,14 @@ app.post("/api/workspace/admin/ai-keys", async (req: Request, res: Response) => 
   }
 
   (db as any).aiProviderKeys[provider] = {
-    encrypted: encryptCredentials({ apiKey: apiKey.trim() }),
+    ...(apiKey?.trim() ? { encrypted: encryptCredentials({ apiKey: apiKey.trim() }) } : {}),
     model: model?.trim() || existing?.model || undefined,
     baseUrl: baseUrl?.trim() ? baseUrl.trim().replace(/\/$/, "") : existing?.baseUrl || undefined,
     accountAuth: !!accountAuth,
     updatedAt: new Date().toISOString(),
   };
   await saveDB(res, db);
-  res.json({ success: true, provider, configured: true, live: true, accountAuth: !!accountAuth });
+  res.json({ success: true, provider, configured: true, live: false, accountAuth: !!accountAuth });
 });
 
 // Fetch available models from provider API with graceful fallback to verified comprehensive catalog
@@ -4301,19 +4395,70 @@ app.post("/api/workspace/admin/ai-keys/opusmax/key-status", async (req: Request,
   }
 });
 
+// Selection affects approved agent runs and agent pipelines, not Gemini-specific studios or VANTA.
+app.post("/api/workspace/admin/ai/selection", async (req: Request, res: Response) => {
+  if (!(await callerIsOwnerOrAdmin(res))) { res.status(403).json({ error: "Owner or admin required." }); return; }
+  const { provider, model } = req.body;
+  if (typeof provider !== 'string' || typeof model !== 'string') { res.status(400).json({ error: "Provider and model are required." }); return; }
+  const db = await getDB(res);
+  try {
+    const candidate = { ...db };
+    selectAgentModel(candidate as any, provider, model);
+    const config = resolveAgentAIConfig(candidate as any, decryptCredentials, process.env);
+    if (config.baseUrl) await validateAIEndpoint(config.provider, config.baseUrl);
+    (db as any).agentAISelection = (candidate as any).agentAISelection;
+  } catch (error: any) { res.status(400).json({ error: error.message }); return; }
+  await saveDB(res, db);
+  res.json({ success: true });
+});
+
+async function validateAIEndpoint(provider: string, target: string) {
+  if (canonicalAIProvider(provider) === 'google') throw new Error('Custom Gemini endpoints are not supported.');
+  const url = new URL(target);
+  if (url.username || url.password || url.search || url.hash) throw new Error("AI endpoint must not contain credentials, query or fragment.");
+  if (provider === 'ollama' || provider === 'lmstudio') {
+    if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error("Local AI endpoints must use loopback on the API server.");
+  } else {
+    if (url.protocol !== 'https:') throw new Error("Hosted AI endpoints require HTTPS.");
+    await assertPublicHost(target);
+  }
+}
+
+async function resolveWorkspaceAgentAI(res: Response): Promise<AIProviderConfig> {
+  const db = await getDB(res);
+  const config = resolveAgentAIConfig(db as any, decryptCredentials, process.env);
+  if (config.baseUrl) await validateAIEndpoint(config.provider, config.baseUrl);
+  return config;
+}
+
 // Live Model Inference Handshake Endpoint
-app.post("/api/workspace/admin/ai/test-inference", async (req: Request, res: Response) => {
-  const { provider, model, prompt, baseUrl } = req.body as { provider?: string; model?: string; prompt?: string; baseUrl?: string };
-  if (!provider) {
+app.post("/api/workspace/admin/ai/test-inference", expensiveLimiter, async (req: Request, res: Response) => {
+  if (!(await callerIsOwnerOrAdmin(res))) { res.status(403).json({ error: "Owner or admin required." }); return; }
+  let { provider, model, prompt, baseUrl } = req.body as { provider?: string; model?: string; prompt?: string; baseUrl?: string };
+  if (typeof provider !== 'string' || (model !== undefined && typeof model !== 'string') || (prompt !== undefined && typeof prompt !== 'string') || (baseUrl !== undefined && typeof baseUrl !== 'string')) {
     res.status(400).json({ error: "provider is required" });
     return;
   }
+  provider = canonicalAIProvider(provider);
+  if (!SUPPORTED_AI_PROVIDERS.includes(provider as AIProvider)) { res.status(400).json({ error: "Unsupported provider." }); return; }
   const testPrompt = prompt?.trim() || "Generate a 1-sentence growth hook for Sigma Tactix sovereign AI growth infrastructure.";
   const resolvedKey = await resolveEffectiveProviderKey(res, provider);
   // Stored per-workspace gateway settings (optional base URL, account-login flag)
   const storedConfig = await resolveStoredProviderConfig(res, provider).catch(() => ({}) as { baseUrl?: string; accountAuth?: boolean });
+  const verificationStart = providerEntry(await getDB(res) as any, provider);
+  if (verificationStart && verificationStart.verifiedModel === model &&
+      (verificationStart.baseUrl || '') === (baseUrl || storedConfig.baseUrl || '')) {
+    const resetDB = await getDB(res);
+    const resetEntry = providerEntry(resetDB as any, provider);
+    if (resetEntry && resetEntry.encrypted === verificationStart.encrypted) {
+      delete resetEntry.verifiedAt;
+      await saveDB(res, resetDB);
+    }
+  }
 
   try {
+    const target = baseUrl || storedConfig.baseUrl;
+    if (target) await validateAIEndpoint(provider, target);
     const result = await executeUniversalAICompletion({
       provider,
       model: model || (provider === 'google' || provider === 'gemini' ? 'gemini-2.5-flash' : 'default'),
@@ -4323,6 +4468,17 @@ app.post("/api/workspace/admin/ai/test-inference", async (req: Request, res: Res
       accountAuth: storedConfig.accountAuth,
     });
 
+    if (!result.text?.trim()) throw new Error("Provider returned no text; verification failed.");
+    const verificationDB = await getDB(res);
+    const entry = providerEntry(verificationDB as any, provider);
+    if (entry && entry.encrypted === verificationStart?.encrypted &&
+        (entry.model === model || ((verificationDB as any).agentAISelection?.provider === provider && (verificationDB as any).agentAISelection?.model === model)) &&
+        (entry.baseUrl || '') === (baseUrl || storedConfig.baseUrl || '')) {
+      entry.verifiedAt = new Date().toISOString();
+      entry.verifiedModel = model;
+      entry.verifiedBaseUrl = entry.baseUrl || '';
+      await saveDB(res, verificationDB);
+    }
     const costUsd = calculateTokenCost(result.model, result.promptTokens, result.candidateTokens);
 
     await recordTokenUsage(res, {
@@ -4364,12 +4520,13 @@ app.delete("/api/workspace/admin/ai-keys/:provider", async (req: Request, res: R
     res.status(403).json({ error: "You must be an owner or admin to remove AI provider keys." });
     return;
   }
-  const { provider } = req.params;
+  const provider = canonicalAIProvider(req.params.provider as string);
   const db = await getDB(res);
+  if (provider === "google" && (db as any).aiProviderKeys) delete (db as any).aiProviderKeys.gemini;
   if ((db as any).aiProviderKeys?.[provider]) {
     delete (db as any).aiProviderKeys[provider];
-    await saveDB(res, db);
   }
+  await saveDB(res, db);
   res.json({ success: true, provider, configured: false });
 });
 
@@ -5371,7 +5528,7 @@ async function executeAgentTask(
   geminiKey?: string,
   geminiModel: string = DEFAULT_GEMINI_MODEL,
   permittedTools: readonly AgentToolName[] = [],
-  sbContext?: { sb: any; workspaceId: string; taskId?: string },
+  sbContext?: { sb: any; workspaceId: string; taskId?: string; aiConfig?: AIProviderConfig },
 ): Promise<{ steps: string[]; output: string }> {
   let attemptId: string | null = null;
 
@@ -5379,7 +5536,7 @@ async function executeAgentTask(
     try {
       attemptId = await startNodeAttempt(sbContext.sb, sbContext.workspaceId, sbContext.taskId, {
         nodeId: `agent:${agentName}`,
-        executorVersion: `gemini:${geminiModel}`,
+        executorVersion: `${sbContext?.aiConfig?.provider || "google"}:${sbContext?.aiConfig?.model || geminiModel}`,
       });
     } catch (err: any) {
       console.warn("Could not open ledger node attempt:", err?.message || err);
@@ -5415,7 +5572,7 @@ async function executeAgentTaskInner(
   geminiKey?: string,
   geminiModel: string = DEFAULT_GEMINI_MODEL,
   permittedTools: readonly AgentToolName[] = [],
-  sbContext?: { sb: any; workspaceId: string; taskId?: string },
+  sbContext?: { sb: any; workspaceId: string; taskId?: string; aiConfig?: AIProviderConfig },
 ): Promise<{ steps: string[]; output: string }> {
   const executionLog: string[] = [];
   const startedAt = Date.now();
@@ -5457,56 +5614,17 @@ async function executeAgentTaskInner(
       : `No performance targets set in the Marketing Vault — none were supplied to the model.`
   );
 
-  // 3. Provider & Model Resolution (Supports Gemini, Ollama, LM Studio, OpenAI, etc.)
-  let effectiveProvider: SupportedProvider = "google";
-  let effectiveModel = geminiModel;
-  let effectiveApiKey = geminiKey || process.env.GEMINI_API_KEY;
-  let effectiveBaseUrl: string | undefined = undefined;
-
-  if (geminiModel.startsWith("local-ollama") || geminiModel.startsWith("ollama")) {
-    effectiveProvider = "ollama";
-    effectiveModel = geminiModel.replace(/^local-ollama-|^ollama-/, "");
-    effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
-  } else if (geminiModel.startsWith("lmstudio")) {
-    effectiveProvider = "lmstudio";
-    effectiveModel = geminiModel.replace(/^lmstudio-/, "");
-    effectiveBaseUrl = process.env.LMSTUDIO_BASE_URL || "http://127.0.0.1:1234/v1";
-  } else if (geminiModel.startsWith("gpt-") || geminiModel.startsWith("o1") || geminiModel.startsWith("o3")) {
-    effectiveProvider = "openai";
-    effectiveApiKey = process.env.OPENAI_API_KEY;
-  } else if (!effectiveApiKey && (process.env.OLLAMA_BASE_URL || process.env.USE_LOCAL_LLM === "true")) {
-    effectiveProvider = "ollama";
-    effectiveModel = process.env.OLLAMA_MODEL || "qwen2.5:14b";
-    effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
-  }
-
-  // If Google/Gemini is chosen but no API key exists, fallback to local Ollama if configured
-  if (effectiveProvider === "google" && !effectiveApiKey) {
-    if (process.env.OLLAMA_BASE_URL || process.env.USE_LOCAL_LLM === "true") {
-      effectiveProvider = "ollama";
-      effectiveModel = process.env.OLLAMA_MODEL || "qwen2.5:14b";
-      effectiveBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1";
-      executionLog.push(`No GEMINI_API_KEY found; falling back to local Ollama runtime (${effectiveModel}).`);
-    } else {
-      throw new Error(
-        "No Gemini API key or local LLM is configured for this workspace. " +
-        "Set GEMINI_API_KEY or OLLAMA_BASE_URL on the server, or add a workspace key under Admin > AI Model Config."
-      );
-    }
-  }
+  // The approved request supplies one workspace-resolved provider config to every DAG node.
+  const aiConfig = sbContext?.aiConfig || {
+    provider: "google" as const, model: geminiModel, apiKey: geminiKey || process.env.GEMINI_API_KEY,
+  };
 
   // 4. Multi-turn ReAct Loop Execution with real sandboxed tools
   const reactResult = await executeAgentReActLoop({
     agentName,
     goal,
     scopedContext,
-    config: {
-      provider: effectiveProvider,
-      model: effectiveModel,
-      apiKey: effectiveApiKey,
-      baseUrl: effectiveBaseUrl,
-      timeoutMs: 90_000,
-    },
+    config: aiConfig,
     maxSteps: 5,
     allowedTools: permittedTools,
     executeTool: async (name, args) => {
@@ -5879,6 +5997,7 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
         "Re-dispatch it from the module's agent hub."
       );
     }
+    const agentAIConfig = await resolveWorkspaceAgentAI(res);
     const geminiKey = await resolveEffectiveGeminiKey(res);
     const geminiModel = await resolveEffectiveGeminiModel(res);
     const sb = res.locals.sb;
@@ -5901,7 +6020,7 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
         execute: async (subAgent, _ctx, upstream) => {
         const attemptId = await startNodeAttempt(sb, workspaceId, task.id, {
           nodeId: `sub-agent:${subAgent.id}`,
-          executorVersion: `gemini:${geminiModel}`,
+          executorVersion: `${agentAIConfig.provider}:${agentAIConfig.model}`,
         }).catch(() => null);
         try {
           const result = await executeAgentTask(
@@ -5912,7 +6031,7 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
             geminiKey,
             geminiModel,
             subAgent.permittedTools,
-            { sb, workspaceId },
+            { sb, workspaceId, aiConfig: agentAIConfig },
           );
           await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
           return result;
@@ -6048,6 +6167,7 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
     const geminiKey = await resolveEffectiveGeminiKey(res);
     const geminiModel = await resolveEffectiveGeminiModel(res);
 
+    const agentAIConfig = await resolveWorkspaceAgentAI(res);
     // Stage 1: Analytics / Diagnostic Agent
     // Phase 2 §6: the pipeline runs as a real DAG, not an inline sequence.
     //
@@ -6164,7 +6284,7 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
         if (!stagePlan) throw new Error(`Missing governed dispatch plan for pipeline stage ${stage.id}`);
         const attemptId = await startNodeAttempt(sb, workspaceId, pipelineRunId, {
           nodeId: `pipeline:${stage.id}`,
-          executorVersion: `gemini:${geminiModel}`,
+          executorVersion: `${agentAIConfig.provider}:${agentAIConfig.model}`,
         }).catch(() => null);
 
         try {
@@ -6178,7 +6298,7 @@ app.post("/api/workspace/run-pipeline", expensiveLimiter, requireModule("agents"
             stagePlan.subAgents.find(subAgent => subAgent.id === stagePlan.entrySubAgent)?.permittedTools || [],
             // The DAG node owns node accounting, but database context is still
             // required for scoped retrieval and tool execution.
-            { sb, workspaceId }
+            { sb, workspaceId, aiConfig: agentAIConfig }
           );
           await finishNodeAttempt(sb, workspaceId, attemptId || "", {}).catch(() => {});
           return {
