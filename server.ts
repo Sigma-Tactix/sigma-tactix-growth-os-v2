@@ -9401,11 +9401,28 @@ if (process.env.NODE_ENV !== "production") {
   });
   app.use(vite.middlewares);
 } else {
-  const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*", (req: Request, res: Response) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
+  // Serve the built SPA only when the build output actually exists next to the
+  // running server. dist/server.js lives inside dist/, so the Vite build
+  // (plus the public/ assets it copies in) is found relative to __dirname in
+  // production; a cwd-relative fallback covers any runtime that lands the
+  // bundle elsewhere. Without this guard, pointing a bare deploy at an empty
+  // dist/ would 500 on index.html instead of just serving the API.
+  const distPath = fs.existsSync(path.join(__dirname, "index.html"))
+    ? __dirname
+    : fs.existsSync(path.join(process.cwd(), "dist", "index.html"))
+      ? path.join(process.cwd(), "dist")
+      : "";
+  if (distPath) {
+    app.use(express.static(distPath));
+    app.get("*", (req: Request, res: Response) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    console.warn(
+      "NODE_ENV=production but no dist/index.html found — API only. " +
+      "Run `npm run build` and place the dist/ bundle next to dist/server.js."
+    );
+  }
 }
 
 // Global error handler. Registered LAST — after every route and after the SPA
