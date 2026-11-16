@@ -1,8 +1,45 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-11-12
-> **Version**: v0.2.17-dev (DM Suite honest-state hardening & audit fixes + final UI polish pass)
+> **Last updated**: 2026-11-13
+> **Version**: v0.2.19-dev (Code Review Remediation: isomorphic browser PDF hash fix, export header preservation, KPI strip gutters & font floor compliance)
 > **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+
+## Brain / Vanta Render-Defect Batch (audit → verify → fix) — 2026-11-13
+
+Uncommitted batch on `task/dmsuite-consolidation-and-fixes`. An orchestrated audit (5 read-only cluster auditors) found candidate defects; each was adversarially verified against the current code, and only confirmed breaks were fixed. Six real defects, all presentation/honesty/controls — no data-path or crash bugs in the 2D/3D engine itself:
+
+- **`MapsBrainOrbit.tsx` (3)**: compact-mode (<640px) Timeline view permanently clipped its right edge (no zoom-out control could recover it; fixed by widening the compact timeline frame); search-result `flyTo` silently no-opped in the 3D orbit mode (dropdown now hidden with the same guard the aside "Fly to" button already used); the map SVG `role="img"` pruned ~30 focusable node buttons from the accessibility tree (now `role="group"`).
+- **`VantaSynapticBrainOrb.tsx` (1)**: the main-app "VANTA Core" surface rendered hardcoded `SAMPLE_VAULT_FILES` (fabricated company documents) instead of the user's real topology whenever the focused topology was collapsed; sample files now render only when no topology object is supplied (the isolated lab), and the in-app collapsed state shows an honest empty vault.
+- **`EcosystemStatusBar.tsx` (2)**: "Auto-Remediate" captured its route target inside a `setSections` updater and read it synchronously — unreliable under React's deferred reducers, so navigate/toast/`remediatedIds` commonly no-opped (now computed from in-scope state); the "Ping all" demo toast claimed "Pinged all 24 … telemetry confirmed nominal" with no endpoint (now an honest demo-refresh message with the correct count of 18).
+- **`QuickFixAssistant.tsx` (1)**: the shared "Apply Fix" control unconditionally toasted "System health restored to OPERATIONAL" with a green "Resolved & Live" state; it now routes honestly — neutral "Routed · Awaiting verification" state, `notifyInfo`, no fabricated success.
+- **`VantaPreviewLab.tsx` (1)**: the lab's default 3D tab mounted the R3F canvas with no WebGL gate or error boundary — a no-WebGL/WebGL1-only browser threw on mount and blanked the whole app (no boundary higher in the tree). Now gated on `isWebGLAvailable()` with a status empty-state plus a `SynapticBoundary` fallback, mirroring `SecondBrainOrbit3D`'s `OrbitBoundary`.
+- **`VantaCompactDock.tsx` + `Layout.tsx` (1, completed post-hoc by the main agent)**: `VantaCompactDock` was imported/mounted *nowhere*, so the sidebar widget's "Open VANTA" / "Ask the Sigma brain" buttons fired `setDockOpen(true)` into the void. The dock is now mounted in `Layout` (self-gated by `dockOpen` and hidden on `/living-system`), and its "Open full VANTA" button follows the gate-aware navigation target (release → `/living-system`, dev → `?vantaLab=1`, hidden when gated).
+
+Verification: scoped brain/vanta suite 8/8 files · 31/31 tests pass; `vite build` clean; my edited files are `tsc`-clean. The repo-wide `tsc` still reports errors in three stray untracked files from the separate remediation session (`src/previewHarness.tsx`, `src/server/routes/stripeWebhookThreats.test.ts`, plus `src/lib/workspaceIsolation.test.ts`'s deps) — not part of this batch. Design gates confirmed NOT defects: the VANTA release gate + held page, backend-only error states under client-only dev, and the 2 env-blocked `EPERM` test files.
+
+## Code Review Remediation & Isomorphic Runtime Fixes — 2026-11-13
+
+Remediation batch following two-axis code review (`origin/main...HEAD`) addressing Standards, Spec, and browser runtime defects:
+
+- **`src/lib/pdfReportRenderer.ts` — Browser PDF Export Runtime Fix**: Removed static Node `crypto` import that broke browser execution with `TypeError: crypto.createHash is not a function` during executive summary PDF exports in `exportService.ts`. Switched to standard isomorphic `globalThis.crypto.subtle.digest('SHA-256', ...)`, removing Vite's `crypto has been externalized for browser compatibility` warning while preserving deterministic 64-char SHA-256 artifact verification.
+- **`src/pages/Dashboard.tsx` — Export & Spec Correction**:
+  - Removed accidental `no-export` from the outer `.sigma-page-header` container, which was causing the entire Topline Report header and metadata to be stripped during PDF/PNG exports. Restored `no-export` to the interactive controls toolbar.
+  - Fixed KPI strip desktop gutter padding (`lg:px-6 lg:first:pl-0 lg:last:pr-0`), eliminating the defect where columns 2–4 sat flush against `lg:divide-x` hairline borders with zero gutter clearance. Removed vestigial `wide` property.
+  - Adjusted KPI value letter-spacing to `tracking-[-0.01em]` to strictly comply with the `-0.015em` negative letter-spacing limit in `.agent/rules/executive-artifact-standards.md` §3.
+  - Raised sub-11px micro-text (`text-[11px]`) across header metadata, benchmark references, KPI labels, range segments, and feed descriptions to accessible `text-xs` (12px / 0.75rem floor).
+  - Dropped continuous `pulse` animation on unverified/benchmark status badge per brand guide rules (no decorative non-state pulsing).
+  - Aligned Activity Feed empty state terminology to "Client Enclave" per `AGENTS.md` §2 and `CONTEXT.md`.
+- **`src/components/Layout.tsx` — Desktop Shell Hygiene**: Conditioned topbar brand mark with `isSidebarOpen && "md:hidden"` so the logo is not visually duplicated beside the open sidebar on desktop, while remaining visible when the sidebar is collapsed and on mobile.
+
+## Dashboard + App-Shell Brand Polish (Sigma Tactix Design-System Index applied) — 2026-11-13
+
+Uncommitted batch on `task/dmsuite-consolidation-and-fixes`, applied against the "Sigma Tactix Design System Index Aug'26" brand guide (Sigma Orange #FF481B anchor, 8px spacing, radius/elevation tokens, do/don't rules: no decorative status dots, no dead controls, semantic accents only):
+
+- **`src/pages/Dashboard.tsx` — Topline Report surface**: header moved onto the `.sigma-page-header` material (radial brand wash + inset highlight, no flat H1 against the canvas); KPI strip restructured with an overline label, a `Benchmark reference` context line, and hairline `divide-x` separators instead of four equal cells; media-mode + range controls switched to the shared `sigma-segmented` tokens (`aria-pressed`); channel-benchmarks card header simplified (decorative accent stripe removed, title carries hierarchy); activity-feed header dropped its dead `MoreVertical` icon and non-state dot, empty state copy now names the cause (no ledger events yet). All copy em-dash-free per the copy rules.
+- **`src/components/Layout.tsx` — app shell**: compact `SigmaTactixLogo` mark added at the top-left of `.sigma-topbar` (brand anchor next to quick search; sidebar keeps the full lockup); `ThemeToggle` is now always visible in the top bar instead of hidden below `xl` (light/dark/system via `AppearanceContext`, persisted to `localStorage`).
+- **Verification discipline**: temporary `src/preview.tsx` + `preview.html` harness (mounts `Layout` + `Dashboard` under the real providers, bypassing only the Supabase `AuthGate`) used to verify rendering in both themes in the Browser pane; harness deleted after the check.
+
+Verification: `npm run build` exit 0; `npm run lint` (`tsc --noEmit`) exit 0; `npm test` 88/90 files / 596 tests pass — the 2 failing files are the same pre-existing sandbox-blocked server-route files (`aiSettingsRoutes`, `mcpRoutes`, `listen EPERM` on 127.0.0.1), confirmed by a clean-baseline stash-and-retest; this batch touches neither. Note: a running production server serves the pre-edit `dist/` bundle until it is restarted after `npm run build` (rebuild 2026-11-13 06:11 now contains the shell changes).
 
 ## Final UI Polish Pass (Design-System Tokens, Honest States, A11y) — 2026-11-12
 

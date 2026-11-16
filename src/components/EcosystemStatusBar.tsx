@@ -402,41 +402,36 @@ export default function EcosystemStatusBar({
   // awaiting verification. Claiming "health verified" here would fabricate a
   // state the panel has no evidence for.
   const handleApplyQuickFix = (elementId: string) => {
-    let target: { name: string; element: EcosystemElement; route?: string } | null = null;
+    // Compute the target from the `sections` value already in scope. Reading
+    // state back out of a setSections updater is not reliable: React does not
+    // guarantee the updater runs synchronously on the same tick.
+    const target = sections
+      .flatMap(sec => sec.subSections)
+      .flatMap(sub => sub.elements)
+      .find(el => el.id === elementId);
+    if (!target) return;
     setSections(prevSections => prevSections.map(sec => ({
       ...sec,
       subSections: sec.subSections.map(sub => ({
         ...sub,
-        elements: sub.elements.map(el => {
-          if (el.id === elementId) {
-            target = {
-              name: el.name,
-              element: el,
-              route: el.howToFix?.targetRoute
-            };
-            return {
+        elements: sub.elements.map(el => el.id === elementId
+          ? {
               ...el,
               status: 'WARNING',
               diagnosticDetail: 'Remediation routed to the responsible tool. Awaiting operator verification — this panel has no health endpoint to confirm it.'
-            };
-          }
-          return el;
-        })
+            }
+          : el)
       }))
     })));
-    if (target && 'element' in target) {
-      // `setSections` runs its updater synchronously in React 19, so the lookup
-      // above is complete before we act on it.
-      if (target.element?.howToFix?.targetRoute) {
-        navigate(target.element.howToFix.targetRoute);
-      }
-      setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
-      notifyInfo(
-        'Remediation Routed',
-        `${target.name} was routed to its responsible tool. No fix was applied and no health verification was performed.`,
-        { category: 'SYSTEM' }
-      );
+    setRemediatedIds(prev => ({ ...prev, [elementId]: true }));
+    if (target.howToFix?.targetRoute) {
+      navigate(target.howToFix.targetRoute);
     }
+    notifyInfo(
+      'Remediation Routed',
+      `${target.name} was routed to its responsible tool. No fix was applied and no health verification was performed.`,
+      { category: 'SYSTEM' }
+    );
   };
 
   // Run full health refresh
@@ -448,12 +443,15 @@ export default function EcosystemStatusBar({
       );
       return;
     }
+    const demoCount = sections
+      .flatMap(sec => sec.subSections)
+      .flatMap(sub => sub.elements).length;
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
       notifyInfo(
-        'Ecosystem Health Check Complete',
-        'Pinged all 24 ecosystem sub-modules and agents. Real-time telemetry confirmed nominal.'
+        'Demo Data Refreshed',
+        `Showing the ${demoCount} demo sample elements. No live telemetry was checked — this panel has no health endpoint.`
       );
     }, 1200);
   };

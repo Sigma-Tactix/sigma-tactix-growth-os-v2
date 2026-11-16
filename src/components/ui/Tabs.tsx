@@ -104,7 +104,7 @@ export function Tabs<T extends string = string>({
                   className={cn(
                     'px-1.5 py-0.2 rounded text-[10px] font-mono tabular-nums font-bold transition-colors',
                     isActive
-                      ? 'bg-white/20 text-white'
+                      ? 'bg-black/15 text-[var(--sigma-tab-active-text)]'
                       : 'bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text-soft)] border border-[var(--sigma-border)]'
                   )}
                 >

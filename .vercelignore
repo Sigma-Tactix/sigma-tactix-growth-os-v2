@@ -1,0 +1,5 @@
+.vercel/
+vercel.json
+node_modules/
+dist/server.js
+dist/server.js.map

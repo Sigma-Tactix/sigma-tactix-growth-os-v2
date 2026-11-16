@@ -61,6 +61,12 @@ import {
 } from "./src/lib/gscService.js";
 import { supabaseForToken, verifySupabaseToken } from "./src/lib/supabaseAdmin.js";
 import { resolveWorkspaceId, loadWorkspace, saveWorkspace, WorkspaceConflictError } from "./src/lib/workspaceStore.js";
+import {
+  assertOwnerOrAdminOfDefault,
+  CallerNotOwnerOrAdminError,
+  createWorkspace,
+  listMemberWorkspaces,
+} from "./src/lib/workspaceManage.js";
 import { syncTaskToLedger, listLedgerRuns, listLedgerTasks, backfillAgentTasks, startNodeAttempt, finishNodeAttempt, recordTermsAcceptance } from "./src/lib/executionLedgerStore.js";
 import { probeLedgerUsability, formatLedgerGuardFailure } from "./src/lib/executionLedgerHealth.js";
 import { evaluateAgentRequest, getAgentPolicy, buildScopedBrainContext, documentVaultIdsForScope, type VaultName } from "./src/lib/agentPolicies.js";
@@ -115,6 +121,7 @@ import { FixtureMarketSimulationAdapter } from "./src/server/providers/marketSim
 import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligenceRoutes.js";
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
+import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
 import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
@@ -564,11 +571,42 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   // workspace is a backend/schema problem, not an auth problem, so it must
   // not be reported as 401 (that reads as "your session is bad" and sends
   // debugging in exactly the wrong direction).
+  //
+  // Multi-workspace switching: an x-workspace header selects a DIFFERENT
+  // workspace than the caller's default, but ONLY when the caller is a
+  // verified member of it — the header itself grants nothing. The
+  // membership read is the caller's own RLS-scoped view of
+  // workspace_members (ws_select / wm_select both resolve through
+  // is_member()), so a foreign or unknown id yields zero rows and the
+  // request fails closed: it silently falls back to the caller's default
+  // workspace instead of ever touching another tenant.
+  const rawRequestedWs =
+    (Array.isArray(req.headers["x-workspace"]) ? req.headers["x-workspace"][0] : req.headers["x-workspace"]) || undefined;
+  let requestedWs: string | undefined;
+  if (rawRequestedWs && /^[0-9a-fA-F-]{12,64}$/.test(rawRequestedWs)) {
+    const { data: membership, error: membershipError } = await sb
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", userId)
+      .eq("workspace_id", rawRequestedWs)
+      .maybeSingle();
+    if (membershipError) {
+      // Transient DB error: treat the header as absent and resolve the
+      // default — worst case the caller lands in their own workspace, which
+      // is always safe; never trust a header under a failing check.
+      console.error("x-workspace membership check failed, falling back to default workspace:", membershipError.message);
+    } else if (membership) {
+      requestedWs = rawRequestedWs;
+    } else {
+      // Not a member (or unknown id): fail closed to the default workspace.
+      console.warn(`x-workspace "${rawRequestedWs}" ignored: ${userEmail || userId} is not a member of that workspace.`);
+    }
+  }
   try {
     res.locals.sb = sb;
     res.locals.userId = userId;
     res.locals.userEmail = userEmail;
-    res.locals.wsId = await resolveWorkspaceId(sb, userId);
+    res.locals.wsId = requestedWs || (await resolveWorkspaceId(sb, userId));
     next();
   } catch (err: any) {
     console.error("Workspace resolution failed:", err);
@@ -1429,6 +1467,68 @@ app.use("/api", apiLimiter);
 app.use("/api/workspace", requireAuth);
 
 // ---------------------------------------------------------------------------
+// Workspace management — create + list the Client Enclaves a caller is
+// allowed to manage, and switch between them.
+//
+// Both routes run through the per-request RLS-scoped client stashed by
+// requireAuth; no service-role key, no secret-vault access. Create is
+// gated to callers who hold owner/admin in their resolved default
+// workspace (the same bar as the team routes), so a plain invited member
+// cannot spawn enclaves; listing is membership-scoped by RLS itself.
+// ---------------------------------------------------------------------------
+
+app.get("/api/workspace/manage", async (_req: Request, res: Response) => {
+  try {
+    const { workspaces, defaultWorkspaceId } = await listMemberWorkspaces(res.locals.sb, res.locals.userId);
+    res.json({
+      workspaces,
+      defaultWorkspaceId,
+      // The empty-workspace guarantee for the create path below: anything a
+      // new enclave starts with is the empty template, never demo content.
+      seedPolicy: "empty-template",
+    });
+  } catch (err: any) {
+    console.error("Workspace list failed:", err);
+    res.status(500).json({ error: "Workspace list failed: " + (err.message || String(err)) });
+  }
+});
+
+app.post("/api/workspace/manage", async (req: Request, res: Response) => {
+  const name = (req.body || {}).name;
+  if (typeof name !== "string" || !name.trim()) {
+    res.status(400).json({ error: "A workspace name is required." });
+    return;
+  }
+  try {
+    // Create right is owner/admin-only in the caller's default enclave —
+    // mirrors the gate on the team routes; a plain member gets a 403.
+    await assertOwnerOrAdminOfDefault(res.locals.sb, res.locals.userId);
+    const created = await createWorkspace(res.locals.sb, res.locals.userId, name);
+    // Membership enrolment happens in the AFTER INSERT trigger
+    // (add_owner_membership), so the new enclave is usable on the caller's
+    // next request with `x-workspace: <id>` — no separate step needed.
+    res.status(201).json({
+      id: created.id,
+      name: created.name,
+      ownerId: created.owner_id,
+      createdAt: created.created_at,
+      empty: true,
+    });
+  } catch (err: any) {
+    if (err instanceof CallerNotOwnerOrAdminError) {
+      res.status(403).json({ error: "Owner or admin required." });
+      return;
+    }
+    if (err?.message === "A workspace name is required.") {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    console.error("Workspace create failed:", err);
+    res.status(500).json({ error: "Workspace create failed: " + (err.message || String(err)) });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // CRO landing artifacts
 // ---------------------------------------------------------------------------
 // The old CRO Studio reported a successful teardown from a client-side timer.
@@ -2105,6 +2205,11 @@ app.use(
     provider: socialScheduler,
     expensiveLimiter,
   }),
+);
+
+app.use(
+  "/api/workspace/brain",
+  createBrainGraphRouter()
 );
 
 
@@ -9401,11 +9506,28 @@ if (process.env.NODE_ENV !== "production") {
   });
   app.use(vite.middlewares);
 } else {
-  const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*", (req: Request, res: Response) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
+  // Serve the built SPA only when the build output actually exists next to the
+  // running server. dist/server.js lives inside dist/, so the Vite build
+  // (plus the public/ assets it copies in) is found relative to __dirname in
+  // production; a cwd-relative fallback covers any runtime that lands the
+  // bundle elsewhere. Without this guard, pointing a bare deploy at an empty
+  // dist/ would 500 on index.html instead of just serving the API.
+  const distPath = fs.existsSync(path.join(__dirname, "index.html"))
+    ? __dirname
+    : fs.existsSync(path.join(process.cwd(), "dist", "index.html"))
+      ? path.join(process.cwd(), "dist")
+      : "";
+  if (distPath) {
+    app.use(express.static(distPath));
+    app.get("*", (req: Request, res: Response) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    console.warn(
+      "NODE_ENV=production but no dist/index.html found — API only. " +
+      "Run `npm run build` and place the dist/ bundle next to dist/server.js."
+    );
+  }
 }
 
 // Global error handler. Registered LAST — after every route and after the SPA

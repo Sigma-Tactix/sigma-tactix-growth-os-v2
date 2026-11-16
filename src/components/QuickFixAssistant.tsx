@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  Wrench, 
-  Zap, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  ArrowRight, 
-  ExternalLink, 
-  ShieldAlert,
+  Wrench,
+  Zap,
+  ArrowRight,
+  ExternalLink,
   Sparkles,
   RefreshCw
 } from 'lucide-react';
@@ -47,7 +43,7 @@ export default function QuickFixAssistant({
   const [isFixing, setIsFixing] = useState(false);
   const [isFixed, setIsFixed] = useState(false);
   const navigate = useNavigate();
-  const { notifySuccess } = useToast();
+  const { notifyInfo } = useToast();
 
   const handleApply = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -59,9 +55,9 @@ export default function QuickFixAssistant({
       if (data.onApplyFix) {
         data.onApplyFix();
       }
-      notifySuccess(
-        'Mitigation Applied',
-        `Autonomous fix executed for ${data.codename || data.name}. System health restored to OPERATIONAL.`,
+      notifyInfo(
+        'Routed',
+        `Routed to ${data.codename || data.name}. No fix was executed and none was verified — awaiting verification.`,
         { category: 'SYSTEM' }
       );
     }, 750);
@@ -206,8 +202,8 @@ export default function QuickFixAssistant({
                 disabled={isFixing || isFixed}
                 className={cn(
                   "flex-1 px-3 py-1.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg",
-                  isFixed 
-                    ? "bg-green-500/20 text-green-300 border border-green-500/40" 
+                  isFixed
+                    ? "bg-white/10 text-zinc-300 border border-white/15"
                     : isCritical
                       ? "bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/30"
                       : "bg-accent hover:opacity-90 text-background amber-glow"
@@ -216,12 +212,12 @@ export default function QuickFixAssistant({
                 {isFixing ? (
                   <>
                     <RefreshCw size={13} className="animate-spin" />
-                    <span>Applying Patch...</span>
+                    <span>Routing...</span>
                   </>
                 ) : isFixed ? (
                   <>
-                    <CheckCircle2 size={13} className="text-green-400" />
-                    <span>Resolved & Live</span>
+                    <ArrowRight size={13} className="text-zinc-400" />
+                    <span>Routed · Awaiting verification</span>
                   </>
                 ) : (
                   <>

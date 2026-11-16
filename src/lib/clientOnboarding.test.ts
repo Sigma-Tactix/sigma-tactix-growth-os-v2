@@ -5,6 +5,7 @@ import {
   mergeDocumentSuggestion,
   normalizeDomain,
   validateOnboardingDraft,
+  buildInitialBrainGraphEntities,
 } from './clientOnboarding';
 
 describe('client onboarding contract', () => {
@@ -83,5 +84,25 @@ describe('client onboarding contract', () => {
       },
       connectors: [],
     });
+  });
+
+  it('builds initial Second Brain knowledge graph entities from onboarding inputs', () => {
+    const draft = createEmptyOnboardingDraft('acme.com');
+    draft.companyName = 'Acme Corp';
+    draft.icp = 'B2B SaaS VPs of Growth with >$20k ad spend';
+    draft.brandVault.corePositioning = 'Autonomous growth marketing without agency markups';
+    draft.brandVault.offersAndPricing = '$4,999/mo growth retainer';
+
+    const entities = buildInitialBrainGraphEntities(draft);
+    expect(entities).toHaveLength(4);
+    expect(entities.map((e) => e.name)).toEqual([
+      'Acme Corp',
+      'Acme Corp ICP Target',
+      'Acme Corp Core Positioning',
+      'Acme Corp Core Offer',
+    ]);
+    expect(entities.find((e) => e.entityType === 'Persona')?.summary).toBe(
+      'B2B SaaS VPs of Growth with >$20k ad spend',
+    );
   });
 });

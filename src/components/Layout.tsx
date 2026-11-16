@@ -61,6 +61,7 @@ import { useTutorial } from '@/src/contexts/TutorialContext';
 import ThemeToggle from '@/src/components/ui/ThemeToggle';
 import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
+import VantaCompactDock from '@/src/components/vanta/VantaCompactDock';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
 import { isVantaReleaseEnabled, resolveVantaNavigationTarget, VANTA_GATED_BADGE } from '@/src/lib/vantaFeatureFlag';
@@ -454,6 +455,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={18} />
           </button>
 
+          {/* Brand mark — top-left anchor for the app header */}
+          <SigmaTactixLogo
+            variant="mark"
+            size={30}
+            onClick={() => navigate('/')}
+            className="shrink-0 md:mr-2"
+          />
+
           {/* Quick Search */}
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-xs 2xl:max-w-md relative">
              <div className="w-full relative group">
@@ -651,7 +660,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}>STATUS</span>
             </button>
 
-            <div className="hidden xl:block"><ThemeToggle /></div>
+            <ThemeToggle />
             <div className="hidden h-5 w-px sigma-divider border-l mx-0.5 sm:block" />
             
             {/* Role Switcher — click-toggle (was hover-only, which fails WCAG 2.1.1) */}
@@ -820,6 +829,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* VANTA Neural Core Slide-out Intelligence Drawer */}
         <VantaTranscriptDrawer />
+
+        {/* VANTA compact command dock — self-gated (dockOpen + /living-system),
+            opened by the Living System sidebar widget's "Open VANTA" controls */}
+        <VantaCompactDock />
 
         {/* Guided Client Onboarding Wizard */}
         <ClientOnboardingWizard 

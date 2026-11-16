@@ -1,0 +1,29 @@
+# Keep the build context small. The build stage only needs source + lockfile;
+# node_modules and dist are regenerated inside the image. public/ IS needed —
+# Vite bakes it into dist/ at build time.
+node_modules/
+dist/
+.vexp/
+.git/
+.gitignore
+.env
+.env.*
+.env.example
+
+# Root-level visual-check screenshots & agent scaffolding (not build inputs).
+/*.png
+graphify-out/
+output/
+reports/
+evaluation/
+artifacts/
+roster-backups/
+skills-lock.json
+*.patch
+agents/
+steering/
+docs/
+tasks/
+hooks/
+metadata.json
+supabase-config.json

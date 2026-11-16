@@ -20,10 +20,18 @@ export default function SecondBrainWorkspace() {
     setError(null);
     void (async () => {
       try {
-        const response = await apiFetch('/api/workspace/vault/documents');
-        const data = await response.json();
-        if (!response.ok || !data.success || !Array.isArray(data.documents)) throw new Error(data.error || 'Document index unavailable');
-        if (!cancelled) setResult({ workspaceId: currentWorkspace.id, graph: buildSecondBrainGraph(hydrateSecondBrainVaults(data.documents)) });
+        const [docRes, graphRes] = await Promise.all([
+          apiFetch('/api/workspace/vault/documents').then((r) => r.json()).catch(() => ({ success: false })),
+          apiFetch('/api/workspace/brain/graph').then((r) => r.json()).catch(() => ({ success: false })),
+        ]);
+        const documents = docRes.success && Array.isArray(docRes.documents) ? docRes.documents : [];
+        const knowledgeGraph = graphRes.success ? { entities: graphRes.entities, relationships: graphRes.relationships } : undefined;
+        if (!cancelled) {
+          setResult({
+            workspaceId: currentWorkspace.id,
+            graph: buildSecondBrainGraph(hydrateSecondBrainVaults(documents), knowledgeGraph),
+          });
+        }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : 'Document index unavailable');
       }

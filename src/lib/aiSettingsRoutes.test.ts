@@ -5,6 +5,7 @@ import type { Server } from 'node:http';
 import express from 'express';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { canUseLocalSockets } from '../test/socketProbe.js';
 import * as settings from './aiSettings.js';
 
 // Exercise the actual registered handlers without starting the monolithic server,
@@ -23,7 +24,7 @@ const compiled = ts.transpileModule(statements.map(node => node.getText(source))
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-describe('AI settings HTTP handlers', () => {
+describe.skipIf(await canUseLocalSockets().then(ok => !ok))('AI settings HTTP handlers', () => {
   let server: Server;
   let url: string;
   let state: any;
@@ -58,6 +59,7 @@ describe('AI settings HTTP handlers', () => {
     url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/workspace/admin`;
   });
   afterEach(async () => {
+    if (!server) return;
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));
   });

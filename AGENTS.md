@@ -38,6 +38,7 @@ Always adhere to terms defined in `CONTEXT.md`:
 6. **Theme Token Discipline**: Never hardcode pure white or pure black backgrounds for cards or menus. Use the semantic theme classes (`sigma-card`, `sigma-control`, `sigma-menu`, `sigma-text`, `sigma-muted`, `sigma-input`, `sigma-divider`) to support light, dark, and system appearances.
 7. **Token Cost Engine Accuracy**: When matching models in `tokenCostEngine.ts`, always sort candidate models by descending key length to prevent prefix collisions (e.g., `o1` matching `o1-mini`).
 8. **Deep Modules & Clean Seams**: Keep public interfaces simple and hide implementation complexity behind deep services (e.g. `agentReachService.ts`, `vantaServer.ts`).
+9. **Fast Bounded Decisions (Laya Engine)**: When evaluating two or more concrete architectural paths or development choices, query the advisory engine via `npm run laya:decide -- --question "<question>" --option "id1=desc1" --option "id2=desc2"` (check runtime with `npm run laya:status`). Laya produces fast (~200ms warm) System 1 signals. Laya NEVER authorizes writes, deployments, deletions, spending, or bypasses Human-in-the-Loop gates. If unavailable or offline, fall back to deterministic policy and verified codebase evidence.
 
 ## 4. Verification & Testing
 - Run unit tests with `npm run test` (Vitest).
