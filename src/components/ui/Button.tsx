@@ -61,8 +61,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 
 // btn-xs / btn-sm: compact visual height, extended to a 44px hit area on touch
 // devices via a pseudo-element (see index.css @media (pointer: coarse)).
+// Font floor strictly maintained at 12px (text-xs) per executive artifact standards.
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: 'btn-xs h-7 px-2.5 text-[11px] rounded-lg gap-1.5',
+  xs: 'btn-xs h-7 px-2.5 text-xs rounded-lg gap-1.5',
   sm: 'btn-sm h-8.5 px-3 text-xs rounded-lg gap-2',
   md: 'h-10 px-4 text-xs font-medium rounded-xl gap-2',
   lg: 'h-11.5 px-5 text-sm font-semibold rounded-xl gap-2.5',
@@ -81,16 +82,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   ...props
 }, ref) => {
   const leadingIcon = leftIcon || icon;
+
+  // Optical alignment (/better-ui): give 2px less padding on the icon side when text is present
+  const opticalPadding = leadingIcon && !rightIcon && children
+    ? (size === 'xs' ? 'pl-2 pr-2.5' : size === 'sm' ? 'pl-2.5 pr-3' : size === 'md' ? 'pl-3 pr-4' : 'pl-3.5 pr-5')
+    : rightIcon && !leadingIcon && children
+    ? (size === 'xs' ? 'pl-2.5 pr-2' : size === 'sm' ? 'pl-3 pr-2.5' : size === 'md' ? 'pl-4 pr-3' : 'pl-5 pr-3.5')
+    : undefined;
+
   return (
     <motion.button
       ref={ref}
-      whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
-      transition={{ duration: 0.1 }}
+      whileTap={{ scale: disabled || isLoading ? 1 : 0.96 }}
+      transition={{ duration: 0.15, ease: [0, 0, 0.2, 1] }}
       disabled={disabled || isLoading}
       className={cn(
-        'inline-flex items-center justify-center font-sans select-none outline-none transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:active:transform-none',
+        'inline-flex items-center justify-center font-sans select-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:active:transform-none',
+        'transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-150 ease-out',
         variantStyles[variant],
         sizeStyles[size],
+        opticalPadding,
         className
       )}
       {...(props as any)}

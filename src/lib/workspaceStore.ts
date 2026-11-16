@@ -126,7 +126,7 @@ export async function resolveWorkspaceId(sb: SupabaseClient, userId: string): Pr
 
   const { data: created, error: insErr } = await sb
     .from("workspaces")
-    .insert({ name: "My Workspace", owner_id: userId })
+    .insert({ name: "My Workspace", owner_id: userId, tier: "enterprise" })
     .select("id")
     .single();
   if (insErr) throw insErr;

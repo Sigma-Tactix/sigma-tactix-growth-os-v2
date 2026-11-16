@@ -434,7 +434,7 @@ DROP POLICY IF EXISTS ws_insert ON workspaces;
 DROP POLICY IF EXISTS ws_update ON workspaces;
 DROP POLICY IF EXISTS ws_delete ON workspaces;
 CREATE POLICY ws_select ON workspaces
-    FOR SELECT TO authenticated USING (public.is_member(id));
+    FOR SELECT TO authenticated USING (public.is_member(id) OR owner_id = (select auth.uid()));
 CREATE POLICY ws_insert ON workspaces
     FOR INSERT TO authenticated WITH CHECK (owner_id = (select auth.uid()));
 CREATE POLICY ws_update ON workspaces

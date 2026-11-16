@@ -15,7 +15,7 @@ const ENV_KEYS: Record<string, string[]> = {
   google: ['GEMINI_API_KEY'], openai: ['OPENAI_API_KEY'], anthropic: ['ANTHROPIC_API_KEY'],
   xai: ['XAI_API_KEY'], deepseek: ['DEEPSEEK_API_KEY'], qwen: ['DASHSCOPE_API_KEY', 'QWEN_API_KEY'],
   glm: ['GLM_API_KEY', 'ZHIPU_API_KEY'], omniroute: ['OMNIROUTE_API_KEY'], opencode: ['OPENCODE_API_KEY'],
-  openrouter: ['OPENROUTER_API_KEY'], opusmax: ['OPUSMAX_API_KEY'],
+  openrouter: ['OPENROUTER_API_KEY'], opusmax: ['OPUSMAX_API_KEY', 'ANTHROPIC_AUTH_TOKEN'],
 };
 export function environmentProviderKey(provider: string, env: Record<string, string | undefined>) {
   return ENV_KEYS[canonicalAIProvider(provider)]?.map(name => env[name]).find(Boolean);

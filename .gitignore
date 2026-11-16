@@ -124,6 +124,7 @@ artifacts/
 .claude/settings.local.json
 
 # live per-agent runtime scratch (regenerated on every session; never commit)
+.scratch/
 .claude/sessions/
 .claude/state/
 .agents/teamwork/

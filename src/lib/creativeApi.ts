@@ -177,7 +177,7 @@ export async function getBrandCreativeStylePresets(): Promise<BrandCreativeStyle
   return data.presets;
 }
 
-function generateFallbackSocialCampaign(params: GenerateSocialParams): GenerateSocialResult {
+export function generateFallbackSocialCampaign(params: GenerateSocialParams): GenerateSocialResult {
   const { channel, topic, targetAudience } = params;
   const audience = targetAudience || 'B2B Tech Founders & Revenue Leaders';
 

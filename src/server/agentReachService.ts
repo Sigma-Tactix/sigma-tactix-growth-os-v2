@@ -949,7 +949,45 @@ Provide structured analysis matching the schema.`;
       timestamp: new Date().toISOString(),
     };
   } catch (err) {
-    console.error('Competitor battlecard generation failed:', err);
+    console.error('Competitor battlecard generation failed on Gemini, trying OpusMax fallback:', err);
+    const omKey = process.env.OPUSMAX_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
+    if (omKey) {
+      try {
+        const base = (process.env.OPUSMAX_BASE_URL || process.env.ANTHROPIC_BASE_URL || 'https://api.opusmax.pro').replace(/\/$/, '').replace(/\/v1$/, '');
+        const r = await fetch(`${base}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${omKey}` },
+          body: JSON.stringify({
+            model: 'claude-opus-5-5',
+            messages: [
+              { role: 'system', content: 'You are an elite B2B competitor intelligence analyst. Return VALID JSON ONLY with keys: valueProposition (string), coreStrengths (string[]), vulnerabilities (string[]), pricingSignals (string), counterPositioning (string), salesTalkTrack (string).' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.4
+          })
+        });
+        if (r.ok) {
+          const data = await r.json() as any;
+          const text = data.choices?.[0]?.message?.content || '{}';
+          const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+          const parsed = JSON.parse(clean);
+          return {
+            competitorName: competitorName || 'Target Competitor',
+            targetUrl: target,
+            valueProposition: parsed.valueProposition || 'Competitive growth services',
+            coreStrengths: parsed.coreStrengths || [],
+            vulnerabilities: parsed.vulnerabilities || [],
+            pricingSignals: parsed.pricingSignals || 'Enterprise pricing',
+            counterPositioning: parsed.counterPositioning || '',
+            salesTalkTrack: parsed.salesTalkTrack || '',
+            sourceDossierSummary: fetchResult.content.slice(0, 600),
+            timestamp: new Date().toISOString(),
+          };
+        }
+      } catch (omErr) {
+        console.error('OpusMax battlecard fallback failed:', omErr);
+      }
+    }
     return {
       competitorName: competitorName || 'Target Competitor',
       targetUrl: target,
@@ -1060,7 +1098,46 @@ Provide structured JSON matching the schema.`;
       sourceThumbnail
     };
   } catch (err) {
-    console.error('Article repurposing failed:', err);
+    console.error('Article repurposing failed on Gemini, trying OpusMax fallback:', err);
+    const omKey = process.env.OPUSMAX_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
+    if (omKey) {
+      try {
+        const base = (process.env.OPUSMAX_BASE_URL || process.env.ANTHROPIC_BASE_URL || 'https://api.opusmax.pro').replace(/\/$/, '').replace(/\/v1$/, '');
+        const r = await fetch(`${base}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${omKey}` },
+          body: JSON.stringify({
+            model: 'claude-opus-5-5',
+            messages: [
+              { role: 'system', content: 'You are an elite editorial growth copywriter. Return VALID JSON ONLY with keys: title (string), subtitle (string), markdownContent (string), keyTakeaways (string[]), citedQuotes (array of {quote, context, sourceUrl}), estimatedReadTime (string).' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.5
+          })
+        });
+        if (r.ok) {
+          const data = await r.json() as any;
+          const text = data.choices?.[0]?.message?.content || '{}';
+          const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+          const parsed = JSON.parse(clean);
+          return {
+            title: parsed.title || sourceTitle,
+            subtitle: parsed.subtitle || '',
+            format,
+            targetAudience,
+            markdownContent: parsed.markdownContent || fetchResult.content,
+            keyTakeaways: parsed.keyTakeaways || [],
+            citedQuotes: parsed.citedQuotes || [],
+            estimatedReadTime: parsed.estimatedReadTime || '5 min read',
+            sourceUrl,
+            sourceTitle,
+            sourceThumbnail
+          };
+        }
+      } catch (omErr) {
+        console.error('OpusMax article repurposing fallback failed:', omErr);
+      }
+    }
     return {
       title: `Executive Insights: ${sourceTitle}`,
       subtitle: `Key findings synthesized from ${sourceUrl}`,

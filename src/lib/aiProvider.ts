@@ -60,7 +60,10 @@ export function resolveProviderBaseUrl(provider: SupportedProvider, explicitBase
     case "glm": return "https://open.bigmodel.cn/api/paas/v4";
     case "omniroute": return "https://api.omniroute.ai/v1";
     case "opencode": return "https://api.opencode.ai/v1";
-    case "opusmax": return "https://api.opusmax.pro/v1";
+    case "opusmax": {
+      const base = (process.env.OPUSMAX_BASE_URL || process.env.ANTHROPIC_BASE_URL || "https://api.opusmax.pro/v1").replace(/\/$/, "");
+      return base.endsWith('/v1') ? base : `${base}/v1`;
+    }
     case "ollama":
       return (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, "");
     case "lmstudio":

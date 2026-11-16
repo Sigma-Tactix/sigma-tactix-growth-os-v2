@@ -89,6 +89,30 @@ export default function AuthGate({ children }: AuthGateProps) {
         <button type="button" onClick={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setError(null); setNotice(null); }} className="mt-5 text-sm font-medium text-[#c93616] hover:text-[#9f2d13]">
           {mode === 'signIn' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
         </button>
+
+        {Boolean((import.meta as any).env?.DEV) && (
+          <div className="mt-5 pt-4 border-t border-[var(--sigma-border)]">
+            <p className="text-[11px] text-zinc-400 mb-2">Development Mode</p>
+            <button
+              type="button"
+              onClick={async () => {
+                setError(null);
+                setSubmitting(true);
+                try {
+                  await emailSignIn('nazimkhwaja+test1@sigmatactix.com', 'DevPassword123!');
+                } catch (caught) {
+                  setError(caught instanceof Error ? caught.message : 'Unable to sign in as Dev Enclave.');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              disabled={submitting}
+              className="sigma-button-secondary w-full px-4 py-2 text-xs font-semibold text-orange-400 hover:text-orange-300 border border-orange-500/30"
+            >
+              One-Click Developer Enclave Sign-in
+            </button>
+          </div>
+        )}
       </section>
     </main>
   );
