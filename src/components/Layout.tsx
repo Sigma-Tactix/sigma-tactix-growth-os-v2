@@ -61,6 +61,7 @@ import { useTutorial } from '@/src/contexts/TutorialContext';
 import ThemeToggle from '@/src/components/ui/ThemeToggle';
 import VantaHeaderIndicator from '@/src/components/vanta/VantaHeaderIndicator';
 import VantaTranscriptDrawer from '@/src/components/vanta/VantaTranscriptDrawer';
+import VantaCompactDock from '@/src/components/vanta/VantaCompactDock';
 import SigmaTactixLogo from '@/src/components/brand/SigmaTactixLogo';
 import Button from '@/src/components/ui/Button';
 import { isVantaReleaseEnabled, resolveVantaNavigationTarget, VANTA_GATED_BADGE } from '@/src/lib/vantaFeatureFlag';
@@ -828,6 +829,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* VANTA Neural Core Slide-out Intelligence Drawer */}
         <VantaTranscriptDrawer />
+
+        {/* VANTA compact command dock — self-gated (dockOpen + /living-system),
+            opened by the Living System sidebar widget's "Open VANTA" controls */}
+        <VantaCompactDock />
 
         {/* Guided Client Onboarding Wizard */}
         <ClientOnboardingWizard 

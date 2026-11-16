@@ -30,6 +30,7 @@ import VantaSynapticBrainOrb, {
 
 // Existing project types
 import type { VantaPhase } from '@/src/lib/vanta';
+import { isWebGLAvailable } from '@/src/lib/webglDetection';
 
 /* ─── Constants ───────────────────────────────────────────────────────── */
 
@@ -100,6 +101,16 @@ const SEQUENCE_FRAMES: { frame: NeuralSequenceFrame; title: string; subtitle: st
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
+class SynapticBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    return this.state.failed
+      ? <div role="status" className="flex h-full min-h-[200px] items-center justify-center p-6 text-center"><p className="max-w-sm text-xs text-zinc-400">3D rendering is unavailable in this browser. The Synaptic Brain requires WebGL. Try the 2D Thinking Orb view.</p></div>
+      : this.props.children;
+  }
+}
+
 export default function VantaPreviewLab() {
   const [activeTab, setActiveTab] = useState<'synaptic-3d' | 'thinking-2d'>('synaptic-3d');
 
@@ -118,6 +129,7 @@ export default function VantaPreviewLab() {
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sequencePlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mic = useMicrophone();
+  const hasWebGL = useMemo(() => isWebGLAvailable(), []);
 
   // Auto-play for 5-Frame Sequence
   useEffect(() => {
@@ -380,14 +392,28 @@ export default function VantaPreviewLab() {
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative overflow-y-auto lg:overflow-hidden">
             {/* 3D Canvas */}
             <div className="flex-1 h-[460px] lg:h-full min-h-[460px] relative">
-              <VantaSynapticBrainOrb
-                sequenceFrame={sequenceFrame}
-                audioLevel={effectiveAudio}
-                selectedFileId={selectedFile?.id ?? null}
-                onSelectFile={handleSelectFile}
-                showSphereLayers={showSphereLayers}
-                className="w-full h-full"
-              />
+              {hasWebGL ? (
+                <SynapticBoundary>
+                  <VantaSynapticBrainOrb
+                    sequenceFrame={sequenceFrame}
+                    audioLevel={effectiveAudio}
+                    selectedFileId={selectedFile?.id ?? null}
+                    onSelectFile={handleSelectFile}
+                    showSphereLayers={showSphereLayers}
+                    className="w-full h-full"
+                  />
+                </SynapticBoundary>
+              ) : (
+                <div role="status" className="flex h-full min-h-[460px] flex-col items-center justify-center gap-3 bg-[#080301] p-6 text-center">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-500/30 bg-orange-500/10">
+                    <Orbit size={18} className="text-orange-400" />
+                  </span>
+                  <p className="text-xs font-semibold text-zinc-200">3D Synaptic Brain unavailable</p>
+                  <p className="max-w-sm text-[11px] leading-relaxed text-zinc-400">
+                    WebGL is not available in this browser, so the 3D brain can't be rendered. The control bars and vault file list still work — use them to inspect the sequence state, or switch to the 2D Thinking Orb view.
+                  </p>
+                </div>
+              )}
 
               {/* Bottom State Caption */}
               <div className="pointer-events-none absolute bottom-5 left-5 z-10 space-y-1 bg-black/60 p-3 rounded-xl border border-white/10 backdrop-blur-md max-w-sm">

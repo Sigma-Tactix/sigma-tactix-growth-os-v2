@@ -257,7 +257,7 @@ export default function MapsBrainOrbit({ graph: suppliedGraph }: { graph?: MapsB
     window.setTimeout(() => setCopiedNodeId(current => current === node.id ? null : current), 1400);
   };
 
-  const baseWidth = compact ? 500 : MAPS_FRAME.width;
+  const baseWidth = compact ? (view === 'timeline' ? 700 : 500) : MAPS_FRAME.width;
   const baseHeight = compact ? 560 : MAPS_FRAME.height;
   const cameraWidth = baseWidth / camera.zoom;
   const cameraHeight = baseHeight / camera.zoom;
@@ -285,7 +285,7 @@ export default function MapsBrainOrbit({ graph: suppliedGraph }: { graph?: MapsB
                 <Search size={11} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-zinc-600" />
                 <input value={query} onChange={event => setQuery(event.target.value)} placeholder="label, path, note" className="w-full border border-white/[0.08] bg-black/20 py-1 pl-6 pr-2 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-orange-400/50" />
               </label>
-              {searchResults.length > 0 && (
+              {searchResults.length > 0 && !(view === 'orbit' && suppliedGraph) && (
                 <div className="absolute right-0 top-[calc(100%+5px)] w-64 border border-white/[0.1] bg-[#090b0e]/98 p-1 shadow-2xl">
                   {searchResults.map(node => (
                     <button key={node.id} type="button" onClick={() => { flyTo(node.id); setQuery(''); }} className="flex w-full items-center justify-between gap-3 px-2 py-1.5 text-left text-[11px] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100">
@@ -324,7 +324,7 @@ export default function MapsBrainOrbit({ graph: suppliedGraph }: { graph?: MapsB
         </div>
       </header>
 
-      {view === 'orbit' && suppliedGraph ? <div className="absolute inset-x-0 bottom-8 top-36"><Suspense fallback={<p role="status">Loading 3D orbit…</p>}><SecondBrainOrbit3D key={sceneRevision} graph={graph} matchingIds={matchingIds} selectedId={selectedNodeId} onSelect={setSelectedNodeId} motion={motion} showNames={showNames} /></Suspense></div> : <svg viewBox={viewBox} className="absolute inset-0 z-10 h-full w-full" role="img" aria-label={`${view} view of the ${suppliedGraph ? 'workspace document' : 'configured system'} map`}>
+      {view === 'orbit' && suppliedGraph ? <div className="absolute inset-x-0 bottom-8 top-36"><Suspense fallback={<p role="status">Loading 3D orbit…</p>}><SecondBrainOrbit3D key={sceneRevision} graph={graph} matchingIds={matchingIds} selectedId={selectedNodeId} onSelect={setSelectedNodeId} motion={motion} showNames={showNames} /></Suspense></div> : <svg viewBox={viewBox} className="absolute inset-0 z-10 h-full w-full" role="group" aria-label={`${view} view of the ${suppliedGraph ? 'workspace document' : 'configured system'} map`}>
         <defs>
           <radialGradient id="mapsCoreGlow"><stop offset="0%" stopColor="#FFCCB1" /><stop offset="32%" stopColor="#FF6B2C" /><stop offset="100%" stopColor="#FF481B" stopOpacity="0" /></radialGradient>
           <filter id="mapsSelectedGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>

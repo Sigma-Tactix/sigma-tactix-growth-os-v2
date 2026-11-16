@@ -20,6 +20,7 @@ export default defineConfig(({mode}) => {
     test: {
       exclude: [
         '**/node_modules/**',
+        '**/node_modules.bak*/**',
         '**/.kilo/**',
         '**/dist/**',
         '**/worktrees/**',

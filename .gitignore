@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+node_modules.bak*/
 /.pnp
 .pnp.js
 
@@ -126,3 +127,4 @@ artifacts/
 .claude/sessions/
 .claude/state/
 .agents/teamwork/
+.vercel

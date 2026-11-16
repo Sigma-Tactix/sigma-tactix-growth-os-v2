@@ -145,3 +145,53 @@ export function buildClientWorkspaceDraft(draft: ClientOnboardingDraft): Partial
     connectors: draft.connectors,
   };
 }
+
+export function buildInitialBrainGraphEntities(draft: ClientOnboardingDraft): Array<{
+  vaultId: string;
+  name: string;
+  entityType: 'Concept' | 'Persona' | 'Offer';
+  summary: string;
+}> {
+  const entities: Array<{
+    vaultId: string;
+    name: string;
+    entityType: 'Concept' | 'Persona' | 'Offer';
+    summary: string;
+  }> = [];
+
+  const company = draft.companyName.trim() || 'Client';
+
+  if (draft.companyName.trim()) {
+    entities.push({
+      vaultId: 'brand',
+      name: company,
+      entityType: 'Concept',
+      summary: `Primary brand entity for ${company}`,
+    });
+  }
+  if (draft.icp.trim()) {
+    entities.push({
+      vaultId: 'customer',
+      name: `${company} ICP Target`,
+      entityType: 'Persona',
+      summary: draft.icp.trim(),
+    });
+  }
+  if (draft.brandVault.corePositioning.trim()) {
+    entities.push({
+      vaultId: 'brand',
+      name: `${company} Core Positioning`,
+      entityType: 'Concept',
+      summary: draft.brandVault.corePositioning.trim(),
+    });
+  }
+  if (draft.brandVault.offersAndPricing.trim()) {
+    entities.push({
+      vaultId: 'brand',
+      name: `${company} Core Offer`,
+      entityType: 'Offer',
+      summary: draft.brandVault.offersAndPricing.trim(),
+    });
+  }
+  return entities;
+}

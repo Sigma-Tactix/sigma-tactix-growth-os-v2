@@ -989,7 +989,7 @@ export default function VantaSynapticBrainOrb({
         {/* 4. Synaptic Axon Filaments (The 5 Frames Sequence) */}
         <DynamicSynapticAxons frame={effectiveFrame} targetedFile={targetedFile} />
 
-        {/* 5. Live system graph in-app; deterministic sample files in the isolated visual lab. */}
+        {/* 5. Live system graph in-app; deterministic sample files only in the isolated visual lab. */}
         {topology && hasLiveTopology ? (
           <TopologyNetwork
             topology={topology}
@@ -997,10 +997,13 @@ export default function VantaSynapticBrainOrb({
             onSelectNode={onSelectNode}
           />
         ) : (
+          /* No topology supplied = isolated lab: decorative vault rings + sample files.
+             A topology IS supplied but has no entities yet (in-app): honest empty state,
+             never fabricated sample files presented as the user's vault. */
           <SphereVaultLayers
-            files={SAMPLE_VAULT_FILES}
-            selectedFileId={activeFileId}
-            onSelectFile={handleSelect}
+            files={topology ? [] : SAMPLE_VAULT_FILES}
+            selectedFileId={topology ? null : activeFileId}
+            onSelectFile={topology ? undefined : handleSelect}
             showRings={showSphereLayers}
           />
         )}

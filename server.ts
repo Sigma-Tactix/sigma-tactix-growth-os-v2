@@ -121,6 +121,7 @@ import { FixtureMarketSimulationAdapter } from "./src/server/providers/marketSim
 import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligenceRoutes.js";
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
+import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
 import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
@@ -2204,6 +2205,11 @@ app.use(
     provider: socialScheduler,
     expensiveLimiter,
   }),
+);
+
+app.use(
+  "/api/workspace/brain",
+  createBrainGraphRouter()
 );
 
 
