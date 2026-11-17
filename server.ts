@@ -655,7 +655,11 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const rawRequestedWs =
     (Array.isArray(req.headers["x-workspace"]) ? req.headers["x-workspace"][0] : req.headers["x-workspace"]) || undefined;
   let requestedWs: string | undefined;
-  if (rawRequestedWs && /^[0-9a-fA-F-]{12,64}$/.test(rawRequestedWs)) {
+  if (rawRequestedWs !== undefined) {
+    if (!/^[0-9a-fA-F-]{12,64}$/.test(rawRequestedWs)) {
+      res.status(400).json({ error: "Invalid workspace selection identifier format." });
+      return;
+    }
     const { data: membership, error: membershipError } = await sb
       .from("workspace_members")
       .select("workspace_id")
@@ -663,16 +667,16 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
       .eq("workspace_id", rawRequestedWs)
       .maybeSingle();
     if (membershipError) {
-      // Transient DB error: treat the header as absent and resolve the
-      // default — worst case the caller lands in their own workspace, which
-      // is always safe; never trust a header under a failing check.
-      console.error("x-workspace membership check failed, falling back to default workspace:", membershipError.message);
-    } else if (membership) {
-      requestedWs = rawRequestedWs;
-    } else {
-      // Not a member (or unknown id): fail closed to the default workspace.
-      console.warn(`x-workspace "${rawRequestedWs}" ignored: ${userEmail || userId} is not a member of that workspace.`);
+      console.error("x-workspace membership check failed:", membershipError.message);
+      res.status(500).json({ error: "Membership verification failed." });
+      return;
     }
+    if (!membership) {
+      console.warn(`x-workspace "${rawRequestedWs}" rejected: ${userEmail || userId} is not an authorized member.`);
+      res.status(403).json({ error: "Access denied: you are not an authorized member of the requested workspace." });
+      return;
+    }
+    requestedWs = rawRequestedWs;
   }
   try {
     res.locals.sb = sb;
