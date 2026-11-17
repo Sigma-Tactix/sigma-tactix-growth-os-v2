@@ -324,7 +324,7 @@ function resolveRuntimeCommitSha(): string {
         return head;
       }
     }
-  } catch {}
+  } catch { }
   return "be85432d0b5033878b438cf38b97587ef03b9c73";
 }
 
@@ -334,7 +334,8 @@ function resolveRuntimeCommitSha(): string {
 // is the question a restart policy needs. It must NOT check Supabase — a DB
 // blip would then cause the supervisor to kill an otherwise healthy process.
 app.get("/healthz", (_req: Request, res: Response) => {
-  res.json({ ok: true, uptimeSeconds: Math.round(process.uptime()),
+  res.json({
+    ok: true, uptimeSeconds: Math.round(process.uptime()),
     commit: resolveRuntimeCommitSha(),
     status: "alive",
   });
@@ -6011,6 +6012,9 @@ async function executeAgentTaskInner(
         args,
         sb: sbContext?.sb,
         workspaceId: sbContext?.workspaceId,
+        taskId: sbContext?.taskId,
+        agentName,
+        allowedScope,
         secondBrain: brain,
         workspaceRoot: path.join(
           process.cwd(),

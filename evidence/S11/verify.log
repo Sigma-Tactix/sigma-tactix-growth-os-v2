@@ -1,0 +1,30 @@
+=== npm test src/lib/computerRuntime.test.ts src/lib/agentPipeline.test.ts ===
+> vitest run src/lib/computerRuntime.test.ts src/lib/agentPipeline.test.ts
+
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/computerRuntime.test.ts (11 tests) 172ms
+ ✓ src/lib/agentPipeline.test.ts (10 tests) 19ms
+
+ Test Files  2 passed (2)
+      Tests  21 passed (21)
+   Start at  00:37:09
+   Duration  1.10s (transform 211ms, setup 0ms, import 1.38s, tests 191ms, environment 0ms)
+
+=== npm run verify ===
+> sigma-tactix-growth-os@0.1.0 verify
+> npm run build && npm run lint && npm run test
+
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+✓ 4404 modules transformed.
+✓ built in 36.87s
+dist\server.js 1.0mb
+
+> tsc --noEmit
+Passed with 0 errors.
+
+> vitest run
+Test Files  103 passed | 1 skipped (104)
+     Tests  716 passed | 3 skipped (719)
+Duration    11.82s
+Exit Code: 0

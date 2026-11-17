@@ -3,6 +3,12 @@ import { assertPublicHttpUrl, fetchSiteContent } from "./siteFetch.js";
 import { searchDocuments } from "./rag.js";
 import { isSecretVaultId } from "./secretVaultPolicy.js";
 import { documentVaultIdsForScope } from "./agentPolicies.js";
+import {
+  safeReadWorkspaceFile,
+  safeWriteWorkspaceFile,
+  executeSandboxedCommand,
+  executeIsolatedBrowserResearch,
+} from "./computerRuntime.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Tool declarations exposed to Gemini agents during execution
@@ -104,6 +110,19 @@ export const GROWTH_OS_AGENT_TOOLS: FunctionDeclaration[] = [
       required: ["url"],
     },
   },
+  {
+    name: "browser_research",
+    description: "Execute bounded, public-web browser research and asset retrieval inside an isolated workspace sandbox.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        url: { type: Type.STRING, description: "The public HTTP/HTTPS URL to research." },
+        downloadFile: { type: Type.BOOLEAN, description: "Whether to download the resource into the workspace downloads sandbox." },
+        outputFilename: { type: Type.STRING, description: "Optional output filename inside the downloads directory." },
+      },
+      required: ["url"],
+    },
+  },
 ];
 
 export const AGENT_TOOL_NAMES = [
@@ -115,6 +134,7 @@ export const AGENT_TOOL_NAMES = [
   "read_workspace_file",
   "write_workspace_file",
   "http_request",
+  "browser_research",
 ] as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[number];
@@ -253,6 +273,22 @@ export const GROWTH_OS_OPENAI_TOOLS: OpenAIToolDefinition[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "browser_research",
+      description: "Execute bounded, public-web browser research and asset retrieval inside an isolated workspace sandbox.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The public HTTP/HTTPS URL to research." },
+          downloadFile: { type: "boolean", description: "Whether to download the resource into the workspace downloads sandbox." },
+          outputFilename: { type: "string", description: "Optional output filename inside the downloads directory." },
+        },
+        required: ["url"],
+      },
+    },
+  },
 ];
 
 export interface ToolCallExecutionInput {
@@ -264,6 +300,8 @@ export interface ToolCallExecutionInput {
   workspaceRoot?: string;
   agentName?: string;
   allowedScope?: string[];
+  taskId?: string;
+  runId?: string;
 }
 
 // Executes tool calls requested by models during agent execution
@@ -359,81 +397,22 @@ export async function executeAgentToolCall(input: ToolCallExecutionInput): Promi
     }
 
     if (name === "run_sandboxed_command") {
-      const cmd = (args.command || "").trim();
-      if (!cmd) return { error: "Missing command parameter" };
-
-      // High-risk command safety guard
-      const blockedPatterns = [/rm\s+-rf\s+\//, /mkfs/, />\s*\/dev\/sd/, /shutdown/, /reboot/];
-      if (blockedPatterns.some(p => p.test(cmd))) {
-        return { error: "Command blocked by security policy: destructive or privileged pattern detected." };
-      }
-
-      // Commands are allowed only through the isolated supervisor. There is
-      // deliberately no host-shell fallback: an unavailable sandbox is an
-      // unavailable capability, not permission to execute on the app host.
-      const supervisorUrl = process.env.COMPUTER_SUPERVISOR_URL || "http://127.0.0.1:4312";
-      const supervisorToken = process.env.COMPUTER_SUPERVISOR_TOKEN;
-      try {
-        const supervisor = new URL(supervisorUrl);
-        const isLoopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(supervisor.hostname);
-        if (!isLoopback && !supervisorToken) {
-          return {
-            success: false,
-            error: "Remote isolated command supervisor requires authentication.",
-          };
-        }
-        const ping = await fetch(`${supervisorUrl}/health`, { method: "GET", signal: AbortSignal.timeout(1000) });
-        if (!ping.ok) {
-          return { success: false, error: `Isolated command supervisor health check failed (${ping.status}).` };
-        }
-        const resp = await fetch(`${supervisorUrl}/execute`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(supervisorToken ? { Authorization: `Bearer ${supervisorToken}` } : {}),
-          },
-          body: JSON.stringify({ command: cmd, timeoutSeconds: Math.min(args.timeoutSeconds || 30, 120) }),
-          signal: AbortSignal.timeout(Math.min((args.timeoutSeconds || 30) * 1000 + 2_000, 122_000)),
-        });
-        if (!resp.ok) {
-          return { success: false, error: `Isolated command supervisor rejected execution (${resp.status}).` };
-        }
-        return await resp.json();
-      } catch (error: any) {
-        return {
-          success: false,
-          error: `The isolated command supervisor is unavailable; host execution is disabled. ${error?.message || ""}`.trim(),
-        };
-      }
+      const result = await executeSandboxedCommand({
+        workspaceId: workspaceId || 'unscoped',
+        runId: input.taskId || input.runId || 'run-default',
+        command: args.command,
+        timeoutSeconds: args.timeoutSeconds,
+      });
+      return result;
     }
 
     if (name === "read_workspace_file") {
       const filePath = args.filePath as string;
       if (!filePath) return { error: "Missing filePath parameter" };
-      if (/credentials|\.env|executive[-_]brief|token[-_]?secret|private[-_]?key/i.test(filePath)) {
-        return { error: "Access denied: Secret Vault files (Executive, Credentials) are strictly excluded from agent tools." };
-      }
-
-      const path = await import("path");
-      const fs = await import("fs/promises");
-      const resolved = path.resolve(workspaceRoot, filePath);
-
-      // Prevent directory traversal out of workspace root
-      const relative = path.relative(workspaceRoot, resolved);
-      if (relative.startsWith("..") || path.isAbsolute(relative)) {
-        return { error: "Path traversal out of workspace root is forbidden." };
-      }
-
       try {
-        const content = await fs.readFile(resolved, "utf-8");
-        return {
-          filePath,
-          content: content.slice(0, 20_000),
-          truncated: content.length > 20_000,
-          sizeBytes: content.length,
-        };
+        return await safeReadWorkspaceFile(workspaceRoot, filePath);
       } catch (err: any) {
-        return { error: `Failed to read file: ${err.message}` };
+        return { error: `Failed to read file: ${err?.message || err}` };
       }
     }
 
@@ -441,31 +420,28 @@ export async function executeAgentToolCall(input: ToolCallExecutionInput): Promi
       const filePath = args.filePath as string;
       const content = args.content as string;
       if (!filePath || content === undefined) return { error: "Missing filePath or content parameter" };
-      if (/credentials|\.env|executive[-_]brief|token[-_]?secret|private[-_]?key/i.test(filePath)) {
-        return { error: "Access denied: Secret Vault files (Executive, Credentials) are strictly excluded from agent tools." };
-      }
-
-      const path = await import("path");
-      const fs = await import("fs/promises");
-      const resolved = path.resolve(workspaceRoot, filePath);
-
-      // Prevent directory traversal out of workspace root
-      const relative = path.relative(workspaceRoot, resolved);
-      if (relative.startsWith("..") || path.isAbsolute(relative)) {
-        return { error: "Path traversal out of workspace root is forbidden." };
-      }
-
       try {
-        await fs.mkdir(path.dirname(resolved), { recursive: true });
-        await fs.writeFile(resolved, content, "utf-8");
-        return {
-          success: true,
-          filePath,
-          bytesWritten: Buffer.byteLength(content, "utf-8"),
-        };
+        return await safeWriteWorkspaceFile(workspaceRoot, filePath, content);
       } catch (err: any) {
-        return { error: `Failed to write file: ${err.message}` };
+        return { error: `Failed to write file: ${err?.message || err}` };
       }
+    }
+
+    if (name === "browser_research") {
+      const url = args.url as string;
+      if (!url) return { error: "Missing url parameter" };
+      const result = await executeIsolatedBrowserResearch({
+        workspaceId: workspaceId || 'unscoped',
+        runId: input.taskId || input.runId || 'run-default',
+        workspaceRoot,
+        targetUrl: url,
+        downloadFile: Boolean(args.downloadFile),
+        outputFilename: args.outputFilename,
+      });
+      if (!result.success) {
+        return { error: result.error, code: result.code };
+      }
+      return result.data;
     }
 
     if (name === "http_request") {
