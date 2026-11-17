@@ -6,6 +6,13 @@ export const vantaMessageRequest = z.object({
   content: z.string().trim().min(1).max(4000),
   localContextIds: z.array(z.string().uuid()).max(12).default([]),
   useWeb: z.boolean().default(true),
+  pageContext: z.object({
+    routePath: z.string().max(200).optional(),
+    objectName: z.string().max(200).optional(),
+    filterSummary: z.string().max(200).optional(),
+    period: z.string().max(100).optional(),
+    selection: z.string().max(2000).optional(),
+  }).optional(),
 });
 
 export const vantaConversationRequest = z.object({

@@ -6,7 +6,7 @@ import { useVanta } from '@/src/contexts/VantaContext';
 const SOURCE_LABELS = { workspace: 'Workspace', vault: 'Vault', document: 'Document', web: 'Web', local: 'Local session' } as const;
 
 export default function VantaTranscriptDrawer({ embedded = false }: { embedded?: boolean }) {
-  const { messages, conversations, conversationId, transcriptOpen, setTranscriptOpen, playMessage, approveMemory, dispatchProposal, newConversation, loadConversation, setConversationShared, deleteCurrentConversation } = useVanta();
+  const { messages, conversations, conversationId, transcriptOpen, setTranscriptOpen, playMessage, approveMemory, dispatchProposal, newConversation, loadConversation, setConversationShared, deleteCurrentConversation, pageContext } = useVanta();
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [dispatchedProposalIds, setDispatchedProposalIds] = React.useState<Set<string>>(new Set());
@@ -22,6 +22,12 @@ export default function VantaTranscriptDrawer({ embedded = false }: { embedded?:
         </div>
         {!embedded && <button type="button" onClick={() => setTranscriptOpen(false)} className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-white" aria-label="Close transcript"><X size={17} /></button>}
       </header>
+      <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] px-4 py-1.5 text-xs font-mono text-zinc-400">
+        <span className="truncate">
+          <strong className="text-amber-300">{pageContext.clientName}</strong> · {pageContext.objectName}
+        </span>
+        <span className="shrink-0 text-zinc-500">{pageContext.period}</span>
+      </div>
       <div className="flex items-center gap-1.5 border-b border-white/10 px-3 py-2">
         <label className="min-w-0 flex-1"><span className="sr-only">Conversation history</span><select value={conversationId || ''} onChange={event => { setConfirmDelete(false); if (event.target.value) void loadConversation(event.target.value); }} className="w-full truncate rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-zinc-300 outline-none"><option value="">New private conversation</option>{conversations.map(conversation => <option key={conversation.id} value={conversation.id}>{conversation.visibility === 'workspace' ? 'Shared · ' : ''}{conversation.title}</option>)}</select></label>
         <button type="button" onClick={() => { newConversation(); setConfirmDelete(false); }} className="rounded-lg border border-white/10 p-2 text-zinc-400 hover:text-white" aria-label="New conversation"><Plus size={13} /></button>

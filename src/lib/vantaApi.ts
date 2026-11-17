@@ -101,11 +101,23 @@ export async function streamVantaMessage(
   localContextIds: string[],
   handlers: VantaStreamHandlers,
   signal?: AbortSignal,
+  pageContext?: {
+    routePath?: string;
+    objectName?: string;
+    filterSummary?: string;
+    period?: string;
+    selection?: string;
+  },
 ): Promise<void> {
   const deadline = AbortSignal.timeout(75_000);
   const response = await apiFetch(`/api/workspace/vanta/conversations/${conversationId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ content, localContextIds, useWeb: shouldUseVantaWebResearch(content) }),
+    body: JSON.stringify({
+      content,
+      localContextIds,
+      useWeb: shouldUseVantaWebResearch(content),
+      pageContext,
+    }),
     signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
   });
   if (!response.ok || !response.body) {
@@ -154,6 +166,18 @@ export async function attachVantaLocalFiles(files: File[]): Promise<Array<{ id: 
     await apiFetch('/api/workspace/vanta/local-context', { method: 'POST', body: form }),
   );
   return data.attached;
+}
+
+export async function deleteVantaLocalFile(id: string): Promise<void> {
+  await jsonOrThrow(
+    await apiFetch(`/api/workspace/vanta/local-context/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  );
+}
+
+export async function inspectVantaLocalFile(id: string): Promise<{ id: string; name: string; size: number; snippet: string; expiresAt: number }> {
+  return jsonOrThrow(
+    await apiFetch(`/api/workspace/vanta/local-context/${encodeURIComponent(id)}`),
+  );
 }
 
 export async function transcribeVantaAudio(blob: Blob): Promise<string> {

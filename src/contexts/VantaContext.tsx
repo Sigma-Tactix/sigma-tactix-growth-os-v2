@@ -1,9 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useWorkspace } from './WorkspaceContext';
 import { useToast } from './ToastContext';
 import { apiFetch } from '@/src/lib/api';
 import {
   attachVantaLocalFiles,
+  deleteVantaLocalFile,
+  inspectVantaLocalFile,
   createVantaConversation,
   deleteVantaConversation,
   getVantaMessages,
@@ -24,6 +27,7 @@ import {
   type VantaMessage,
   type VantaTopologyFocus,
 } from '@/src/lib/vanta';
+import { resolveVantaPageContext, type VantaPageContext } from '@/src/lib/vantaPageContext';
 import type { WorkspaceData } from '@/src/types';
 
 interface LocalContextItem { id: string; name: string; size: number }
@@ -45,6 +49,11 @@ interface VantaContextValue {
   transcriptOpen: boolean;
   setTranscriptOpen: (open: boolean) => void;
   localContexts: LocalContextItem[];
+  pageContext: VantaPageContext;
+  setPageSelection: (selection: string | undefined) => void;
+  setCustomPageContext: (ctx: Partial<VantaPageContext>) => void;
+  removeLocalContext: (id: string) => Promise<void>;
+  inspectLocalContext: (id: string) => Promise<{ id: string; name: string; size: number; snippet: string; expiresAt: number }>;
   send: (content: string, speakReply?: boolean) => Promise<void>;
   attachFiles: (files: File[]) => Promise<void>;
   startListening: () => Promise<void>;
@@ -85,10 +94,39 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
   const [dockOpen, setDockOpen] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [localContexts, setLocalContexts] = useState<LocalContextItem[]>([]);
+  const [pageSelection, setPageSelection] = useState<string | undefined>(undefined);
+  const [customContext, setCustomContext] = useState<Partial<VantaPageContext>>({});
   const [focusedEntityIds, setFocusedEntityIds] = useState<string[]>([]);
   const [topologyExpanded, setTopologyExpanded] = useState(false);
-  const { currentWorkspaceId } = useWorkspace();
+  const { currentWorkspaceId, currentWorkspace } = useWorkspace();
   const { notifyError, notifyInfo, notifySuccess } = useToast();
+  const location = useLocation();
+
+  const pageContext = useMemo(() => {
+    const base = resolveVantaPageContext({
+      pathname: location?.pathname || '/',
+      search: location?.search || '',
+      workspaceName: currentWorkspace?.name || 'Sigma Tactix (HQ)',
+      workspaceId: currentWorkspaceId || 'ws-primary',
+      selection: pageSelection,
+    });
+    return { ...base, ...customContext };
+  }, [location?.pathname, location?.search, currentWorkspace?.name, currentWorkspaceId, pageSelection, customContext]);
+
+  const removeLocalContext = useCallback(async (id: string) => {
+    try {
+      await deleteVantaLocalFile(id);
+      setLocalContexts(previous => previous.filter(item => item.id !== id));
+      notifySuccess('Attachment removed', 'The session file was deleted and removed from prompt context.');
+    } catch {
+      setLocalContexts(previous => previous.filter(item => item.id !== id));
+      notifyInfo('Attachment cleared', 'Attachment reference was removed from local session.');
+    }
+  }, [notifyInfo, notifySuccess]);
+
+  const inspectLocalContext = useCallback(async (id: string) => {
+    return await inspectVantaLocalFile(id);
+  }, []);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -130,6 +168,8 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
     setConversations([]);
     setLocalContexts([]);
+    setPageSelection(undefined);
+    setCustomContext({});
     Promise.allSettled([
       getVantaStatus(),
       apiFetch('/api/workspace').then(async response => {
@@ -249,7 +289,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'RESPONSE_READY', hasProposal: Boolean(message.proposal) });
           if (speakAfterResponseRef.current) void playText(message.content);
         },
-      }, controller.signal);
+      }, controller.signal, pageContext);
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         dispatch({ type: 'WARNING', message: 'Request cancelled.' });
@@ -261,7 +301,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     } finally {
       sendingRef.current = false;
     }
-  }, [ensureConversation, localContexts, notifyError, playText, state.provider.verified]);
+  }, [ensureConversation, localContexts, notifyError, pageContext, playText, state.provider.verified]);
 
   const attachFiles = useCallback(async (files: File[]) => {
     if (!files.length) return;
@@ -411,6 +451,11 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
     transcriptOpen,
     setTranscriptOpen,
     localContexts,
+    pageContext,
+    setPageSelection,
+    setCustomPageContext: (ctx: Partial<VantaPageContext>) => setCustomContext(previous => ({ ...previous, ...ctx })),
+    removeLocalContext,
+    inspectLocalContext,
     send,
     attachFiles,
     startListening,
@@ -430,7 +475,7 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
       speechSourceRef.current = null;
       dispatch({ type: 'RESET' });
     },
-  }), [approveMemory, attachFiles, conversationId, conversations, deleteCurrentConversation, dockOpen, fullTopology, loadConversation, localContexts, messages, playText, refreshStatus, selectedNodeId, send, setConversationShared, startListening, state, retrieval, stopListening, topology, topologyExpanded, transcriptOpen]);
+  }), [approveMemory, attachFiles, conversationId, conversations, deleteCurrentConversation, dockOpen, fullTopology, inspectLocalContext, loadConversation, localContexts, messages, pageContext, playText, refreshStatus, removeLocalContext, selectedNodeId, send, setConversationShared, startListening, state, retrieval, stopListening, topology, topologyExpanded, transcriptOpen]);
 
   return <VantaContext.Provider value={value}>{children}</VantaContext.Provider>;
 }
