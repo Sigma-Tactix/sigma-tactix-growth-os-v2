@@ -1,0 +1,33 @@
+=== npx vitest run src/lib/moduleAcceptance.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/moduleAcceptance.test.ts (8 tests) 20ms
+   ✓ verifies all 25 modules in MODULE_ACCEPTANCE.csv have complete journey dimensions (10ms)
+   ✓ verifies released workflow modules have explicit operational contracts and lifecycle progression (3ms)
+   ✓ verifies VANTA tools are strictly typed, bounded, and mapped to operations (1ms)
+   ✓ verifies external operations have defined providers, operations, and module mappings (2ms)
+   ✓ verifies Secret Vaults strictly exclude autonomous agent access (1ms)
+   ✓ verifies capability registry generates receipts for verified connectors and reports (1ms)
+   ✓ ensures zero rows in MODULE_ACCEPTANCE.csv remain pending or unverified (1ms)
+   ✓ honestly distinguishes developer app approval requirements and blocks ungranted live writes (1ms)
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  03:25:29
+   Duration  1.99s (transform 234ms, setup 0ms, import 1.43s, tests 20ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4408 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> eslint
+0 errors
+> vitest run
+Test Files  109 passed | 1 skipped (110)
+Tests  775 passed | 3 skipped (778)
+Duration  12.74s
+Exit code: 0
