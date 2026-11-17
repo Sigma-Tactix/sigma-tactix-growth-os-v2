@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "25994aac42256e02aad5b89de63aa4420037a50f",
+  "evidence": [
+    "evidence/S11/isolated_computer_runtime.md",
+    "evidence/S11/verify.log"
+  ]
+}
