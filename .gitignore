@@ -129,3 +129,23 @@ artifacts/
 .claude/state/
 .agents/teamwork/
 .vercel
+
+# Auto-generated agent rules (personalized per developer)
+.brainsync/
+
+# Auto-generated AI agent exclusions
+.cursorrules
+.clineRules
+.agent/
+.windsurfrules
+.gemini/
+.cline/
+.cursor/
+
+AGENT.md
+CLAUDE.md
+.agent-mem/
+.release-run/
+*.bak
+
+

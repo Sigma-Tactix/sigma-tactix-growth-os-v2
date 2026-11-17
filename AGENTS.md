@@ -92,3 +92,19 @@ At session startup or before beginning any multi-step task:
    - Misses & Documentation Discrepancies
    - Near-term Opportunities
    - Operational Guidelines & Scripts
+
+
+---
+
+## 🛡️ Global Safety Rules & Active Memory Directives
+
+- **NEVER** run `git clean -fd` or `git reset --hard` without checking `git log` and verifying commits exist.
+- **NEVER** delete untracked files or folders blindly. Always backup or stash before bulk edits.
+- Always read `.cursor/active-context.md` for exact instructions on the specific file you are currently editing.
+- **Don't mix Tailwind with inline styles** — use responsive prefixes consistently (`sm:`, `md:`, `lg:`, `xl:`).
+- **Don't store secrets in Docker images** — use runtime injection.
+- **Pin base image versions** — not `:latest`.
+- **Don't run as root in containers** — use `USER` directive.
+- **Use async error handler middleware** — don't let unhandled errors crash the server.
+- Extract repeated class patterns into components; do not use arbitrary values when a utility class exists.
+- Rate limit API endpoints and validate request bodies with schema validation (Zod).

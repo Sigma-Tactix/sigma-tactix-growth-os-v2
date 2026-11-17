@@ -1,0 +1,18 @@
+{
+  "verdict": "NOT_CERTIFIED",
+  "application_e2e_passes_claimed": 0,
+  "reviewed_source_sha": "18ef63cb7d0412e49d31a603fb7770e292b4da1d",
+  "deployed_source_sha": null,
+  "observed_frontend_asset": "/assets/index-B2if1xM1.js",
+  "audit_date_dubai": "2026-11-17",
+  "ui_observation_count": 36,
+  "scenario_template_count": 153,
+  "scenario_statuses": {
+    "NOT_RUN": 153
+  },
+  "seeded_business_workflows": 25,
+  "source_route_count": 46,
+  "task_count": 23,
+  "task_acceptance_count": 70,
+  "note": "UI/source findings and scenario execution statuses are different evidence types. Expand runtime parameter cases before coverage can pass."
+}

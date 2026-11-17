@@ -1,0 +1,1 @@
+The founder plan is historical background. Its four-week schedule is superseded by the 20 November goal. Current work orders are docs/release-2026-11-20/tasks.json; supplementary files do not change task state.

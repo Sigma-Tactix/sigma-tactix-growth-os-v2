@@ -1,0 +1,1215 @@
+{
+  "schema_version": "1.0",
+  "goal_id": "growth-os-2026-11-20",
+  "timezone": "Asia/Dubai",
+  "target": "2026-11-20T18:00:00+04:00",
+  "date_deadline": "2026-11-20",
+  "baseline_commit": "18ef63cb7d0412e49d31a603fb7770e292b4da1d",
+  "state": "planned_not_running",
+  "concurrency": {
+    "max_editors": 3,
+    "one_coordinator": true,
+    "lease_minutes": 30,
+    "heartbeat_seconds": 60
+  },
+  "limits": {
+    "new_paid_provider_budget": null,
+    "model_limit_source": "discover existing authorized session quotas; do not assume unlimited APIs"
+  },
+  "milestones": [
+    {
+      "id": "M0",
+      "target": "2026-11-17T18:00:00+04:00",
+      "name": "Research and contracts"
+    },
+    {
+      "id": "M1",
+      "target": "2026-11-18T12:00:00+04:00",
+      "name": "Trustworthy foundation"
+    },
+    {
+      "id": "M2",
+      "target": "2026-11-18T22:00:00+04:00",
+      "name": "VANTA context and execution"
+    },
+    {
+      "id": "M3",
+      "target": "2026-11-19T16:00:00+04:00",
+      "name": "Module deliverables"
+    },
+    {
+      "id": "M4",
+      "target": "2026-11-19T22:00:00+04:00",
+      "name": "Integrated release candidate and feature freeze"
+    },
+    {
+      "id": "M5",
+      "target": "2026-11-20T12:00:00+04:00",
+      "name": "Release rehearsal"
+    },
+    {
+      "id": "M6",
+      "target": "2026-11-20T18:00:00+04:00",
+      "name": "Production acceptance"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "S00",
+      "role": "product",
+      "milestone": "M0",
+      "priority": "P0",
+      "depends_on": [],
+      "objective": "Audit every page claim and button for client usefulness",
+      "resources": [
+        "control-inventory"
+      ],
+      "source_hints": [
+        "PRODUCT_ACCEPTANCE.md",
+        "CLIENT_WORKFLOWS.md",
+        "CONTROL_INVENTORY.csv"
+      ],
+      "acceptance": [
+        {
+          "id": "S00-A1",
+          "criterion": "Inventory all current routes/controls/claims; disposition keep merge repair operator_only retire and link to a client job",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S00-A2",
+          "criterion": "Reproduce rendered dashboard color behavior and remove unsupported live/accuracy/demo claims; record exact observed scope",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S00-A3",
+          "criterion": "Every enabled client control has a meaningful tested result, failure behavior and source/evidence; shared workflow context retained",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "claude",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit",
+        "redacted acceptance evidence",
+        "independent review",
+        "versioned lesson and rollback note"
+      ]
+    },
+    {
+      "id": "S01",
+      "role": "research",
+      "milestone": "M0",
+      "priority": "P0",
+      "depends_on": [],
+      "objective": "Users, jobs and required operation freeze",
+      "resources": [
+        "research-and-scope"
+      ],
+      "source_hints": [
+        "RESEARCH.md",
+        "GOAL.md",
+        "MODULE_ACCEPTANCE.csv"
+      ],
+      "acceptance": [
+        {
+          "id": "S01-A1",
+          "criterion": "Separate primary desk research, hypotheses, interviews and proxy feedback",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S01-A2",
+          "criterion": "Confirm buyer/operator/reviewer tasks and map required operations",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S01-A3",
+          "criterion": "Record unsupported demographics and source limits; no invented validation",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "independent_available_model",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S03",
+      "role": "integrator",
+      "milestone": "M0",
+      "priority": "P0",
+      "depends_on": [],
+      "objective": "Initialize current checkout, runtimes and baseline",
+      "resources": [
+        "runtime-inventory"
+      ],
+      "source_hints": [
+        "AGENTS.md",
+        "package.json",
+        "DEPLOY.md",
+        ".github/workflows/ci.yml"
+      ],
+      "acceptance": [
+        {
+          "id": "S03-A1",
+          "criterion": "Confirm repository HEAD, preserve existing work, create integration branch and worktree map",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S03-A2",
+          "criterion": "Record actual available Antigravity/Codex/Claude adapters, limits and staging access",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S03-A3",
+          "criterion": "Capture fresh baseline verify/deployment topology and missing-access register",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "antigravity",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S02",
+      "role": "integrator",
+      "milestone": "M0",
+      "priority": "P0",
+      "depends_on": [
+        "S01",
+        "S03",
+        "S00"
+      ],
+      "objective": "Freeze shared contracts and task ownership",
+      "resources": [
+        "shared-contracts",
+        "migration-numbering"
+      ],
+      "source_hints": [
+        "src/types.ts",
+        "CONTRACTS.md"
+      ],
+      "acceptance": [
+        {
+          "id": "S02-A1",
+          "criterion": "Map existing types/tables/services to shared proposed contracts",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S02-A2",
+          "criterion": "Freeze workspace/context/action/run/artifact/capability semantics and required acceptance IDs",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S02-A3",
+          "criterion": "Assign exclusive write paths; record changes through integrator",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "antigravity",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S04",
+      "role": "platform",
+      "milestone": "M1",
+      "priority": "P0",
+      "depends_on": [
+        "S03"
+      ],
+      "objective": "Prove deployed frontend and API topology",
+      "resources": [
+        "server.ts",
+        "deployment-config"
+      ],
+      "source_hints": [
+        "server.ts",
+        "vercel.json",
+        "DEPLOY.md",
+        "certification/LIVE_AUDIT.md: SPA renders at known backend paths; simulator HTML-as-JSON error"
+      ],
+      "acceptance": [
+        {
+          "id": "S04-A1",
+          "criterion": "SPA deep link returns HTML; API returns JSON; protected route without session returns401",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S04-A2",
+          "criterion": "Authenticated database operation works; unknown API returns JSON404",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S04-A3",
+          "criterion": "Expose runtime SHA and separate liveness/readiness; record actual deployment receipt",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S05",
+      "role": "platform",
+      "milestone": "M1",
+      "priority": "P0",
+      "depends_on": [
+        "S02"
+      ],
+      "objective": "Durable Client Enclave lifecycle",
+      "resources": [
+        "workspace-lifecycle"
+      ],
+      "source_hints": [
+        "src/contexts/WorkspaceContext.tsx",
+        "src/lib/workspaceManage.ts",
+        "src/components/ClientOnboardingWizard.tsx"
+      ],
+      "acceptance": [
+        {
+          "id": "S05-A1",
+          "criterion": "Wizard persists server-issued ID/profile/membership and resumable onboarding",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S05-A2",
+          "criterion": "Second authorized session can list/reopen same client",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S05-A3",
+          "criterion": "UI role derives from server membership; local tier/role edits cannot grant access",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S06",
+      "role": "platform",
+      "milestone": "M1",
+      "priority": "P0",
+      "depends_on": [
+        "S05"
+      ],
+      "objective": "Enforce selected-client request scope",
+      "resources": [
+        "server.ts",
+        "api-scope"
+      ],
+      "source_hints": [
+        "src/lib/api.ts",
+        "server.ts",
+        "src/contexts/WorkspaceContext.tsx"
+      ],
+      "acceptance": [
+        {
+          "id": "S06-A1",
+          "criterion": "Protected scoped calls carry explicit server-issued workspace identity",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S06-A2",
+          "criterion": "Invalid/revoked explicit selection is rejected instead of writing to default",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S06-A3",
+          "criterion": "Client switching clears stale page/attachment results and cancels or ignores old responses",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S07",
+      "role": "platform",
+      "milestone": "M1",
+      "priority": "P0",
+      "depends_on": [
+        "S02",
+        "S06"
+      ],
+      "objective": "Truthful durable approval and run states",
+      "resources": [
+        "server.ts",
+        "execution-ledger"
+      ],
+      "source_hints": [
+        "src/components/dashboard/ActionQueueTab.tsx",
+        "src/lib/actionQueueStore.ts",
+        "src/lib/executionLedgerStore.ts",
+        "certification/SOURCE_FINDINGS.md: resolve relevant C-01 to C-11"
+      ],
+      "acceptance": [
+        {
+          "id": "S07-A1",
+          "criterion": "401403500timeout cannot create completion badge",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S07-A2",
+          "criterion": "Approved payload version/hash bound to permission; revoked or edited action blocked",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S07-A3",
+          "criterion": "Repeated approval does not duplicate side effects; reload sees same persisted state",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S08",
+      "role": "platform",
+      "milestone": "M2",
+      "priority": "P0",
+      "depends_on": [
+        "S02",
+        "S04"
+      ],
+      "objective": "Operation-level capabilities and receipts",
+      "resources": [
+        "capability-registry"
+      ],
+      "source_hints": [
+        "src/server/routes/capabilityRoutes.ts",
+        "src/data/suiteHubConfig.ts",
+        "certification/SOURCE_FINDINGS.md: resolve relevant C-01 to C-11"
+      ],
+      "acceptance": [
+        {
+          "id": "S08-A1",
+          "criterion": "Every visible operation has supported/configured/verified/freshness/limitation state",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S08-A2",
+          "criterion": "Verification identifies exact account/environment/tool version and receipt",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S08-A3",
+          "criterion": "Fixtures and key presence never mark operation production verified",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S09",
+      "role": "product",
+      "milestone": "M2",
+      "priority": "P0",
+      "depends_on": [
+        "S02",
+        "S06"
+      ],
+      "objective": "VANTA page context and attachments everywhere",
+      "resources": [
+        "Layout.tsx",
+        "vanta-context-ui"
+      ],
+      "source_hints": [
+        "src/components/Layout.tsx",
+        "src/contexts/VantaContext.tsx",
+        "src/components/vanta"
+      ],
+      "acceptance": [
+        {
+          "id": "S09-A1",
+          "criterion": "All released routes open VANTA with visible client/object/filter context",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S09-A2",
+          "criterion": "Inspect/remove permitted page selections and persisted attachments",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S09-A3",
+          "criterion": "Switching client mid-answer cannot show old output; server rejects foreign/stale refs",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "claude",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S10",
+      "role": "platform",
+      "milestone": "M2",
+      "priority": "P0",
+      "depends_on": [
+        "S07",
+        "S08"
+      ],
+      "objective": "Typed VANTA tool gateway and consent",
+      "resources": [
+        "server.ts",
+        "vanta-tool-gateway"
+      ],
+      "source_hints": [
+        "src/lib/vantaServer.ts",
+        "src/server/routes/vantaRoutes.ts",
+        "src/lib/agentPolicies.ts",
+        "certification/SOURCE_FINDINGS.md: resolve relevant C-01 to C-11"
+      ],
+      "acceptance": [
+        {
+          "id": "S10-A1",
+          "criterion": "Planner uses validated tool/schema/effect/cost/runtime policy",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S10-A2",
+          "criterion": "Secret Vault exclusion tested in semantic/keyword/attachments/memory/tool paths",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S10-A3",
+          "criterion": "Authorized tool returns receipt; injected/unknown tool/destination denied; cancellation works",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S11",
+      "role": "platform",
+      "milestone": "M2",
+      "priority": "P0",
+      "depends_on": [
+        "S10"
+      ],
+      "objective": "Isolated browser and file runtime",
+      "resources": [
+        "computer-runtime"
+      ],
+      "source_hints": [
+        "new scoped sandbox adapter",
+        "existing provider boundaries"
+      ],
+      "acceptance": [
+        {
+          "id": "S11-A1",
+          "criterion": "Two client browser sessions and file roots cannot share data",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S11-A2",
+          "criterion": "Runtime cannot access host home/IDE credentials or internal network targets",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S11-A3",
+          "criterion": "Bounded public-browser research/download task records evidence; size/type/path limits and teardown verified",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S12",
+      "role": "platform",
+      "milestone": "M2",
+      "priority": "P0",
+      "depends_on": [
+        "S07",
+        "S10"
+      ],
+      "objective": "Durable worker, cron and hooks",
+      "resources": [
+        "server.ts",
+        "job-worker",
+        "migration-numbering"
+      ],
+      "source_hints": [
+        "src/pages/Scheduler.tsx",
+        "existing ledger/job services",
+        "backend/database/migrations"
+      ],
+      "acceptance": [
+        {
+          "id": "S12-A1",
+          "criterion": "Job executes with browser closed and survives worker restart",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S12-A2",
+          "criterion": "Auth/signature/replay/dedup/timezone/missed-run/cancel/retry checks pass",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S12-A3",
+          "criterion": "Unknown provider outcome enters reconciliation before resend; receipt persists",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S13",
+      "role": "platform",
+      "milestone": "M3",
+      "priority": "P0",
+      "depends_on": [
+        "S06",
+        "S08"
+      ],
+      "objective": "Verify source operations and baseline",
+      "resources": [
+        "connector-adapters"
+      ],
+      "source_hints": [
+        "existing connector/provider adapters",
+        "src/lib/api.ts"
+      ],
+      "acceptance": [
+        {
+          "id": "S13-A1",
+          "criterion": "Required exact accounts/properties can read and normalize reconciled values",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S13-A2",
+          "criterion": "Refresh/revoke/permission/empty/stale/failure behavior is honest",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S13-A3",
+          "criterion": "Missing credentials/app approvals recorded per operation; live evidence distinct from fixture",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S14",
+      "role": "product",
+      "milestone": "M3",
+      "priority": "P0",
+      "depends_on": [
+        "S01",
+        "S02",
+        "S00"
+      ],
+      "objective": "Concise sequential module experience",
+      "resources": [
+        "client-workflow-ui"
+      ],
+      "source_hints": [
+        "src/App.tsx",
+        "src/data/suiteHubConfig.ts",
+        "src/pages/SuiteHubPage.tsx"
+      ],
+      "acceptance": [
+        {
+          "id": "S14-A1",
+          "criterion": "Setup Understand Plan Create Review Execute Measure Learn sequence visible",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S14-A2",
+          "criterion": "Every module shows purpose/input/main action/output/status/next step",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S14-A3",
+          "criterion": "Keep deep links; readable existing theme tokens; empty/error/stale states; operator-only infrastructure",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S14-A4",
+          "criterion": "Retire client clutter using PRODUCT_ACCEPTANCE dispositions; working mission sequence passes client deliverable acceptance",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "claude",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S16",
+      "role": "product",
+      "milestone": "M3",
+      "priority": "P0",
+      "depends_on": [
+        "S02",
+        "S13"
+      ],
+      "objective": "Polished PDF PPTX XLSX delivery",
+      "resources": [
+        "artifact-pipeline"
+      ],
+      "source_hints": [
+        "src/services/exportService.ts",
+        "src/lib/reportSnapshot.ts",
+        "src/lib/pdfReportRenderer.ts"
+      ],
+      "acceptance": [
+        {
+          "id": "S16-A1",
+          "criterion": "Same immutable source snapshot produces actual persisted PDF/PPTX/XLSX bytes",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S16-A2",
+          "criterion": "Independent render/open proves every page/slide legible and editable as promised",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S16-A3",
+          "criterion": "Workbook formulas/numbers/dates/source sheets verified; cross-client downloads denied",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "claude",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S15",
+      "role": "qa",
+      "milestone": "M3",
+      "priority": "P0",
+      "depends_on": [
+        "S08",
+        "S09",
+        "S10",
+        "S13",
+        "S14",
+        "S16"
+      ],
+      "objective": "Verify every released module journey",
+      "resources": [
+        "module-acceptance"
+      ],
+      "source_hints": [
+        "MODULE_ACCEPTANCE.csv",
+        "src/App.tsx",
+        "browser and operation evidence",
+        "CONTROL_INVENTORY.csv",
+        "CLIENT_WORKFLOWS.md",
+        "certification/SCENARIOS.json",
+        "certification/ROUTE_INVENTORY.csv",
+        "certification/METHOD.md"
+      ],
+      "acceptance": [
+        {
+          "id": "S15-A1",
+          "criterion": "Input VANTA task output next-step and failure acceptance exercised per module",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S15-A2",
+          "criterion": "Each enabled external action has operation receipt and permissions proof",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S15-A3",
+          "criterion": "Every required row classified pass/fail/blocked; unavailable is not counted as working",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "independent_available_model",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S17",
+      "role": "qa",
+      "milestone": "M4",
+      "priority": "P0",
+      "depends_on": [
+        "S04",
+        "S06",
+        "S07",
+        "S10",
+        "S11",
+        "S12"
+      ],
+      "objective": "Adversarial isolation and security evidence",
+      "resources": [
+        "security-acceptance"
+      ],
+      "source_hints": [
+        "real disposable database tests",
+        ".github/workflows/ci.yml",
+        "tool and artifact boundaries",
+        "certification/SOURCE_FINDINGS.md: resolve relevant C-01 to C-11"
+      ],
+      "acceptance": [
+        {
+          "id": "S17-A1",
+          "criterion": "Two users/two clients isolated across API database RPC storage retrieval sandbox jobs",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S17-A2",
+          "criterion": "Revocation Secret Vault prompt injection SSRF and approval mutations denied",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S17-A3",
+          "criterion": "Secret scans block failures; critical security findings fixed or release blocked",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "independent_available_model",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S19",
+      "role": "platform",
+      "milestone": "M5",
+      "priority": "P0",
+      "depends_on": [
+        "S04",
+        "S07",
+        "S12"
+      ],
+      "objective": "Operate recover and rollback",
+      "resources": [
+        "operations-runbook"
+      ],
+      "source_hints": [
+        "runtime observability",
+        "worker deployment",
+        "RELEASE_RUNBOOK.md"
+      ],
+      "acceptance": [
+        {
+          "id": "S19-A1",
+          "criterion": "Logs correlate requests actions jobs and receipts without exposing secrets",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S19-A2",
+          "criterion": "Backup restore, worker recovery and rollback demonstrated. Launch REL-01 asynchronously on the frozen candidate by 19 Nov 22:00 Dubai, complete by 20 Nov 10:00 for M5; retain single-job ownership/heartbeat, do not block an interactive tool for the soak. Candidate changes require affected evidence rerun.",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S19-A3",
+          "criterion": "Record runtime limits support owner and monitored readiness/error states",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "codex",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S18",
+      "role": "qa",
+      "milestone": "M4",
+      "priority": "P0",
+      "depends_on": [
+        "S09",
+        "S12",
+        "S13",
+        "S15",
+        "S16",
+        "S17",
+        "S21"
+      ],
+      "objective": "Fresh-session complete delivery rehearsal",
+      "resources": [
+        "release-e2e"
+      ],
+      "source_hints": [
+        "full browser journey",
+        "source receipts",
+        "client artifacts"
+      ],
+      "acceptance": [
+        {
+          "id": "S18-A1",
+          "criterion": "Onboard clientA evidence VANTA action approval execution receipt and3formats from fresh session",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S18-A2",
+          "criterion": "Repeat clientB and stale/failure/revocation paths; desktop mobile keyboard",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S18-A3",
+          "criterion": "Exact candidate verify and evidence match; zero unresolved P0P1 in enabled required workflow",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "independent_available_model",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S20",
+      "role": "integrator",
+      "milestone": "M6",
+      "priority": "P0",
+      "depends_on": [
+        "S18",
+        "S19",
+        "S22"
+      ],
+      "objective": "Release exact verified candidate",
+      "resources": [
+        "release-integration",
+        "deployment-config"
+      ],
+      "source_hints": [
+        "release branch",
+        "release evidence index",
+        "production smoke"
+      ],
+      "acceptance": [
+        {
+          "id": "S20-A1",
+          "criterion": "All candidate/staging-required cases and M0-M5 gates pass on exact candidate, including S22; retain limitations. Only the three named production-activation bindings may be pending deployment at this predeploy step.",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S20-A2",
+          "criterion": "Deploy only under current authorization; run every named production-activation binding on exact build/configuration: OPS-02@production, AUTH-01@production, ART-04@production. All must PASS before production certification activates; failure means NO-GO and invoke rollback/recovery.",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S20-A3",
+          "criterion": "Founder reviews working deliverable package rollback and support; failed required gate is NO-GO",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "antigravity",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit if source changes",
+        "redacted acceptance evidence",
+        "independent review",
+        "configuration and rollback note"
+      ]
+    },
+    {
+      "id": "S21",
+      "role": "product",
+      "milestone": "M4",
+      "priority": "P0",
+      "depends_on": [
+        "S07",
+        "S10",
+        "S16"
+      ],
+      "objective": "Demonstrate development and client learning loops",
+      "resources": [
+        "learning-registry"
+      ],
+      "source_hints": [
+        "PRODUCT_ACCEPTANCE.md",
+        "CLIENT_WORKFLOWS.md",
+        "CONTROL_INVENTORY.csv"
+      ],
+      "acceptance": [
+        {
+          "id": "S21-A1",
+          "criterion": "A reproduced development failure produces an independently verified fix plus regression case and versioned lesson",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S21-A2",
+          "criterion": "An authorized completed client job records reviewed outcome/limitations and an approved permitted Knowledge Vault lesson",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S21-A3",
+          "criterion": "A later task retrieves the right scoped lesson; revoked/incorrect lessons can be superseded; privilege and approval policies never self-modify",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "claude",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "focused commit",
+        "redacted acceptance evidence",
+        "independent review",
+        "versioned lesson and rollback note"
+      ]
+    },
+    {
+      "id": "S22",
+      "role": "qa",
+      "milestone": "M6",
+      "priority": "P0",
+      "depends_on": [
+        "S18",
+        "S19"
+      ],
+      "objective": "Independent autonomous delivery certification gate",
+      "resources": [
+        "certification-evidence"
+      ],
+      "source_hints": [
+        "certification/LIVE_AUDIT.md",
+        "certification/METHOD.md",
+        "certification/SCENARIOS.json",
+        "certification/ROUTE_INVENTORY.csv",
+        "certification/SOURCE_FINDINGS.md"
+      ],
+      "acceptance": [
+        {
+          "id": "S22-A1",
+          "criterion": "Every discovered route/control/module and enabled tool/connector/hook/cron/automation operation has bound happy, failure, permission, durability and VANTA cases with independent actual evidence on exact candidate. All candidate/staging-required cases PASS; only named production-activation bindings may remain pending deployment. No production certificate yet.",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S22-A2",
+          "criterion": "Three complete client workflows, two-client isolation, real receipts and inspected PDF/PPTX/XLSX pass; REL-01 twelve-hour staging soak with at least ten jobs has zero duplicate effects, false completions or unresolved outcomes",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "S22-A3",
+          "criterion": "Independent candidate report records scope, status counts, evidence hashes, reviewers, limitations and retest rules; zero unresolved P0/P1 client-impact defects. Production certification remains inactive until S20 proves exact deployed build/configuration and authenticated smoke",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "status": "pending",
+      "preferred_session": "independent_available_model",
+      "max_work_cycles": 3,
+      "max_failed_attempts": 2,
+      "outputs": [
+        "independent candidate acceptance report",
+        "hashed private evidence index",
+        "explicit NO-GO or staged-candidate acceptance",
+        "production certification activation requirements"
+      ]
+    }
+  ],
+  "revision": 3
+}

@@ -1,0 +1,9 @@
+id,route,control_or_claim,effect_class,client_job,expected_evidence,observed,proposed_disposition,owner_tasks,verification_status
+dashboard-color,/,Report color profile,appearance,client report readability,selected scope and rendered/exported palette,main curve changes; other observed curves remain unchanged; Indigo cyan,repair,S00;S14,pending
+dashboard-sample-intake,/,Sample intake chart and Simulate Burst,simulation,none on client overview,real intake evidence or operator-only demo,sample data and simulation control on client home,operator_only,S00;S14,pending
+dashboard-benchmark-status,/,Benchmark OPTIMAL/SCALING,claim,source comparison if explicitly requested,source date market and justified status rule,reference rows present despite unlinked marketing sources,repair,S00;S14,pending
+agent-accuracy,/agents,Fleet Accuracy 99.x%,claim,trust in actual measured work,defined labelled evaluation sample and method,ledger unavailable and zero verified runs alongside unsupported accuracy,retire,S00;S08,pending
+agent-active,/agents,Fleet ACTIVE states,claim,actual job progress,worker heartbeat/run receipt,ACTIVE labels alongside no verified runs,repair,S00;S08,pending
+agent-vault-policy,/agents,Executive Vault allowed reads,permission-claim,correct data boundary,enforced policy tested against both Secret Vault classes,display contradicts canonical autonomous-agent exclusion,repair,S10;S17,pending
+creative-antislop,/suite/creative,Anti-Slop ON toggle,quality-claim,usable client copy,output quality rubric/evidence,toggle shown without quality evidence demonstrated,repair,S00;S14,pending
+creative-internal-footer,/suite/creative,Route consolidation implementation note,copy,none in ordinary client flow,client next step,internal deep-link/module implementation explanation exposed,retire,S00;S14,pending

@@ -1,0 +1,26 @@
+module,e2e_status,observation,evidence
+overview,BLOCKED,Benchmark/sample and unlinked sources; no real metric or scope proof,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+diagnostics,BLOCKED,Entry form viewed; no crawl or artifact,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+knowledge,BLOCKED,Document index unavailable,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+creative-text,BLOCKED,Editor viewed; empty-input click not a verified negative test,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+creative-image,BLOCKED,Renderers unavailable/local engine not started,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+creative-video,BLOCKED,Unwired providers; claimed renderer not exercised,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+social-assets,BLOCKED,Empty carousel; no generation/export,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+social-listening,BLOCKED,Local sample; monitoring not deployed,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+social-publishing,BLOCKED,No write attempted; source auth/false receipt defects,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+search,BLOCKED,GSC demo data; no actual property,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+cro,BLOCKED,Form viewed; no capture/render/export,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+demand-intake,BLOCKED,Questionnaire; no durable lead,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+demand-outreach,BLOCKED,Zero leads; no controlled delivery,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+paid,BLOCKED,Example brief; no actual import/account operation,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+lifecycle,BLOCKED,Sample copy and unverified estimates; no send,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+intelligence,BLOCKED,Setup required,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+simulation,BLOCKED,FAIL at initial data load: HTML-as-JSON error; full scenario not executed,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+attribution,BLOCKED,No connected spend/revenue/pipeline,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+agents-approvals,BLOCKED,Ledger unavailable; zero verified runs,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+agent-reach,BLOCKED,Runtime unavailable,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+scheduler,BLOCKED,In-app only; no daemon,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+reports,BLOCKED,Sample data; no actual three-format files inspected,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+connectors,BLOCKED,Pipeline unavailable; zero configured,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+living-system,BLOCKED,No indexed documents; VANTA offline,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md
+admin,BLOCKED,Empty required fields disable Continue; durable provisioning not tested,LIVE_AUDIT.md; LIVE_OBSERVATIONS.json; SOURCE_FINDINGS.md

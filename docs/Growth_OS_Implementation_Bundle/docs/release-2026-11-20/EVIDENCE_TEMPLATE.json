@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "task_id": "S00",
+  "acceptance_ids": [],
+  "base_sha": "",
+  "commit": "",
+  "environment": "",
+  "command": "npm run verify",
+  "exit_code": null,
+  "evidence": [],
+  "scenarios": [],
+  "reviewer": "",
+  "limitations": [],
+  "observed_at": "",
+  "tool_receipts": []
+}
