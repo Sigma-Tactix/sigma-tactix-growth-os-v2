@@ -6309,6 +6309,15 @@ app.post("/api/workspace/run-agent/:id/approve", expensiveLimiter, async (req: R
     res.status(409).json({ error: `Task is ${task.status}, not Pending Approval` });
     return;
   }
+  // S07-A2: Revoked action blocked; modified payload version rejected
+  if ((task as any).revoked) {
+    res.status(403).json({ error: "Task execution blocked: approval has been revoked." });
+    return;
+  }
+  if (req.body?.expectedPayloadHash && (task as any).payloadHash && req.body.expectedPayloadHash !== (task as any).payloadHash) {
+    res.status(422).json({ error: "Payload version mismatch: task was modified after approval request." });
+    return;
+  }
   // Separation of duties, but only where a second approver exists — see
   // workspaceHasSecondApprover(). Tasks created before requestedBy existed have
   // no requester recorded, so this cannot fire on them either; they still had

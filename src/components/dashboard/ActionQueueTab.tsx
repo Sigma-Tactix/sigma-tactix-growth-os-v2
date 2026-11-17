@@ -42,7 +42,10 @@ import {
   DEMO_INITIAL_QUEUE_ITEMS,
   getInitialActionQueueItems,
   useActionQueue,
+  computeActionPayloadHash,
+  actionQueueStore,
 } from '@/src/lib/actionQueueStore';
+import { apiFetch } from '@/src/lib/api';
 
 export type { ActionQueueItem, ActionQueueItemStatus, ActionQueueCategory };
 export { DEMO_INITIAL_QUEUE_ITEMS };
@@ -79,6 +82,7 @@ export default function ActionQueueTab() {
     executionEligible: boolean;
     detail: string;
   } | null>(null);
+  const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());
   const [isTriagingQueue, setIsTriagingQueue] = useState(false);
   const [triagingItemId, setTriagingItemId] = useState<string | null>(null);
   const [lastTriageStats, setLastTriageStats] = useState<{ count: number; timestamp: string; engine: string } | null>(null);
@@ -98,7 +102,7 @@ export default function ActionQueueTab() {
 
   // Poll the provider-neutral decision runtime on mount.
   useEffect(() => {
-    fetch('/api/workspace/decision/status')
+    apiFetch('/api/workspace/decision/status')
       .then(res => res.json())
       .then(data => {
         if (data && data.success) {
@@ -141,42 +145,118 @@ export default function ActionQueueTab() {
   }, [items, selectedCategory, statusFilter, operatingMode, currentWorkspace.id, searchQuery]);
 
   const handleApprove = async (id: string, title: string) => {
-    const item = items.find(i => i.id === id);
-    let executionNote = 'Operator approved execution. Changes dispatched to destination module.';
+    // S07-A3: Idempotent - block concurrent double-trigger
+    if (inFlightIds.has(id)) {
+      return;
+    }
 
-    if (item && (
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    // S07-A3: If already running or completed, block duplicate dispatch
+    if (item.status === 'RUNNING' || item.status === 'COMPLETED') {
+      notifyInfo('Action already dispatched', `Action "${title}" is already ${item.status.toLowerCase()}.`);
+      return;
+    }
+
+    // S07-A2: Verify permission and payload integrity before executing
+    if (item.approval?.status === 'REVOKED') {
+      actionQueueStore.failItem(id, 'Action approval has been revoked. Execution blocked.');
+      notifyError('Execution Blocked', `Approval for "${title}" was revoked. Changes will not be dispatched.`);
+      return;
+    }
+
+    const currentHash = computeActionPayloadHash(item);
+    if (item.payloadHash && item.payloadHash !== currentHash) {
+      actionQueueStore.failItem(id, 'Payload was modified after creation/approval. Consent invalidated.');
+      notifyError('Execution Blocked', `Payload for "${title}" was modified. Re-authorization required.`);
+      return;
+    }
+
+    // Mark in-flight and set status to RUNNING
+    setInFlightIds(prev => new Set(prev).add(id));
+    actionQueueStore.startExecution(id);
+
+    let executionNote = 'Operator approved execution. Changes dispatched to destination module.';
+    let dispatchFailed = false;
+    let failureReason = '';
+
+    if (
       item.runPayload?.socialPost ||
       item.suggestedAction?.toLowerCase().includes('social') ||
       item.suggestedAction?.toLowerCase().includes('publish')
-    )) {
+    ) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       try {
         const postContent = item.runPayload?.socialPost?.content || item.summary;
         const targetChannels = item.runPayload?.socialPost?.channels || ['chan-li-01', 'chan-tw-01'];
         const scheduledFor = item.runPayload?.socialPost?.scheduledFor || new Date(Date.now() + 3600000).toISOString();
 
-        const res = await fetch('/api/social/schedule', {
+        const res = await apiFetch('/api/social/schedule', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             content: postContent,
             channels: targetChannels,
             scheduledFor,
             campaignId: item.id,
+            payloadHash: currentHash,
           }),
         });
+        clearTimeout(timeoutId);
 
-        if (res.ok) {
-          const resJson = await res.json();
-          if (resJson.success) {
-            executionNote = `Operator approved. Dispatched to social distribution queue (Job ID: ${resJson.result.id}, Scheduled: ${new Date(scheduledFor).toLocaleTimeString()}).`;
+        if (!res.ok) {
+          dispatchFailed = true;
+          const errorBody = await res.text().catch(() => '');
+          let parsedMsg = '';
+          try {
+            const parsed = JSON.parse(errorBody);
+            parsedMsg = parsed.error || parsed.message || '';
+          } catch {
+            parsedMsg = errorBody.slice(0, 100);
+          }
+          failureReason = `HTTP ${res.status} ${res.statusText}${parsedMsg ? `: ${parsedMsg}` : ''}`;
+        } else {
+          const resJson = await res.json().catch(() => null);
+          if (resJson && resJson.success) {
+            executionNote = `Operator approved. Dispatched to social distribution queue (Job ID: ${resJson.result?.id || 'queued'}, Scheduled: ${new Date(scheduledFor).toLocaleTimeString()}).`;
+          } else {
+            dispatchFailed = true;
+            failureReason = resJson?.error || 'Endpoint returned success: false';
           }
         }
-      } catch (err) {
-        console.warn('Social dispatch endpoint unreachable:', err);
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        dispatchFailed = true;
+        if (err.name === 'AbortError') {
+          failureReason = 'Request timed out after 8000ms';
+        } else {
+          failureReason = err?.message || 'Network unreachable';
+        }
       }
     }
 
-    approveItem(id, executionNote);
+    setInFlightIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    // S07-A1: 401, 403, 500, or timeout CANNOT create completion badge!
+    if (dispatchFailed) {
+      const failMessage = `Dispatch failed: ${failureReason}`;
+      actionQueueStore.failItem(id, failureReason, failMessage);
+      notifyError(`Approval Failed: ${title}`, failureReason);
+      return;
+    }
+
+    // Success path: transition to COMPLETED truthfully with hash binding
+    actionQueueStore.approveItem(id, executionNote, {
+      expectedHash: currentHash,
+      approver: 'operator',
+    });
     notifySuccess(`Approved: ${title}`, executionNote);
   };
 
@@ -199,7 +279,7 @@ export default function ActionQueueTab() {
     try {
       let data: any = null;
       try {
-        const res = await fetch('/api/workspace/decision/triage', {
+        const res = await apiFetch('/api/workspace/decision/triage', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -279,7 +359,7 @@ export default function ActionQueueTab() {
         items.map(async item => {
           let data: any = null;
           try {
-            const res = await fetch('/api/workspace/decision/triage', {
+            const res = await apiFetch('/api/workspace/decision/triage', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -360,7 +440,7 @@ export default function ActionQueueTab() {
     try {
       let data: any = null;
       try {
-        const res = await fetch('/api/workspace/decision/route', {
+        const res = await apiFetch('/api/workspace/decision/route', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ issueText: routeInputText.trim() }),
@@ -703,6 +783,7 @@ export default function ActionQueueTab() {
             <option value="RUNNING">Running</option>
             <option value="COMPLETED">Completed</option>
             <option value="ALERT">Alert</option>
+            <option value="FAILED">Failed</option>
           </select>
         </div>
       </div>
@@ -746,6 +827,7 @@ export default function ActionQueueTab() {
             const isPending = item.status === 'PENDING_APPROVAL';
             const isAlert = item.status === 'ALERT';
             const isRunning = item.status === 'RUNNING';
+            const isFailed = item.status === 'FAILED';
 
             return (
               <motion.div
@@ -758,6 +840,8 @@ export default function ActionQueueTab() {
                   'group rounded-2xl border p-5 transition-all relative overflow-hidden backdrop-blur-md',
                   isPending
                     ? 'border-amber-500/30 bg-[#120F0A]/90 hover:border-amber-500/50 shadow-[0_4px_20px_rgba(245,158,11,0.08)]'
+                    : isFailed
+                    ? 'border-rose-600/40 bg-[#170a0a]/90 hover:border-rose-500/60 shadow-[0_4px_20px_rgba(225,29,72,0.12)]'
                     : isAlert
                     ? 'border-rose-500/30 bg-[#120A0A]/90 hover:border-rose-500/50 shadow-[0_4px_20px_rgba(244,63,94,0.08)]'
                     : isRunning
@@ -773,6 +857,8 @@ export default function ActionQueueTab() {
                         'h-11 w-11 rounded-2xl border flex items-center justify-center shrink-0 mt-0.5',
                         isPending
                           ? 'border-amber-400/30 bg-amber-500/10 text-amber-400'
+                          : isFailed
+                          ? 'border-rose-500/40 bg-rose-500/15 text-rose-400'
                           : isAlert
                           ? 'border-rose-400/30 bg-rose-500/10 text-rose-400'
                           : isRunning
@@ -843,6 +929,7 @@ export default function ActionQueueTab() {
                           className={cn(
                             'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider ml-auto',
                             isPending && 'bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse',
+                            isFailed && 'bg-rose-600/20 text-rose-300 border border-rose-600/50',
                             isAlert && 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
                             isRunning && 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 animate-pulse',
                             item.status === 'COMPLETED' && 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
@@ -897,10 +984,39 @@ export default function ActionQueueTab() {
                         <button
                           type="button"
                           onClick={() => handleApprove(item.id, item.title)}
-                          className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold text-black hover:bg-amber-300 transition-all shadow-md cursor-pointer font-sans"
+                          disabled={inFlightIds.has(item.id)}
+                          className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold text-black hover:bg-amber-300 transition-all shadow-md cursor-pointer font-sans disabled:opacity-50"
                         >
-                          <Check size={14} />
-                          <span>Approve & Execute</span>
+                          {inFlightIds.has(item.id) ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                          ) : (
+                            <Check size={14} />
+                          )}
+                          <span>{inFlightIds.has(item.id) ? 'Executing...' : 'Approve & Execute'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDismiss(item.id, item.title)}
+                          className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-mono text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                          <X size={13} />
+                          <span>Dismiss</span>
+                        </button>
+                      </>
+                    ) : isFailed ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(item.id, item.title)}
+                          disabled={inFlightIds.has(item.id)}
+                          className="flex items-center gap-1.5 rounded-xl bg-rose-600/30 border border-rose-500/50 px-3.5 py-2 text-xs font-bold text-rose-200 hover:bg-rose-600/50 transition-all shadow-md cursor-pointer font-sans disabled:opacity-50"
+                        >
+                          {inFlightIds.has(item.id) ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                          ) : (
+                            <RefreshCw size={14} />
+                          )}
+                          <span>Retry Approval</span>
                         </button>
                         <button
                           type="button"

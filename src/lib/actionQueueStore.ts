@@ -12,8 +12,17 @@ import {
 } from 'lucide-react';
 import { isDemoSeedEnabled } from './demoSeed.js';
 
-export type ActionQueueItemStatus = 'PENDING_APPROVAL' | 'RUNNING' | 'COMPLETED' | 'ALERT';
+export type ActionQueueItemStatus = 'PENDING_APPROVAL' | 'RUNNING' | 'COMPLETED' | 'ALERT' | 'FAILED';
 export type ActionQueueCategory = 'ALL' | 'APPROVALS' | 'DEMAND' | 'CAPTURE' | 'INTELLIGENCE' | 'CREATIVE' | 'INFRASTRUCTURE';
+
+export interface ActionApprovalRecord {
+  approvedAt: string;
+  approver: string;
+  approvedPayloadHash: string;
+  status: 'APPROVED' | 'REVOKED';
+  revokedAt?: string;
+  revocationReason?: string;
+}
 
 export interface ActionQueueItem {
   id: string;
@@ -32,6 +41,10 @@ export interface ActionQueueItem {
   duration?: string;
   runPayload?: Record<string, any>;
   suggestedAction?: string;
+  payloadHash?: string;
+  approval?: ActionApprovalRecord;
+  lastExecutedAt?: string;
+  lastError?: string;
   layaTriage?: {
     risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     confidence: number;
@@ -227,9 +240,48 @@ export function resolveActionQueueIcon(category: string, moduleName?: string) {
   return Zap;
 }
 
+function canonicalize(value: unknown): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalize).join(',')}]`;
+  const keys = Object.keys(value as Record<string, unknown>).sort();
+  return `{${keys.map(k => `${JSON.stringify(k)}:${canonicalize((value as any)[k])}`).join(',')}}`;
+}
+
+/**
+ * Deterministic hash of an action item's payload and constraints (S07-A2).
+ * Works identically across browser and Node.js runtimes.
+ */
+export function computeActionPayloadHash(item: Partial<ActionQueueItem>): string {
+  const payloadToHash = {
+    id: item.id || '',
+    moduleName: item.moduleName || '',
+    moduleCategory: item.moduleCategory || '',
+    enclaveId: item.enclaveId || '',
+    title: item.title || '',
+    summary: item.summary || '',
+    suggestedAction: item.suggestedAction || '',
+    risk: item.risk || '',
+    runPayload: item.runPayload || {},
+  };
+  const str = canonicalize(payloadToHash);
+  let h1 = 0x811c9dc5;
+  let h2 = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 0x01000193);
+    h2 = Math.imul(h2 ^ (ch >> 8), 0x5bd1e995);
+  }
+  const p1 = (h1 >>> 0).toString(16).padStart(8, '0');
+  const p2 = (h2 >>> 0).toString(16).padStart(8, '0');
+  return `act-hash-${p1}${p2}`;
+}
+
 export function hydrateQueueItem(item: ActionQueueItem): ActionQueueItem {
+  const payloadHash = item.payloadHash || computeActionPayloadHash(item);
   return {
     ...item,
+    payloadHash,
     moduleIcon: item.moduleIcon || resolveActionQueueIcon(item.moduleCategory, item.moduleName),
   };
 }
@@ -302,16 +354,137 @@ export class ActionQueueStore {
 
   addItem(item: ActionQueueItem) {
     const current = this.loadItems();
-    this.setItems([hydrateQueueItem(item), ...current]);
+    const withHash: ActionQueueItem = {
+      ...item,
+      payloadHash: item.payloadHash || computeActionPayloadHash(item),
+    };
+    this.setItems([hydrateQueueItem(withHash), ...current]);
   }
 
-  approveItem(id: string, executionNote?: string) {
+  /**
+   * S07-A2 & S07-A3: Truthful approval with payload hash verification and idempotency.
+   */
+  approveItem(
+    id: string,
+    executionNote?: string,
+    options?: { approver?: string; expectedHash?: string }
+  ): { success: boolean; error?: string } {
+    const current = this.loadItems();
+    const item = current.find(i => i.id === id);
+    if (!item) {
+      return { success: false, error: `Action item ${id} not found` };
+    }
+
+    // S07-A2: Revoked action blocked
+    if (item.approval?.status === 'REVOKED') {
+      return {
+        success: false,
+        error: `Action approval was revoked: ${item.approval.revocationReason || 'Operator withdrew consent.'}`,
+      };
+    }
+
+    // S07-A2: Verify payload version/hash bound to permission; edited action blocked
+    const currentHash = computeActionPayloadHash(item);
+    if (options?.expectedHash && options.expectedHash !== currentHash) {
+      this.failItem(id, `Payload hash mismatch: expected ${options.expectedHash}, got ${currentHash}. Action was altered after review.`);
+      return {
+        success: false,
+        error: 'Payload altered after review; consent invalidated.',
+      };
+    }
+
+    if (item.approval?.approvedPayloadHash && item.approval.approvedPayloadHash !== currentHash) {
+      this.failItem(id, `Approved payload hash mismatch: approved ${item.approval.approvedPayloadHash}, got ${currentHash}. Action was altered after approval.`);
+      return {
+        success: false,
+        error: 'Payload altered after approval; consent invalidated.',
+      };
+    }
+
+    // S07-A3: Idempotent - if already completed with identical payload hash, do not duplicate
+    if (item.status === 'COMPLETED' && item.payloadHash === currentHash) {
+      return { success: true };
+    }
+
+    const approvalRecord: ActionApprovalRecord = {
+      approvedAt: new Date().toISOString(),
+      approver: options?.approver || 'operator',
+      approvedPayloadHash: currentHash,
+      status: 'APPROVED',
+    };
+
+    this.setItems(prev => prev.map(i => {
+      if (i.id === id) {
+        return {
+          ...i,
+          status: 'COMPLETED' as const,
+          payloadHash: currentHash,
+          approval: approvalRecord,
+          details: executionNote || 'Operator approved execution. Changes dispatched to destination module.',
+          lastExecutedAt: new Date().toISOString(),
+          lastError: undefined,
+        };
+      }
+      return i;
+    }));
+
+    return { success: true };
+  }
+
+  /**
+   * S07-A1: Truthful failure transition. 401/403/500/timeout records failure, never completion.
+   */
+  failItem(id: string, reason: string, details?: string) {
     this.setItems(prev => prev.map(item => {
       if (item.id === id) {
         return {
           ...item,
-          status: 'COMPLETED' as const,
-          details: executionNote || 'Operator approved execution. Changes dispatched to destination module.'
+          status: 'FAILED' as const,
+          details: details || `Execution failed: ${reason}`,
+          lastError: reason,
+          lastExecutedAt: new Date().toISOString(),
+        };
+      }
+      return item;
+    }));
+  }
+
+  /**
+   * S07-A3: Transitions to RUNNING state when execution begins.
+   */
+  startExecution(id: string) {
+    this.setItems(prev => prev.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          status: 'RUNNING' as const,
+          duration: 'In progress',
+          lastExecutedAt: new Date().toISOString(),
+        };
+      }
+      return item;
+    }));
+  }
+
+  /**
+   * S07-A2: Explicitly revokes approval consent and blocks future execution.
+   */
+  revokeItem(id: string, reason?: string) {
+    const revReason = reason || 'Operator withdrew consent.';
+    this.setItems(prev => prev.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          status: 'ALERT' as const,
+          details: `Approval revoked: ${revReason}`,
+          approval: {
+            approvedAt: item.approval?.approvedAt || new Date().toISOString(),
+            approver: item.approval?.approver || 'operator',
+            approvedPayloadHash: item.payloadHash || computeActionPayloadHash(item),
+            status: 'REVOKED' as const,
+            revokedAt: new Date().toISOString(),
+            revocationReason: revReason,
+          },
         };
       }
       return item;
@@ -332,7 +505,8 @@ export class ActionQueueStore {
     const runningCount = items.filter(i => i.status === 'RUNNING').length;
     const alertCount = items.filter(i => i.status === 'ALERT').length;
     const completedCount = items.filter(i => i.status === 'COMPLETED').length;
-    return { pendingCount, runningCount, alertCount, completedCount };
+    const failedCount = items.filter(i => i.status === 'FAILED').length;
+    return { pendingCount, runningCount, alertCount, completedCount, failedCount };
   }
 
   subscribe(listener: () => void): () => void {
@@ -378,14 +552,18 @@ export function useActionQueue() {
     const runningCount = items.filter(i => i.status === 'RUNNING').length;
     const alertCount = items.filter(i => i.status === 'ALERT').length;
     const completedCount = items.filter(i => i.status === 'COMPLETED').length;
-    return { pendingCount, runningCount, alertCount, completedCount };
+    const failedCount = items.filter(i => i.status === 'FAILED').length;
+    return { pendingCount, runningCount, alertCount, completedCount, failedCount };
   }, [items]);
 
   return {
     items,
     setItems: useCallback((updater: any) => actionQueueStore.setItems(updater), []),
     addItem: useCallback((item: ActionQueueItem) => actionQueueStore.addItem(item), []),
-    approveItem: useCallback((id: string, note?: string) => actionQueueStore.approveItem(id, note), []),
+    approveItem: useCallback((id: string, note?: string, options?: { approver?: string; expectedHash?: string }) => actionQueueStore.approveItem(id, note, options), []),
+    failItem: useCallback((id: string, reason: string, details?: string) => actionQueueStore.failItem(id, reason, details), []),
+    startExecution: useCallback((id: string) => actionQueueStore.startExecution(id), []),
+    revokeItem: useCallback((id: string, reason?: string) => actionQueueStore.revokeItem(id, reason), []),
     dismissItem: useCallback((id: string) => actionQueueStore.dismissItem(id), []),
     resetToDefault: useCallback(() => actionQueueStore.resetToDefault(), []),
     clear: useCallback(() => actionQueueStore.clear(), []),

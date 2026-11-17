@@ -65,6 +65,7 @@ describe('actionQueueStore', () => {
       runningCount: 0,
       alertCount: 0,
       completedCount: 0,
+      failedCount: 0,
     });
   });
 
