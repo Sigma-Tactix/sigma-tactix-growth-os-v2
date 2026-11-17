@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "0edce482612d5bdc198595473ea4c3512d04e62e",
+  "evidence": [
+    "evidence/S13/source_operations_baseline.md",
+    "evidence/S13/verify.log"
+  ]
+}
