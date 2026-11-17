@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "395e46e1cd08c4dd7d7c44a81c57001c0def3403",
+  "evidence": [
+    "evidence/S16/polished_delivery_artifacts.md",
+    "evidence/S16/verify.log"
+  ]
+}
