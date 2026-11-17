@@ -1,0 +1,9 @@
+{
+  "commit": "4ce558ea0045ddd6e79913e9b16ff5b17efa3264",
+  "command": "npm run verify",
+  "exit_code": 0,
+  "evidence": [
+    "evidence/S06/verify.log",
+    "evidence/S06/request_scope_enforcement.md"
+  ]
+}
