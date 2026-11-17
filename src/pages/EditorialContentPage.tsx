@@ -268,32 +268,32 @@ export default function EditorialContentPage() {
         {/* Left Column: Configuration & Generator */}
         <div className="lg:col-span-5 space-y-6">
           {/* Format Selector */}
-          <GlassCard spotlight elevation="flat" className="p-5 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--sigma-muted)]">
+          <GlassCard spotlight elevation="flat" className="p-6 md:p-7 space-y-5">
+            <div className="flex items-center gap-2.5 pb-3.5 border-b border-[var(--sigma-border)]/60 text-xs font-semibold uppercase tracking-wider text-[var(--sigma-muted)]">
               <BookOpen className="w-4 h-4 text-[var(--sigma-vermilion)]" />
-              <span>Article Format & Objective</span>
+              <span>Article Format &amp; Objective</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {ARTICLE_FORMATS.map(fmt => (
                 <button
                   key={fmt.id}
                   onClick={() => setSelectedFormat(fmt.id)}
                   className={cn(
-                    "p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between group",
+                    "p-4 rounded-xl border text-left transition-all flex flex-col justify-between group",
                     selectedFormat === fmt.id
                       ? "bg-[var(--sigma-vermilion)]/10 border-[var(--sigma-vermilion)]/50 text-[var(--sigma-text)] shadow-xs"
                       : "bg-[var(--sigma-surface)] border-[var(--sigma-border)] text-[var(--sigma-muted)] hover:border-[var(--sigma-border-hover)] hover:text-[var(--sigma-text)]"
                   )}
                 >
-                  <div>
+                  <div className="space-y-1.5">
                     <div className="font-semibold text-xs text-[var(--sigma-text)] group-hover:text-[var(--sigma-vermilion)] transition-colors">
                       {fmt.label}
                     </div>
-                    <p className="text-[11px] text-[var(--sigma-muted)] mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[var(--sigma-muted)] line-clamp-2 leading-relaxed">
                       {fmt.description}
                     </p>
                   </div>
-                  <div className="text-[10px] font-mono text-[var(--sigma-vermilion)] mt-3 pt-2 border-t border-[var(--sigma-border)] font-medium">
+                  <div className="text-xs font-mono text-[var(--sigma-vermilion)] mt-3 pt-2.5 border-t border-[var(--sigma-border)] font-medium">
                     {fmt.wordCount}
                   </div>
                 </button>
@@ -302,46 +302,48 @@ export default function EditorialContentPage() {
           </GlassCard>
 
           {/* Form Fields */}
-          <GlassCard spotlight elevation="flat" className="p-5 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--sigma-muted)]">
+          <GlassCard spotlight elevation="flat" className="p-6 md:p-7 space-y-6">
+            <div className="flex items-center gap-2.5 pb-3.5 border-b border-[var(--sigma-border)]/60 text-xs font-semibold uppercase tracking-wider text-[var(--sigma-muted)]">
               <Sliders className="w-4 h-4 text-[var(--sigma-vermilion)]" />
               <span>Content Parameters</span>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-[var(--sigma-text)] mb-1.5">Article Topic / Thesis</label>
-              <textarea
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                rows={3}
-                placeholder="e.g. Why B2B software companies must replace outsourced agencies with autonomous growth infrastructure..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 resize-none leading-relaxed transition-colors"
-              />
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--sigma-text)] mb-2">Article Topic / Thesis</label>
+                <textarea
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Why B2B software companies must replace outsourced agencies with autonomous growth infrastructure..."
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 resize-none leading-relaxed transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--sigma-text)] mb-2">Target Audience &amp; Persona</label>
+                <input
+                  type="text"
+                  value={targetAudience}
+                  onChange={e => setTargetAudience(e.target.value)}
+                  placeholder="e.g. Series A/B SaaS Founders, VP Marketing"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--sigma-text)] mb-2">Target Keywords &amp; Semantic Entities</label>
+                <input
+                  type="text"
+                  value={primaryKeyword}
+                  onChange={e => setPrimaryKeyword(e.target.value)}
+                  placeholder="e.g. Sovereign Growth OS, B2B pipeline infrastructure"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 transition-colors"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-[var(--sigma-text)] mb-1.5">Target Audience & Persona</label>
-              <input
-                type="text"
-                value={targetAudience}
-                onChange={e => setTargetAudience(e.target.value)}
-                placeholder="e.g. Series A/B SaaS Founders, VP Marketing"
-                className="w-full px-3.5 py-2 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[var(--sigma-text)] mb-1.5">Target Keywords & Semantic Entities</label>
-              <input
-                type="text"
-                value={primaryKeyword}
-                onChange={e => setPrimaryKeyword(e.target.value)}
-                placeholder="e.g. Sovereign Growth OS, B2B pipeline infrastructure"
-                className="w-full px-3.5 py-2 rounded-xl bg-[var(--sigma-bg)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-muted)] focus:outline-none focus:border-[var(--sigma-vermilion)]/60 transition-colors"
-              />
-            </div>
-
-            <div className="pt-2">
+            <div className="pt-3 border-t border-[var(--sigma-border)]/40">
               <Button
                 data-tutorial-id="tut-content-generate-btn"
                 onClick={handleGenerate}

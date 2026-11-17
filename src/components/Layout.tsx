@@ -811,7 +811,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Page Container */}
         <main className={cn(
-          "flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-10 sigma-app-view",
+          "flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 lg:p-10 xl:p-12 sigma-app-view",
           isDigitalMarketingRoute && "sigma-marketing-suite"
         )}>
           <motion.div

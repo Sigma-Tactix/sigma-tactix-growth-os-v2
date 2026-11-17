@@ -850,19 +850,19 @@ export default function PaidAdsPage() {
 
       {/* Strategic Context & Client Briefing (Req 6.a - 6.e) */}
       <div className="bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-[var(--sigma-border)]/60 gap-3 bg-[var(--sigma-canvas)]/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/20 flex items-center justify-center text-amber-accent">
-              <Briefcase size={20} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-7 border-b border-[var(--sigma-border)]/60 gap-4 bg-[var(--sigma-canvas)]/30">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-[var(--sigma-accent-amber)]/10 border border-[var(--sigma-accent-amber)]/20 flex items-center justify-center text-amber-accent shrink-0">
+              <Briefcase size={22} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[var(--sigma-text)] font-heading">Client Brief & Strategic Growth Context</h3>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-accent border border-emerald-500/20 font-mono text-[11px]">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-lg font-bold text-[var(--sigma-text)] font-heading">Client Brief & Strategic Growth Context</h3>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-accent border border-emerald-500/20 font-mono text-xs">
                   Example Brief
                 </span>
               </div>
-              <p className="text-xs text-muted">
+              <p className="text-xs text-muted max-w-3xl leading-relaxed">
                 Grounding parameters for performance media planning, ICP qualification, RFP tenders, and baseline reports.
                 These fields start with an editable example, not data pulled from your workspace or ad platforms — replace them
                 with your real metrics before using this brief to plan.
@@ -870,17 +870,17 @@ export default function PaidAdsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               onClick={() => setIsEditingBrief(!isEditingBrief)}
-              className="px-3.5 py-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] border border-[var(--sigma-border)] rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-[var(--sigma-text-soft)] border border-[var(--sigma-border)] rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Settings2 size={13} className="text-amber-accent" />
               {isEditingBrief ? 'Save Context' : 'Edit Brief'}
             </button>
             <button
               onClick={() => setIsBriefExpanded(!isBriefExpanded)}
-              className="p-1.5 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-muted hover:text-[var(--sigma-text)] rounded-xl border border-[var(--sigma-border)] transition-all cursor-pointer"
+              className="p-2 bg-[var(--sigma-surface-subtle)] hover:bg-[var(--sigma-surface-raised)] text-muted hover:text-[var(--sigma-text)] rounded-xl border border-[var(--sigma-border)] transition-all cursor-pointer"
               title={isBriefExpanded ? 'Collapse Brief' : 'Expand Brief'}
             >
               {isBriefExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -894,102 +894,102 @@ export default function PaidAdsPage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="p-6 space-y-6"
+              className="p-6 md:p-8 space-y-6"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* 1. Client Brief & Business Profile */}
-                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
+                <div className="p-5 md:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2.5">
                     <span className="flex items-center gap-1.5">
                       <Building2 size={14} /> Client Business Brief
                     </span>
-                    <span className="text-[11px] text-muted uppercase">Profile</span>
+                    <span className="text-xs text-muted uppercase">Profile</span>
                   </div>
                   {isEditingBrief ? (
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-3 text-xs">
                       <div>
-                        <label className="text-[11px] text-muted uppercase font-mono">Business Overview</label>
+                        <label className="text-xs text-muted uppercase font-mono">Business Overview</label>
                         <textarea
                           rows={2}
                           value={clientBrief.businessOverview}
                           onChange={(e) => setClientBrief({ ...clientBrief, businessOverview: e.target.value })}
-                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
+                          className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-muted uppercase font-mono">Current Market Position</label>
+                        <label className="text-xs text-muted uppercase font-mono">Current Market Position</label>
                         <input
                           type="text"
                           value={clientBrief.currentPosition}
                           onChange={(e) => setClientBrief({ ...clientBrief, currentPosition: e.target.value })}
-                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
+                          className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs"
                         />
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-3 text-xs">
                       <div>
-                        <div className="text-[11px] text-muted font-mono uppercase">Overview & Value Prop</div>
-                        <p className="text-[var(--sigma-text-soft)] mt-0.5 leading-relaxed text-[11px]">{clientBrief.businessOverview}</p>
+                        <div className="text-xs text-muted font-mono uppercase font-semibold">Overview & Value Prop</div>
+                        <p className="text-[var(--sigma-text-soft)] mt-1 leading-relaxed text-xs">{clientBrief.businessOverview}</p>
                       </div>
                       <div>
-                        <div className="text-[11px] text-muted font-mono uppercase">Competitive Position</div>
-                        <p className="text-muted mt-0.5 text-[11px]">{clientBrief.currentPosition}</p>
+                        <div className="text-xs text-muted font-mono uppercase font-semibold">Competitive Position</div>
+                        <p className="text-muted mt-1 text-xs leading-relaxed">{clientBrief.currentPosition}</p>
                       </div>
                       <div>
-                        <div className="text-[11px] text-muted font-mono uppercase">Active Marketing Footprint</div>
-                        <p className="text-muted mt-0.5 text-[11px]">{clientBrief.marketingActivities}</p>
+                        <div className="text-xs text-muted font-mono uppercase font-semibold">Active Marketing Footprint</div>
+                        <p className="text-muted mt-1 text-xs leading-relaxed">{clientBrief.marketingActivities}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* 2. Budget & Acquisition Targets */}
-                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
+                <div className="p-5 md:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2.5">
                     <span className="flex items-center gap-1.5">
                       <DollarSign size={14} /> Budget & Targets
                     </span>
-                    <span className="text-[11px] text-muted font-bold bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 rounded">
-                      Pacing: not measured (no live spend)
+                    <span className="text-xs text-muted font-bold bg-[var(--sigma-surface-subtle)] px-1.5 py-0.5 rounded">
+                      Pacing: not measured
                     </span>
                   </div>
                   {isEditingBrief ? (
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-3 text-xs">
                       <div>
-                        <label className="text-[11px] text-muted uppercase font-mono">Monthly Budget Ceiling ($)</label>
+                        <label className="text-xs text-muted uppercase font-mono">Monthly Budget Ceiling ($)</label>
                         <input
                           type="number"
                           value={clientBrief.targetBudget}
                           onChange={(e) => setClientBrief({ ...clientBrief, targetBudget: Number(e.target.value) })}
-                          className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs font-mono"
+                          className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs font-mono"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[11px] text-muted uppercase font-mono">Target CAC ($)</label>
+                          <label className="text-xs text-muted uppercase font-mono">Target CAC ($)</label>
                           <input
                             type="number"
                             value={clientBrief.targetCac}
                             onChange={(e) => setClientBrief({ ...clientBrief, targetCac: Number(e.target.value) })}
-                            className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs font-mono"
+                            className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs font-mono"
                           />
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-xs">
-                      <div className="grid grid-cols-2 gap-2 p-2.5 bg-[var(--sigma-surface-subtle)]/50 rounded-lg font-mono">
+                    <div className="space-y-3 text-xs">
+                      <div className="grid grid-cols-2 gap-2 p-3 bg-[var(--sigma-surface-subtle)]/50 rounded-lg font-mono">
                         <div>
-                          <span className="text-[11px] text-muted uppercase">Monthly Budget</span>
-                          <div className="text-base font-bold text-[var(--sigma-text)] mt-0.5">${clientBrief.targetBudget.toLocaleString()}</div>
+                          <span className="text-xs text-muted uppercase font-semibold">Monthly Budget</span>
+                          <div className="text-base font-bold text-[var(--sigma-text)] mt-1">${clientBrief.targetBudget.toLocaleString()}</div>
                         </div>
                         <div>
-                          <span className="text-[11px] text-muted uppercase">Target CAC</span>
-                          <div className="text-base font-bold text-amber-accent mt-0.5">${clientBrief.targetCac}</div>
+                          <span className="text-xs text-muted uppercase font-semibold">Target CAC</span>
+                          <div className="text-base font-bold text-amber-accent mt-1">${clientBrief.targetCac}</div>
                         </div>
                       </div>
-                      <div className="text-[11px] text-muted leading-relaxed">
+                      <div className="text-xs text-muted leading-relaxed">
                         Budget enforces strict safety limits. Automated bid adjustments cannot exceed 15% without human approval.
                       </div>
                     </div>
@@ -997,62 +997,62 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* 3. ICP Specifications */}
-                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
+                <div className="p-5 md:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2.5">
                     <span className="flex items-center gap-1.5">
                       <Target size={14} /> Ideal Customer Profile (ICP)
                     </span>
-                    <span className="text-[11px] text-muted font-mono">B2B Core</span>
+                    <span className="text-xs text-muted font-mono">B2B Core</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[11px] text-muted uppercase font-mono">ICP Criteria & Firmographics</label>
+                      <label className="text-xs text-muted uppercase font-mono">ICP Criteria & Firmographics</label>
                       <textarea
                         rows={3}
                         value={clientBrief.icpProfile}
                         onChange={(e) => setClientBrief({ ...clientBrief, icpProfile: e.target.value })}
-                        className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
+                        className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs"
                       />
                     </div>
                   ) : (
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-3 text-xs">
                       <div>
-                        <div className="text-[11px] text-muted font-mono uppercase">Target Firmographics</div>
-                        <p className="text-[var(--sigma-text-soft)] mt-0.5 leading-relaxed text-[11px]">{clientBrief.icpProfile}</p>
+                        <div className="text-xs text-muted font-mono uppercase font-semibold">Target Firmographics</div>
+                        <p className="text-[var(--sigma-text-soft)] mt-1 leading-relaxed text-xs">{clientBrief.icpProfile}</p>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">Stripe Stack</span>
-                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">Series A-C</span>
-                        <span className="px-2 py-0.5 bg-[var(--sigma-surface-subtle)] border border-zinc-700 rounded text-[11px] font-mono text-[var(--sigma-text-soft)]">$5M-$50M ARR</span>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <span className="px-2.5 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-lg text-xs font-mono text-[var(--sigma-text-soft)]">Stripe Stack</span>
+                        <span className="px-2.5 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-lg text-xs font-mono text-[var(--sigma-text-soft)]">Series A-C</span>
+                        <span className="px-2.5 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-lg text-xs font-mono text-[var(--sigma-text-soft)]">$5M-$50M ARR</span>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* 4. Active RFPs & Tenders */}
-                <div className="p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
+                <div className="p-5 md:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2.5">
                     <span className="flex items-center gap-1.5">
                       <FileText size={14} /> RFP & Commercial Tenders
                     </span>
-                    <span className="text-[11px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-mono">
+                    <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-mono font-semibold">
                       2 Tenders
                     </span>
                   </div>
                   {isEditingBrief ? (
                     <div>
-                      <label className="text-[11px] text-muted uppercase font-mono">Active RFPs & Procurement Requirements</label>
+                      <label className="text-xs text-muted uppercase font-mono">Active RFPs & Procurement Requirements</label>
                       <textarea
                         rows={3}
                         value={clientBrief.rfpStatus}
                         onChange={(e) => setClientBrief({ ...clientBrief, rfpStatus: e.target.value })}
-                        className="w-full mt-1 p-2 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text)] text-xs"
+                        className="w-full mt-1.5 p-2.5 bg-[var(--sigma-input)] border-[var(--sigma-border)] text-[var(--sigma-text)] border border-[var(--sigma-border)] rounded-lg text-xs"
                       />
                     </div>
                   ) : (
-                    <div className="space-y-2 text-xs">
-                      <p className="text-[var(--sigma-text-soft)] leading-relaxed text-[11px]">{clientBrief.rfpStatus}</p>
-                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg text-[11px] font-mono text-blue-accent/90">
+                    <div className="space-y-3 text-xs">
+                      <p className="text-[var(--sigma-text-soft)] leading-relaxed text-xs">{clientBrief.rfpStatus}</p>
+                      <div className="p-2.5 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs font-mono text-blue-accent/90">
                         Sovereign Vault requirements satisfied for both proposals.
                       </div>
                     </div>
@@ -1060,12 +1060,12 @@ export default function PaidAdsPage() {
                 </div>
 
                 {/* 5. Existing Performance Reports & Context */}
-                <div className="md:col-span-2 p-4 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2">
+                <div className="md:col-span-2 p-5 md:p-6 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)]/60 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-accent border-b border-[var(--sigma-border)]/60 pb-2.5">
                     <span className="flex items-center gap-1.5">
                       <BarChart3 size={14} /> Historical Performance Context & Headwinds
                     </span>
-                    <span className="text-[11px] text-emerald-accent font-mono">Q3 Grounded</span>
+                    <span className="text-xs text-emerald-accent font-mono font-semibold">Q3 Grounded</span>
                   </div>
                   {isEditingBrief ? (
                     <div>
@@ -1104,7 +1104,7 @@ export default function PaidAdsPage() {
       </div>
 
       {/* Main Suite Tabs */}
-      <div className="overflow-x-auto no-scrollbar pb-1">
+      <div className="overflow-x-auto no-scrollbar py-3 my-2 border-b border-[var(--sigma-border)]/40">
         <Tabs
           tabs={[
             { id: 'MEDIA_PLAN', label: '1. Media Plan Creator', icon: <Calendar size={13} /> },
@@ -1125,11 +1125,11 @@ export default function PaidAdsPage() {
       {/* 1. MEDIA PLAN CREATOR */}
       {/* ========================================================================= */}
       {activeTab === 'MEDIA_PLAN' && (
-        <div className="space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-semibold text-[var(--sigma-text)]">Active Media Plans</h3>
-              <p className="text-xs text-[var(--sigma-text-muted)]">Manage multi-channel flights, budget envelopes, and blended performance targets.</p>
+        <div className="space-y-10 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--sigma-border)]/40">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold tracking-tight text-[var(--sigma-text)]">Active Media Plans</h3>
+              <p className="text-xs text-[var(--sigma-text-muted)] leading-relaxed">Manage multi-channel flights, budget envelopes, and blended performance targets.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
               <Button
@@ -1211,7 +1211,7 @@ export default function PaidAdsPage() {
           </div>
 
           {/* Industry Media Plan Templates & Benchmarks (Req 6.f, 6.h) */}
-          <div className="p-6 bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl space-y-6">
+          <div className="mt-12 p-6 md:p-8 bg-[var(--sigma-surface-subtle)]/50 border border-[var(--sigma-border)] rounded-2xl space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--sigma-border)]/60 pb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -1336,11 +1336,11 @@ export default function PaidAdsPage() {
       {/* 2. INTENT & SIGNAL AUDIENCES */}
       {/* ========================================================================= */}
       {activeTab === 'AUDIENCE_INTENT' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-[var(--sigma-text)]">Intent & Signal-Based Audience Finder</h3>
-              <p className="text-xs text-muted">
+        <div className="space-y-10 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--sigma-border)]/40">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold tracking-tight text-[var(--sigma-text)]">Intent & Signal-Based Audience Finder</h3>
+              <p className="text-xs text-muted leading-relaxed">
                 Discovers high-propensity buying segments by synthesizing search queries, firmographics, web behavior, and social sentiment.
               </p>
             </div>
@@ -1613,7 +1613,7 @@ export default function PaidAdsPage() {
       {/* 3. CHANNELS & DEVICE ALLOCATOR */}
       {/* ========================================================================= */}
       {activeTab === 'CHANNELS_DEVICES' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
           {/* Channel Budget Distribution (8 Cols) */}
           <div className="lg:col-span-8 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--sigma-border)]/60 pb-4">
@@ -1802,11 +1802,11 @@ export default function PaidAdsPage() {
       {/* 4. UNIVERSAL CAMPAIGN METRICS TABLE */}
       {/* ========================================================================= */}
       {activeTab === 'CAMPAIGN_METRICS' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-[var(--sigma-text)]">Universal Campaign Metrics Matrix</h3>
-              <p className="text-xs text-muted">
+        <div className="space-y-10 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--sigma-border)]/40">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold tracking-tight text-[var(--sigma-text)]">Universal Campaign Metrics Matrix</h3>
+              <p className="text-xs text-muted leading-relaxed">
                 Where campaign spend, CTRs, CPCs and ROAS will show once a linked ad pipeline reports to this
                 workspace. Until then nothing is shown — the benchmark simulation is clearly labeled and uses zero
                 real spend.
@@ -1922,7 +1922,7 @@ export default function PaidAdsPage() {
       {/* 5. AUTOMATIC UTM BUILDER */}
       {/* ========================================================================= */}
       {activeTab === 'UTM_BUILDER' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
           {/* UTM Form (7 Cols) */}
           <div className="lg:col-span-7 bg-surface border border-[var(--sigma-border)] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
             <div>
@@ -2099,7 +2099,7 @@ export default function PaidAdsPage() {
       {/* 6. AD CREATIVES & RSA STUDIO */}
       {/* ========================================================================= */}
       {activeTab === 'SEARCH_ADS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
           <div className="space-y-4 p-6 bg-surface border border-[var(--sigma-border)] rounded-2xl shadow-xl">
             <div className="text-xs font-mono font-bold text-muted uppercase tracking-wider">
               Google RSA Generator

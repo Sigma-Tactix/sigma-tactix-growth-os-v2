@@ -591,22 +591,26 @@ export default function SeoAeoPage() {
         ) }
       </div>
 
-      {/* Navigation Tabs */ }
-      <Tabs<'SEARCH_CONSOLE' | 'CLUSTERS' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>
-        tabs={ [
-          { id: 'SEARCH_CONSOLE', label: 'Google Search Console Trends', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-          { id: 'CLUSTERS', label: 'Topical Clusters & Search Intent', icon: <Layers className="w-3.5 h-3.5" /> },
-          { id: 'AEO_SIMULATOR', label: 'AEO Citation Index (ChatGPT / Perplexity / Claude)', icon: <Sparkles className="w-3.5 h-3.5" /> },
-          { id: 'SCHEMA_ARCHITECT', label: 'Semantic Schema Architect (JSON-LD)', icon: <Code2 className="w-3.5 h-3.5" /> },
-          { id: 'AGENTS', label: 'Autonomous SEO Agents & Sub-Agents', icon: <Bot className="w-3.5 h-3.5" /> }
-        ] }
-        activeTab={ activeTab }
-        onChange={ setActiveTab }
-      />
+      {/* Navigation Tabs */}
+      <div className="overflow-x-auto no-scrollbar py-3 my-2 border-b border-[var(--sigma-border)]/40">
+        <Tabs<'SEARCH_CONSOLE' | 'CLUSTERS' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>
+          tabs={ [
+            { id: 'SEARCH_CONSOLE', label: 'Google Search Console Trends', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+            { id: 'CLUSTERS', label: 'Topical Clusters & Search Intent', icon: <Layers className="w-3.5 h-3.5" /> },
+            { id: 'AEO_SIMULATOR', label: 'AEO Citation Index (ChatGPT / Perplexity / Claude)', icon: <Sparkles className="w-3.5 h-3.5" /> },
+            { id: 'SCHEMA_ARCHITECT', label: 'Semantic Schema Architect (JSON-LD)', icon: <Code2 className="w-3.5 h-3.5" /> },
+            { id: 'AGENTS', label: 'Autonomous SEO Agents & Sub-Agents', icon: <Bot className="w-3.5 h-3.5" /> }
+          ] }
+          activeTab={ activeTab }
+          onChange={ setActiveTab }
+          variant="pill"
+          size="sm"
+        />
+      </div>
 
-      {/* TAB 1: KEYWORD CLUSTERS */ }
+      {/* TAB 1: KEYWORD CLUSTERS */}
       { activeTab === 'CLUSTERS' && (
-        <div className="space-y-4">
+        <div className="space-y-8 pt-4">
           { showSampleBanner && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
               Sample keyword clusters from a demo seed — volumes, difficulty and CPC are modeled figures, not live Search Console data.
@@ -728,9 +732,9 @@ export default function SeoAeoPage() {
         </div>
       ) }
 
-      {/* TAB 2: AEO SIMULATOR */ }
+      {/* TAB 2: AEO SIMULATOR */}
       { activeTab === 'AEO_SIMULATOR' && (
-        <div className="space-y-6">
+        <div className="space-y-8 pt-4">
           {/* Query Testing Box */ }
           <div className="p-5 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
@@ -830,9 +834,9 @@ export default function SeoAeoPage() {
         </div>
       ) }
 
-      {/* TAB 3: SCHEMA ARCHITECT */ }
+      {/* TAB 3: SCHEMA ARCHITECT */}
       { activeTab === 'SCHEMA_ARCHITECT' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
@@ -935,9 +939,9 @@ export default function SeoAeoPage() {
         </div>
       ) }
 
-      {/* TAB 4: AUTONOMOUS AGENTS */ }
+      {/* TAB 4: AUTONOMOUS AGENTS */}
       { activeTab === 'AGENTS' && (
-        <div className="space-y-4">
+        <div className="space-y-8 pt-4">
           <div className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -983,9 +987,9 @@ export default function SeoAeoPage() {
         </div>
       ) }
 
-      {/* Google Search Console Trends Tab */ }
+      {/* Google Search Console Trends Tab */}
       { activeTab === 'SEARCH_CONSOLE' && (
-        <div className="space-y-6">
+        <div className="space-y-8 pt-4">
           <SearchConsoleTrends />
         </div>
       ) }

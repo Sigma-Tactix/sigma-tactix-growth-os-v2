@@ -508,46 +508,46 @@ export default function CompetitorResearchPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Rival Ad */}
-              <div className="p-5 rounded-xl bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] space-y-4">
-                <div className="flex items-center justify-between text-xs">
+              <div className="p-6 rounded-2xl bg-[var(--sigma-surface-subtle)]/60 border border-[var(--sigma-border)] space-y-5 shadow-xs">
+                <div className="flex items-center justify-between text-xs pb-3 border-b border-[var(--sigma-border)]/40">
                   <Badge variant="neutral">RIVAL AD ({selectedCreativeComparison.channel})</Badge>
-                  <span className="text-rose-accent font-mono text-[11px] flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Vulnerable Angle
+                  <span className="text-rose-accent font-mono text-xs flex items-center gap-1 font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Vulnerable Angle
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-muted">Headline</div>
+                  <div className="text-xs font-mono text-muted uppercase tracking-wider font-semibold">Headline</div>
                   <div className="text-sm font-semibold text-[var(--sigma-text-soft)]">"{selectedCreativeComparison.adHeadline}"</div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-muted">Body Copy</div>
+                  <div className="text-xs font-mono text-muted uppercase tracking-wider font-semibold">Body Copy</div>
                   <p className="text-xs text-muted leading-relaxed italic">"{selectedCreativeComparison.adCopy}"</p>
                 </div>
-                <div className="pt-2 border-t border-[var(--sigma-border)] space-y-1">
-                  <div className="text-[11px] font-mono text-rose-accent font-semibold">Flagged Hook Angle</div>
-                  <p className="text-xs text-[var(--sigma-text-soft)]">{selectedCreativeComparison.hookAngle}</p>
+                <div className="pt-3 border-t border-[var(--sigma-border)] space-y-1">
+                  <div className="text-xs font-mono text-rose-accent font-semibold">Flagged Hook Angle</div>
+                  <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">{selectedCreativeComparison.hookAngle}</p>
                 </div>
               </div>
 
               {/* Sigma Counter-Ad */}
-              <div className="p-5 rounded-xl bg-[var(--sigma-accent-amber)]/5 border border-[var(--sigma-accent-amber)]/30 space-y-4">
-                <div className="flex items-center justify-between text-xs">
+              <div className="p-6 rounded-2xl bg-[var(--sigma-accent-amber)]/5 border border-[var(--sigma-accent-amber)]/30 space-y-5 shadow-xs">
+                <div className="flex items-center justify-between text-xs pb-3 border-b border-[var(--sigma-accent-amber)]/20">
                   <Badge variant="vermilion">SIGMA COUNTER-ATTACK</Badge>
-                  <span className="text-emerald-accent font-mono text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Proposed Counter-Angle
+                  <span className="text-emerald-accent font-mono text-xs flex items-center gap-1 font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Proposed Counter-Angle
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-amber-accent/80">Counter-Headline</div>
+                  <div className="text-xs font-mono text-amber-accent/80 uppercase tracking-wider font-semibold">Counter-Headline</div>
                   <div className="text-sm font-semibold text-[var(--sigma-text)]">"{selectedCreativeComparison.sigmaTactixCounterAd.headline}"</div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-xs font-mono text-amber-accent/80">Counter-Body</div>
+                  <div className="text-xs font-mono text-amber-accent/80 uppercase tracking-wider font-semibold">Counter-Body</div>
                   <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">"{selectedCreativeComparison.sigmaTactixCounterAd.copy}"</p>
                 </div>
-                <div className="pt-2 border-t border-[var(--sigma-accent-amber)]/20 space-y-1">
-                  <div className="text-[11px] font-mono text-emerald-accent font-semibold">Strategic Advantage</div>
-                  <p className="text-xs text-[var(--sigma-text-soft)]">{selectedCreativeComparison.sigmaTactixCounterAd.strategicAdvantage}</p>
+                <div className="pt-3 border-t border-[var(--sigma-accent-amber)]/20 space-y-1">
+                  <div className="text-xs font-mono text-emerald-accent font-semibold">Strategic Advantage</div>
+                  <p className="text-xs text-[var(--sigma-text-soft)] leading-relaxed">{selectedCreativeComparison.sigmaTactixCounterAd.strategicAdvantage}</p>
                 </div>
               </div>
             </div>

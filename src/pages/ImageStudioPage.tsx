@@ -648,22 +648,22 @@ export default function ImageStudioPage() {
           </div>
 
           {/* Aspect Ratio & Style Presets */}
-          <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
-                <Ratio className="w-4 h-4 text-purple-400" />
+          <div className="p-6 md:p-7 rounded-2xl bg-[var(--sigma-surface)] border border-[var(--sigma-border)] space-y-6 shadow-sm">
+            <div className="space-y-3 pb-4 border-b border-[var(--sigma-border)]/60">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)] flex items-center gap-2">
+                <Ratio className="w-4 h-4 text-[var(--sigma-primary)]" />
                 Aspect Ratio / Resolution
               </label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2.5">
                 {(['16:9', '1:1', '9:16', '4:5'] as const).map(r => (
                   <button
                     key={r}
                     onClick={() => setRatio(r)}
                     className={cn(
-                      "py-2 px-3 rounded-lg text-xs font-medium border text-center transition-colors",
+                      "py-2.5 px-3 rounded-xl text-xs font-semibold border text-center transition-colors cursor-pointer",
                       ratio === r
-                        ? "bg-purple-600 text-white border-purple-500"
-                        : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+                        ? "bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] border-[var(--sigma-primary)]"
+                        : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
                     )}
                   >
                     {r}
@@ -672,38 +672,38 @@ export default function ImageStudioPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
-                <Palette className="w-4 h-4 text-purple-400" />
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--sigma-text)] flex items-center gap-2">
+                <Palette className="w-4 h-4 text-[var(--sigma-primary)]" />
                 Style Preset
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 {stylePresets.map(style => (
                   <button
                     key={style.id}
                     onClick={() => setStylePreset(style.id)}
                     className={cn(
-                      "p-2.5 rounded-xl border text-left transition-all",
+                      "p-3 rounded-xl border text-left transition-all cursor-pointer",
                       stylePreset === style.id
-                        ? "bg-purple-500/10 border-purple-500/40 text-white"
-                        : "bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/15 hover:text-slate-200"
+                        ? "bg-[var(--sigma-primary)]/10 border-[var(--sigma-primary)]/50 text-[var(--sigma-text)]"
+                        : "bg-[var(--sigma-surface-subtle)] border-[var(--sigma-border)] text-[var(--sigma-text-muted)] hover:border-[var(--sigma-border-strong)] hover:text-[var(--sigma-text)]"
                     )}
                   >
-                    <div className="text-xs font-semibold text-slate-200">{style.label}</div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{style.desc}</p>
+                    <div className="text-xs font-semibold text-[var(--sigma-text)]">{style.label}</div>
+                    <p className="text-xs text-[var(--sigma-text-muted)] mt-1 line-clamp-1">{style.desc}</p>
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-slate-500">
+              <p className="mt-2 text-xs text-[var(--sigma-text-muted)]">
                 {stylePresets[0]?.source === 'brand_vault' ? 'Suggested from this workspace Brand Vault.' : 'Brand Vault baseline styles active.'}
               </p>
             </div>
           </div>
 
           {/* Prompt Editor & Generation Triggers */}
-          <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+          <div className="p-6 md:p-7 rounded-2xl bg-[var(--sigma-surface)] border border-[var(--sigma-border)] space-y-6 shadow-sm">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-[var(--sigma-text)]">
                 Creative Visual Prompt
               </label>
               <textarea
@@ -711,18 +711,18 @@ export default function ImageStudioPage() {
                 onChange={e => setPrompt(e.target.value)}
                 rows={3}
                 placeholder="Describe your desired marketing graphic in vivid detail..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-purple-500/50 resize-none font-sans"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--sigma-input)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-text-muted)] focus:outline-none focus:border-[var(--sigma-primary)]/60 resize-none font-sans leading-relaxed"
               />
             </div>
 
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Negative Prompt (What to Avoid)</label>
+              <label className="block text-xs font-semibold text-[var(--sigma-text)]">Negative Prompt (What to Avoid)</label>
               <input
                 type="text"
                 value={negativePrompt}
                 onChange={e => setNegativePrompt(e.target.value)}
                 placeholder="watermark, blurry, distorted..."
-                className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--sigma-input)] border border-[var(--sigma-border)] text-xs text-[var(--sigma-text)] placeholder-[var(--sigma-text-muted)] focus:outline-none focus:border-[var(--sigma-primary)]/60"
               />
               <div className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-2">
                 <label className="flex items-center justify-between gap-3 text-xs text-slate-300">

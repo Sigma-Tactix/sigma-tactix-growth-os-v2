@@ -368,50 +368,51 @@ The Sigma Tactix Revenue Architecture Team`);
   };
 
   return (
-    <div className="space-y-8 lg:space-y-10 pb-16">
+    <div className="space-y-10 lg:space-y-12 pb-20">
       {/* Header */}
-      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Badge variant="vermilion">EXECUTION LAYER</Badge>
-              <span className="text-[var(--sigma-text-soft)] text-xs">•</span>
-              <Badge variant="neutral">LIFECYCLE &amp; COMPLIANCE</Badge>
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="brand" size="sm" icon={<Mail size={13} />}>Lifecycle Marketing</Badge>
+              <Badge variant="neutral" size="sm">CAN-SPAM &amp; RFC 8058 Governed</Badge>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--sigma-text)] flex items-center gap-3">
-              <Mail className="w-7 h-7 text-[var(--sigma-vermilion)]" />
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
               Email &amp; Lifecycle Marketing
             </h1>
-            <p className="text-muted text-sm mt-1 max-w-2xl leading-relaxed">
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-2xl leading-relaxed">
               Automate high-converting B2B nurture sequences, interactive drip workflows, and strictly governed regulatory compliance (CAN-SPAM, RFC 8058, GDPR).
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Tabs<'BROADCAST' | 'SEQUENCES' | 'COMPLIANCE_AUDIT' | 'DELIVERABILITY'>
-              tabs={[
-                { id: 'BROADCAST', label: 'Campaign Broadcast' },
-                { id: 'SEQUENCES', label: 'Automated Drip Sequences' },
-                { id: 'COMPLIANCE_AUDIT', label: 'Compliance & Regulations' },
-                { id: 'DELIVERABILITY', label: 'Deliverability & DNS Health' }
-              ]}
-              activeTab={activeTab}
-              onChange={setActiveTab}
-            />
-          </div>
         </div>
-      </GlassCard>
+      </div>
+
+      {/* Main Suite Tabs */}
+      <div className="overflow-x-auto no-scrollbar py-3 my-2 border-b border-[var(--sigma-border)]/40">
+        <Tabs<'BROADCAST' | 'SEQUENCES' | 'COMPLIANCE_AUDIT' | 'DELIVERABILITY'>
+          tabs={[
+            { id: 'BROADCAST', label: 'Campaign Broadcast' },
+            { id: 'SEQUENCES', label: 'Automated Drip Sequences' },
+            { id: 'COMPLIANCE_AUDIT', label: 'Compliance & Regulations' },
+            { id: 'DELIVERABILITY', label: 'Deliverability & DNS Health' }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          variant="pill"
+          size="sm"
+        />
+      </div>
 
       {/* Main Tab 1: Broadcast */}
       {activeTab === 'BROADCAST' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
           {/* Left Column: Subject Lines & Options */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="p-5 rounded-2xl bg-[var(--sigma-surface)] border border-[var(--sigma-border)] space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-2">
+            <div className="p-6 md:p-7 rounded-2xl bg-[var(--sigma-surface)] border border-[var(--sigma-border)] space-y-6">
+              <div className="flex items-center gap-2.5 pb-3.5 border-b border-[var(--sigma-border)]/60 text-xs font-semibold uppercase tracking-wider text-muted">
                 <Sliders className="w-4 h-4 text-cyan-accent" />
-                Subject Line A/B Optimization
-              </h3>
+                <span>Subject Line A/B Optimization</span>
+              </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1 text-xs">

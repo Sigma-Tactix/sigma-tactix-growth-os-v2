@@ -459,57 +459,69 @@ export default function AgentReachPage() {
         )}
       </div>
 
-      {/* 4. Filter & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 p-1 bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-2xl backdrop-blur-xl">
-          {(['ALL', 'READY', 'TIER_0', 'TIER_1', 'TIER_2'] as const).map(tier => (
-            <button
-              key={tier}
-              onClick={() => setFilterTier(tier)}
-              className={cn(
-                'px-4 py-2 rounded-xl text-xs font-mono uppercase transition-all cursor-pointer',
-                filterTier === tier
-                  ? 'bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] font-bold shadow-[var(--sigma-shadow-md)]'
-                  : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
-              )}
-            >
-              {tier === 'ALL' ? `All (${summary.totalChannels})` : tier === 'READY' ? `Ready (${summary.readyCount})` : tier.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative w-full sm:w-72">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search 15 platforms..."
-            className="w-full bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </div>
-      </div>
-
-      {/* 5. Channel Matrix Grid */}
-      <div>
-        <div className="text-xs font-mono uppercase text-[var(--sigma-text-muted)] flex items-center justify-between mb-4">
-          <span>Channel Matrix ({filteredChannels.length} of {channelList.length} shown)</span>
-          <span>Refresh with "Run Doctor" above</span>
-        </div>
-        {filteredChannels.length === 0 ? (
-          <div className="p-10 rounded-2xl border border-dashed border-[var(--sigma-border)] text-center space-y-1.5">
-            <Terminal size={20} className="mx-auto text-[var(--sigma-text-muted)] opacity-60" />
-            <div className="text-sm text-[var(--sigma-text)]">
-              {channelList.length === 0 ? 'No channel telemetry yet' : 'No channels match the current view'}
-            </div>
-            <div className="text-xs text-[var(--sigma-text-muted)]">
-              {channelList.length === 0
-                ? 'Run the doctor to probe the 15-channel router. The channel list appears once the latest scan returns.'
-                : 'Clear the search box or switch the tier filter to see more channels.'}
-            </div>
+      {/* 4. Supported Channels Routing Matrix */}
+      <div className="space-y-6 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--sigma-border)]/40">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-[var(--sigma-text)]">
+              Supported Channel Routing Matrix
+            </h2>
+            <p className="text-xs text-[var(--sigma-text-muted)] mt-1">
+              Live routing status, CLI bindings, and credential health across 15 external intelligence channels.
+            </p>
           </div>
-        ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <span className="text-xs font-mono px-3 py-1 bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-lg text-[var(--sigma-text-muted)]">
+            {filteredChannels.length} of {channelList.length} channels available
+          </span>
+        </div>
+
+        {/* Filter & Search Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-2xl backdrop-blur-xl">
+            {(['ALL', 'READY', 'TIER_0', 'TIER_1', 'TIER_2'] as const).map(tier => (
+              <button
+                key={tier}
+                onClick={() => setFilterTier(tier)}
+                className={cn(
+                  'px-4 py-2 rounded-xl text-xs font-mono uppercase transition-all cursor-pointer',
+                  filterTier === tier
+                    ? 'bg-[var(--sigma-primary)] text-[var(--sigma-inverse-text)] font-bold shadow-[var(--sigma-shadow-md)]'
+                    : 'text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]'
+                )}
+              >
+                {tier === 'ALL' ? `All (${summary.totalChannels})` : tier === 'READY' ? `Ready (${summary.readyCount})` : tier.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search 15 platforms..."
+              className="w-full bg-[var(--sigma-surface)]/60 border border-[var(--sigma-border)] rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--sigma-text)] placeholder:text-[var(--sigma-text-muted)] font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+        </div>
+
+        {/* 5. Channel Matrix Grid */}
+        <div>
+          {filteredChannels.length === 0 ? (
+            <div className="p-10 rounded-2xl border border-dashed border-[var(--sigma-border)] text-center space-y-1.5">
+              <Terminal size={20} className="mx-auto text-[var(--sigma-text-muted)] opacity-60" />
+              <div className="text-sm text-[var(--sigma-text)]">
+                {channelList.length === 0 ? 'No channel telemetry yet' : 'No channels match the current view'}
+              </div>
+              <div className="text-xs text-[var(--sigma-text-muted)]">
+                {channelList.length === 0
+                  ? 'Run the doctor to probe the 15-channel router. The channel list appears once the latest scan returns.'
+                  : 'Clear the search box or switch the tier filter to see more channels.'}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredChannels.map(ch => {
           const isOk = ch.status === 'ok';
           const isWarn = ch.status === 'warn';
@@ -609,6 +621,7 @@ export default function AgentReachPage() {
         })}
         </div>
         )}
+        </div>
       </div>
 
       {/* 6. Quick Ingestion to Social Listening Bridge */}
