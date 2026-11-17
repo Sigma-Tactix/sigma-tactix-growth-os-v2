@@ -1,5 +1,5 @@
 {
-  "commit": "HEAD",
+  "commit": "f5df9651d2a1b951cedafba66cadee03cc440a98",
   "command": "npm run verify",
   "exit_code": 0,
   "evidence": [
