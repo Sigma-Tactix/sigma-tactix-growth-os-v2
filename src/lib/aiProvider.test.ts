@@ -262,4 +262,44 @@ describe("aiProvider - Unified Agent AI Gateway & ReAct Execution", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it("marks result as exhausted when maxSteps is reached without final completion, avoiding false success (C-09)", async () => {
+    const originalFetch = globalThis.fetch;
+    // Mock response that perpetually asks for tool calls without providing a final response
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{
+          message: {
+            role: "assistant",
+            content: null,
+            tool_calls: [{
+              id: "call-repeat",
+              type: "function",
+              function: { name: "fetch_site_content", arguments: '{"url":"https://example.com"}' },
+            }],
+          },
+        }],
+        usage: { prompt_tokens: 15, completion_tokens: 5 },
+      }),
+    });
+
+    try {
+      const result = await executeAgentReActLoop({
+        agentName: "Auditor",
+        goal: "Perform audit",
+        scopedContext: "Context",
+        config: { provider: "ollama", model: "qwen2.5:14b" },
+        maxSteps: 2,
+        allowedTools: ["fetch_site_content"],
+        executeTool: async () => ({ content: "example content" }),
+      });
+
+      expect(result.status).toBe("exhausted");
+      expect(result.output).toMatch(/Mission incomplete: allocated tool execution budget exhausted/i);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

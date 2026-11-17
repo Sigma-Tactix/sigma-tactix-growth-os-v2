@@ -1,5 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  isSecretVaultId,
+  filterSafeVaultIds,
+  SAFE_DOCUMENT_VAULT_IDS,
+  sanitizeDocumentMatches,
+} from "./secretVaultPolicy.js";
 
 // Real Second Brain storage + retrieval backbone. Every module that produces
 // durable insight (audits, discovery notes, competitor scans, uploaded files)
@@ -87,6 +93,10 @@ export interface SearchDocumentsOptions {
   // correctly matches nothing; undefined means unrestricted (a human search).
   vaultIds?: string[];
   topK?: number;
+  /**
+   * When true (default), strictly excludes all Secret Vaults (Executive, Credentials).
+   */
+  excludeSecretVaults?: boolean;
 }
 
 export interface DocumentMatch {
@@ -108,6 +118,24 @@ export async function searchDocuments(
   queryText: string,
   opts: SearchDocumentsOptions = {},
 ): Promise<DocumentMatch[]> {
+  const excludeSecrets = opts.excludeSecretVaults !== false;
+
+  // Strict Secret Vault exclusion guard (S10-A2 / C-06)
+  if (excludeSecrets) {
+    if (opts.vaultId && isSecretVaultId(opts.vaultId)) {
+      return [];
+    }
+    if (opts.vaultIds) {
+      opts = {
+        ...opts,
+        vaultIds: filterSafeVaultIds(opts.vaultIds),
+      };
+      if (opts.vaultIds.length === 0) {
+        return [];
+      }
+    }
+  }
+
   const queryEmbedding = await embedText(queryText, opts.apiKey);
   if (!queryEmbedding) return [];
 
@@ -132,7 +160,7 @@ export async function searchDocuments(
     console.error("searchDocuments RPC failed:", error);
     return [];
   }
-  return (data || []).map((row: any) => ({
+  const mapped = (data || []).map((row: any) => ({
     id: row.id,
     fileName: row.file_name,
     vaultId: row.vault_id,
@@ -140,6 +168,8 @@ export async function searchDocuments(
     contentText: row.content_text,
     similarity: row.similarity,
   }));
+
+  return excludeSecrets ? sanitizeDocumentMatches(mapped) : mapped;
 }
 
 // Saves a high-performing ad copy hook into pgvector memory for RAG retrieval

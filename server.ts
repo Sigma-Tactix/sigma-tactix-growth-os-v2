@@ -6028,9 +6028,19 @@ async function executeAgentTaskInner(
     executionLog.push(step);
   }
 
-  executionLog.push(
-    `Completed task with ${reactResult.providerUsed} (${reactResult.modelUsed}) in ${reactResult.durationMs}ms (${reactResult.totalTokens.toLocaleString()} tokens, ~$${reactResult.estimatedCostUsd.toFixed(6)} USD).`
-  );
+  if (reactResult.status === 'exhausted') {
+    executionLog.push(
+      `Task incomplete: tool execution budget exhausted with ${reactResult.providerUsed} (${reactResult.modelUsed}) in ${reactResult.durationMs}ms.`
+    );
+  } else if (reactResult.status === 'failed') {
+    executionLog.push(
+      `Task failed: ${reactResult.error || 'Execution error'} with ${reactResult.providerUsed} (${reactResult.modelUsed}) in ${reactResult.durationMs}ms.`
+    );
+  } else {
+    executionLog.push(
+      `Completed task with ${reactResult.providerUsed} (${reactResult.modelUsed}) in ${reactResult.durationMs}ms (${reactResult.totalTokens.toLocaleString()} tokens, ~$${reactResult.estimatedCostUsd.toFixed(6)} USD).`
+    );
+  }
 
   // Record telemetry in database & workspace store
   if (sbContext?.workspaceId) {
@@ -6047,8 +6057,8 @@ async function executeAgentTaskInner(
       totalTokens: reactResult.totalTokens,
       estimatedCostUsd: reactResult.estimatedCostUsd,
       durationMs: reactResult.durationMs,
-      status: "SUCCESS",
-      metadata: { agentName, goal, detailedSteps: reactResult.detailedSteps },
+      status: reactResult.status === 'completed' ? "SUCCESS" : reactResult.status === 'exhausted' ? "INCOMPLETE" : "FAILED",
+      metadata: { agentName, goal, detailedSteps: reactResult.detailedSteps, executionStatus: reactResult.status },
       createdAt: new Date().toISOString(),
     };
 

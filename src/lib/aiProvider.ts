@@ -43,6 +43,8 @@ export interface ReActExecutionResult {
   providerUsed: SupportedProvider;
   modelUsed: string;
   durationMs: number;
+  status: 'completed' | 'exhausted' | 'failed';
+  error?: string;
 }
 
 /**
@@ -316,9 +318,9 @@ Operational Directives:
   }
 
   // If max steps reached without concluding
+  const isExhausted = !finalOutput;
   if (!finalOutput) {
-    const lastMsg = messages[messages.length - 1];
-    finalOutput = lastMsg?.content || "Mission completed within allocated tool execution budget.";
+    finalOutput = "Mission incomplete: allocated tool execution budget exhausted without final deliverable.";
   }
 
   const durationMs = Date.now() - startedAt;
@@ -337,6 +339,7 @@ Operational Directives:
     providerUsed: config.provider,
     modelUsed: model,
     durationMs,
+    status: isExhausted ? 'exhausted' : 'completed',
   };
 }
 
@@ -464,8 +467,9 @@ Operational Directives:
     }
   }
 
+  const isExhausted = !finalOutput;
   if (!finalOutput) {
-    finalOutput = "Mission completed within allocated tool execution budget.";
+    finalOutput = "Mission incomplete: allocated tool execution budget exhausted without final deliverable.";
   }
 
   const durationMs = Date.now() - startedAt;
@@ -483,5 +487,6 @@ Operational Directives:
     providerUsed: "google",
     modelUsed: model,
     durationMs,
+    status: isExhausted ? 'exhausted' : 'completed',
   };
 }

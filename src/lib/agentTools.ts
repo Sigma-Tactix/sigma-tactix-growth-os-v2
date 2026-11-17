@@ -1,6 +1,8 @@
 import { FunctionDeclaration, Type } from "@google/genai";
 import { assertPublicHttpUrl, fetchSiteContent } from "./siteFetch.js";
 import { searchDocuments } from "./rag.js";
+import { isSecretVaultId } from "./secretVaultPolicy.js";
+import { documentVaultIdsForScope } from "./agentPolicies.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Tool declarations exposed to Gemini agents during execution
@@ -260,11 +262,13 @@ export interface ToolCallExecutionInput {
   workspaceId?: string;
   secondBrain?: any;
   workspaceRoot?: string;
+  agentName?: string;
+  allowedScope?: string[];
 }
 
 // Executes tool calls requested by models during agent execution
 export async function executeAgentToolCall(input: ToolCallExecutionInput): Promise<any> {
-  const { name, args, sb, workspaceId, secondBrain, workspaceRoot = process.cwd() } = input;
+  const { name, args, sb, workspaceId, secondBrain, workspaceRoot = process.cwd(), allowedScope } = input;
 
   try {
     if (name === 'read_google_ads_mcp') {
@@ -293,7 +297,36 @@ export async function executeAgentToolCall(input: ToolCallExecutionInput): Promi
       const query = args.query as string;
       if (!query) return { error: "Missing query parameter" };
       if (!sb || !workspaceId) return { error: "Database context unavailable for vector search" };
-      const matches = await searchDocuments(sb, workspaceId, query, { vaultId: args.vaultId, topK: 3 });
+
+      // Secret Vault exclusion (S10-A2 / C-06)
+      if (args.vaultId && isSecretVaultId(args.vaultId)) {
+        return {
+          error: "Access denied: Secret Vaults (Executive, Credentials) are strictly excluded from agent tools.",
+          query,
+          matchCount: 0,
+          results: [],
+        };
+      }
+
+      let vaultIds: string[] | undefined = undefined;
+      if (allowedScope && allowedScope.length > 0) {
+        vaultIds = documentVaultIdsForScope(allowedScope);
+        if (args.vaultId && !vaultIds.includes(args.vaultId)) {
+          return {
+            error: `Access denied: vault '${args.vaultId}' is outside authorized scope for this agent.`,
+            query,
+            matchCount: 0,
+            results: [],
+          };
+        }
+      }
+
+      const matches = await searchDocuments(sb, workspaceId, query, {
+        vaultId: args.vaultId,
+        vaultIds,
+        excludeSecretVaults: true,
+        topK: 3,
+      });
       return {
         query,
         matchCount: matches.length,
@@ -377,6 +410,9 @@ export async function executeAgentToolCall(input: ToolCallExecutionInput): Promi
     if (name === "read_workspace_file") {
       const filePath = args.filePath as string;
       if (!filePath) return { error: "Missing filePath parameter" };
+      if (/credentials|\.env|executive[-_]brief|token[-_]?secret|private[-_]?key/i.test(filePath)) {
+        return { error: "Access denied: Secret Vault files (Executive, Credentials) are strictly excluded from agent tools." };
+      }
 
       const path = await import("path");
       const fs = await import("fs/promises");
@@ -405,6 +441,9 @@ export async function executeAgentToolCall(input: ToolCallExecutionInput): Promi
       const filePath = args.filePath as string;
       const content = args.content as string;
       if (!filePath || content === undefined) return { error: "Missing filePath or content parameter" };
+      if (/credentials|\.env|executive[-_]brief|token[-_]?secret|private[-_]?key/i.test(filePath)) {
+        return { error: "Access denied: Secret Vault files (Executive, Credentials) are strictly excluded from agent tools." };
+      }
 
       const path = await import("path");
       const fs = await import("fs/promises");

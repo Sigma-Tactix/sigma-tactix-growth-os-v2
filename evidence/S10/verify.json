@@ -1,0 +1,9 @@
+{
+  "commit": "73329c8d274fd0e4e3578c4ad5d89ab5a299658d",
+  "command": "npm test",
+  "exit_code": 0,
+  "evidence": [
+    "evidence/S10/verify.log",
+    "evidence/S10/vanta_tool_gateway.md"
+  ]
+}
