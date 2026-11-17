@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "d2ebf92a2dd6eb9f1179a034d931aa884c28e5a3",
+  "evidence": [
+    "evidence/S09/vanta_context_and_attachments.md",
+    "evidence/S09/verify.log"
+  ]
+}
