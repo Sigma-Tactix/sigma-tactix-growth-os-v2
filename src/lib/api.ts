@@ -1106,3 +1106,37 @@ export async function renderReportSnapshotArtifact(
   return res.json();
 }
 
+export async function getClientLearnings(params?: { category?: string; q?: string; vaultScope?: string[] }): Promise<{
+  success: boolean;
+  learnings: any[];
+}> {
+  const queryParts: string[] = [];
+  if (params?.category) queryParts.push(`category=${encodeURIComponent(params.category)}`);
+  if (params?.q) queryParts.push(`q=${encodeURIComponent(params.q)}`);
+  if (params?.vaultScope) queryParts.push(`vaultScope=${encodeURIComponent(params.vaultScope.join(','))}`);
+  const qs = queryParts.length ? `?${queryParts.join('&')}` : '';
+  const res = await apiFetch(`/api/workspace/learnings${qs}`);
+  if (!res.ok) throw new Error(`Failed to fetch learnings: ${res.statusText}`);
+  return res.json();
+}
+
+export async function recordClientLearning(data: {
+  taskTitle: string;
+  category: string;
+  reviewedOutcome: string;
+  limitations?: string;
+  lessonContent: string;
+  targetVault: string;
+}): Promise<any> {
+  const res = await apiFetch('/api/workspace/learnings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Failed to record learning: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+

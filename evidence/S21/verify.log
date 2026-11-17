@@ -1,0 +1,32 @@
+=== npx vitest run src/lib/learningRegistry.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/learningRegistry.test.ts (7 tests) 8ms
+   ✓ contains versioned development lessons with verified fixes and regression test pointers (4ms)
+   ✓ records and approves a client job learning into an approved Knowledge Vault (1ms)
+   ✓ strictly forbids targeting lessons into Secret Vaults (1ms)
+   ✓ retrieves only active approved lessons within the requesting workspace and vault scope (1ms)
+   ✓ supersedes an existing lesson with a newer version and excludes superseded records from queries (0ms)
+   ✓ revokes an incorrect lesson and removes it from subsequent retrieval queries (0ms)
+   ✓ prevents self-modification of policies, privilege elevation, and Secret Vault bypass attempts (1ms)
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  03:40:48
+   Duration  368ms (transform 70ms, setup 0ms, import 93ms, tests 8ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4408 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> eslint
+0 errors
+> vitest run
+Test Files  111 passed | 1 skipped (112)
+Tests  789 passed | 3 skipped (792)
+Duration  12.73s
+Exit code: 0
