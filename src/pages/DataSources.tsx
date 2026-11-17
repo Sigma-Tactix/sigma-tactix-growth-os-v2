@@ -878,41 +878,43 @@ export default function DataSources() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6 border-b border-[var(--sigma-border)] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="brand" size="sm" icon={<Zap size={12} />}>Data & Integration Layer</Badge>
-            <Badge variant="neutral" size="sm">Enclave: {currentWorkspace.name}</Badge>
+    <div className="space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge variant="brand" size="sm" icon={<Zap size={13} />}>Data &amp; Integration Layer</Badge>
+              <Badge variant="neutral" size="sm">Client Enclave: {currentWorkspace.name}</Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Data Pipelines
+            </h1>
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl leading-relaxed">
+              Configure marketing data sources and verify exact provider-account access. A verified account is shown separately from live metrics, which require an ingested provider payload.
+            </p>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
-            Data Pipelines
-          </h1>
-          <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl mt-1.5 font-normal leading-relaxed">
-            Configure marketing data sources and verify exact provider-account access. A verified account is shown separately from live metrics, which require an ingested provider payload.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleSyncAll}
-            disabled={isSyncingAll || activeConnections.length === 0}
-            icon={<RefreshCw size={13} className={cn(isSyncingAll && "animate-spin text-[var(--sigma-primary)]")} />}
-          >
-            {isSyncingAll ? "Checking accounts..." : "Check All Accounts"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSyncAll}
+              disabled={isSyncingAll || activeConnections.length === 0}
+              icon={<RefreshCw size={13} className={cn(isSyncingAll && "animate-spin text-[var(--sigma-primary)]")} />}
+            >
+              {isSyncingAll ? "Checking accounts..." : "Check All Accounts"}
+            </Button>
 
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => openSetupModal()}
-            icon={<Plus size={14} />}
-          >
-            New Pipeline Setup
-          </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => openSetupModal()}
+              icon={<Plus size={14} />}
+            >
+              New Pipeline Setup
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -208,15 +208,30 @@ export default function CroStudioPage() {
     }
   };
 
-  return <div className="space-y-7 pb-16">
-    <div className="flex flex-col gap-4 border-b border-[var(--sigma-border)] pb-6 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <div className="mb-2 flex items-center gap-2"><Badge variant="brand" size="sm" icon={<SplitSquareVertical size={12} />}>CRO proposal studio</Badge><Badge variant="neutral" size="sm">Public evidence only</Badge></div>
-        <h1 className="text-3xl font-bold tracking-tight text-[var(--sigma-text)] lg:text-4xl">Current vs. proposed landing page</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">Capture a public page, retain desktop/mobile evidence, and create an editable proposal. No lift, performance, or publication claim is made.</p>
+  return (
+    <div className="space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge variant="brand" size="sm" icon={<SplitSquareVertical size={13} />}>CRO Proposal Studio</Badge>
+              <Badge variant="neutral" size="sm">Public Evidence Only</Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Current vs. Proposed Landing Page
+            </h1>
+            <p className="max-w-3xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
+              Capture a public page, retain desktop and mobile evidence, and create an editable proposal. No lift, performance, or publication claim is made.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <Badge variant="neutral" size="sm" icon={<ShieldCheck size={13} />}>
+              Approval required before delivery
+            </Badge>
+          </div>
+        </div>
       </div>
-      <Badge variant="neutral" size="sm" icon={<ShieldCheck size={12} />}>Approval required before delivery</Badge>
-    </div>
 
     <GlassCard className="space-y-4 p-5" spotlight>
       <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--sigma-primary)]" /><h2 className="text-sm font-semibold text-[var(--sigma-text)]">Create an evidence-backed proposal</h2></div>
@@ -259,5 +274,6 @@ export default function CroStudioPage() {
         onClear={() => setRunHistory([])}
       />
     </div>
-  </div>;
+  </div>
+  );
 }

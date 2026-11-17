@@ -605,74 +605,76 @@ export default function AgentCockpit() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="brand" size="sm" icon={<Bot size={12} />}>Agent Governance Layer</Badge>
-            <Badge variant="neutral" size="sm">Multi-Agent Growth OS</Badge>
+    <div className="space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge variant="brand" size="sm" icon={<Bot size={13} />}>Agent Governance Layer</Badge>
+              <Badge variant="neutral" size="sm">Multi-Agent Growth OS</Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Autonomous Agent Cockpit
+            </h1>
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl leading-relaxed">
+              Orchestrate scoped autonomous execution across content, SEO authority, performance marketing, and operations with strict RBAC boundaries, dedicated sub-agents, live learning loops, and Human-in-the-Loop (HITL) gates.
+            </p>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
-            Autonomous Agent Cockpit
-          </h1>
-          <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl mt-1.5 font-normal leading-relaxed">
-            Orchestrate scoped autonomous execution across content, SEO authority, performance marketing, and operations with strict RBAC boundaries, dedicated sub-agents, live learning loops, and Human-in-the-Loop (HITL) gates.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant={isSimulationMode || activeTab === 'simulation' ? "primary" : "secondary"}
-            size="sm"
-            icon={<Sliders size={13} />}
-            onClick={() => {
-              const nextMode = !isSimulationMode;
-              setIsSimulationMode(nextMode);
-              if (nextMode) setActiveTab('simulation');
-              else if (activeTab === 'simulation') setActiveTab('dag');
-            }}
-          >
-            {isSimulationMode || activeTab === 'simulation' ? "Exit Simulation" : "Simulation Mode"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <Button
+              variant={isSimulationMode || activeTab === 'simulation' ? "primary" : "secondary"}
+              size="sm"
+              icon={<Sliders size={13} />}
+              onClick={() => {
+                const nextMode = !isSimulationMode;
+                setIsSimulationMode(nextMode);
+                if (nextMode) setActiveTab('simulation');
+                else if (activeTab === 'simulation') setActiveTab('dag');
+              }}
+            >
+              {isSimulationMode || activeTab === 'simulation' ? "Exit Simulation" : "Simulation Mode"}
+            </Button>
 
-          <Button
-            variant={activeTab === 'dag' && !isSimulationMode ? "primary" : "secondary"}
-            size="sm"
-            icon={<Workflow size={13} />}
-            onClick={() => {
-              setIsSimulationMode(false);
-              setActiveTab('dag');
-            }}
-          >
-            Data Flow DAG
-          </Button>
+            <Button
+              variant={activeTab === 'dag' && !isSimulationMode ? "primary" : "secondary"}
+              size="sm"
+              icon={<Workflow size={13} />}
+              onClick={() => {
+                setIsSimulationMode(false);
+                setActiveTab('dag');
+              }}
+            >
+              System DAG
+            </Button>
 
-          <Button
-            variant={activeTab === 'analytics' ? "primary" : "secondary"}
-            size="sm"
-            icon={<Activity size={13} />}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Telemetry
-          </Button>
+            <Button
+              variant={activeTab === 'analytics' ? "primary" : "secondary"}
+              size="sm"
+              icon={<Activity size={13} />}
+              onClick={() => setActiveTab('analytics')}
+            >
+              Telemetry
+            </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Crown size={13} className="text-purple-400" />}
-            onClick={() => {
-              setSelectedAgent(orchestratorAgent);
-              handleTriggerAgentRun(orchestratorAgent);
-            }}
-            disabled={isTriggeringRun}
-          >
-            Orchestrate Pipeline
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Crown size={13} className="text-amber-400" />}
+              onClick={() => {
+                setSelectedAgent(orchestratorAgent);
+                handleTriggerAgentRun(orchestratorAgent);
+              }}
+              disabled={isTriggeringRun}
+            >
+              Orchestrate Pipeline
+            </Button>
 
-          <Badge variant={pendingHitlCount > 0 ? "warning" : "neutral"} size="md" dot={pendingHitlCount > 0} icon={<AlertTriangle size={12} />}>
-            HITL Gate: {pendingHitlCount} Pending
-          </Badge>
+            <Badge variant={pendingHitlCount > 0 ? "warning" : "neutral"} size="md" dot={pendingHitlCount > 0} icon={<AlertTriangle size={12} />}>
+              HITL Gate: {pendingHitlCount} Pending
+            </Badge>
+          </div>
         </div>
       </div>
 

@@ -350,9 +350,9 @@ export default function VideoStudioPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-8 lg:space-y-10 pb-16">
       {/* Header */}
-      <GlassCard spotlight elevation="raised" className="p-6">
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">

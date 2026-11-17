@@ -366,10 +366,10 @@ export default function AIExplorer() {
 
            {/* AI Recommendation - Restricted to Admin/Sub-Admin */}
            {isAdmin ? (
-             <div className="bg-[#09090B] border border-secondary/20 shadow-[0_0_50px_rgba(6,182,212,0.05)] rounded-2xl p-7 relative border-l-4 border-l-secondary">
-                <div className="flex items-center gap-3 mb-6 text-secondary">
-                   <Zap size={22} className="fill-secondary" />
-                   <span className="text-[10px] font-mono uppercase tracking-[0.2em] font-black">AI Recommendation</span>
+             <div className="sigma-panel-raised border border-[var(--sigma-border-strong)] rounded-2xl p-7 relative space-y-4">
+                <div className="flex items-center gap-2.5 text-[var(--sigma-primary)]">
+                   <Zap size={20} className="fill-[var(--sigma-primary)]" />
+                   <span className="text-xs font-mono uppercase tracking-wider font-semibold">AI Recommendation</span>
                 </div>
                 <p className="italic font-serif text-lg silver-text leading-relaxed font-medium">
                    "Shift 15% of Display budget to Referral programs. Data suggests a potential 8% decrease in overall blended CAC while maintaining volume."
@@ -382,7 +382,7 @@ export default function AIExplorer() {
                 </div>
                 <div>
                    <h3 className="text-xs font-bold uppercase tracking-widest silver-text mb-1">Strategic AI Access</h3>
-                   <p className="text-[10px] text-muted font-sans max-w-[200px]">Strategic recommendations are restricted to Administrative intelligence levels.</p>
+                   <p className="text-xs text-muted font-sans max-w-[200px]">Strategic recommendations are restricted to Administrative intelligence levels.</p>
                 </div>
              </div>
            )}

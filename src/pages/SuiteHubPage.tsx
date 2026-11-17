@@ -79,21 +79,31 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
     hub.modules.find((m) => m.id === searchParams.get('tab')) || hub.modules[0];
 
   return (
-    <div className="space-y-5">
-      <div className="sigma-card p-5 sm:p-6">
+    <div className="space-y-8 sm:space-y-10 pb-16">
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)]">{hub.department}</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--sigma-text)]">{hub.title}</h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-[var(--sigma-text-soft)]">{hub.tagline}</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono uppercase tracking-[0.18em] text-[var(--sigma-primary)] font-semibold">
+                {hub.department}
+              </span>
+              <span className="text-[var(--sigma-text-muted)] text-xs">•</span>
+              <span className="text-xs font-mono text-[var(--sigma-text-muted)]">DEPARTMENT HUB</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              {hub.title}
+            </h1>
+            <p className="max-w-2xl text-sm text-[var(--sigma-text-muted)] leading-relaxed">
+              {hub.tagline}
+            </p>
           </div>
-          <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3 py-2 text-[11px] font-mono text-[var(--sigma-text-muted)] sm:flex">
-            <Layers size={13} className="text-[var(--sigma-primary)]" />
-            {hub.modules.length} modules · 1 space
+          <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] px-3.5 py-2 text-xs font-mono text-[var(--sigma-text-muted)] sm:flex">
+            <Layers size={14} className="text-[var(--sigma-primary)]" />
+            <span>{hub.modules.length} workspaces in 1 hub</span>
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-6 pt-5 border-t border-[var(--sigma-border)]">
           <Tabs
             tabs={hub.modules.map((m) => ({
               id: m.id,
@@ -113,13 +123,14 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
         </div>
       </div>
 
-      <div className={cn('sigma-panel')} role="tabpanel" aria-label={activeModule.label}>
+      {/* Module Workspace Canvas: Generous breathing room without restrictive unpadded outer border */}
+      <div role="tabpanel" aria-label={activeModule.label} className="space-y-8 pt-2">
         <ModulePage module={activeModule} />
       </div>
 
-      <div className="sigma-card flex items-center gap-3 rounded-2xl p-4 text-xs text-[var(--sigma-text-muted)]">
-        <Building2 size={15} className="shrink-0 text-[var(--sigma-primary)]" />
-        <span>
+      <div className="sigma-card flex items-center gap-3 rounded-2xl p-5 text-xs text-[var(--sigma-text-muted)]">
+        <Building2 size={16} className="shrink-0 text-[var(--sigma-primary)]" />
+        <span className="leading-relaxed">
           Consolidated space: the global marketing department “{hub.department}” maps to the{' '}
           {hub.modules.length} workspaces above. The standalone routes (e.g. {hub.modules[0].href}) still
           work, so existing deep links and generated reports are unaffected.

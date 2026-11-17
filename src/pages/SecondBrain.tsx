@@ -555,64 +555,78 @@ export default function SecondBrain() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[var(--sigma-border)] pb-8">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="vermilion" size="sm">
-              <Database size={12} className="mr-1" /> Foundation Layer
-            </Badge>
-            <span className="text-xs font-mono text-[var(--sigma-text-muted)]">Relational Knowledge Hub</span>
+    <div className="space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <Badge variant="vermilion" size="sm">
+                <Database size={13} className="mr-1" /> Foundation Layer
+              </Badge>
+              <span className="text-xs font-mono text-[var(--sigma-text-muted)]">Relational Knowledge Hub</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Second Brain Knowledge Vaults
+            </h1>
+            <p className="text-[var(--sigma-text-muted)] text-sm max-w-3xl leading-relaxed">
+              Workspace-scoped document records with server-reported extraction and indexing status. Verified vector embeddings and sovereign enclave isolation.
+            </p>
           </div>
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[var(--sigma-text)]">
-            Second Brain Vaults
-          </h1>
-          <p className="text-[var(--sigma-muted)] text-sm max-w-3xl mt-1.5 leading-relaxed">
-            Workspace-scoped document records with server-reported extraction and indexing status. Classification and per-vault policy enforcement are not yet available in this view.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <a href="/?view=second-brain" className="text-sm font-medium text-[var(--sigma-primary)] underline">Open 2D / 3D map</a>
-          <Badge variant={documentLoadError ? 'danger' : 'neutral'} size="sm" dot>
-            {isLoadingDocuments ? 'Loading document index' : documentLoadError ? 'Document index unavailable' : 'Document index loaded'}
-          </Badge>
-          <Badge variant="neutral" size="sm" dot>
-            Snapshot: <strong className="text-[var(--sigma-text)] ml-1 font-mono">{lastBackupTime}</strong>
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <a href="/?view=second-brain" className="text-xs font-medium text-[var(--sigma-primary)] hover:underline mr-1">
+              Open 2D / 3D map
+            </a>
+            <Badge variant={documentLoadError ? 'danger' : 'neutral'} size="sm" dot>
+              {isLoadingDocuments ? 'Loading document index' : documentLoadError ? 'Document index unavailable' : 'Document index loaded'}
+            </Badge>
+            <Badge variant="neutral" size="sm" dot>
+              Snapshot: <strong className="text-[var(--sigma-text)] ml-1 font-mono">{lastBackupTime}</strong>
+            </Badge>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleTriggerBackup}
-            disabled={isBackingUp}
-            isLoading={isBackingUp}
-            icon={!isBackingUp ? <HardDriveDownload size={14} className="text-[var(--sigma-primary)]" /> : undefined}
-            title="Download a browser-generated metadata manifest and calculate its SHA-256 checksum"
-          >
-            {isBackingUp ? 'Exporting...' : 'Export Manifest'}
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleTriggerBackup}
+              disabled={isBackingUp}
+              isLoading={isBackingUp}
+              icon={!isBackingUp ? <HardDriveDownload size={14} className="text-[var(--sigma-primary)]" /> : undefined}
+              title="Download a browser-generated metadata manifest and calculate its SHA-256 checksum"
+            >
+              {isBackingUp ? 'Exporting...' : 'Export Manifest'}
+            </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleDeduplicateVaults}
-            icon={<CopyCheck size={14} className="text-amber-accent" />}
-            title="Explain the current durable deduplication limitation"
-          >
-            Clean Duplicates
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDeduplicateVaults}
+              icon={<CopyCheck size={14} className="text-amber-accent" />}
+              title="Explain the current durable deduplication limitation"
+            >
+              Clean Duplicates
+            </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => headerFileInputRef.current?.click()}
-            icon={<UploadCloud size={14} className="text-[var(--sigma-primary)]" />}
-            title="Upload document file to auto-populate vault record via AI"
-          >
-            Upload Files
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => headerFileInputRef.current?.click()}
+              icon={<UploadCloud size={14} />}
+              title="Upload document file to auto-populate vault record via AI"
+            >
+              Upload Files
+            </Button>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsNewRecordModalOpen(true)}
+              icon={<Plus size={14} />}
+            >
+              New Vault Record
+            </Button>
+          </div>
+
           <input
             ref={headerFileInputRef}
             type="file"
@@ -626,15 +640,6 @@ export default function SecondBrain() {
               }
             }}
           />
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setIsNewRecordModalOpen(true)}
-            icon={<Plus size={14} />}
-          >
-            New Vault Record
-          </Button>
         </div>
       </div>
       {documentLoadError && (

@@ -174,9 +174,9 @@ export default function AttributionRoiPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-8 lg:space-y-10 pb-16">
       {/* Header */}
-      <GlassCard spotlight elevation="raised" className="p-6">
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
         <div data-tutorial-id="tut-attribution-dashboard" className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">

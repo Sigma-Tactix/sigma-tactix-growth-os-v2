@@ -611,38 +611,38 @@ export default function ActionQueueTab() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/5">
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">Pending Approvals</p>
-              <p className="text-2xl font-black text-amber-200 mt-0.5">{stats.pendingCount}</p>
+              <p className="text-xs font-mono uppercase tracking-wider text-amber-accent font-semibold">Pending Approvals</p>
+              <p className="text-2xl font-bold text-amber-accent mt-0.5">{stats.pendingCount}</p>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="h-9 w-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-accent">
               <ShieldCheck size={18} />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.04] p-3.5 flex items-center justify-between">
+          <div className="rounded-2xl border border-[var(--sigma-border)] bg-[var(--sigma-surface-subtle)] p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold">Active Swarms</p>
-              <p className="text-2xl font-black text-indigo-200 mt-0.5">{stats.runningCount}</p>
+              <p className="text-xs font-mono uppercase tracking-wider text-[var(--sigma-accent-cyan)] font-semibold">Active Swarms</p>
+              <p className="text-2xl font-bold text-[var(--sigma-text)] mt-0.5">{stats.runningCount}</p>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="h-9 w-9 rounded-xl bg-[var(--sigma-accent-cyan)]/15 border border-[var(--sigma-accent-cyan)]/30 flex items-center justify-center text-[var(--sigma-accent-cyan)]">
               <Zap size={18} className="animate-pulse" />
             </div>
           </div>
 
           <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-rose-300 font-bold">System Alerts</p>
-              <p className="text-2xl font-black text-rose-200 mt-0.5">{stats.alertCount}</p>
+              <p className="text-xs font-mono uppercase tracking-wider text-rose-accent font-semibold">System Alerts</p>
+              <p className="text-2xl font-bold text-rose-accent mt-0.5">{stats.alertCount}</p>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <div className="h-9 w-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-accent">
               <AlertTriangle size={18} />
             </div>
           </div>
 
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 font-bold">Completed Runs</p>
-              <p className="text-2xl font-black text-emerald-200 mt-0.5">{stats.completedCount}</p>
+              <p className="text-xs font-mono uppercase tracking-wider text-emerald-accent font-semibold">Completed Runs</p>
+              <p className="text-2xl font-bold text-emerald-accent mt-0.5">{stats.completedCount}</p>
             </div>
             <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <CheckCircle2 size={18} />

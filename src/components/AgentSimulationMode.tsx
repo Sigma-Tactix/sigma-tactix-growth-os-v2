@@ -595,10 +595,10 @@ export default function AgentSimulationMode({
   return (
     <div className={cn(
       "space-y-6 transition-all duration-300",
-      isGraphFullscreen ? "fixed inset-2 z-50 bg-[#090a10] p-6 rounded-3xl border border-accent/40 shadow-2xl overflow-y-auto" : ""
+      isGraphFullscreen ? "fixed inset-2 z-50 bg-[var(--sigma-canvas)] p-6 rounded-3xl border border-accent/40 shadow-2xl overflow-y-auto" : ""
     )}>
       {/* Top Simulation Mode Alert & Control Banner */}
-      <div className="bg-gradient-to-r from-purple-950/40 via-amber-950/30 to-purple-950/40 border-2 border-dashed border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      <div className="bg-[var(--sigma-surface)] border-2 border-dashed border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-[var(--sigma-shadow-md)] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1">

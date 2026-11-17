@@ -240,16 +240,16 @@ export default function AgentLearningAnalyticsTab({
         </div>
 
         {/* Metric 4: Learning Reward Score */}
-        <div className="bg-black/30 border border-white/10 rounded-xl p-4 relative overflow-hidden group">
-          <div className="flex items-center justify-between text-xs text-muted font-mono mb-2">
+        <div className="bg-[var(--sigma-surface-subtle)] border border-[var(--sigma-border)] rounded-xl p-4 relative overflow-hidden group">
+          <div className="flex items-center justify-between text-xs text-[var(--sigma-text-muted)] font-mono mb-2">
             <span>LEARNING REWARD</span>
-            <BrainCircuit size={14} className="text-purple-400" />
+            <BrainCircuit size={14} className="text-[var(--sigma-primary)]" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-heading font-black text-purple-300">{lastPoint.rewardScore}</span>
-            <span className="text-xs font-mono text-muted">/ 100</span>
+            <span className="text-2xl font-heading font-bold text-[var(--sigma-primary)]">{lastPoint.rewardScore}</span>
+            <span className="text-xs font-mono text-[var(--sigma-text-muted)]">/ 100</span>
           </div>
-          <p className="text-[10px] text-zinc-400 mt-1 font-sans">
+          <p className="text-xs text-[var(--sigma-text-muted)] mt-1 font-sans">
             Reinforcement scalar calculated over {agent.learningProfile.heuristics.length} active heuristics.
           </p>
         </div>

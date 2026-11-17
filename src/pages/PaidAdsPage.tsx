@@ -807,42 +807,44 @@ export default function PaidAdsPage() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Top Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[var(--sigma-border)] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="brand" size="sm" icon={<Target size={12} />}>Performance Marketing Engine</Badge>
-            <Badge variant="neutral" size="sm">Enclave: {currentWorkspace.name}</Badge>
+    <div className="space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <div className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge variant="brand" size="sm" icon={<Target size={13} />}>Performance Marketing Engine</Badge>
+              <Badge variant="neutral" size="sm">Client Enclave: {currentWorkspace.name}</Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Performance Marketing &amp; Media Strategy
+            </h1>
+            <p className="text-sm text-[var(--sigma-text-muted)] max-w-3xl leading-relaxed">
+              End-to-end performance engine: Media Plan creation, Intent &amp; Signal Audience discovery, dynamic channel &amp; device budget allocation, universal campaign telemetry, and automated UTM tracking.
+            </p>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--sigma-text)]">
-            Performance Marketing & Media Strategy
-          </h1>
-          <p className="text-sm text-[var(--sigma-text-muted)] mt-1.5 max-w-3xl leading-relaxed">
-            End-to-end performance engine: Media Plan creation, Intent & Signal Audience discovery, dynamic channel & device budget allocation, universal campaign telemetry, and automated UTM tracking.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => notifyInfo('Designed Safety Gate', 'The $1,000/day autonomous shift cap is a design guardrail, not a live-enforced setting — no optimizer connector is attached to this workspace yet. Real enforcement arrives with the ad-platform pipeline.')}
-            icon={<ShieldCheck size={13} className="text-emerald-accent" />}
-          >
-            HITL Cap: $1,000/day
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => notifyInfo('Designed Safety Gate', 'The $1,000/day autonomous shift cap is a design guardrail, not a live-enforced setting — no optimizer connector is attached to this workspace yet. Real enforcement arrives with the ad-platform pipeline.')}
+              icon={<ShieldCheck size={14} className="text-emerald-accent" />}
+            >
+              HITL Cap: $1,000/day
+            </Button>
 
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleDeployVortexSwarm}
-            disabled={isDeployingVortex}
-            isLoading={isDeployingVortex}
-            icon={<Play size={13} />}
-          >
-            {isDeployingVortex ? 'Executing Swarm...' : 'Deploy Performance Swarm'}
-          </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleDeployVortexSwarm}
+              disabled={isDeployingVortex}
+              isLoading={isDeployingVortex}
+              icon={<Play size={14} />}
+            >
+              {isDeployingVortex ? 'Executing Swarm...' : 'Deploy Performance Swarm'}
+            </Button>
+          </div>
         </div>
       </div>
 

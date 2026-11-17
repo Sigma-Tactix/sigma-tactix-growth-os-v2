@@ -162,9 +162,9 @@ export default function IntakeEngine() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-8 lg:space-y-10 pb-20">
       {/* Header */}
-      <GlassCard spotlight elevation="raised" className="p-6 md:p-8">
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-2">

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  Sparkles, 
-  TrendingUp, 
-  Bot, 
-  CheckCircle2, 
-  Globe, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  Layers, 
-  Zap, 
-  Cpu, 
-  ShieldCheck, 
-  Play, 
+import {
+  Search,
+  Sparkles,
+  TrendingUp,
+  Bot,
+  CheckCircle2,
+  Globe,
+  ExternalLink,
+  Copy,
+  Check,
+  Layers,
+  Zap,
+  Cpu,
+  ShieldCheck,
+  Play,
   RefreshCw,
   BarChart3,
   Code2,
@@ -35,11 +35,11 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/contexts/ToastContext';
-import { 
-  SEED_KEYWORD_CLUSTERS, 
-  SEED_AEO_BENCHMARKS, 
-  KeywordCluster, 
-  AeoCitationBenchmark 
+import {
+  SEED_KEYWORD_CLUSTERS,
+  SEED_AEO_BENCHMARKS,
+  KeywordCluster,
+  AeoCitationBenchmark
 } from '@/src/data/marketingModulesData';
 import SearchConsoleTrends from '@/src/components/SearchConsoleTrends';
 import { getGSCConnectionStatus, connectGSC, GSCConnectionStatus } from '@/src/lib/searchConsoleApi';
@@ -287,7 +287,7 @@ export default function SeoAeoPage() {
   const [selectedCluster, setSelectedCluster] = useState<KeywordCluster | null>(seededClusters[0] ?? null);
   const showSampleBanner = isDemoSeedEnabled();
   const [activeTab, setActiveTab] = useState<'CLUSTERS' | 'SEARCH_CONSOLE' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>('SEARCH_CONSOLE');
-  
+
   // AEO Live Query Test State
   const [testQuery, setTestQuery] = useState('What is the best AI-native growth infrastructure for enterprise B2B?');
   const [isTestingAeo, setIsTestingAeo] = useState(false);
@@ -479,9 +479,9 @@ export default function SeoAeoPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner Header */}
-      <GlassCard spotlight elevation="raised" className="p-6">
+    <div className="space-y-8 lg:space-y-10 pb-16">
+      {/* Top Banner Header */ }
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -500,8 +500,8 @@ export default function SeoAeoPage() {
 
           <div className="flex items-center gap-3">
             <Button
-              variant={isGscLive ? "secondary" : "outline"}
-              onClick={() => setIsGscModalOpen(true)}
+              variant={ isGscLive ? "secondary" : "outline" }
+              onClick={ () => setIsGscModalOpen(true) }
               leftIcon={
                 isGscLive ? (
                   <Globe className="w-3.5 h-3.5 text-emerald-400" />
@@ -511,28 +511,28 @@ export default function SeoAeoPage() {
                   <Globe className="w-3.5 h-3.5 text-blue-400" />
                 )
               }
-              className={isGscAwaitingGrant ? "border-amber-500/50 text-amber-300 hover:border-amber-400" : undefined}
+              className={ isGscAwaitingGrant ? "border-amber-500/50 text-amber-300 hover:border-amber-400" : undefined }
             >
-              {isGscLive ? 'GSC Live Linked' : isGscAwaitingGrant ? 'GSC: OAuth Pending' : 'Connect GSC'}
+              { isGscLive ? 'GSC Live Linked' : isGscAwaitingGrant ? 'GSC: OAuth Pending' : 'Connect GSC' }
             </Button>
 
             <Button
               variant="secondary"
-              onClick={handleRunAeoTest}
-              disabled={isTestingAeo}
-              leftIcon={<RefreshCw className={cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isTestingAeo && "animate-spin")} />}
+              onClick={ handleRunAeoTest }
+              disabled={ isTestingAeo }
+              leftIcon={ <RefreshCw className={ cn("w-3.5 h-3.5 text-[var(--sigma-vermilion)]", isTestingAeo && "animate-spin") } /> }
             >
-              {isTestingAeo ? 'Queuing AEO Test...' : 'Queue AEO Test'}
+              { isTestingAeo ? 'Queuing AEO Test...' : 'Queue AEO Test' }
             </Button>
 
             <Button
               variant="primary"
               data-tutorial-id="tut-seo-deploy-agent"
-              onClick={handleDeployAuthorityAgent}
-              disabled={isDeployingAgent}
-              leftIcon={<Play className="w-3.5 h-3.5 fill-black" />}
+              onClick={ handleDeployAuthorityAgent }
+              disabled={ isDeployingAgent }
+              leftIcon={ <Play className="w-3.5 h-3.5 fill-black" /> }
             >
-              {isDeployingAgent ? 'Deploying Swarm...' : 'Deploy Authority Agent'}
+              { isDeployingAgent ? 'Deploying Swarm...' : 'Deploy Authority Agent' }
             </Button>
           </div>
         </div>
@@ -541,12 +541,12 @@ export default function SeoAeoPage() {
       {/* Metric Highlights Strip — demo figures are demo-gated; a real
           workspace renders measured states, never invented KPIs. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {showSampleBanner ? (
+        { showSampleBanner ? (
           <>
             <MetricWidget
               label="Blended AEO Citation Rate (Demo)"
               value="83.4%"
-              delta={{ value: "+18.2% vs last mo", trend: "up" }}
+              delta={ { value: "+18.2% vs last mo", trend: "up" } }
               subtext="Modeled demo figure, not measured"
             />
             <MetricWidget
@@ -574,7 +574,7 @@ export default function SeoAeoPage() {
             />
             <MetricWidget
               label="Tracked Keyword Clusters"
-              value={clusters.length > 0 ? `${clusters.length} tracked` : "None yet"}
+              value={ clusters.length > 0 ? `${clusters.length} tracked` : "None yet" }
               subtext="Connect Search Console to build clusters"
             />
             <MetricWidget
@@ -584,154 +584,154 @@ export default function SeoAeoPage() {
             />
             <MetricWidget
               label="Structured Schema Templates"
-              value={Object.keys(SCHEMA_DEFINITIONS).length}
+              value={ Object.keys(SCHEMA_DEFINITIONS).length }
               subtext="Local JSON-LD templates, not a live audit"
             />
           </>
-        )}
+        ) }
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs */ }
       <Tabs<'SEARCH_CONSOLE' | 'CLUSTERS' | 'AEO_SIMULATOR' | 'SCHEMA_ARCHITECT' | 'AGENTS'>
-        tabs={[
+        tabs={ [
           { id: 'SEARCH_CONSOLE', label: 'Google Search Console Trends', icon: <TrendingUp className="w-3.5 h-3.5" /> },
           { id: 'CLUSTERS', label: 'Topical Clusters & Search Intent', icon: <Layers className="w-3.5 h-3.5" /> },
           { id: 'AEO_SIMULATOR', label: 'AEO Citation Index (ChatGPT / Perplexity / Claude)', icon: <Sparkles className="w-3.5 h-3.5" /> },
           { id: 'SCHEMA_ARCHITECT', label: 'Semantic Schema Architect (JSON-LD)', icon: <Code2 className="w-3.5 h-3.5" /> },
           { id: 'AGENTS', label: 'Autonomous SEO Agents & Sub-Agents', icon: <Bot className="w-3.5 h-3.5" /> }
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
+        ] }
+        activeTab={ activeTab }
+        onChange={ setActiveTab }
       />
 
-      {/* TAB 1: KEYWORD CLUSTERS */}
-      {activeTab === 'CLUSTERS' && (
+      {/* TAB 1: KEYWORD CLUSTERS */ }
+      { activeTab === 'CLUSTERS' && (
         <div className="space-y-4">
-          {showSampleBanner && (
+          { showSampleBanner && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
               Sample keyword clusters from a demo seed — volumes, difficulty and CPC are modeled figures, not live Search Console data.
             </div>
-          )}
-          {clusters.length === 0 ? (
+          ) }
+          { clusters.length === 0 ? (
             <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500">
               No topical clusters tracked yet. Connect Google Search Console to build clusters from live keyword data, or enable the demo seed to browse sample clusters.
             </div>
           ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Pillar List */}
-          <div className="space-y-3">
-            <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
-              Topical Pillar Clusters ({clusters.length})
-            </div>
-
-            {clusters.map(cluster => (
-              <div
-                key={cluster.id}
-                onClick={() => setSelectedCluster(cluster)}
-                className={cn(
-                  "p-4 rounded-xl border transition-all cursor-pointer text-left",
-                  selectedCluster?.id === cluster.id
-                    ? "bg-amber-500/10 border-amber-500/40 text-white shadow-lg shadow-amber-500/5"
-                    : "bg-zinc-900/30 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/40"
-                )}
-              >
-                <div className="flex items-center justify-between text-xs font-mono mb-2">
-                  <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-amber-400 font-semibold">
-                    {cluster.intent}
-                  </span>
-                  <span className="text-zinc-400">Vol: {cluster.monthlyVolume.toLocaleString()}/mo</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Pillar List */ }
+              <div className="space-y-3">
+                <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider px-1">
+                  Topical Pillar Clusters ({ clusters.length })
                 </div>
-                <h4 className="font-semibold text-sm leading-snug">{cluster.pillar}</h4>
-                
-                <div className="mt-3 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-800/60 font-mono">
-                  <span>KD: <strong className="text-zinc-200">{cluster.difficulty}%</strong></span>
-                  <span>CPC: <strong className="text-emerald-400">${cluster.cpc.toFixed(2)}</strong></span>
-                  <span>AEO: <strong className="text-amber-400">{cluster.aeoCitationScore}%</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Spokes Deep Dive */}
-          {selectedCluster ? (
-          <div className="lg:col-span-2 p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-mono text-amber-400 uppercase font-semibold">Cluster Breakdown</span>
-                <h3 className="text-lg font-bold text-white mt-0.5">{selectedCluster.pillar}</h3>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Pillar authority structure driving topical entities directly into the Second Brain Authority Vault.
-                </p>
-              </div>
-
-              <button
-                onClick={handleDeployAuthorityAgent}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5 fill-black" />
-                Plan Spokes
-              </button>
-            </div>
-
-            {/* SERP Features in this cluster */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-800/60">
-              <span className="text-xs text-zinc-400 self-center">Captured SERP Features:</span>
-              {selectedCluster.serpFeatures.map((feature, i) => (
-                <span key={i} className="px-2 py-0.5 bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[11px] rounded-md font-mono">
-                  {feature}
-                </span>
-              ))}
-            </div>
-
-            {/* Supporting Spokes Table */}
-            <div className="space-y-2">
-              <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                Supporting Spoke Keywords & AEO Visibility ({selectedCluster.spokes.length})
-              </div>
-
-              <div className="space-y-2">
-                {selectedCluster.spokes.map((spoke, idx) => (
-                  <div 
-                    key={idx}
-                    className="p-3 bg-zinc-900/70 border border-zinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                { clusters.map(cluster => (
+                  <div
+                    key={ cluster.id }
+                    onClick={ () => setSelectedCluster(cluster) }
+                    className={ cn(
+                      "p-4 rounded-xl border transition-all cursor-pointer text-left",
+                      selectedCluster?.id === cluster.id
+                        ? "bg-amber-500/10 border-amber-500/40 text-white shadow-lg shadow-amber-500/5"
+                        : "bg-zinc-900/30 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/40"
+                    ) }
                   >
-                    <div className="space-y-1">
-                      <div className="font-medium text-white flex items-center gap-2">
-                        <span>{spoke.keyword}</span>
-                        <span className="px-1.5 py-0.2 bg-zinc-800 text-[10px] text-zinc-400 rounded font-mono">
-                          {spoke.intent}
-                        </span>
-                      </div>
-                      <div className="font-mono text-[11px] text-zinc-500">
-                        Target Slug: <span className="text-amber-400/80">{spoke.urlSlug}</span>
-                      </div>
+                    <div className="flex items-center justify-between text-xs font-mono mb-2">
+                      <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-amber-400 font-semibold">
+                        { cluster.intent }
+                      </span>
+                      <span className="text-zinc-400">Vol: { cluster.monthlyVolume.toLocaleString() }/mo</span>
                     </div>
+                    <h4 className="font-semibold text-sm leading-snug">{ cluster.pillar }</h4>
 
-                    <div className="flex items-center gap-4 text-zinc-400 font-mono self-end sm:self-center">
-                      <div>Vol: <strong className="text-zinc-200">{spoke.volume.toLocaleString()}</strong></div>
-                      <div className="px-2.5 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 rounded text-[11px] font-semibold">
-                        {spoke.aiEngineVisibility}
-                      </div>
+                    <div className="mt-3 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-800/60 font-mono">
+                      <span>KD: <strong className="text-zinc-200">{ cluster.difficulty }%</strong></span>
+                      <span>CPC: <strong className="text-emerald-400">${ cluster.cpc.toFixed(2) }</strong></span>
+                      <span>AEO: <strong className="text-amber-400">{ cluster.aeoCitationScore }%</strong></span>
                     </div>
                   </div>
-                ))}
+                )) }
               </div>
-            </div>
-          </div>
-          ) : (
-            <div className="lg:col-span-2 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-500">
-              Select a cluster on the left to see its breakdown.
-            </div>
-          )}
-          </div>
-          )}
-        </div>
-      )}
 
-      {/* TAB 2: AEO SIMULATOR */}
-      {activeTab === 'AEO_SIMULATOR' && (
+              {/* Spokes Deep Dive */ }
+              { selectedCluster ? (
+                <div className="lg:col-span-2 p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-xs font-mono text-amber-400 uppercase font-semibold">Cluster Breakdown</span>
+                      <h3 className="text-lg font-bold text-white mt-0.5">{ selectedCluster.pillar }</h3>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Pillar authority structure driving topical entities directly into the Second Brain Authority Vault.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={ handleDeployAuthorityAgent }
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-black" />
+                      Plan Spokes
+                    </button>
+                  </div>
+
+                  {/* SERP Features in this cluster */ }
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-800/60">
+                    <span className="text-xs text-zinc-400 self-center">Captured SERP Features:</span>
+                    { selectedCluster.serpFeatures.map((feature, i) => (
+                      <span key={ i } className="px-2 py-0.5 bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[11px] rounded-md font-mono">
+                        { feature }
+                      </span>
+                    )) }
+                  </div>
+
+                  {/* Supporting Spokes Table */ }
+                  <div className="space-y-2">
+                    <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                      Supporting Spoke Keywords & AEO Visibility ({ selectedCluster.spokes.length })
+                    </div>
+
+                    <div className="space-y-2">
+                      { selectedCluster.spokes.map((spoke, idx) => (
+                        <div
+                          key={ idx }
+                          className="p-3 bg-zinc-900/70 border border-zinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-1">
+                            <div className="font-medium text-white flex items-center gap-2">
+                              <span>{ spoke.keyword }</span>
+                              <span className="px-1.5 py-0.2 bg-zinc-800 text-[10px] text-zinc-400 rounded font-mono">
+                                { spoke.intent }
+                              </span>
+                            </div>
+                            <div className="font-mono text-[11px] text-zinc-500">
+                              Target Slug: <span className="text-amber-400/80">{ spoke.urlSlug }</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-zinc-400 font-mono self-end sm:self-center">
+                            <div>Vol: <strong className="text-zinc-200">{ spoke.volume.toLocaleString() }</strong></div>
+                            <div className="px-2.5 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 rounded text-[11px] font-semibold">
+                              { spoke.aiEngineVisibility }
+                            </div>
+                          </div>
+                        </div>
+                      )) }
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="lg:col-span-2 rounded-xl border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-500">
+                  Select a cluster on the left to see its breakdown.
+                </div>
+              ) }
+            </div>
+          ) }
+        </div>
+      ) }
+
+      {/* TAB 2: AEO SIMULATOR */ }
+      { activeTab === 'AEO_SIMULATOR' && (
         <div className="space-y-6">
-          {/* Query Testing Box */}
+          {/* Query Testing Box */ }
           <div className="p-5 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -755,88 +755,88 @@ export default function SeoAeoPage() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   type="text"
-                  value={testQuery}
-                  onChange={e => setTestQuery(e.target.value)}
+                  value={ testQuery }
+                  onChange={ e => setTestQuery(e.target.value) }
                   placeholder="Enter buyer search question (e.g., best AI marketing OS for UAE companies)..."
                   className="w-full pl-10 pr-4 py-2.5 bg-black/60 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400/60"
                 />
               </div>
 
               <button
-                onClick={handleRunAeoTest}
-                disabled={isTestingAeo}
+                onClick={ handleRunAeoTest }
+                disabled={ isTestingAeo }
                 className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shadow-md disabled:opacity-50"
               >
-                <RefreshCw className={cn("w-3.5 h-3.5", isTestingAeo && "animate-spin")} />
-                {isTestingAeo ? 'Simulating...' : 'Test AI Visibility'}
+                <RefreshCw className={ cn("w-3.5 h-3.5", isTestingAeo && "animate-spin") } />
+                { isTestingAeo ? 'Simulating...' : 'Test AI Visibility' }
               </button>
             </div>
           </div>
 
-          {/* AI Engine Benchmark Cards */}
-          {aeoBenchmarks.length === 0 ? (
+          {/* AI Engine Benchmark Cards */ }
+          { aeoBenchmarks.length === 0 ? (
             <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500 space-y-1">
               <div>No AI-engine benchmark cards tracked yet.</div>
               <div>Connect a generative-engine citation source to measure real brand citation rates — or enable the demo seed to browse sample cards.</div>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {aeoBenchmarks.map((bench, i) => (
-              <div key={i} className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-white text-sm flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    {bench.engine}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              { aeoBenchmarks.map((bench, i) => (
+                <div key={ i } className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-white text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      { bench.engine }
+                    </div>
+                    <span className={ cn(
+                      "px-2 py-0.5 rounded text-[10px] font-mono font-bold",
+                      bench.status === 'OPTIMAL' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    ) }>
+                      { bench.status }
+                    </span>
                   </div>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-mono font-bold",
-                    bench.status === 'OPTIMAL' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                  )}>
-                    {bench.status}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800/60 font-mono">
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Citation Rate</div>
-                    <div className="text-xl font-bold text-white">{bench.brandCitationRate}%</div>
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800/60 font-mono">
+                    <div>
+                      <div className="text-[10px] text-zinc-500">Citation Rate</div>
+                      <div className="text-xl font-bold text-white">{ bench.brandCitationRate }%</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-zinc-500">Avg Citation Rank</div>
+                      <div className="text-xl font-bold text-amber-400">#{ bench.rankPosition }</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Avg Citation Rank</div>
-                    <div className="text-xl font-bold text-amber-400">#{bench.rankPosition}</div>
-                  </div>
-                </div>
 
-                <div className="space-y-1 text-xs pt-2 border-t border-zinc-800/60">
-                  <div className="text-zinc-500 text-[11px] font-mono">Top Cited Source:</div>
-                  <div className="text-zinc-300 font-mono text-[11px] truncate bg-black/40 p-1.5 rounded border border-zinc-800/60">
-                    {bench.primarySourceCited}
+                  <div className="space-y-1 text-xs pt-2 border-t border-zinc-800/60">
+                    <div className="text-zinc-500 text-[11px] font-mono">Top Cited Source:</div>
+                    <div className="text-zinc-300 font-mono text-[11px] truncate bg-black/40 p-1.5 rounded border border-zinc-800/60">
+                      { bench.primarySourceCited }
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-zinc-500 font-mono flex items-center justify-between pt-1">
+                    <span>Sentiment: <strong className="text-emerald-400">{ bench.sentimentScore }% Positive</strong></span>
+                    <span>Tested: { bench.lastTested }</span>
                   </div>
                 </div>
-
-                <div className="text-[10px] text-zinc-500 font-mono flex items-center justify-between pt-1">
-                  <span>Sentiment: <strong className="text-emerald-400">{bench.sentimentScore}% Positive</strong></span>
-                  <span>Tested: {bench.lastTested}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          )}
-          {showSampleBanner && aeoBenchmarks.length > 0 && (
+              )) }
+            </div>
+          ) }
+          { showSampleBanner && aeoBenchmarks.length > 0 && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
               These AI-engine cards are sample data from a demo seed, not measured citations. Enable a live citation source to replace them.
             </div>
-          )}
+          ) }
         </div>
-      )}
+      ) }
 
-      {/* TAB 3: SCHEMA ARCHITECT */}
-      {activeTab === 'SCHEMA_ARCHITECT' && (
+      {/* TAB 3: SCHEMA ARCHITECT */ }
+      { activeTab === 'SCHEMA_ARCHITECT' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                Semantic Schemas ({Object.keys(SCHEMA_DEFINITIONS).length})
+                Semantic Schemas ({ Object.keys(SCHEMA_DEFINITIONS).length })
               </div>
               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-mono">
                 Answer-Engine Ready
@@ -844,30 +844,30 @@ export default function SeoAeoPage() {
             </div>
 
             <div className="space-y-2">
-              {Object.entries(SCHEMA_DEFINITIONS).map(([key, item]) => (
+              { Object.entries(SCHEMA_DEFINITIONS).map(([key, item]) => (
                 <button
-                  key={key}
-                  onClick={() => setSelectedSchemaType(key as any)}
-                  className={cn(
+                  key={ key }
+                  onClick={ () => setSelectedSchemaType(key as any) }
+                  className={ cn(
                     "w-full p-3.5 rounded-xl border text-left transition-all cursor-pointer",
                     selectedSchemaType === key
                       ? "bg-amber-400/10 border-amber-400/40 text-white shadow-md shadow-amber-500/5"
                       : "bg-zinc-900/30 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                  )}
+                  ) }
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-xs text-white">{item.name}</span>
+                    <span className="font-bold text-xs text-white">{ item.name }</span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-amber-400 border border-zinc-700/60 whitespace-nowrap">
-                      {item.badge}
+                      { item.badge }
                     </span>
                   </div>
-                  <div className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</div>
+                  <div className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{ item.description }</div>
                   <div className="text-[10px] font-mono text-emerald-400 mt-1.5 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
-                    <span title="Illustrative target, not a measured result.">Design target: {item.citationLift}</span>
+                    <span title="Illustrative target, not a measured result.">Design target: { item.citationLift }</span>
                   </div>
                 </button>
-              ))}
+              )) }
             </div>
 
             <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2 text-xs">
@@ -887,7 +887,7 @@ export default function SeoAeoPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-white text-sm">{SCHEMA_DEFINITIONS[selectedSchemaType]?.name}</span>
+                <span className="font-bold text-white text-sm">{ SCHEMA_DEFINITIONS[selectedSchemaType]?.name }</span>
                 <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] rounded font-mono">
                   Valid Schema.org
                 </span>
@@ -895,7 +895,7 @@ export default function SeoAeoPage() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleCommitToAuthorityVault}
+                  onClick={ handleCommitToAuthorityVault }
                   className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-400/30 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
                   title="Store in Second Brain Authority Vault for LLM agents to reference"
                 >
@@ -904,7 +904,7 @@ export default function SeoAeoPage() {
                 </button>
 
                 <button
-                  onClick={handleDownloadSchema}
+                  onClick={ handleDownloadSchema }
                   className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -912,11 +912,11 @@ export default function SeoAeoPage() {
                 </button>
 
                 <button
-                  onClick={handleCopySchema}
+                  onClick={ handleCopySchema }
                   className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 >
-                  {copiedSchema ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedSchema ? 'Copied' : 'Copy JSON-LD'}
+                  { copiedSchema ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" /> }
+                  { copiedSchema ? 'Copied' : 'Copy JSON-LD' }
                 </button>
               </div>
             </div>
@@ -929,14 +929,14 @@ export default function SeoAeoPage() {
             </div>
 
             <pre className="p-4 bg-black/80 border border-zinc-800 rounded-xl text-[12px] font-mono text-zinc-300 overflow-x-auto leading-relaxed max-h-[480px]">
-              {JSON.stringify(activeSchemaObj, null, 2)}
+              { JSON.stringify(activeSchemaObj, null, 2) }
             </pre>
           </div>
         </div>
-      )}
+      ) }
 
-      {/* TAB 4: AUTONOMOUS AGENTS */}
-      {activeTab === 'AGENTS' && (
+      {/* TAB 4: AUTONOMOUS AGENTS */ }
+      { activeTab === 'AGENTS' && (
         <div className="space-y-4">
           <div className="p-5 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
@@ -951,12 +951,12 @@ export default function SeoAeoPage() {
               </div>
 
               <button
-                onClick={handleDeployAuthorityAgent}
-                disabled={isDeployingAgent}
+                onClick={ handleDeployAuthorityAgent }
+                disabled={ isDeployingAgent }
                 className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
               >
                 <Play className="w-3.5 h-3.5 fill-black" />
-                {isDeployingAgent ? 'Executing...' : 'Trigger Full SEO Run'}
+                { isDeployingAgent ? 'Executing...' : 'Trigger Full SEO Run' }
               </button>
             </div>
 
@@ -981,33 +981,33 @@ export default function SeoAeoPage() {
             </div>
           </div>
         </div>
-      )}
+      ) }
 
-      {/* Google Search Console Trends Tab */}
-      {activeTab === 'SEARCH_CONSOLE' && (
+      {/* Google Search Console Trends Tab */ }
+      { activeTab === 'SEARCH_CONSOLE' && (
         <div className="space-y-6">
           <SearchConsoleTrends />
         </div>
-      )}
+      ) }
 
-      {/* Real-time Agent Run Results View */}
+      {/* Real-time Agent Run Results View */ }
       <div className="mt-8">
         <AgentRunResults
-          records={runHistory}
+          records={ runHistory }
           title="SEO & AEO Authority Run Results"
           description="Log of topical authority indexing runs, citation audits, and Google Search Console performance sweeps."
-          onClear={() => setRunHistory([])}
+          onClear={ () => setRunHistory([]) }
         />
       </div>
 
-      {/* Google Search Console Connection Modal */}
+      {/* Google Search Console Connection Modal */ }
       <AnimatePresence>
-        {isGscModalOpen && (
+        { isGscModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={ { opacity: 0, scale: 0.95 } }
+              animate={ { opacity: 1, scale: 1 } }
+              exit={ { opacity: 0, scale: 0.95 } }
               className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between p-5 border-b border-zinc-800">
@@ -1021,20 +1021,20 @@ export default function SeoAeoPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsGscModalOpen(false)}
+                  onClick={ () => setIsGscModalOpen(false) }
                   className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleConnectGsc} className="p-5 space-y-4">
+              <form onSubmit={ handleConnectGsc } className="p-5 space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-300">Verified GSC Property URL or Domain</label>
                   <input
                     type="text"
-                    value={gscPropertyUrl}
-                    onChange={(e) => setGscPropertyUrl(e.target.value)}
+                    value={ gscPropertyUrl }
+                    onChange={ (e) => setGscPropertyUrl(e.target.value) }
                     placeholder="sc-domain:example.com or https://example.com/"
                     className="w-full px-3.5 py-2.5 bg-black/50 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-400/50"
                   />
@@ -1057,24 +1057,24 @@ export default function SeoAeoPage() {
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsGscModalOpen(false)}
+                    onClick={ () => setIsGscModalOpen(false) }
                     className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={isConnectingGsc}
+                    disabled={ isConnectingGsc }
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium rounded-xl text-xs flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                   >
                     <Globe className="w-3.5 h-3.5" />
-                    {isConnectingGsc ? 'Saving Property...' : 'Connect & Grant GSC Access'}
+                    { isConnectingGsc ? 'Saving Property...' : 'Connect & Grant GSC Access' }
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
-        )}
+        ) }
       </AnimatePresence>
     </div>
   );

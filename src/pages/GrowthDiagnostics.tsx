@@ -211,25 +211,30 @@ export default function GrowthDiagnostics() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-16">
-      <header className="flex flex-col gap-4 border-b border-[var(--sigma-border)] pb-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-3xl">
-          <div className="mb-2 flex items-center gap-2 text-xs text-[var(--sigma-text-muted)]">
-            <ClipboardCheck size={14} className="text-[var(--sigma-primary)]" />
-            Guided growth workspace
+    <div className="mx-auto max-w-6xl space-y-10 lg:space-y-12 pb-20">
+      {/* Top Banner Header Surface */}
+      <header className="sigma-page-header p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="max-w-3xl space-y-3">
+            <div className="flex items-center gap-2 text-xs text-[var(--sigma-text-muted)] font-mono">
+              <ClipboardCheck size={14} className="text-[var(--sigma-primary)]" />
+              <span>Guided Growth Workspace</span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[-0.015em] text-[var(--sigma-text)]">
+              Diagnose. Choose a strategy. Approve the work.
+            </h1>
+            <p className="max-w-2xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
+              Growth OS turns diagnostic evidence into a focused strategy and a governed agent task queue. You stay in control before anything runs.
+            </p>
           </div>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--sigma-text)] sm:text-4xl">
-            Diagnose. Choose a strategy. Approve the work.
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--sigma-text-muted)]">
-            Growth OS turns diagnostic evidence into a focused strategy and a governed agent task queue. You stay in control before anything runs.
-          </p>
+          {audit && (
+            <div className="shrink-0">
+              <Button variant="ghost" size="sm" icon={<Download size={14} />} onClick={downloadPlan}>
+                Export Plan
+              </Button>
+            </div>
+          )}
         </div>
-        {audit && (
-          <Button variant="ghost" size="sm" icon={<Download size={14} />} onClick={downloadPlan}>
-            Export plan
-          </Button>
-        )}
       </header>
 
       <nav aria-label="Growth workflow" className="grid grid-cols-3 overflow-hidden rounded-xl border border-[var(--sigma-border)] bg-[var(--sigma-surface)]">

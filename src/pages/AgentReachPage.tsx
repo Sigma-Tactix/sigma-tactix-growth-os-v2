@@ -177,9 +177,9 @@ export default function AgentReachPage() {
   };
 
   return (
-    <div className="space-y-8 pb-16 max-w-7xl mx-auto">
+    <div className="space-y-10 lg:space-y-12 pb-20 max-w-7xl mx-auto">
       {/* 1. Header Banner */}
-      <GlassCard spotlight elevation="raised" className="p-6">
+      <GlassCard spotlight elevation="raised" className="p-6 md:p-8 lg:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 mb-1">
