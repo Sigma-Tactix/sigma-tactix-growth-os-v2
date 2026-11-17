@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "7ee870665938bf060eec992ba970d3dc99f5a499",
+  "evidence": [
+    "evidence/S21/development_and_client_learning_loops.md",
+    "evidence/S21/verify.log"
+  ]
+}
