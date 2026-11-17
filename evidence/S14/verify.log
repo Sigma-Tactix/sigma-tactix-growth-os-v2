@@ -1,0 +1,24 @@
+=== npx vitest run src/data/marketingWorkflowSequence.test.ts src/data/suiteHubConfig.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/data/suiteHubConfig.test.ts (3 tests) 7ms
+ ✓ src/data/marketingWorkflowSequence.test.ts (6 tests) 12ms
+
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+   Start at  01:39:50
+   Duration  457ms (transform 135ms, setup 0ms, import 330ms, tests 18ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4408 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> vitest run
+Test Files  107 passed | 1 skipped (108)
+Tests  762 passed | 3 skipped (765)
+Duration  11.35s
+Exit code: 0

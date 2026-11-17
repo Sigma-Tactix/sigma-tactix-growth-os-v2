@@ -1,9 +1,11 @@
 import React, { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Building2, Layers } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { cn } from '@/src/lib/utils';
 import { SUITE_HUBS, MEASUREMENT_MODULE, type SuiteHub as SuiteHubDef, type SuiteModule } from '@/src/data/suiteHubConfig';
+import MarketingLifecycleBar from '@/src/components/workflow/MarketingLifecycleBar';
+import ModuleOperationalCard from '@/src/components/workflow/ModuleOperationalCard';
 
 /**
  * Unified Digital Marketing Suite hubs.
@@ -80,6 +82,9 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
 
   return (
     <div className="space-y-5">
+      {/* 8-Stage Sequential Marketing Lifecycle Bar (S14-A1) */}
+      <MarketingLifecycleBar activeStageId={activeModule.lifecycleStage} />
+
       <div className="sigma-card p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -113,17 +118,11 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
         </div>
       </div>
 
+      {/* Module Operational Blueprint (S14-A2) */}
+      <ModuleOperationalCard module={activeModule} />
+
       <div className={cn('sigma-panel')} role="tabpanel" aria-label={activeModule.label}>
         <ModulePage module={activeModule} />
-      </div>
-
-      <div className="sigma-card flex items-center gap-3 rounded-2xl p-4 text-xs text-[var(--sigma-text-muted)]">
-        <Building2 size={15} className="shrink-0 text-[var(--sigma-primary)]" />
-        <span>
-          Consolidated space: the global marketing department “{hub.department}” maps to the{' '}
-          {hub.modules.length} workspaces above. The standalone routes (e.g. {hub.modules[0].href}) still
-          work, so existing deep links and generated reports are unaffected.
-        </span>
       </div>
     </div>
   );

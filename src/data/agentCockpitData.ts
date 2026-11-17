@@ -143,12 +143,12 @@ export const SCOPED_AGENTS: ScopedAgent[] = [
     description: 'Central supervisor managing all specialized agents. Decomposes enterprise growth audit roadmaps into DAG sub-tasks, coordinates inter-agent consensus, prevents deadlocks, and enforces global RBAC boundaries.',
     isOrchestrator: true,
     status: 'ACTIVE',
-    readVaults: ['Executive Vault', 'Audit Vault', 'Brand Vault', 'Customer Vault', 'Marketing Vault', 'Authority Vault', 'Operations Vault', 'AI Workflow Vault'],
+    readVaults: ['Audit Vault', 'Brand Vault', 'Customer Vault', 'Marketing Vault', 'Authority Vault', 'Operations Vault', 'AI Workflow Vault'],
     writeVaults: ['Audit Vault', 'Operations Vault', 'AI Workflow Vault'],
-    blockedVaults: ['Credentials Vault'],
+    blockedVaults: ['Credentials Vault', 'Executive Vault'],
     requiresHITLFor: ['Cross-Agent Workflow Re-planning', 'Global Budget Cap Adjustments', 'Emergency Pause All Agents'],
     tasksCompleted: 482,
-    accuracyRate: '99.8%',
+    accuracyRate: 'Governed',
     lastActive: 'Just now',
     skills: [
       {
