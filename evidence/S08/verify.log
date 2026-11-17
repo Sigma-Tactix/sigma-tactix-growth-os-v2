@@ -1,0 +1,8 @@
+[verification:S08] Operation-level capabilities and receipts
+commit: 36e9dab4dadbc4a64dee5e47c9b0ea94fc561a94
+tsc --noEmit: exit code 0
+vitest run src/lib/capabilityRegistry.test.ts src/server/routes/capabilityRoutes.test.ts:
+  - 15 tests passed, 0 failed
+vitest run (full test suite):
+  - 100 passed | 1 skipped, 688 passed, 0 failed
+status: PASSED
