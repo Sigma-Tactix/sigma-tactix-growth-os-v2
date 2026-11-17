@@ -12,6 +12,9 @@ export class FixtureWebIntelligenceAdapter implements WebIntelligenceProvider {
       provider: 'tinyfish',
       configured: true,
       verified: true,
+      isFixture: true,
+      environment: 'test',
+      toolVersion: 'tinyfish:0.4.1-fixture',
       operations: ['search', 'fetch'],
       detail: 'Fixture adapter active for deterministic testing and local development.',
     };

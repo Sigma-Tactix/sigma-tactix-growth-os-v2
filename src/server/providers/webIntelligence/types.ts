@@ -4,6 +4,11 @@ export interface WebIntelligenceCapabilities {
   verified: boolean;
   operations: Array<'search' | 'fetch' | 'agent' | 'browser'>;
   detail: string;
+  isFixture?: boolean;
+  environment?: 'development' | 'test' | 'staging' | 'production';
+  toolVersion?: string;
+  account?: string;
+  verifiedAt?: string;
 }
 
 export interface SearchRequest {

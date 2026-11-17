@@ -5,6 +5,11 @@ export interface MarketSimulationCapabilities {
   executionEligible: boolean;
   blockers: string[];
   detail: string;
+  isFixture?: boolean;
+  environment?: 'development' | 'test' | 'staging' | 'production';
+  toolVersion?: string;
+  account?: string;
+  verifiedAt?: string;
 }
 
 export interface ScenarioEvidencePack {
