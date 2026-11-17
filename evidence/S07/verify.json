@@ -1,0 +1,9 @@
+{
+  "commit": "4dbde20bcd1133c102791dcb93f79ea8aaa9a96c",
+  "command": "npm run verify",
+  "exit_code": 0,
+  "evidence": [
+    "evidence/S07/verify.log",
+    "evidence/S07/action_queue_governance.md"
+  ]
+}

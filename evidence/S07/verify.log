@@ -1,0 +1,8 @@
+[verification:S07] Truthful durable approval and run states
+commit: 4dbde20bcd1133c102791dcb93f79ea8aaa9a96c
+tsc --noEmit: exit code 0
+vitest run src/lib/actionQueueGovernance.test.ts src/lib/actionQueueStore.test.ts:
+  - 19 tests passed, 0 failed
+vitest run (full test suite):
+  - 99 passed | 1 skipped, 677 passed, 0 failed
+status: PASSED
