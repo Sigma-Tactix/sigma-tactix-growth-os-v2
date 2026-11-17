@@ -1,0 +1,9 @@
+{
+  "commit": "302997fe2ac6a5ffb4ae48857da3dec461e53c11",
+  "command": "npm run verify",
+  "exit_code": 0,
+  "evidence": [
+    "evidence/S05/verify.log",
+    "evidence/S05/enclave_lifecycle.md"
+  ]
+}

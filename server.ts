@@ -1731,12 +1731,41 @@ app.post("/api/workspace/manage", async (req: Request, res: Response) => {
     // Membership enrolment happens in the AFTER INSERT trigger
     // (add_owner_membership), so the new enclave is usable on the caller's
     // next request with `x-workspace: <id>` — no separate step needed.
+    // If initial onboarding profile is provided, seed the fresh workspace_state
+    const profile = req.body?.profile;
+    if (profile && typeof profile === "object") {
+      try {
+        const db = structuredClone(emptyWorkspaceData);
+        if (profile.domain && typeof profile.domain === "string") {
+          db.settings.technical.customDomain = profile.domain;
+        }
+        if (profile.brandVault && typeof profile.brandVault === "object") {
+          if (typeof profile.brandVault.corePositioning === "string") {
+            db.secondBrain.brandVault.corePositioning = profile.brandVault.corePositioning;
+          }
+          if (typeof profile.brandVault.offersAndPricing === "string") {
+            db.secondBrain.brandVault.offersAndPricing = profile.brandVault.offersAndPricing;
+          }
+          if (typeof profile.brandVault.voiceAndTone === "string") {
+            db.secondBrain.brandVault.voiceAndTone = profile.brandVault.voiceAndTone;
+          }
+        }
+        if (profile.icp && typeof profile.icp === "string") {
+          db.secondBrain.customerVault.idealCustomerProfile = profile.icp;
+        }
+        await saveWorkspace(res.locals.sb, created.id, db);
+      } catch (seedErr: any) {
+        console.warn("Could not seed initial workspace profile state:", seedErr?.message || seedErr);
+      }
+    }
     res.status(201).json({
       id: created.id,
       name: created.name,
       ownerId: created.owner_id,
       createdAt: created.created_at,
-      empty: true,
+      empty: !profile,
+      role: "owner",
+      tier: (created as any).tier || "starter",
     });
   } catch (err: any) {
     if (err instanceof CallerNotOwnerOrAdminError) {

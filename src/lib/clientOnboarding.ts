@@ -195,3 +195,47 @@ export function buildInitialBrainGraphEntities(draft: ClientOnboardingDraft): Ar
   }
   return entities;
 }
+
+
+export const ONBOARDING_DRAFT_KEY = 'sigmatactix_onboarding_draft';
+
+export interface SavedOnboardingSession {
+  draft: ClientOnboardingDraft;
+  step: number;
+  uploadedFileName?: string;
+  savedAt: string;
+}
+
+export function saveOnboardingSession(session: SavedOnboardingSession): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(session));
+    }
+  } catch (e) {
+    console.error('Failed to save onboarding session', e);
+  }
+}
+
+export function loadOnboardingSession(): SavedOnboardingSession | null {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(ONBOARDING_DRAFT_KEY);
+      if (stored) {
+        return JSON.parse(stored) as SavedOnboardingSession;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load onboarding session', e);
+  }
+  return null;
+}
+
+export function clearOnboardingSession(): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+    }
+  } catch (e) {
+    console.error('Failed to clear onboarding session', e);
+  }
+}

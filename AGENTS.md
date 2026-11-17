@@ -108,3 +108,22 @@ At session startup or before beginning any multi-step task:
 - **Use async error handler middleware** — don't let unhandled errors crash the server.
 - Extract repeated class patterns into components; do not use arbitrary values when a utility class exists.
 - Rate limit API endpoints and validate request bodies with schema validation (Zod).
+
+---
+
+# BrainSync Memory Context
+
+## 🏛️ CORE ARCHITECTURE & GLOBAL SAFETY RULES
+- **NEVER** run `git clean -fd` or `git reset --hard` without checking `git log` and verifying commits exist.
+- **NEVER** delete untracked files or folders blindly. Always backup or stash before bulk edits.
+- **Don't mix Tailwind with inline styles**
+- **Don't store secrets in Docker images — use runtime injection**
+- **Pin base image versions — not :latest**
+- **Don't run as root in containers — use USER directive**
+- **Use async error handler middleware — don't let errors crash server**
+- Use .dockerignore to exclude unnecessary files
+- Use multi-stage builds to reduce image size
+- Rate limit API endpoints to prevent abuse
+- Validate request body with a schema validator (Joi, Zod)
+- Use helmet for security headers
+
