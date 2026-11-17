@@ -1,12 +1,9 @@
 {
-  "task": "S18",
-  "status": "pass",
-  "build": "success",
-  "lint": "success",
-  "test_files_passed": 112,
-  "test_files_failed": 0,
-  "tests_passed": 796,
-  "tests_failed": 0,
-  "tests_skipped": 3,
-  "timestamp": "2026-11-18T03:56:30+04:00"
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "d89741cec0f0b88b5819830787e5e4034f4d0d55",
+  "evidence": [
+    "evidence/S18/fresh_session_e2e_rehearsal.md",
+    "evidence/S18/verify.log"
+  ]
 }
