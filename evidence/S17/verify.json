@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "f129860607787ca796107df1f303065c3d01186f",
+  "evidence": [
+    "evidence/S17/adversarial_isolation_security.md",
+    "evidence/S17/verify.log"
+  ]
+}
