@@ -1,0 +1,6 @@
+{
+  "commit": "cee8aa05279bc78877d371b03162e01238b8026c",
+  "command": "npm run verify",
+  "exit_code": 0,
+  "evidence": ["evidence/S01/verify.log"]
+}
