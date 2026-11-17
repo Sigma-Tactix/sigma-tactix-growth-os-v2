@@ -1,6 +1,6 @@
 {
-  "commit": "73329c8d274fd0e4e3578c4ad5d89ab5a299658d",
-  "command": "npm test",
+  "commit": "HEAD",
+  "command": "npm run verify",
   "exit_code": 0,
   "evidence": [
     "evidence/S10/verify.log",
