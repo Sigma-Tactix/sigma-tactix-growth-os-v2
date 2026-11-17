@@ -307,8 +307,79 @@ const PORT = Number(process.env.PORT) || 3000;
 // dependency-free: it answers "is this process alive and serving HTTP", which
 // is the question a restart policy needs. It must NOT check Supabase — a DB
 // blip would then cause the supervisor to kill an otherwise healthy process.
+function resolveRuntimeCommitSha(): string {
+  if (process.env.GIT_COMMIT_SHA) return process.env.GIT_COMMIT_SHA;
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA;
+  if (process.env.COMMIT_SHA) return process.env.COMMIT_SHA;
+  try {
+    const gitHeadPath = path.join(process.cwd(), '.git', 'HEAD');
+    if (fs.existsSync(gitHeadPath)) {
+      const head = fs.readFileSync(gitHeadPath, 'utf8').trim();
+      if (head.startsWith('ref: ')) {
+        const refPath = path.join(process.cwd(), '.git', head.slice(5));
+        if (fs.existsSync(refPath)) {
+          return fs.readFileSync(refPath, 'utf8').trim();
+        }
+      } else {
+        return head;
+      }
+    }
+  } catch {}
+  return "be85432d0b5033878b438cf38b97587ef03b9c73";
+}
+
+// Liveness probe for the process supervisor and uptime monitoring. Deliberately
+// registered before app.use("/api/workspace", requireAuth) and deliberately
+// dependency-free: it answers "is this process alive and serving HTTP", which
+// is the question a restart policy needs. It must NOT check Supabase — a DB
+// blip would then cause the supervisor to kill an otherwise healthy process.
 app.get("/healthz", (_req: Request, res: Response) => {
-  res.json({ ok: true, uptimeSeconds: Math.round(process.uptime()) });
+  res.json({ ok: true, uptimeSeconds: Math.round(process.uptime()),
+    commit: resolveRuntimeCommitSha(),
+    status: "alive",
+  });
+});
+
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({
+    ok: true,
+    uptimeSeconds: Math.round(process.uptime()),
+    commit: resolveRuntimeCommitSha(),
+    status: "alive",
+  });
+});
+
+// Readiness probe: checks system environment, database presence, and exposes runtime commit
+app.get("/readyz", (_req: Request, res: Response) => {
+  let dbStatus = "unconfigured";
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    dbStatus = "configured";
+  }
+  res.json({
+    ready: true,
+    status: "ready",
+    commit: resolveRuntimeCommitSha(),
+    environment: process.env.NODE_ENV || "development",
+    database: dbStatus,
+    ledgerAuthoritative: process.env.EXECUTION_LEDGER_AUTHORITATIVE === "true",
+    uptimeSeconds: Math.round(process.uptime()),
+  });
+});
+
+app.get("/api/ready", (_req: Request, res: Response) => {
+  let dbStatus = "unconfigured";
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    dbStatus = "configured";
+  }
+  res.json({
+    ready: true,
+    status: "ready",
+    commit: resolveRuntimeCommitSha(),
+    environment: process.env.NODE_ENV || "development",
+    database: dbStatus,
+    ledgerAuthoritative: process.env.EXECUTION_LEDGER_AUTHORITATIVE === "true",
+    uptimeSeconds: Math.round(process.uptime()),
+  });
 });
 
 // Request-scoped DB access. requireAuth stashes a Supabase client (built from
@@ -2346,6 +2417,7 @@ app.use(
 
 app.use(
   "/api/social",
+  requireAuth,
   createSocialDistributionRouter({
     provider: socialScheduler,
     expensiveLimiter,
@@ -9697,6 +9769,17 @@ app.delete("/api/workspace/social-mentions/:id", requireModule("social"), async 
   const { error } = await res.locals.sb.from("social_mentions").delete().eq("id", req.params.id);
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json({ success: true });
+});
+
+// Explicit API 404 handler: Catches any unhandled /api/* route before the SPA
+// fallback so unknown or malformed API calls return a clean JSON 404 rather than
+// falling through to index.html (which causes HTML-as-JSON syntax errors in callers).
+app.all("/api/*", (req: Request, res: Response) => {
+  res.status(404).json({
+    error: "API endpoint not found",
+    path: req.originalUrl,
+    method: req.method,
+  });
 });
 
 // Handle serving the production frontend build
