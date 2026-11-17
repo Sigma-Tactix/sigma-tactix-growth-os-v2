@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "a759906bf043908417e01f858036237dc1a8521f",
+  "evidence": [
+    "evidence/S14/sequential_module_experience.md",
+    "evidence/S14/verify.log"
+  ]
+}
