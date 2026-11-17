@@ -1,0 +1,32 @@
+=== npx vitest run src/lib/securityAcceptance.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/securityAcceptance.test.ts (7 tests) 19ms
+   ✓ strictly denies cross-client artifact downloads between two independent tenants (2ms)
+   ✓ enforces directory boundary and rejects path traversal, null bytes, and sensitive files (6ms)
+   ✓ verifies zero-trust exclusion of all Secret Vaults across all autonomous agent policies (2ms)
+   ✓ rejects SSRF attempts against cloud metadata, internal loopback, and private IPv4/IPv6 networks (6ms)
+   ✓ truthfully transitions connector state to Disconnected upon 401/403 revocation (0ms)
+   ✓ verifies safe workspace serialization excludes encrypted provider keys and webhook secrets (0ms)
+   ✓ verifies VANTA tools enforce strict effect types and runtime policy validation (C-05) (1ms)
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  03:33:39
+   Duration  2.05s (transform 358ms, setup 0ms, import 1.77s, tests 19ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4408 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> eslint
+0 errors
+> vitest run
+Test Files  110 passed | 1 skipped (111)
+Tests  782 passed | 3 skipped (785)
+Duration  13.28s
+Exit code: 0
