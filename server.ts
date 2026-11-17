@@ -110,6 +110,8 @@ import { getGoogleAdsMcpStatus, listGoogleAdsMcpCustomers } from "./src/server/g
 import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
 import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
 import { createCapabilityRouter } from "./src/server/routes/capabilityRoutes.js";
+import { DurableJobQueue } from "./src/lib/durableJobWorker.js";
+import { createDurableWorkerRouter } from "./src/server/routes/durableWorkerRoutes.js";
 import { createDecisionRouter } from "./src/server/routes/decisionRoutes.js";
 import { classifyActionRisk, routeIssueToModule, evaluateAgentSwarmSafety, getDecisionRuntimeStatus } from "./src/lib/decisionEngine.js";
 import { buildCapabilityRegistry } from "./src/lib/capabilityRegistry.js";
@@ -295,7 +297,14 @@ app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), asyn
 // and a 50 MB ceiling on an unauthenticated-reachable parser is simply a heap
 // exhaustion primitive. 5 MB is well above the largest real JSON body (a
 // content asset's text).
-app.use(express.json({ limit: "5mb" }));
+app.use(
+  express.json({
+    limit: "5mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 // Read from the environment so the process can run behind a reverse proxy on a
 // chosen port, and so a second instance can be brought up for a zero-downtime
@@ -2331,6 +2340,7 @@ const vantaUpload = multer({
 });
 type VantaLocalContext = { id: string; workspaceId: string; userId: string; name: string; text: string; expiresAt: number };
 const vantaLocalContexts = new Map<string, VantaLocalContext>();
+const durableJobQueue = new DurableJobQueue();
 
 function pruneVantaLocalContexts() {
   const now = Date.now();
@@ -2422,6 +2432,13 @@ app.use(
       await miroFishMarketSimulation.capabilities(),
     ],
     buildCapabilityRegistry,
+  }),
+);
+
+app.use(
+  "/api",
+  createDurableWorkerRouter({
+    queue: durableJobQueue,
   }),
 );
 

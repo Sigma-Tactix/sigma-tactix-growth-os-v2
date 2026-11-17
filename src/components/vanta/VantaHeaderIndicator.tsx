@@ -109,7 +109,8 @@ export default function VantaHeaderIndicator() {
         </span>
       </button>
 
-      {messages.length > 0 && (
+      {
+    messages.length > 0 && (
         <button
           type="button"
           onClick={handleTranscriptClick}
@@ -124,7 +125,8 @@ export default function VantaHeaderIndicator() {
         >
           {messages.length} msg{messages.length === 1 ? '' : 's'}
         </button>
-      )}
-    </div>
+    )
+  }
+    </div >
   );
 }

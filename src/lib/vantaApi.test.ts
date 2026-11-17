@@ -32,11 +32,13 @@ describe('VANTA response stream', () => {
   });
   it('delivers retrieval status and a completed message across split frames', async () => {
     const encoder = new TextEncoder();
-    const body = new ReadableStream({ start(controller) {
-      controller.enqueue(encoder.encode('event: retrieval\ndata: {"count":2,"method":"semantic"}\n'));
-      controller.enqueue(encoder.encode('\nevent: message\ndata: {"id":"reply","content":"answer"}\n\n'));
-      controller.close();
-    } });
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode('event: retrieval\ndata: {"count":2,"method":"semantic"}\n'));
+        controller.enqueue(encoder.encode('\nevent: message\ndata: {"id":"reply","content":"answer"}\n\n'));
+        controller.close();
+      }
+    });
     vi.mocked(apiFetch).mockResolvedValue(new Response(body));
     const onRetrieval = vi.fn(), onMessage = vi.fn();
     await streamVantaMessage('one', 'hello', [], { onRetrieval, onMessage });

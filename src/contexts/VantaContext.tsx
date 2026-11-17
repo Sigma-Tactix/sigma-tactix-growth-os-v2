@@ -289,195 +289,195 @@ export function VantaProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'RESPONSE_READY', hasProposal: Boolean(message.proposal) });
           if (speakAfterResponseRef.current) void playText(message.content);
         },
-      }, controller.signal, pageContext);
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        dispatch({ type: 'WARNING', message: 'Request cancelled.' });
-        return;
-      }
-      const message = error instanceof Error ? error.message : 'VANTA request failed.';
-      dispatch({ type: 'FAILED', message });
-      notifyError('VANTA request failed', message);
-    } finally {
-      sendingRef.current = false;
-    }
+    }, controller.signal, pageContext);
+} catch (error) {
+  if ((error as Error).name === 'AbortError') {
+    dispatch({ type: 'WARNING', message: 'Request cancelled.' });
+    return;
+  }
+  const message = error instanceof Error ? error.message : 'VANTA request failed.';
+  dispatch({ type: 'FAILED', message });
+  notifyError('VANTA request failed', message);
+} finally {
+  sendingRef.current = false;
+}
   }, [ensureConversation, localContexts, notifyError, pageContext, playText, state.provider.verified]);
 
-  const attachFiles = useCallback(async (files: File[]) => {
-    if (!files.length) return;
-    try {
-      const attached = await attachVantaLocalFiles(files);
-      setLocalContexts(previous => [...previous, ...attached]);
-      notifySuccess('Session context attached', `${attached.length} file${attached.length === 1 ? '' : 's'} will be discarded after the session window.`);
-    } catch (error) {
-      notifyError('Attachment failed', error instanceof Error ? error.message : 'The selected files could not be attached.');
-    }
-  }, [notifyError, notifySuccess]);
+const attachFiles = useCallback(async (files: File[]) => {
+  if (!files.length) return;
+  try {
+    const attached = await attachVantaLocalFiles(files);
+    setLocalContexts(previous => [...previous, ...attached]);
+    notifySuccess('Session context attached', `${attached.length} file${attached.length === 1 ? '' : 's'} will be discarded after the session window.`);
+  } catch (error) {
+    notifyError('Attachment failed', error instanceof Error ? error.message : 'The selected files could not be attached.');
+  }
+}, [notifyError, notifySuccess]);
 
-  const startListening = useCallback(async () => {
-    if (!state.provider.voiceAvailable) {
-      notifyInfo('Voice unavailable', 'Verify the configured voice provider first. Text input remains available.');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      recorderRef.current = recorder;
-      recorder.ondataavailable = event => { if (event.data.size) chunksRef.current.push(event.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop());
-        try {
-          const transcript = await transcribeVantaAudio(new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' }));
-          await send(transcript, true);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Transcription failed.';
-          dispatch({ type: 'FAILED', message });
-          notifyError('Transcription failed', message);
-        }
-      };
-      const context = new AudioContext();
-      audioContextRef.current = context;
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 128;
-      context.createMediaStreamSource(stream).connect(analyser);
-      const samples = new Uint8Array(analyser.frequencyBinCount);
-      const updateAmplitude = () => {
-        analyser.getByteTimeDomainData(samples);
-        const value = Math.sqrt(samples.reduce((sum, sample) => sum + ((sample - 128) / 128) ** 2, 0) / samples.length);
-        dispatch({ type: 'AUDIO_AMPLITUDE', value: Math.min(1, value * 4) });
-        analyserFrameRef.current = requestAnimationFrame(updateAmplitude);
-      };
-      updateAmplitude();
-      recorder.start(250);
-      recordingTimeoutRef.current = window.setTimeout(() => {
-        if (recorder.state === 'recording') recorder.stop();
-        if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
-        recordingTimeoutRef.current = null;
-        dispatch({ type: 'VOICE_STOPPED' });
-        notifyInfo('Voice capture stopped', 'Push-to-talk clips are limited to 60 seconds.');
-      }, 60_000);
-      dispatch({ type: 'VOICE_STARTED' });
-    } catch (error) {
-      const message = error instanceof DOMException && error.name === 'NotAllowedError' ? 'Microphone access was denied.' : 'Microphone is unavailable.';
-      dispatch({ type: 'WARNING', message });
-      notifyError('Cannot start listening', message);
-    }
-  }, [notifyError, notifyInfo, send, state.provider.voiceAvailable]);
-
-  const stopListening = useCallback(() => {
-    if (recordingTimeoutRef.current !== null) {
-      window.clearTimeout(recordingTimeoutRef.current);
+const startListening = useCallback(async () => {
+  if (!state.provider.voiceAvailable) {
+    notifyInfo('Voice unavailable', 'Verify the configured voice provider first. Text input remains available.');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    streamRef.current = stream;
+    chunksRef.current = [];
+    const recorder = new MediaRecorder(stream);
+    recorderRef.current = recorder;
+    recorder.ondataavailable = event => { if (event.data.size) chunksRef.current.push(event.data); };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(track => track.stop());
+      try {
+        const transcript = await transcribeVantaAudio(new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' }));
+        await send(transcript, true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Transcription failed.';
+        dispatch({ type: 'FAILED', message });
+        notifyError('Transcription failed', message);
+      }
+    };
+    const context = new AudioContext();
+    audioContextRef.current = context;
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 128;
+    context.createMediaStreamSource(stream).connect(analyser);
+    const samples = new Uint8Array(analyser.frequencyBinCount);
+    const updateAmplitude = () => {
+      analyser.getByteTimeDomainData(samples);
+      const value = Math.sqrt(samples.reduce((sum, sample) => sum + ((sample - 128) / 128) ** 2, 0) / samples.length);
+      dispatch({ type: 'AUDIO_AMPLITUDE', value: Math.min(1, value * 4) });
+      analyserFrameRef.current = requestAnimationFrame(updateAmplitude);
+    };
+    updateAmplitude();
+    recorder.start(250);
+    recordingTimeoutRef.current = window.setTimeout(() => {
+      if (recorder.state === 'recording') recorder.stop();
+      if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
       recordingTimeoutRef.current = null;
-    }
-    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
-    if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
-    dispatch({ type: 'VOICE_STOPPED' });
-  }, []);
+      dispatch({ type: 'VOICE_STOPPED' });
+      notifyInfo('Voice capture stopped', 'Push-to-talk clips are limited to 60 seconds.');
+    }, 60_000);
+    dispatch({ type: 'VOICE_STARTED' });
+  } catch (error) {
+    const message = error instanceof DOMException && error.name === 'NotAllowedError' ? 'Microphone access was denied.' : 'Microphone is unavailable.';
+    dispatch({ type: 'WARNING', message });
+    notifyError('Cannot start listening', message);
+  }
+}, [notifyError, notifyInfo, send, state.provider.voiceAvailable]);
 
-  const approveMemory = useCallback(async (content: string, sourceMessageId?: string) => {
-    try {
-      dispatch({ type: 'AWAITING_CONFIRMATION' });
-      await saveVantaMemory(content, sourceMessageId);
-      dispatch({ type: 'ACTION_OPENED' });
-      notifySuccess('Memory approved', 'VANTA can use this durable memory in future grounded answers.');
-    } catch (error) {
-      notifyError('Memory was not saved', error instanceof Error ? error.message : 'Approval failed.');
-    }
-  }, [notifyError, notifySuccess]);
+const stopListening = useCallback(() => {
+  if (recordingTimeoutRef.current !== null) {
+    window.clearTimeout(recordingTimeoutRef.current);
+    recordingTimeoutRef.current = null;
+  }
+  if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+  if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
+  dispatch({ type: 'VOICE_STOPPED' });
+}, []);
 
-  const dispatchProposal = useCallback(async (proposal: NonNullable<VantaMessage['proposal']>) => {
-    try {
-      dispatch({ type: 'AWAITING_CONFIRMATION' });
-      const result = await dispatchVantaProposal(proposal);
-      dispatch({ type: 'ACTION_OPENED' });
-      notifySuccess('Mission queued for approval', `${result.task.agentName} · ${result.dispatchPlan['executionSubAgentIds'] ? 'bounded plan' : 'focused plan'}. An owner or admin must approve it before execution.`);
-    } catch (error) {
-      dispatch({ type: 'WARNING', message: 'Mission was not queued.' });
-      notifyError('Mission was not queued', error instanceof Error ? error.message : 'Dispatch failed.');
-      throw error;
-    }
-  }, [notifyError, notifySuccess]);
+const approveMemory = useCallback(async (content: string, sourceMessageId?: string) => {
+  try {
+    dispatch({ type: 'AWAITING_CONFIRMATION' });
+    await saveVantaMemory(content, sourceMessageId);
+    dispatch({ type: 'ACTION_OPENED' });
+    notifySuccess('Memory approved', 'VANTA can use this durable memory in future grounded answers.');
+  } catch (error) {
+    notifyError('Memory was not saved', error instanceof Error ? error.message : 'Approval failed.');
+  }
+}, [notifyError, notifySuccess]);
 
-  const loadConversation = useCallback(async (id: string) => {
-    try {
-      setMessages(await getVantaMessages(id));
-      setConversationId(id);
-      setTranscriptOpen(true);
-    } catch (error) {
-      notifyError('Conversation unavailable', error instanceof Error ? error.message : 'This conversation could not be loaded.');
-    }
-  }, [notifyError]);
+const dispatchProposal = useCallback(async (proposal: NonNullable<VantaMessage['proposal']>) => {
+  try {
+    dispatch({ type: 'AWAITING_CONFIRMATION' });
+    const result = await dispatchVantaProposal(proposal);
+    dispatch({ type: 'ACTION_OPENED' });
+    notifySuccess('Mission queued for approval', `${result.task.agentName} · ${result.dispatchPlan['executionSubAgentIds'] ? 'bounded plan' : 'focused plan'}. An owner or admin must approve it before execution.`);
+  } catch (error) {
+    dispatch({ type: 'WARNING', message: 'Mission was not queued.' });
+    notifyError('Mission was not queued', error instanceof Error ? error.message : 'Dispatch failed.');
+    throw error;
+  }
+}, [notifyError, notifySuccess]);
 
-  const setConversationShared = useCallback(async (shared: boolean) => {
-    if (!conversationId) return;
-    try {
-      await shareVantaConversation(conversationId, shared);
-      setConversations(previous => previous.map(item => item.id === conversationId ? { ...item, visibility: shared ? 'workspace' : 'private' } : item));
-      notifySuccess(shared ? 'Conversation shared' : 'Conversation made private', shared ? 'Workspace members can now read this conversation.' : 'Only you can read this conversation.');
-    } catch (error) {
-      notifyError('Sharing was not changed', error instanceof Error ? error.message : 'The conversation could not be updated.');
-    }
-  }, [conversationId, notifyError, notifySuccess]);
+const loadConversation = useCallback(async (id: string) => {
+  try {
+    setMessages(await getVantaMessages(id));
+    setConversationId(id);
+    setTranscriptOpen(true);
+  } catch (error) {
+    notifyError('Conversation unavailable', error instanceof Error ? error.message : 'This conversation could not be loaded.');
+  }
+}, [notifyError]);
 
-  const deleteCurrentConversation = useCallback(async () => {
-    if (!conversationId) return;
-    try {
-      await deleteVantaConversation(conversationId);
-      setConversations(previous => previous.filter(item => item.id !== conversationId));
-      setConversationId(null);
-      setMessages([]);
-      notifySuccess('Conversation deleted');
-    } catch (error) {
-      notifyError('Conversation was not deleted', error instanceof Error ? error.message : 'Deletion failed.');
-    }
-  }, [conversationId, notifyError, notifySuccess]);
+const setConversationShared = useCallback(async (shared: boolean) => {
+  if (!conversationId) return;
+  try {
+    await shareVantaConversation(conversationId, shared);
+    setConversations(previous => previous.map(item => item.id === conversationId ? { ...item, visibility: shared ? 'workspace' : 'private' } : item));
+    notifySuccess(shared ? 'Conversation shared' : 'Conversation made private', shared ? 'Workspace members can now read this conversation.' : 'Only you can read this conversation.');
+  } catch (error) {
+    notifyError('Sharing was not changed', error instanceof Error ? error.message : 'The conversation could not be updated.');
+  }
+}, [conversationId, notifyError, notifySuccess]);
 
-  const value = useMemo<VantaContextValue>(() => ({
-    state,
-    retrieval,
-    messages,
-    conversations,
-    conversationId,
-    topology,
-    fullTopology,
-    topologyExpanded,
-    setTopologyExpanded,
-    selectedNodeId,
-    setSelectedNodeId,
-    dockOpen,
-    setDockOpen,
-    transcriptOpen,
-    setTranscriptOpen,
-    localContexts,
-    pageContext,
-    setPageSelection,
-    setCustomPageContext: (ctx: Partial<VantaPageContext>) => setCustomContext(previous => ({ ...previous, ...ctx })),
-    removeLocalContext,
-    inspectLocalContext,
-    send,
-    attachFiles,
-    startListening,
-    stopListening,
-    playMessage: message => playText(message.content),
-    approveMemory,
-    dispatchProposal,
-    refreshStatus,
-    newConversation: () => { setConversationId(null); setMessages([]); setFocusedEntityIds([]); },
-    loadConversation,
-    setConversationShared,
-    deleteCurrentConversation,
-    toggleInspect: () => dispatch({ type: state.inspectMode ? 'INSPECT_FINISHED' : 'INSPECT_STARTED' }),
-    stop: () => {
-      requestAbortRef.current?.abort();
-      try { speechSourceRef.current?.stop(); } catch { /* already stopped */ }
-      speechSourceRef.current = null;
-      dispatch({ type: 'RESET' });
-    },
+const deleteCurrentConversation = useCallback(async () => {
+  if (!conversationId) return;
+  try {
+    await deleteVantaConversation(conversationId);
+    setConversations(previous => previous.filter(item => item.id !== conversationId));
+    setConversationId(null);
+    setMessages([]);
+    notifySuccess('Conversation deleted');
+  } catch (error) {
+    notifyError('Conversation was not deleted', error instanceof Error ? error.message : 'Deletion failed.');
+  }
+}, [conversationId, notifyError, notifySuccess]);
+
+const value = useMemo<VantaContextValue>(() => ({
+  state,
+  retrieval,
+  messages,
+  conversations,
+  conversationId,
+  topology,
+  fullTopology,
+  topologyExpanded,
+  setTopologyExpanded,
+  selectedNodeId,
+  setSelectedNodeId,
+  dockOpen,
+  setDockOpen,
+  transcriptOpen,
+  setTranscriptOpen,
+  localContexts,
+  pageContext,
+  setPageSelection,
+  setCustomPageContext: (ctx: Partial<VantaPageContext>) => setCustomContext(previous => ({ ...previous, ...ctx })),
+  removeLocalContext,
+  inspectLocalContext,
+  send,
+  attachFiles,
+  startListening,
+  stopListening,
+  playMessage: message => playText(message.content),
+  approveMemory,
+  dispatchProposal,
+  refreshStatus,
+  newConversation: () => { setConversationId(null); setMessages([]); setFocusedEntityIds([]); },
+  loadConversation,
+  setConversationShared,
+  deleteCurrentConversation,
+  toggleInspect: () => dispatch({ type: state.inspectMode ? 'INSPECT_FINISHED' : 'INSPECT_STARTED' }),
+  stop: () => {
+    requestAbortRef.current?.abort();
+    try { speechSourceRef.current?.stop(); } catch { /* already stopped */ }
+    speechSourceRef.current = null;
+    dispatch({ type: 'RESET' });
+  },
   }), [approveMemory, attachFiles, conversationId, conversations, deleteCurrentConversation, dockOpen, fullTopology, inspectLocalContext, loadConversation, localContexts, messages, pageContext, playText, refreshStatus, removeLocalContext, selectedNodeId, send, setConversationShared, startListening, state, retrieval, stopListening, topology, topologyExpanded, transcriptOpen]);
 
-  return <VantaContext.Provider value={value}>{children}</VantaContext.Provider>;
+return <VantaContext.Provider value={value}>{children}</VantaContext.Provider>;
 }
 
 export function useVanta() {
