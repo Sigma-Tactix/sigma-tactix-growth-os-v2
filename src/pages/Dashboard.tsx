@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -8,38 +8,31 @@ import {
   Tooltip, 
   ResponsiveContainer,
 } from 'recharts';
-import { 
-  TrendingUp, 
-  Target, 
-  Rocket, 
+import {
+  TrendingUp,
+  Target,
+  Rocket,
   ExternalLink,
-  MoreVertical,
-  Plus,
   Download,
   FileText,
   FileJson,
+  FileSpreadsheet,
   Eye,
   EyeOff,
   Settings2,
   Check,
   Calendar,
-  Filter,
-  FileSpreadsheet,
-  Building2,
-  Palette,
   ChevronDown,
   Layers,
   Zap,
-  DollarSign,
   Briefcase,
   CheckCircle,
   BarChart3
 } from 'lucide-react';
-import { 
-  INDUSTRY_REPORT_FORMATS, 
-  IndustryReportFormat, 
-  COLOR_PROFILES, 
-  ReportColorProfile 
+import {
+  INDUSTRY_REPORT_FORMATS,
+  COLOR_PROFILES,
+  ReportColorProfile
 } from '@/src/data/industryReportFormats';
 import { cn, formatCurrency, formatNumber } from '@/src/lib/utils';
 import { useUser, UserRole } from '@/src/contexts/UserContext';
@@ -154,6 +147,36 @@ export default function Dashboard() {
   });
 
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+
+  // The toolbar menus (industry, date range, export) are opened via toggle
+  // buttons with no outside-click dismissal — a shared dismiss handler keeps
+  // them consistent: any click outside the toolbar, or Escape, closes all of
+  // them.
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const anyToolbarMenuOpen = showIndustryDropdown || showDateOptions || showExportOptions;
+  useEffect(() => {
+    if (!anyToolbarMenuOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
+        setShowIndustryDropdown(false);
+        setShowDateOptions(false);
+        setShowExportOptions(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowIndustryDropdown(false);
+        setShowDateOptions(false);
+        setShowExportOptions(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [anyToolbarMenuOpen]);
 
   const selectedIndustry = useMemo(() => {
     return INDUSTRY_REPORT_FORMATS.find(f => f.id === selectedIndustryId) || INDUSTRY_REPORT_FORMATS[0];
@@ -406,7 +429,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 no-export">
+              <div ref={toolbarRef} className="flex flex-wrap items-center gap-2.5 no-export">
               {/* Media Mode Toggle */}
               <div className="sigma-segmented" role="group" aria-label="Dashboard media mode">
                 {(['organic', 'paid'] as const).map(mode => (
@@ -428,6 +451,8 @@ export default function Dashboard() {
               <div className="relative">
                 <button
                   onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
+                  aria-expanded={showIndustryDropdown}
+                  aria-haspopup="true"
                   className="px-3.5 py-2 glass-panel rounded-xl hover:bg-[var(--sigma-surface-subtle)] transition-all text-xs font-semibold text-[var(--sigma-text)] flex items-center gap-2 border border-[var(--sigma-border)] cursor-pointer"
                   title="Select Industry Format & Channel Benchmarks"
                 >
@@ -473,46 +498,33 @@ export default function Dashboard() {
               </div>
 
               {/* Color Profiles Selector */}
-              <div className="flex items-center glass-panel border border-[var(--sigma-border)] rounded-xl p-1 gap-1">
-                <button
-                  onClick={() => handleSelectColorProfile('amber')}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer",
-                    colorProfileKey === 'amber' ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border)]" : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
-                  )}
-                  title="Vermilion & Slate Profile"
-                >
-                  <span className="w-2 h-2 rounded-full bg-[#FF481B]" />
-                  <span>Vermilion</span>
-                </button>
-                <button
-                  onClick={() => handleSelectColorProfile('indigo')}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer",
-                    colorProfileKey === 'indigo' ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border)]" : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
-                  )}
-                  title="Royal Indigo Profile"
-                >
-                  <span className="w-2 h-2 rounded-full bg-sky-400" />
-                  <span>Indigo</span>
-                </button>
-                <button
-                  onClick={() => handleSelectColorProfile('emerald')}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer",
-                    colorProfileKey === 'emerald' ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border)]" : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
-                  )}
-                  title="Emerald Profile"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>Emerald</span>
-                </button>
+              <div className="flex items-center glass-panel border border-[var(--sigma-border)] rounded-xl p-1 gap-1" role="group" aria-label="Report color profile">
+                {(Object.keys(COLOR_PROFILES) as ReportColorProfile[]).map(key => {
+                  const profile = COLOR_PROFILES[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleSelectColorProfile(key)}
+                      aria-pressed={colorProfileKey === key}
+                      title={profile.name}
+                      className={cn(
+                        "px-2.5 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer",
+                        colorProfileKey === key ? "bg-[var(--sigma-surface-subtle)] text-[var(--sigma-text)] font-semibold border border-[var(--sigma-border)]" : "text-[var(--sigma-text-muted)] hover:text-[var(--sigma-text)]"
+                      )}
+                    >
+                      <span className={cn("w-2 h-2 rounded-full shrink-0", profile.dotClass)} />
+                      <span>{profile.badge}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Date Picker */}
               <div className="relative">
-                 <button 
+                 <button
                    onClick={() => setShowDateOptions(!showDateOptions)}
+                   aria-expanded={showDateOptions}
+                   aria-haspopup="true"
                    className="px-3.5 py-2 glass-panel border border-[var(--sigma-border)] rounded-xl hover:bg-[var(--sigma-surface-subtle)] transition-all text-xs font-semibold text-[var(--sigma-text)] flex items-center gap-2 cursor-pointer"
                  >
                    <Calendar size={14} className="text-[var(--sigma-text-muted)]" />
@@ -572,6 +584,8 @@ export default function Dashboard() {
                    onClick={() => setShowExportOptions(!showExportOptions)}
                    isLoading={isExporting}
                    icon={<Download size={14} />}
+                   aria-expanded={showExportOptions}
+                   aria-haspopup="true"
                  >
                    Export Report
                  </Button>
@@ -811,16 +825,16 @@ export default function Dashboard() {
                     <AreaChart data={filteredChartData}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--sigma-primary)" stopOpacity={0.28}/>
-                          <stop offset="95%" stopColor="var(--sigma-primary)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor={activeColorProfile.chartStroke} stopOpacity={0.28}/>
+                          <stop offset="95%" stopColor={activeColorProfile.chartStroke} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--sigma-border)" />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'var(--sigma-text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }} 
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'var(--sigma-text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
                         dy={10}
                       />
                       <YAxis hide />
@@ -828,10 +842,10 @@ export default function Dashboard() {
                       <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="var(--sigma-primary)"
+                        stroke={activeColorProfile.chartStroke}
                         strokeWidth={2.5}
-                        fillOpacity={1} 
-                        fill="url(#colorValue)" 
+                        fillOpacity={1}
+                        fill="url(#colorValue)"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -911,7 +925,7 @@ export default function Dashboard() {
                              <div className="text-xs font-semibold font-mono tabular-nums text-[var(--sigma-text)]">{seg.conv}</div>
                               <div className="w-16 h-1 bg-[var(--sigma-border)] rounded-full mx-auto mt-1.5 overflow-hidden">
                                 <div
-                                  className="h-full bg-emerald-400 rounded-full"
+                                  className={cn("h-full rounded-full", activeColorProfile.barFill)}
                                   title={`Illustrative benchmark share (CVR ${seg.conv} relative to the highest benchmark row)`}
                                   style={{ width: `${maxBenchmarkCvr > 0 ? Math.round(((parseFloat(seg.conv) || 0) / maxBenchmarkCvr) * 100) : 0}%` }}
                                 />

@@ -1,8 +1,18 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-11-13
+> **Last updated**: 2026-11-17
 > **Version**: v0.2.19-dev (Code Review Remediation: isomorphic browser PDF hash fix, export header preservation, KPI strip gutters & font floor compliance)
 > **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+
+## Dashboard Topline Polish (color-profile wiring, menu a11y, touch targets) — 2026-11-17
+
+Uncommitted batch on `fix/app-modules-workflows`, done as a polish pass on `src/pages/Dashboard.tsx` and render-checked in a live browser at 1440px and 390px (Playwright against `npm run dev`, one-click DEV enclave sign-in):
+
+- **`Dashboard.tsx` — Color-profile switcher now actually works**: `activeColorProfile` was computed but never consumed, so the Amber/Indigo/Emerald switcher changed nothing. Wired it into the Performance Velocity chart (`Area` stroke + gradient stops now use `chartStroke`, verified `#F59E0B → #10B981 → #38BDF8` on switch) and the benchmark CVR bars (`barFill`). The switcher buttons now data-drive from `COLOR_PROFILES` (dot + badge per profile) instead of three hardcoded dots, and gained `role="group"`/`aria-label` + `aria-pressed`. Swatch height aligned to the sibling toolbar controls (`py-2`) so no control sits under the coarse-pointer 44px hit-area rule.
+- **`Dashboard.tsx` — Toolbar menu dismissal + a11y**: industry/date/export dropdowns only closed on re-toggle or item select. Added one shared effect: outside-pointerdown or Escape closes all three; toggle buttons carry `aria-expanded`/`aria-haspopup`.
+- **`Dashboard.tsx` — Import hygiene**: removed six unused lucide icons (`MoreVertical`, `Plus`, `Filter`, `Building2`, `Palette`, `DollarSign`) and the unused `IndustryReportFormat` type import.
+
+Verification: `npm run verify` green (vite build + tsc --noEmit + 96 test files / 645 tests). Browser checks: no 390px horizontal overflow; channel table scrolls inside its card (`.overflow-x-auto`, min-w 650); focus ring visible (3px theme-aware outline); page-error 401/500 console entries are pre-existing Supabase-DB-not-connected states in this sandbox, not introduced here. Scratch drivers kept at `.scratch/render-check-dashboard.mjs`, `.scratch/check-chart-stroke.mjs`, `.scratch/check-mobile-dashboard.mjs`.
 
 ## Brain / Vanta Render-Defect Batch (audit → verify → fix) — 2026-11-13
 
