@@ -138,6 +138,13 @@ import { buildBrandCreativeStylePresets } from "./src/lib/brandCreativeStyles.js
 import { buildGrowthStrategies } from "./src/lib/growthStrategy.js";
 import { validateReportSnapshot } from "./src/lib/reportSnapshot.js";
 import { renderExecutiveReportPDF } from "./src/lib/pdfReportRenderer.js";
+import {
+  reportArtifactRepository,
+  renderSnapshotToPDF,
+  renderSnapshotToPPTX,
+  renderSnapshotToXLSX,
+  generateReportArtifactBundle,
+} from "./src/lib/reportArtifactPipeline.js";
 import * as fs from "fs";
 import { spawn } from "child_process";
 
@@ -7589,47 +7596,85 @@ app.delete("/api/workspace/reports/:id", requireModule("reporting"), async (req:
   res.json({ success: true });
 });
 
-const reportArtifactCache = new Map<string, { buffer: Buffer; mime: string; filename: string }>();
-
-app.post("/api/workspace/reports/snapshot", requireModule("reporting"), async (req: Request, res: Response) => {
-  try {
-    const validated = validateReportSnapshot(req.body);
-    const { data } = await res.locals.sb
-      .from("saved_reports")
-      .insert({
-        workspace_id: res.locals.wsId,
-        name: validated.title,
-        blocks: [validated],
-        date_range: `${validated.reportingPeriod.start} - ${validated.reportingPeriod.end}`,
-      })
-      .select()
-      .single();
-
-    res.json({ success: true, report: validated, savedRecord: data || null });
-  } catch (err) {
-    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
-  }
-});
-
 app.post("/api/workspace/reports/snapshot/render", requireModule("reporting"), async (req: Request, res: Response) => {
   try {
-    const { snapshot, brand } = req.body;
+    const { snapshot, brand, format } = req.body;
     const validated = validateReportSnapshot(snapshot);
-    const result = await renderExecutiveReportPDF(validated, brand);
+    const wsId = res.locals.wsId || validated.workspaceId;
 
-    const buf = Buffer.from(result.pdfBuffer);
-    reportArtifactCache.set(result.artifactHash, {
-      buffer: buf,
-      mime: "application/pdf",
-      filename: `sigmatactix-${validated.id}-executive-summary.pdf`,
-    });
+    if (format === "bundle") {
+      const bundle = await generateReportArtifactBundle(validated, brand);
+      reportArtifactRepository.storeBundle(bundle);
+      res.json({
+        success: true,
+        bundleHash: bundle.bundleHash,
+        snapshotId: bundle.snapshotId,
+        artifacts: {
+          pdf: {
+            artifactHash: bundle.pdf.artifactHash,
+            byteSize: bundle.pdf.byteSize,
+            downloadUrl: `/api/workspace/reports/artifact/${bundle.pdf.artifactHash}/download`,
+            filename: bundle.pdf.filename,
+          },
+          pptx: {
+            artifactHash: bundle.pptx.artifactHash,
+            byteSize: bundle.pptx.byteSize,
+            downloadUrl: `/api/workspace/reports/artifact/${bundle.pptx.artifactHash}/download`,
+            filename: bundle.pptx.filename,
+          },
+          xlsx: {
+            artifactHash: bundle.xlsx.artifactHash,
+            byteSize: bundle.xlsx.byteSize,
+            downloadUrl: `/api/workspace/reports/artifact/${bundle.xlsx.artifactHash}/download`,
+            filename: bundle.xlsx.filename,
+          },
+        },
+      });
+      return;
+    }
+
+    if (format === "pptx") {
+      const pptxResult = await renderSnapshotToPPTX(validated, brand);
+      reportArtifactRepository.storeArtifact(pptxResult, wsId, validated.id);
+      res.json({
+        success: true,
+        format: "pptx",
+        artifactHash: pptxResult.artifactHash,
+        byteSize: pptxResult.byteSize,
+        slideCount: pptxResult.metadata?.slideCount || 6,
+        downloadUrl: `/api/workspace/reports/artifact/${pptxResult.artifactHash}/download`,
+        filename: pptxResult.filename,
+      });
+      return;
+    }
+
+    if (format === "xlsx") {
+      const xlsxResult = await renderSnapshotToXLSX(validated);
+      reportArtifactRepository.storeArtifact(xlsxResult, wsId, validated.id);
+      res.json({
+        success: true,
+        format: "xlsx",
+        artifactHash: xlsxResult.artifactHash,
+        byteSize: xlsxResult.byteSize,
+        sheetCount: xlsxResult.metadata?.sheetCount || 5,
+        downloadUrl: `/api/workspace/reports/artifact/${xlsxResult.artifactHash}/download`,
+        filename: xlsxResult.filename,
+      });
+      return;
+    }
+
+    // Default to PDF
+    const result = await renderSnapshotToPDF(validated, brand);
+    reportArtifactRepository.storeArtifact(result, wsId, validated.id);
 
     res.json({
       success: true,
+      format: "pdf",
       artifactHash: result.artifactHash,
       byteSize: result.byteSize,
-      pageCount: result.pageCount,
+      pageCount: result.metadata?.pageCount || 2,
       downloadUrl: `/api/workspace/reports/artifact/${result.artifactHash}/download`,
+      filename: result.filename,
     });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
@@ -7637,14 +7682,20 @@ app.post("/api/workspace/reports/snapshot/render", requireModule("reporting"), a
 });
 
 app.get("/api/workspace/reports/artifact/:hash/download", async (req: Request, res: Response) => {
-  const artifact = reportArtifactCache.get(req.params.hash);
-  if (!artifact) {
-    res.status(404).json({ error: "Report artifact not found or expired" });
+  const requestingWorkspaceId = res.locals.wsId || (req.query.workspaceId as string) || "";
+  const lookup = reportArtifactRepository.getArtifactForWorkspace(req.params.hash, requestingWorkspaceId);
+  if (lookup.status === "not_found") {
+    res.status(404).json({ error: lookup.error });
     return;
   }
+  if (lookup.status === "forbidden") {
+    res.status(403).json({ error: lookup.error });
+    return;
+  }
+  const artifact = lookup.artifact;
   res.setHeader("Content-Type", artifact.mime);
   res.setHeader("Content-Disposition", `attachment; filename="${artifact.filename}"`);
-  res.setHeader("Content-Length", artifact.buffer.length);
+  res.setHeader("Content-Length", artifact.byteSize);
   res.send(artifact.buffer);
 });
 

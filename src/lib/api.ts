@@ -1086,3 +1086,23 @@ export async function getOperationsReadiness(allowFixture?: boolean): Promise<{
   }
   return res.json();
 }
+
+export async function renderReportSnapshotArtifact(
+  snapshot: any,
+  options?: { format?: 'pdf' | 'pptx' | 'xlsx' | 'bundle'; brand?: any }
+): Promise<any> {
+  const res = await apiFetch('/api/workspace/reports/snapshot/render', {
+    method: 'POST',
+    body: JSON.stringify({
+      snapshot,
+      format: options?.format || 'pdf',
+      brand: options?.brand,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `Failed to render report artifact: ${res.statusText}`);
+  }
+  return res.json();
+}
+

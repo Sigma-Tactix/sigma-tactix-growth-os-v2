@@ -1,0 +1,30 @@
+=== npx vitest run src/lib/reportArtifactPipeline.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/reportArtifactPipeline.test.ts (5 tests) 135ms
+   ✓ produces valid PDF, PPTX, and XLSX bytes from the same snapshot (80ms)
+   ✓ renders a 6-slide presentation with cover, decision, KPIs, delivery, next steps, and evidence (8ms)
+   ✓ renders a multi-page PDF with table layout, AI disclosure, and tenant theme (4ms)
+   ✓ generates Excel workbook with authentic formulas, numbers, and multiple structured sheets (24ms)
+   ✓ strictly denies cross-client artifact downloads (13ms)
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  01:49:40
+   Duration  1.23s (transform 258ms, setup 0ms, import 825ms, tests 135ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4408 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> eslint
+0 errors
+> vitest run
+Test Files  108 passed | 1 skipped (109)
+Tests  767 passed | 3 skipped (770)
+Duration  34.18s
+Exit code: 0
