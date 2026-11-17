@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "a0aedb82bf5a910b4b917b1dffaeff7cf9d3987d",
+  "evidence": [
+    "evidence/S12/durable_worker_cron_hooks.md",
+    "evidence/S12/verify.log"
+  ]
+}
