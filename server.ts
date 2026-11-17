@@ -110,6 +110,12 @@ import { getGoogleAdsMcpStatus, listGoogleAdsMcpCustomers } from "./src/server/g
 import { createVantaRouter } from "./src/server/routes/vantaRoutes.js";
 import { createBillingRouter } from "./src/server/routes/billingRoutes.js";
 import { createCapabilityRouter } from "./src/server/routes/capabilityRoutes.js";
+import {
+  normalizeSourceMetrics,
+  executeConnectorReconciliation,
+  assessOperationReadiness,
+  OPERATION_APPROVAL_REGISTER,
+} from "./src/lib/sourceOperations.js";
 import { DurableJobQueue } from "./src/lib/durableJobWorker.js";
 import { createDurableWorkerRouter } from "./src/server/routes/durableWorkerRoutes.js";
 import { createDecisionRouter } from "./src/server/routes/decisionRoutes.js";
@@ -9048,24 +9054,46 @@ app.post("/api/workspace/run-reconciliation", requireModule("reporting"), async 
   const connectors = db.secondBrain.connectors || [];
 
   const reconciliation: Record<string, string | number> = {};
+  const reconciliationDetails: Record<string, any> = {};
+  let dbChanged = false;
+
   for (const [platform, key] of Object.entries(RECONCILIATION_KEYS)) {
     const conn = connectors.find(c => c.platform === platform);
     if (!conn || conn.status !== 'Connected') {
       reconciliation[key as string] = 'Disconnected';
       continue;
     }
-    let ok = false;
+
     try {
-      ok = await getConnectorAdapter(conn.platform)(getStoredCredentials(conn));
-    } catch {
-      ok = false;
+      const outcome = await executeConnectorReconciliation(conn, getStoredCredentials(conn));
+      reconciliation[key as string] = outcome.status;
+      reconciliationDetails[platform] = {
+        status: outcome.status,
+        message: outcome.message,
+        reconciledAt: outcome.reconciledAt,
+      };
+
+      if (outcome.updatedConnectorState) {
+        Object.assign(conn, outcome.updatedConnectorState);
+        dbChanged = true;
+      }
+    } catch (err) {
+      reconciliation[key as string] = 'Mismatch';
+      reconciliationDetails[platform] = {
+        status: 'Mismatch',
+        message: err instanceof Error ? err.message : 'Reconciliation probe failed.',
+        reconciledAt: new Date().toISOString(),
+      };
     }
-    reconciliation[key as string] = ok ? 'Synced' : 'Mismatch';
   }
 
-  reconciliation.discrepancyCount = Object.values(reconciliation).filter(s => s === 'Mismatch').length;
+  if (dbChanged) {
+    await saveDB(res, db);
+  }
 
-  res.json({ success: true, reconciliation });
+  reconciliation.discrepancyCount = Object.values(reconciliation).filter(s => s !== 'Synced' && s !== 'Disconnected').length;
+
+  res.json({ success: true, reconciliation, details: reconciliationDetails });
 });
 
 // ============================================================================
@@ -9083,24 +9111,67 @@ app.get("/api/workspace/pipelines", async (req: Request, res: Response) => {
 app.get("/api/workspace/reporting/metrics", async (req: Request, res: Response) => {
   const db = await getDB(res);
   const media = req.query.media === 'paid' ? 'paid' : req.query.media === 'organic' ? 'organic' : undefined;
-  const metrics = (db.secondBrain.pipelines || [])
-    .filter(p => p.status === 'active' && p.verificationState === 'verified' && p.lastMetrics?.available)
-    .map(p => ({ ...p.lastMetrics, platform: p.platform, accountName: p.accountName, pipelineId: p.id, mediaType: p.lastMetrics?.mediaType || classifyChannelMedia(p.platform) }))
+  const verifiedPipelines = (db.secondBrain.pipelines || [])
+    .filter(p => p.status === 'active' && p.verificationState === 'verified' && p.lastMetrics?.available);
+
+  const metrics = verifiedPipelines
+    .map(p => {
+      const norm = normalizeSourceMetrics(p.platform, p.propertyId, p.lastMetrics || {}, {
+        accountName: p.accountName,
+        observedAt: p.lastMetrics?.observedAt,
+        isFixture: Boolean((p.lastMetrics as any)?.isFixture),
+      });
+      return {
+        ...norm,
+        pipelineId: p.id,
+        mediaType: p.lastMetrics?.mediaType || classifyChannelMedia(p.platform),
+      };
+    })
     .filter(item => !media || item.mediaType === media);
+
   const spend = metrics.reduce((sum, item) => sum + item.spend, 0);
   const conversions = metrics.reduce((sum, item) => sum + item.conversions, 0);
   const revenue = metrics.reduce((sum, item) => sum + item.revenue, 0);
+  const hasLive = metrics.some(item => !item.isFixture);
+
   res.json({
     success: true,
     metrics: {
       available: metrics.length > 0,
-      source: metrics.length > 0 ? 'verified_connector_payload' : 'none',
+      source: metrics.length === 0 ? 'none' : (hasLive ? 'live_provider' : 'fixture'),
       observedAt: metrics.map(item => item.observedAt).sort().at(-1) || null,
       spend,
       conversions,
       revenue,
-      roas: spend > 0 ? revenue / spend : 0,
+      roas: spend > 0 ? Number((revenue / spend).toFixed(2)) : 0,
       providers: metrics,
+    },
+  });
+});
+
+app.get("/api/workspace/operations/readiness", async (req: Request, res: Response) => {
+  const db = await getDB(res);
+  const connectors = db.secondBrain.connectors || [];
+  const allowFixture = req.query.allowFixture === 'true' || process.env.NODE_ENV === 'test';
+
+  const evaluations = OPERATION_APPROVAL_REGISTER.map(op => {
+    const conn = connectors.find(c => c.platform === op.canonicalPlatform);
+    const creds = conn ? getStoredCredentials(conn) : {};
+    return assessOperationReadiness(op.operationId, {
+      ...creds,
+      verified: conn?.verificationState === 'verified',
+    }, { allowFixture });
+  });
+
+  res.json({
+    success: true,
+    operations: evaluations,
+    summary: {
+      total: evaluations.length,
+      readyLive: evaluations.filter(e => e.readinessState === 'ready_live').length,
+      readyFixture: evaluations.filter(e => e.readinessState === 'ready_fixture').length,
+      blockedCredentials: evaluations.filter(e => e.readinessState === 'blocked_credentials').length,
+      blockedApproval: evaluations.filter(e => e.readinessState === 'blocked_approval').length,
     },
   });
 });

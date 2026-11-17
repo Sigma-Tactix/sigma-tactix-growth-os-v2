@@ -1,0 +1,23 @@
+=== npx vitest run src/lib/sourceOperations.test.ts ===
+ RUN  v4.1.11 C:/Dev Projects/sigma-tactix-growth-os-v2
+
+ ✓ src/lib/sourceOperations.test.ts (16 tests) 12ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  01:31:27
+   Duration  370ms (transform 72ms, setup 0ms, import 95ms, tests 12ms, environment 0ms)
+
+=== npm run verify summary ===
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js
+vite v6.4.3 building for production...
+✓ 4405 modules transformed.
+dist/index.html 1.21 kB
+dist/server.js 718.2kb
+> tsc --noEmit
+0 errors
+> vitest run
+Test Files  106 passed | 1 skipped (107)
+Tests  756 passed | 3 skipped (759)
+Duration  12.43s
+Exit code: 0
