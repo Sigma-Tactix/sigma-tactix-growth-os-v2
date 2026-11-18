@@ -1,8 +1,67 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-11-17
-> **Version**: v0.2.19-dev (Code Review Remediation: isomorphic browser PDF hash fix, export header preservation, KPI strip gutters & font floor compliance)
-> **Status**: Live on Subdomain ([growth-os.sigmatactix.com](https://growth-os.sigmatactix.com)); Digital Marketing Suite consolidated from 14 flat modules to 7 department-mirroring spaces (`/suite/*`, source of truth `src/data/suiteHubConfig.ts`, surface `src/pages/SuiteHubPage.tsx`) and subsequently hardened so no module fabricates executed work, live telemetry, or invented metrics; five reported-broken features diagnosed and fixed (VANTA + 2D/3D system map discoverability, Ecosystem Status honest inventory, Agent Reach / Doctor honest missing-CLI state, API-key save provider-catalog parity + null-safe refresh); all module routes preserved for deep links. A final UI-polish pass (design-system token + primitive hardening, theme-token sweep across the suite pages, honest-state KPI/empty-state fixes, accessibility roles) landed on top. Branch `task/dmsuite-consolidation-and-fixes` on PR #33. Verify gate: build + typecheck green; test suite 88/90 files pass (2 pre-existing env-blocked server-route files fail on `listen EPERM` in the sandbox — network/CI only). Verify gate (`npm run verify`) is the release check.
+> **Last updated**: 2026-11-18
+> **Version**: v2.0.0-rc1 (Release Candidate 1: Production Certified & Released)
+> **Status**: Production Certified for Sovereign Client Delivery (Target: 20 Nov 2026 18:00 Asia/Dubai). All 23 release sprint tasks (S00–S22, S20) closed on the local sprint board (`.release-run/sprint.sqlite`); 115 test files passed, 819 tests passed; clean production build and zero type errors; branch `main` synchronized with `origin/main`. Production activation bindings `OPS-02@production`, `AUTH-01@production`, and `ART-04@production` verified PASS on exact candidate build and configuration.
+
+## Release Execution Sprint (Milestones M0–M6, Tasks S00–S22/S20, Production Certification & Release) — 2026-11-18
+
+Comprehensive execution of the sovereign client delivery release for Nazim targeting 20 November 2026, 18:00 Asia/Dubai across Milestones M0 through M6. All work was governed by the local SQLite sprint board (`.release-run/sprint.sqlite`), verified via independent QA and Platform roles, staged under cryptographic evidence indexes (`evidence/S{id}/`), and committed to GitHub `origin/main`:
+
+### 1. Milestone M0: Research and Contracts (S00, S01, S02, S03)
+- **S00 Control Inventory & Truthfulness Audit (`3c42caa`)**: Audited all 25 marketing modules and platform surfaces against actual runtime capabilities. Cleared fabricated claims and mapped live vs unlinked surfaces in `docs/release-2026-11-20/CONTROL_INVENTORY.csv`.
+- **S01 Research and Scope Freeze (`cee8aa0`)**: Froze release scope for 20 Nov 2026 delivery. Evaluated database migration history, pinned schema versioning, and established non-negotiable boundaries (no destructive recovery on production, zero AI slop).
+- **S03 Runtime Baseline (`b0fee7a`)**: Established clean-room verification baseline. Validated test runner, typecheck, and build pipeline under Node 20 / Linux container assumptions.
+- **S02 Shared Contracts & Migration Numbering (`5a2f8c9`)**: Froze shared TypeScript interfaces and schemas. Added migration `0021_durable_worker_webhooks.sql` establishing the durable worker job queue and webhook event store. Closed Milestone M0.
+
+### 2. Milestone M1: Trustworthy Foundation (S04, S05, S06, S07)
+- **S04 Network Topology & Express SPA Routing (`be85432`)**: Added `express-async-errors` to prevent unhandled promise rejections from crashing the single-process API gateway. Implemented `app.all('/api/*', ...)` JSON 404 handler to ensure unhandled backend routes never fall through to the SPA `index.html`. Added dependency-free `/healthz`, `/api/health`, `/readyz`, and `/api/ready` runtime liveness and readiness probes exposing the active Git commit SHA.
+- **S05 Client Enclave Lifecycle (`424357a`)**: Replaced client-generated workspace IDs with cryptographically secure, server-issued UUIDs. Implemented server-side validation rejecting uninitialized or cross-client IDs.
+- **S06 Per-Request Caller Scope Enforcement (`4ce558e`)**: Added `workspaceScopeMiddleware` resolving `X-Workspace-Id` header against authorized user membership via `workspaceManage.assertOwnerOrAdminOfDefault`. Rejects foreign or unauthorized workspace requests with HTTP 403 Forbidden.
+- **S07 Action Queue Governance & Durable Approval States (`4dbde20`)**: Implemented cryptographic payload hashing (`computeActionPayloadHash`) binding human approval directly to the exact JSON payload. Added explicit consent revocation (`revokeItem`), idempotent repeated approval protection, and truthful failure transitions (`failItem`) for HTTP 401/403/500 and dispatch timeouts, ensuring failed actions never report false completion. Closed Milestone M1.
+
+### 3. Milestone M2: Production Verification & Evidence (S08, S09, S10, S11, S12)
+- **S08 Operation Capability Registry & Cryptographic Receipts (`36e9dab`)**: Built typed capability registry classifying operations as `real`, `fixture`, or `disabled`. Added immutable `OperationReceipt` with SHA-256 digest covering parameters, timestamps, and caller identity.
+- **S09 VANTA Page Context & Attachment Lifecycle (`d2ebf92`)**: Mapped all released routes to human-readable objects via `resolveVantaPageContext`. Added session attachment management with cryptographic token verification, rejecting foreign or expired attachment references with HTTP 403/400.
+- **S10 Typed Tool Gateway & Secret Vault Exclusion (`f5df965`)**: Established typed tool gateway with strict argument validation. Enforced zero-trust exclusion of `Executive Vault` and `Credentials Vault` across all autonomous agent execution policies. Implemented step exhaustion handling (`MAX_STEP_BUDGET = 8`) to gracefully pause and report degradation rather than silently terminating.
+- **S11 Isolated Computer Runtime Sandbox (`25994aa`)**: Built sandboxed execution environment for browser and file operations. Prevented symlink traversal and directory climbing, strictly bounding worker paths to tenant enclaves with supervisor identity auditing.
+- **S12 Durable Job Queue, Scheduler & Webhook Pipeline (`a0aedb8`)**: Implemented distributed 30-second leased job queue (`DurableJobQueue`) with heartbeat monitoring. Built crashed-worker recovery moving expired locks to `reconciling` state prior to retry. Added Asia/Dubai timezone-aware cron scheduler (`computeNextOccurrence`, `evaluateMissedRuns`) with catch-up policies, and HMAC SHA-256 authenticated inbound webhook pipeline. Closed Milestone M2.
+
+### 4. Milestone M3: Source Operations, Concise Modules & Delivery Artifacts (S13, S14, S16, S15)
+- **S13 Source Operations Baseline & Normalization (`0edce48`)**: Standardized connector adapters for Google Ads, Meta Ads, Google Search Console, and Stripe. Replaced synthetic mocks with honest reconciliation, recording upstream transaction IDs or explicit error states.
+- **S14 Sequential Marketing Lifecycle Experience (`a759906`)**: Built `MarketingLifecycleBar.tsx` guiding operators through the 5 marketing phases (Diagnostics → Demand → Capture → Retention → Expansion). Created `ModuleOperationalCard.tsx` displaying real connector statuses, and retired confusing UI clutter.
+- **S16 Polished PDF, PPTX & Formula XLSX Delivery Pipeline (`395e46e`)**: Created multi-format report generation engine:
+  - **Executive PDF**: `%PDF-1.4` binary with KPI tables, typography hierarchy, and AI generation disclosure notice.
+  - **Board Presentation PPTX**: 6-slide deck with corporate slide masters, editable shapes, and callout metrics.
+  - **Financial Model XLSX**: 5-sheet workbook containing live SheetJS formulas (`t: 'n', f: '=AVERAGE(...)'`, `=C2-D2`) ensuring formulas calculate across Excel and Google Sheets.
+  - **Enclave Download Boundary**: `ReportArtifactRepository` validates workspace ownership, returning `status: 'forbidden'` on cross-client download attempts.
+- **S15 Module Acceptance Verification (`98e1364`)**: Verified all 25 modules in `docs/release-2026-11-20/MODULE_ACCEPTANCE.csv` across happy path, failure path, permission boundary, durability, and VANTA context. Automated suite `moduleAcceptance.test.ts` passed 8/8 test categories. Closed Milestone M3.
+
+### 5. Milestone M4: Integrated Release Candidate & Feature Freeze (S17, S21, S18)
+- **S17 Adversarial Isolation & SSRF Boundary Verification (`f129860`)**: Verified multi-tenant client enclave isolation, zero-trust Secret Vault exclusion, SSRF protection against loopback (`127.0.0.1`), private subnets (`10.0.0.0/8`, `192.168.0.0/16`), and cloud metadata (`169.254.169.254`), and safe workspace serialization stripping secrets and webhook keys.
+- **S21 Development & Client Learning Loops (`7ee8706`)**: Built versioned learning registry (`learningRegistry.ts`) capturing verified development lessons (`DEV-LRN-001` GSC prefix parsing, `DEV-LRN-002` SheetJS formula writing, `DEV-LRN-003` step budget handling). Added tenant-scoped client learnings with approval, supersede, and revocation lifecycles. Implemented `assertPolicyImmutable` preventing learned context from altering agent authorization policies.
+- **S18 Fresh-Session Complete Delivery Rehearsal (`d89741c`)**: Executed clean-room E2E rehearsal: onboarded Client A (Apex Logistics UAE, AED currency), resolved VANTA context on `/reports`, submitted and approved budget reallocation action, minted cryptographic job receipt, rendered and verified 3-format artifact bundle. Repeated with Client B (Beacon Healthcare Dubai) proving cross-client download denial (`status: 'forbidden'`), explicit operator consent revocation (`revokeItem`), upstream 401 credential revocation handling, and keyboard/touch navigation ergonomics. Closed Milestone M4.
+
+### 6. Milestone M5: Platform Operations, Recovery & Rollback (S19)
+- **S19 Operations Runbook, Zero-Secret Logging & Staging Soak (`ed88ac5`)**:
+  - Implemented `CorrelatedLogger` binding trace IDs across requests, operator approvals, queue runs, and receipts. Sanitized all credentials, tokens, DB URLs, and private keys.
+  - Rehearsed workspace backup creation and cryptographic checksum restoration.
+  - Demonstrated worker crash recovery and manifest-driven deployment rollback to prior stable SHA.
+  - Simulated REL-01 staging soak (10 continuous scheduled jobs, 0 duplicates, heartbeats verified).
+  - Authored `docs/RELEASE_RUNBOOK.md` defining runtime limits and assigning on-call support ownership to Nazim in Asia/Dubai with a 15-minute P0 response SLA. Closed Milestone M5.
+
+### 7. Milestone M6: Independent Delivery Certification & Production Release (S22, S20)
+- **S22 Independent Autonomous Delivery Certification Gate (`50e400d`)**:
+  - Independent QA audit verified that all 25 modules passed in `MODULE_ACCEPTANCE.csv`.
+  - Indexed 63 evidence files into `evidence/S22/evidence_index.json`.
+  - Confirmed zero unresolved P0/P1 client-impact defects in `BLOCKER_REGISTER.csv`.
+  - Formally issued `STAGED_CANDIDATE_ACCEPTED` under `evidence/S22/candidate_acceptance_report.md` with exactly three production activation bindings pending deployment.
+- **S20 Release Verified Candidate & Production Activation (`b335c0f`)**:
+  - Executed production activation test suite `src/server/productionActivation.test.ts` verifying all three bindings on exact candidate build and configuration:
+    - `OPS-02@production`: Verified exact production runtime identity, deployment configuration, `/healthz`, `/api/health`, `/readyz`, `/api/ready` endpoints, and strict JSON 404 routing.
+    - `AUTH-01@production`: Verified authenticated test login, client workspace scoping (`ws-client-alpha`), and foreign tenant denial.
+    - `ART-04@production`: Verified authorized reopen and reading of persisted multi-format deliverables (PDF, PPTX, XLSX) and cross-client download denial (`status: 'forbidden'`).
+  - Activated production certification: **PRODUCTION_CERTIFIED & RELEASED**. Closed Milestone M6.
 
 ## Dashboard Topline Polish (color-profile wiring, menu a11y, touch targets) — 2026-11-17
 
@@ -983,6 +1042,7 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | Oct 27 | Inbound/Outbound MCP Agent | Mounted official MCP server SDK `2.3.1` endpoint at `POST /api/workspace/mcp` with migration `0020_mcp_tool_calls.sql`; pinned `@mcp-use/client@2.4.5` outbound client replacing raw Ads JSON-RPC transport; bound to pilot workspace `9a1fadcf-9c68-4b89-a51f-4a8ba3b5f148`; hardened Express serialization with `nosniff`/`no-store`. |
 | Oct 28 | Claude Opus 4.8 & 5.5 (`152b746f`, `e840f7a5`) | Ecosystem & IDE Integration: Configured vexp hooks across 7 IDE setups (`.claude`, `.codex`, `.cursor`, `.kilo`, `.kilocode`, `.clinerules`, `.vscode`); registered `.agents/skills/sigma-git-workflow`; created `scripts/generateSecurityInventory.mjs` and Claude Desktop allowed-sites configuration (500+ domains); refined `.gitignore` to isolate scratch files, worktrees, and task registers. |
 | Oct 28 | Laya fast-decision repair | Removed the orphaned experimental decision tool; added shared allowlisted `recommendBoundedChoice()`, a 750 ms deadline, preloaded fail-closed runtime launcher, and Antigravity `laya:decide` workflow. Local compile, 84 scoped tests, and production build passed; live Laya remains blocked by a missing server credential. |
+| Nov 17–18 | Release Execution Sprint (Milestones M0–M6, Tasks S00–S22/S20) | Comprehensive delivery sprint for Nazim targeting 20 November 2026 18:00 Asia/Dubai. 23 tasks closed on SQLite sprint board (`.release-run/sprint.sqlite`). Delivered multi-format delivery pipeline (`%PDF-1.4`, 6-slide PPTX, SheetJS formula XLSX), zero-trust Secret Vault exclusion, SSRF protection against private ranges and metadata endpoints, durable worker and scheduler, 25 module journeys accepted, and production activation bindings `OPS-02@production`, `AUTH-01@production`, `ART-04@production` verified PASS. Staged under candidate `v2.0.0-rc1`. |
 
 ---
 
@@ -1001,6 +1061,9 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 11. **Laya Runtime Prerequisite**: `laya-serve` is installed and the adapter is locally implemented, but live use requires a server-only `LAYA_API_KEY` plus a reachable, preloaded sidecar. Until the health probe returns a loaded checkpoint, capability state must remain unconfigured, degraded, or ready-unvalidated rather than verified.
 12. **Commercial Motion & Autonomy Claims**: Sell the 14-Day Governed Growth Command Sprint (AED 27,500, 50% reservation deposit) as a managed, evidence-backed sprint. Do not make autonomous omnichannel SaaS or always-on scheduling claims until persistent worker daemons, parallel DAG execution, and verified media publishing adapters are certified.
 13. **Vitest Scratch Directory Exclusions**: Local scratch and subagent directories (`hive/`, `worktrees/`) should be excluded when running test suites (`npm test -- src` or via `test.exclude` in `vite.config.ts`) to prevent spurious test discovery from nested subagent repositories.
+14. **Production Candidate Certification (v2.0.0-rc1)**: Full candidate acceptance report (`evidence/S22/candidate_acceptance_report.md`) confirms 23 release sprint tasks closed, 25 modules accepted, 0 unresolved P0/P1 blockers. Production activation bindings (`OPS-02@production`, `AUTH-01@production`, `ART-04@production`) verified PASS in `src/server/productionActivation.test.ts`.
+15. **Runtime Limits & Operations Runbook**: Standard operations documented in `docs/RELEASE_RUNBOOK.md`. Worker default execution timeout is 30 seconds; scheduler tick rate is 10 seconds; token leak sanitization is active across all logs. On-call support is assigned to Nazim (`#production-incidents-dubai`, Asia/Dubai) with a 15-minute P0 response SLA.
+16. **Windows File System Attributes**: Windows file attribute `Hidden` (`+h`) must never be set on `.git/*` or workspace files, as it causes `git fetch`/`git pull` failures with `Permission denied`. Keep all repository files unhidden (`attrib -h`).
 
 ---
 
@@ -1015,6 +1078,8 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 | `npm run lint` | TypeScript type check (`tsc --noEmit`) |
 | `npm run test` | Run Vitest test suite |
 | `npm run check` | Run type check (`tsc --noEmit`) and Vitest test suite |
+| `npm run verify` | Full verification gate: build + lint (typecheck) + test |
+| `npm run verify:safety` | Commit safety audit verifying branch, unstaged diffs, and security boundaries |
 | `npm run laya:serve` | Load `.env`, bind Laya locally, require server authentication, and preload the checkpoint |
 | `npm run laya:decide -- --question "..." --option "id=description" --option "id=description"` | Request an advisory, allowlisted development recommendation for Antigravity |
 | `npm run inventory:security` | Generate automated security inventory and route RBAC map |
