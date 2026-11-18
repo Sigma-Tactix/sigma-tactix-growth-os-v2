@@ -1,0 +1,101 @@
+{
+  "skills": [
+    {
+      "source": "antfu/skills",
+      "skills": [
+        "vitest"
+      ]
+    },
+    {
+      "source": "anthropics/skills",
+      "skills": [
+        "frontend-design",
+        "mcp-builder",
+        "skill-creator"
+      ]
+    },
+    {
+      "source": "emilkowalski/skills",
+      "skills": [
+        "improve-animations"
+      ]
+    },
+    {
+      "source": "jakubkrehel/skills",
+      "skills": [
+        "better-accessibility",
+        "better-ui"
+      ]
+    },
+    {
+      "source": "JuliusBrussee/caveman",
+      "skills": [
+        "cavecrew",
+        "caveman",
+        "caveman-commit"
+      ]
+    },
+    {
+      "source": "mattpocock/skills",
+      "skills": [
+        "code-review",
+        "codebase-design",
+        "diagnosing-bugs",
+        "domain-modeling",
+        "grilling",
+        "handoff",
+        "implement",
+        "improve-codebase-architecture",
+        "prototype",
+        "research",
+        "resolving-merge-conflicts",
+        "tdd",
+        "to-spec",
+        "to-tickets",
+        "triage",
+        "wayfinder",
+        "wizard",
+        "writing-for-agents"
+      ]
+    },
+    {
+      "source": "obra/superpowers",
+      "skills": [
+        "verification-before-completion"
+      ]
+    },
+    {
+      "source": "pbakaus/impeccable",
+      "skills": [
+        "impeccable"
+      ]
+    },
+    {
+      "source": "supabase/agent-skills",
+      "skills": [
+        "supabase",
+        "supabase-postgres-best-practices"
+      ]
+    },
+    {
+      "source": "vercel-labs/agent-skills",
+      "skills": [
+        "vercel-react-best-practices",
+        "vercel-react-best-practices"
+      ]
+    },
+    {
+      "source": "vercel/ai",
+      "skills": [
+        "ai-sdk"
+      ]
+    },
+    {
+      "source": "wshobson/agents",
+      "skills": [
+        "postgresql-table-design",
+        "tailwind-design-system"
+      ]
+    }
+  ]
+}

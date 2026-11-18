@@ -27,6 +27,7 @@ export default defineConfig(({mode}) => {
         '**/.harness-worktrees/**',
         '**/hive/**',
         '**/.agent/**',
+        '**/.agents/**',
         '**/tools/**',
       ],
     },
