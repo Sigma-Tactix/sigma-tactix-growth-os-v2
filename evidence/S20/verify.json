@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "b335c0f5654b42038ac8ce3b501901a17280316a",
+  "evidence": [
+    "evidence/S20/release_exact_verified_candidate.md",
+    "evidence/S20/verify.log"
+  ]
+}
