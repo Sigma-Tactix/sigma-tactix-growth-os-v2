@@ -1,0 +1,9 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "ed88ac5192a9ab76d529a600effed9ffe2eb5cdb",
+  "evidence": [
+    "evidence/S19/operations_recover_and_rollback.md",
+    "evidence/S19/verify.log"
+  ]
+}
