@@ -1,0 +1,10 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "commit": "50e400d1f5c1d3acea9cafbb0fa020d3bb09784e",
+  "evidence": [
+    "evidence/S22/candidate_acceptance_report.md",
+    "evidence/S22/evidence_index.json",
+    "evidence/S22/verify.log"
+  ]
+}
