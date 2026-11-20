@@ -7,9 +7,6 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from '@/src/components/Layout';
 import Dashboard from '@/src/pages/Dashboard';
-import DashboardBriefing from '@/src/pages/dashboard-variants/DashboardBriefing';
-import DashboardCommandCenter from '@/src/pages/dashboard-variants/DashboardCommandCenter';
-import DashboardProgressBoard from '@/src/pages/dashboard-variants/DashboardProgressBoard';
 import { UserProvider } from '@/src/contexts/UserContext';
 import { ToastProvider } from '@/src/contexts/ToastContext';
 import { WorkspaceProvider } from '@/src/contexts/WorkspaceContext';
@@ -106,9 +103,6 @@ export default function App() {
                 <Routes>
                   {/* Growth OS Overview */}
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard/briefing" element={<DashboardBriefing />} />
-                  <Route path="/dashboard/command" element={<DashboardCommandCenter />} />
-                  <Route path="/dashboard/progress" element={<DashboardProgressBoard />} />
                   <Route path="/diagnostics" element={<GrowthDiagnostics />} />
                   <Route path="/vaults" element={<SecondBrain />} />
 
