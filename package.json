@@ -65,7 +65,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "opusmax-gateway": "^1.0.2",
     "pdf-parse": "^2.4.5",
     "pg": "^8.23.1",
