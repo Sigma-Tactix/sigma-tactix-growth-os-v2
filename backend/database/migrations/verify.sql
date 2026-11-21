@@ -294,3 +294,21 @@ SELECT CASE
            OR has_table_privilege('anon', 'public.landing_artifacts', 'UPDATE') THEN 'FAIL - anon has grants'
          ELSE 'OK'
        END AS status;
+
+\echo '== 25. Connection repair: required tables, RLS and anonymous denial =='
+SELECT expected.table_name,
+       CASE
+         WHEN c.oid IS NULL THEN 'FAIL - apply 0024_reconcile_connection_schema'
+         WHEN NOT c.relrowsecurity THEN 'FAIL - RLS disabled'
+         WHEN has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') THEN 'FAIL - anon has grants'
+         WHEN NOT EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname='public' AND p.tablename=expected.table_name) THEN 'FAIL - policies missing'
+         ELSE 'OK'
+       END AS status
+FROM (VALUES ('token_usage_records'), ('decision_traces'), ('brain_entities'), ('brain_relationships')) AS expected(table_name)
+LEFT JOIN pg_class c ON c.oid=to_regclass('public.' || expected.table_name);
+
+\echo '== 26. Brain graph: enclave reference and Secret Vault constraints =='
+SELECT expected.constraint_name,
+       CASE WHEN EXISTS (SELECT 1 FROM pg_constraint c WHERE c.conname=expected.constraint_name AND c.connamespace='public'::regnamespace)
+            THEN 'OK' ELSE 'FAIL - graph boundary constraint missing' END AS status
+FROM (VALUES ('brain_source_same_workspace'), ('brain_target_same_workspace'), ('brain_evidence_same_workspace'), ('brain_excludes_secret_vaults')) AS expected(constraint_name);

@@ -1,5 +1,16 @@
 .vercel/
-vercel.json
 node_modules/
 dist/server.js
 dist/server.js.map
+.env*
+.mcp.json
+.scratch/
+.release-run/
+.cursor/
+.claude/
+.agents/
+evidence/
+docs/
+worktrees/
+.harness-worktrees/
+.git/

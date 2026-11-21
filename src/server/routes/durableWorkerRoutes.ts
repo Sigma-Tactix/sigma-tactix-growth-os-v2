@@ -17,6 +17,16 @@ export function createDurableWorkerRouter(deps: DurableWorkerRouterDeps): Router
   const existingWebhookEvents = new Set<string>();
   const cronSchedules = new Map<string, DurableCronSchedule>();
 
+  // These collections disappear when a Vercel function is recycled. Reject
+  // mutations until this router is backed by persistent queue storage.
+  router.use(['/webhooks/inbound', '/workspace/jobs', '/workspace/cron-schedules'], (req, res, next) => {
+    if (process.env.VERCEL && req.method !== 'GET') {
+      res.status(503).json({ error: 'Durable execution is unavailable: persistent queue storage and a supervised worker are required.' });
+      return;
+    }
+    next();
+  });
+
   // Inbound webhook verification, replay protection, and deduplication
   router.post('/webhooks/inbound', async (req: Request, res: Response) => {
     const rawBody = (req as any).rawBody || JSON.stringify(req.body || {});
@@ -27,7 +37,7 @@ export function createDurableWorkerRouter(deps: DurableWorkerRouterDeps): Router
 
     const secret = deps.getWebhookSecret
       ? await deps.getWebhookSecret(workspaceId, source)
-      : process.env.INBOUND_WEBHOOK_SECRET || 'dev_inbound_secret';
+      : process.env.INBOUND_WEBHOOK_SECRET || null;
 
     if (!secret) {
       res.status(503).json({ error: 'Inbound webhook secret not configured for workspace.' });

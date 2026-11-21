@@ -7,6 +7,8 @@
     "dev": "tsx watch server.ts",
     "dev:client": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js",
+    "build:vercel": "vite build",
+    "smoke:deployment": "node scripts/checkDeploymentConnections.mjs",
     "start": "node dist/server.js",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",

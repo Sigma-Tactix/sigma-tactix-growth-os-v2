@@ -18,6 +18,9 @@ export default defineConfig(({mode}) => {
     },
     // @ts-ignore
     test: {
+      // Bound simultaneous cold imports on Windows; dashboard SSR tests share
+      // expensive chart dependencies and previously timed out under the full pool.
+      maxWorkers: 4,
       exclude: [
         '**/node_modules/**',
         '**/node_modules.bak*/**',

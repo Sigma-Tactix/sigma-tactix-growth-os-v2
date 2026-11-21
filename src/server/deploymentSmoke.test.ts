@@ -28,7 +28,8 @@ describe('deployment smoke (static, no socket)', () => {
   it('registers /readyz and /api/ready readiness probes exposing runtime commit and environment', () => {
     expect(source).toContain('app.get("/readyz"');
     expect(source).toContain('app.get("/api/ready"');
-    expect(source).toContain('status: "ready"');
+    expect(source).toContain('assessRuntimeReadiness()');
+    expect(source).toContain('res.status(readiness.ready ? 200 : 503)');
   });
 
   it('enforces authentication on /api/social mount (C-01 fix)', () => {
