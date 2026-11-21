@@ -7,10 +7,10 @@
 ## Connection Repair — 2026-11-21
 
 - Supabase migration `20261121002753_reconcile_connection_schema` added the four missing telemetry/trace/graph tables. Verified RLS, anonymous denial, append-only log grants, graph enclave constraints, and caller-scoped RPCs. No existing data was changed.
-- Added a reproducible Vercel API function with API/health rewrites, separate static client build, and standalone-only listeners/timers. Local Vercel project linking is repaired.
+- Added a reproducible Vercel API function with API/health rewrites, bundled internal imports for stock Node ESM, separate static client build, and standalone-only listeners/timers. Local Vercel project linking is repaired. Draft PR #50 is published; GitHub connector PR writes returned 403, so existing local Git authentication was used. CI now builds acceptance fixtures and avoids the ignored local sprint database.
 - Readiness now reports measured database connectivity and the missing persistent execution adapter/worker. Volatile job/schedule/webhook mutations fail on Vercel instead of claiming durability. Example Stripe/encryption configuration is rejected.
 - Added real HTTP/regression checks and a public deployment smoke command with an explicit readiness gate. The older production deployment remains a release concern until a tested replacement is activated; authenticated provider acceptance and the worker remain outstanding.
-- Final `npm run verify` passed: build/typecheck and 867 tests, with 3 skipped. Queue mutation checks are included; deployment evidence is tracked in the repair record. Strategic direction, RACI, pricing, and the user's pre-existing `.mcp.json` edit are unchanged.
+- Final `npm run verify` passed: build/typecheck and 867 tests, with 3 skipped, plus four HTTP checks of the built API under stock Node. Queue mutation checks are included; deployment evidence is tracked in the repair record. Strategic direction, RACI, pricing, and the user's pre-existing `.mcp.json` edit are unchanged.
 
 ## Current Connection and Release Status — 2026-11-21
 

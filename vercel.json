@@ -10,7 +10,7 @@
     "PLAYWRIGHT_SKIP_BROWSER_INSTALL": "1"
   },
   "functions": {
-    "api/gateway.ts": {
+    "api/gateway.mjs": {
       "maxDuration": 300,
       "includeFiles": "backend/agent-skills/**"
     }

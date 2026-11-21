@@ -15,7 +15,7 @@ Migration `20261121002753_reconcile_connection_schema` was applied to `rqktjogeg
 
 ## Implemented in source
 
-- Added `api/gateway.ts`, exporting the existing Express API for Vercel. The standalone server keeps its listener and lifecycle handlers; Vercel imports do not bind a port or start retention timers.
+- Added `api/gateway.mjs`, importing a bundled Express API from `build/server.mjs`. Bundling internal imports avoids stock Node ESM failures on extensionless TypeScript imports. The standalone server keeps its listener and lifecycle handlers; Vercel imports do not bind a port or start retention timers.
 - Routed `/api`, `/api/*`, `/healthz`, and `/readyz` to the API ahead of the SPA fallback. Vercel builds the client separately, keeping the server bundle/source map out of the public output.
 - Restored upload of `vercel.json`; excluded environment files and local tool/evidence directories from Vercel uploads. Linked the local checkout to the existing intended project without changing its Git connection.
 - Readiness now probes the database without reading Client Enclave rows or using a service key. Connectivity alone does not establish authenticated acceptance or durable execution readiness.
@@ -27,11 +27,13 @@ Migration `20261121002753_reconcile_connection_schema` was applied to `rqktjogeg
 
 ## Verification and deployment
 
-Final `npm run verify` passed: production build, TypeScript, 120 test files passed, 867 tests passed, and 3 tests skipped (one skipped file). The additional queue checks are included. A scan of the 24 changed/new repair files found no configured secrets. `git diff --check` passed for the repair files.
+Final `npm run verify` passed after the cloud/CI fixes: production build, TypeScript, 120 test files passed, 867 tests passed, and 3 tests skipped (one skipped file), followed by four HTTP checks of the built API under stock Node. The additional queue checks are included. Secret scans of both repair batches found no configured secrets. `git diff --check` passed for the repair files.
 
 The new smoke command was run against the existing production domain and exited 1, reproducing its HTML-on-API failure. No existing preview was promoted.
 
-Cloud build and deployment observations will be appended after execution. Passing the local gate does not certify live production.
+Published the repair branch and opened draft [PR #50](https://github.com/Sigma-Tactix/sigma-tactix-growth-os-v2/pull/50). The GitHub connector refused PR creation with 403 despite read access; the existing local Git authentication succeeded as a fallback. That connector still needs PR write permission.
+
+Vercel automatically built the exact pushed commit, confirming the repository deployment trigger. The first cloud startup exposed an ESM resolution failure hidden by Vite's resolver. CI also exposed two dependencies on the ignored local sprint database and a missing build step. The follow-up bundles internal API imports, checks the artifact under stock Node, validates committed historical evidence instead of local file existence, and builds fixtures in CI. Fresh validation and deployment results follow below.
 
 ## Remaining work
 
