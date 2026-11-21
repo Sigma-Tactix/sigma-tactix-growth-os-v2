@@ -4,8 +4,6 @@ import { Layers } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { cn } from '@/src/lib/utils';
 import { SUITE_HUBS, MEASUREMENT_MODULE, type SuiteHub as SuiteHubDef, type SuiteModule } from '@/src/data/suiteHubConfig';
-import MarketingLifecycleBar from '@/src/components/workflow/MarketingLifecycleBar';
-import ModuleOperationalCard from '@/src/components/workflow/ModuleOperationalCard';
 
 /**
  * Unified Digital Marketing Suite hubs.
@@ -82,13 +80,10 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
 
   return (
     <div className="space-y-5">
-      {/* 8-Stage Sequential Marketing Lifecycle Bar (S14-A1) */}
-      <MarketingLifecycleBar activeStageId={activeModule.lifecycleStage} />
 
       <div className="sigma-card p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-[var(--sigma-text-muted)]">{hub.department}</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--sigma-text)]">{hub.title}</h1>
             <p className="mt-1.5 max-w-2xl text-sm text-[var(--sigma-text-soft)]">{hub.tagline}</p>
           </div>
@@ -103,7 +98,6 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
             tabs={hub.modules.map((m) => ({
               id: m.id,
               label: m.label,
-              badge: m.badge,
               icon: <m.icon size={14} />,
             }))}
             activeTab={activeModule.id}
@@ -112,17 +106,14 @@ export default function SuiteHubPage({ hubId }: { hubId: string }) {
               // is preserved so deep links into sub-workspaces still resolve.
               const params = new URLSearchParams(searchParams);
               params.set('tab', id);
-              setSearchParams(params, { replace: true });
+              setSearchParams(params);
             }}
           />
         </div>
       </div>
 
-      {/* Module Operational Blueprint (S14-A2) */}
-      <ModuleOperationalCard module={activeModule} />
-
       <div className={cn('sigma-panel')} role="tabpanel" aria-label={activeModule.label}>
-        <ModulePage module={activeModule} />
+        <ModulePage key={activeModule.id} module={activeModule} />
       </div>
     </div>
   );

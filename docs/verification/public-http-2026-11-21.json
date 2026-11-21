@@ -1,0 +1,166 @@
+{
+  "checks": [
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/",
+      "http_status": 200,
+      "content_type": "text/html",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/api/health",
+      "http_status": 200,
+      "content_type": "application/json",
+      "commit": "896eafb206b361190a00d338aef915d120893dbe",
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/healthz",
+      "http_status": 200,
+      "content_type": "application/json",
+      "commit": "896eafb206b361190a00d338aef915d120893dbe",
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "blocked",
+      "deployment": "production",
+      "path": "/api/ready",
+      "http_status": 503,
+      "content_type": "application/json",
+      "commit": "896eafb206b361190a00d338aef915d120893dbe",
+      "ready": false,
+      "error_code": "runtime_not_ready"
+    },
+    {
+      "status": "blocked",
+      "deployment": "production",
+      "path": "/readyz",
+      "http_status": 503,
+      "content_type": "application/json",
+      "commit": "896eafb206b361190a00d338aef915d120893dbe",
+      "ready": false,
+      "error_code": "runtime_not_ready"
+    },
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/api/workspace",
+      "http_status": 401,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/api",
+      "http_status": 404,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "production",
+      "path": "/api/__connection_check_missing__",
+      "http_status": 404,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/",
+      "http_status": 200,
+      "content_type": "text/html",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/api/health",
+      "http_status": 200,
+      "content_type": "application/json",
+      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/healthz",
+      "http_status": 200,
+      "content_type": "application/json",
+      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "blocked",
+      "deployment": "analytics_preview",
+      "path": "/api/ready",
+      "http_status": 503,
+      "content_type": "application/json",
+      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "ready": false,
+      "error_code": "runtime_not_ready"
+    },
+    {
+      "status": "blocked",
+      "deployment": "analytics_preview",
+      "path": "/readyz",
+      "http_status": 503,
+      "content_type": "application/json",
+      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "ready": false,
+      "error_code": "runtime_not_ready"
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/api/workspace",
+      "http_status": 401,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/api",
+      "http_status": 404,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    },
+    {
+      "status": "passed",
+      "deployment": "analytics_preview",
+      "path": "/api/__connection_check_missing__",
+      "http_status": 404,
+      "content_type": "application/json",
+      "commit": null,
+      "ready": null,
+      "error_code": null
+    }
+  ],
+  "scope": "public_read_only_http",
+  "authenticated_workflows": "not_tested_by_this_tool"
+}

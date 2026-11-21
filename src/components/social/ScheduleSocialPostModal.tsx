@@ -25,7 +25,7 @@ import type { SocialChannel, SocialDistributionProviderStatus, SocialPublishResu
 
 /**
  * Conservative mock-mode decision: only a confirmed `live` status may be
- * celebrated. mock_offline AND an unloaded status (null) are treated as mock —
+ * celebrated. unavailable AND an unloaded status (null) are treated as mock —
  * a fresh open of the modal hasn't fetched status yet, and celebrating before
  * knowing is how fake "scheduled" toasts got shipped.
  */
@@ -121,51 +121,22 @@ export function ScheduleSocialPostModal({
         scheduledFor: actionType === 'schedule' ? new Date(scheduleDateTime).toISOString() : undefined,
       };
 
-      let res: { success: boolean; result: SocialPublishResult };
-      // The provider reports mock_offline when no scheduler key/endpoint is
-      // configured: its "results" are local placeholders, not real dispatches.
-      // Those must never read as success — celebrate only confirmed live mode.
-      const isMockMode = shouldTreatAsMock(status);
-      if (actionType === 'draft') {
-        res = await draftSocialPost(payload);
-        if (isMockMode) {
-          notifyWarning(
-            'Draft Staged Locally — Scheduler Not Configured',
-            'No social scheduler is connected, so nothing was sent to any platform. Connect a scheduler endpoint (SOCIAL_SCHEDULER_API_URL / SOCIAL_SCHEDULER_API_KEY) to draft or schedule for real.'
-          );
-        } else {
-          notifySuccess(
-            'Post Drafted',
-            `Draft parked in social scheduler (ID: ${res.result.id}).`
-          );
-        }
-      } else if (actionType === 'immediate') {
-        res = await publishSocialPost(payload);
-        if (isMockMode) {
-          notifyWarning(
-            'Nothing Was Published — Scheduler Not Configured',
-            'This result is a local placeholder: no platform received the post. Connect a live scheduler endpoint and retry.'
-          );
-        } else {
-          notifySuccess(
-            'Post Dispatched',
-            `Published immediately to ${res.result.targetChannels.length} channel(s) (ID: ${res.result.id}).`
-          );
-        }
-      } else {
-        res = await scheduleSocialPost(payload);
-        if (isMockMode) {
-          notifyWarning(
-            'Not Scheduled — Scheduler Not Configured',
-            `No scheduler is connected, so the slot for ${new Date(scheduleDateTime).toLocaleString()} was not recorded anywhere. Connect an endpoint to schedule for real.`
-          );
-        } else {
-          notifySuccess(
-            'Post Scheduled',
-            `Job recorded in distribution ledger for ${new Date(scheduleDateTime).toLocaleString()} (ID: ${res.result.id}).`
-          );
-        }
+      if (shouldTreatAsMock(status)) throw new Error('Connect a publishing provider first.');
+      const res = actionType === 'draft'
+        ? await draftSocialPost(payload)
+        : actionType === 'immediate'
+          ? await publishSocialPost(payload)
+          : await scheduleSocialPost(payload);
+      if (!res.success || !res.result.success) {
+        throw new Error(res.result.error || 'The publishing provider did not accept the post.');
       }
+      const confirmed = res.result.status === 'published';
+      notifySuccess(
+        actionType === 'draft' ? 'Draft saved' : actionType === 'schedule' ? 'Post scheduled' : confirmed ? 'Post published' : 'Post submitted',
+        actionType === 'immediate' && !confirmed
+          ? 'The provider accepted the post. Publication is awaiting confirmation.'
+          : `Provider receipt: ${res.result.id}`
+      );
 
       if (onSuccess) {
         onSuccess(res.result);

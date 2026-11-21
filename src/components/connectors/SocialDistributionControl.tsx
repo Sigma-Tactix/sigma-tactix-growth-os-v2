@@ -10,12 +10,10 @@ import {
   Layers,
 } from 'lucide-react';
 import { GlassCard, Button, Badge } from '@/src/components/ui';
-import { useToast } from '@/src/contexts/ToastContext';
 import { fetchSocialChannels, fetchSocialStatus } from '@/src/lib/socialDistributionApi';
 import type { SocialChannel, SocialDistributionProviderStatus } from '@/src/server/providers/socialDistribution/types';
 
 export function SocialDistributionControl() {
-  const { notifySuccess, notifyError } = useToast();
   const [channels, setChannels] = useState<SocialChannel[]>([]);
   const [status, setStatus] = useState<SocialDistributionProviderStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +44,6 @@ export function SocialDistributionControl() {
 
   const handlePing = async () => {
     await loadStatus();
-    notifySuccess('Scheduler Status Updated', `Mode: ${status?.mode === 'live' ? 'Live Gateway' : 'Offline Mock'}`);
   };
 
   return (
@@ -58,13 +55,13 @@ export function SocialDistributionControl() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-[var(--sigma-text)]">Omnichannel Social Distribution Gateway</h4>
+              <h4 className="text-sm font-bold text-[var(--sigma-text)]">Social connections</h4>
               <Badge variant={status?.mode === 'live' ? 'success' : 'warning'} size="xs">
-                {status?.mode === 'live' ? 'Live Connected' : 'Offline Mock Mode'}
+                {status?.mode === 'live' ? 'Connected' : 'Not connected'}
               </Badge>
             </div>
             <p className="text-xs text-[var(--sigma-text-muted)] mt-0.5">
-              Autonomous multi-platform distribution engine for carousels, video shorts, and thought leadership threads.
+              Connect a channel to publish or schedule posts.
             </p>
           </div>
         </div>
@@ -83,9 +80,9 @@ export function SocialDistributionControl() {
       {/* Channel Badges Grid */}
       <div className="space-y-2">
         <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] flex items-center justify-between">
-          <span>Configured Publishing Targets ({channels.length})</span>
+          <span>Publishing channels ({channels.length})</span>
           <span className="text-[var(--sigma-text-muted)] text-[10px]">
-            {status?.mode === 'live' ? 'Connected to live sidecar daemon' : 'Running zero-friction local mocks'}
+            {status?.mode === 'live' ? 'Provider reachable' : 'Connect a publishing provider to continue.'}
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -102,7 +99,7 @@ export function SocialDistributionControl() {
                   {chan.handle || chan.name}
                 </div>
               </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-accent shrink-0" title="Ready for dispatch" />
+              <span className={`w-2 h-2 rounded-full shrink-0 ${chan.connected ? 'bg-emerald-accent' : 'bg-amber-accent'}`} title={chan.connected ? 'Connected' : 'Reconnect required'} />
             </div>
           ))}
         </div>
@@ -112,11 +109,9 @@ export function SocialDistributionControl() {
       <div className="text-[11px] font-mono text-[var(--sigma-text-muted)] border-t border-[var(--sigma-border)] pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-[var(--sigma-text-soft)]">
           <ShieldCheck className="w-3.5 h-3.5 text-amber-accent" />
-          <span>OAuth tokens sealed in sovereign sidecar credential store.</span>
+          <span>Posts need a connected channel and your approval.</span>
         </div>
-        <div>
-          Env vars: <code className="text-amber-accent/80">SOCIAL_SCHEDULER_API_URL</code> & <code className="text-amber-accent/80">SOCIAL_SCHEDULER_API_KEY</code>
-        </div>
+
       </div>
     </GlassCard>
   );

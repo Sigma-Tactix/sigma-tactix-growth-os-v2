@@ -1,3 +1,4 @@
+import { inspectGeneratedImage } from './imageBytes.js';
 import type {
   CreativeImageRequest,
   CreativeImageResponse,
@@ -24,6 +25,7 @@ export class CloudflareCreativeAdapter {
     }
 
     const modelId = req.modelId || '@cf/black-forest-labs/flux-1-schnell';
+    if (modelId !== '@cf/black-forest-labs/flux-1-schnell') throw new Error('Unsupported Cloudflare image model.');
     const endpoint = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/ai/run/${modelId}`;
 
     const controller = new AbortController();
@@ -44,19 +46,29 @@ export class CloudflareCreativeAdapter {
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown Cloudflare Workers AI error');
-        throw new Error(`Cloudflare AI error ${response.status}: ${errorText.slice(0, 200)}`);
+        throw new Error(`Cloudflare AI returned HTTP ${response.status}.`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
-      const dataUrl = `data:image/jpeg;base64,${base64}`;
+      let bytes: Buffer;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const payload = await response.json() as { success?: boolean; result?: { image?: string }; image?: string };
+        const image = payload.result?.image || payload.image;
+        if (payload.success === false || !image || !/^[A-Za-z0-9+/]+={0,2}$/.test(image)) throw new Error('Cloudflare returned no image.');
+        bytes = Buffer.from(image, 'base64');
+      } else if (contentType.startsWith('image/')) {
+        bytes = Buffer.from(await response.arrayBuffer());
+      } else {
+        throw new Error('Cloudflare returned an unsupported response.');
+      }
+      const inspected = inspectGeneratedImage(bytes);
+      const dataUrl = `data:${inspected.mimeType};base64,${bytes.toString('base64')}`;
 
       return {
         imageUrl: dataUrl,
         enhancedPrompt: req.prompt,
-        aspectRatio: req.aspectRatio || '16:9',
-        seed: Math.floor(Math.random() * 999999),
+        aspectRatio: inspected.aspectRatio,
+        seed: null,
         provider: 'cloudflare',
         modelName: modelId,
         source: 'provider_api',

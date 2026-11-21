@@ -1,3 +1,4 @@
+import { inspectGeneratedImage } from './imageBytes.js';
 import { GoogleGenAI } from '@google/genai';
 import type { CreativeImageRequest, CreativeImageResponse } from './types.js';
 
@@ -34,11 +35,13 @@ export class GeminiImageAdapter {
     const image = interaction.output_image;
     if (!image?.data) throw new Error('Gemini completed the request without returning an image');
 
+    const bytes = Buffer.from(image.data, 'base64');
+    const inspected = inspectGeneratedImage(bytes);
     return {
-      imageUrl: `data:${image.mime_type || 'image/jpeg'};base64,${image.data}`,
+      imageUrl: `data:${inspected.mimeType};base64,${bytes.toString('base64')}`,
       enhancedPrompt: req.prompt,
-      aspectRatio: req.aspectRatio || '16:9',
-      seed: 0,
+      aspectRatio: inspected.aspectRatio,
+      seed: null,
       provider: 'gemini',
       modelName: model,
       source: 'provider_api',

@@ -1,3 +1,4 @@
+import { inspectGeneratedImage } from './imageBytes.js';
 import type {
   CreativeImageRequest,
   CreativeImageResponse,
@@ -47,30 +48,18 @@ export class HuggingFaceCreativeAdapter {
         signal: controller.signal,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown HF error');
-        throw new Error(`HF Inference failed with status ${response.status}: ${errorText.slice(0, 200)}`);
-      }
-
+      if (!response.ok) throw new Error(`HF Inference returned HTTP ${response.status}.`);
       const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const json = await response.json();
-        if (json.error) {
-          throw new Error(`HF error: ${json.error}`);
-        }
-      }
-
-      // Convert image buffer to base64 data URL
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
-      const mime = contentType.includes('png') ? 'image/png' : 'image/jpeg';
-      const dataUrl = `data:${mime};base64,${base64}`;
+      if (!contentType.startsWith('image/')) throw new Error('Hugging Face returned no image.');
+      const bytes = Buffer.from(await response.arrayBuffer());
+      const inspected = inspectGeneratedImage(bytes);
+      const dataUrl = `data:${inspected.mimeType};base64,${bytes.toString('base64')}`;
 
       return {
         imageUrl: dataUrl,
         enhancedPrompt: req.prompt,
-        aspectRatio: req.aspectRatio || '16:9',
-        seed: Math.floor(Math.random() * 999999),
+        aspectRatio: inspected.aspectRatio,
+        seed: null,
         provider: 'huggingface',
         modelName: modelId,
         source: 'provider_api',

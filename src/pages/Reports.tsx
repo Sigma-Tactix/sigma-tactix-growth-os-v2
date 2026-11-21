@@ -480,7 +480,7 @@ export default function Reports() {
           <div className="flex items-center gap-3">
             <div className="text-sm font-semibold flex items-center gap-2 text-[var(--sigma-text)]">
               <span className="text-[var(--sigma-muted)]">Executive Report:</span> 
-              <span className="font-bold text-[var(--sigma-vermilion)]">{currentTemplate.name}</span>
+              <h1 className="font-bold text-[var(--sigma-vermilion)]">{currentTemplate.name}</h1>
             </div>
             <Badge variant="neutral" size="xs" icon={<Calendar size={11} className="text-[var(--sigma-vermilion)]" />}>
               Q4 (Oct 1 - Nov 30)

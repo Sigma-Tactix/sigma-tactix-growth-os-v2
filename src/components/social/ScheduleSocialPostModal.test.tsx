@@ -10,7 +10,7 @@ vi.mock('@/src/lib/api', () => ({
     new Response(
       JSON.stringify({
         success: true,
-        status: { mode: 'mock_offline', configured: false, connectedChannelsCount: 3, supportedPlatforms: ['linkedin', 'twitter'] },
+        status: { mode: 'unavailable', configured: false, connectedChannelsCount: 3, supportedPlatforms: ['linkedin', 'twitter'] },
         channels: [
           { id: 'chan-li-01', name: 'Growth OS LinkedIn', platform: 'linkedin', connected: true, status: 'active' },
           { id: 'chan-tw-01', name: 'Growth OS X', platform: 'twitter', connected: true, status: 'active' },
@@ -56,7 +56,7 @@ describe('Social Distribution Components', () => {
   });
 
   it('treats mock/offline and unloaded statuses as mock so fake success is impossible', () => {
-    expect(shouldTreatAsMock({ mode: 'mock_offline', configured: false, active: false, connectedChannelsCount: 0, supportedPlatforms: [] })).toBe(true);
+    expect(shouldTreatAsMock({ mode: 'unavailable', configured: false, active: false, connectedChannelsCount: 0, supportedPlatforms: [] })).toBe(true);
     expect(shouldTreatAsMock(null)).toBe(true);
     expect(
       shouldTreatAsMock({ mode: 'live', configured: true, active: true, connectedChannelsCount: 2, supportedPlatforms: ['linkedin'] })
@@ -70,8 +70,8 @@ describe('Social Distribution Components', () => {
       </ToastProvider>
     );
 
-    expect(html).toContain('Omnichannel Social Distribution Gateway');
-    expect(html).toContain('OAuth tokens sealed in sovereign sidecar credential store');
-    expect(html).toContain('SOCIAL_SCHEDULER_API_URL');
+    expect(html).toContain('Social connections');
+    expect(html).toContain('Posts need a connected channel and your approval.');
+    expect(html).not.toContain('SOCIAL_SCHEDULER_API_URL');
   });
 });

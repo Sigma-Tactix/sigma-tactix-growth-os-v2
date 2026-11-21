@@ -28,7 +28,18 @@ try {
     if (path === '/api/health') assert.equal(body.status, 'alive');
     if (path === '/api/ready') assert.equal(body.ready, false);
   }
-  console.log('Production client route isolation and built Vercel API: five HTTP checks passed.');
+  for (const [payload, status] of [['{', 400], [JSON.stringify({ text: 'x'.repeat(6 * 1024 * 1024) }), 413]]) {
+    const response = await fetch(`${origin}/api/workspace/reports`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: payload,
+    });
+    assert.equal(response.status, status);
+    assert.match(response.headers.get('content-type') || '', /application\/json/);
+    const body = await response.json();
+    assert.equal(typeof body.error, 'string');
+    assert.equal(body.stack, undefined);
+    assert.equal(body.error.includes('team has been notified'), false);
+  }
+  console.log('Production client route isolation and built Vercel API: seven HTTP checks passed.');
 } finally {
   await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
 }

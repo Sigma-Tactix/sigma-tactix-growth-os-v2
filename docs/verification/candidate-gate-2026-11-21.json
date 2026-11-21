@@ -1,0 +1,19 @@
+{
+  "command": "npm run verify",
+  "exit_code": 0,
+  "checkedAt": "2026-11-21T06:33:47.414809+00:00",
+  "sourceBaseCommit": "896eafb206b361190a00d338aef915d120893dbe",
+  "includesUncommittedChanges": true,
+  "build": "passed",
+  "typecheck": "passed",
+  "testsPassed": 905,
+  "testsSkipped": 3,
+  "testFilesPassed": 122,
+  "testFilesSkipped": 1,
+  "builtApiHttpChecksPassed": 7,
+  "atomicToolTestsPassed": 8,
+  "previewIsolationNegativeBuild": "blocked_missing_staging_as_expected",
+  "builtApiSha256": "aa6b62142d42318f2d43c429c1e2e5554a2ac3b903d514cac23e88fdea0693ab",
+  "independentReview": "incomplete_agent_usage_limit",
+  "fullWorkflowCertification": false
+}

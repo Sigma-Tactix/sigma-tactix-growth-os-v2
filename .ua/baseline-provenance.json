@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "896eafb206b361190a00d338aef915d120893dbe",
+  "sourceKind": "immutable allowlisted Git blob snapshot",
+  "sourceRoot": "C:\\Dev Projects\\sigma-growth-module-audit-20261121\\.ua\\tmp\\source-baseline",
+  "artifactRoot": "C:\\Dev Projects\\sigma-growth-module-audit-20261121\\.ua",
+  "snapshotFiles": 353,
+  "missingPaths": [],
+  "excludes": "Inherited approved source-only inventory; no credentials/runtime records copied",
+  "createdAt": "2026-11-21T03:49:33.484Z"
+}

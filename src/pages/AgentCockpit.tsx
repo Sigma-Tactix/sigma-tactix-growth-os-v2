@@ -83,6 +83,7 @@ export default function AgentCockpit() {
     approveTask: approveSharedTask,
     rejectTask: rejectSharedTask,
     refresh: refreshSharedTasks,
+    queueTask: queueSharedTask,
   } = useTaskStore(currentWorkspaceId || 'ws-primary');
 
   const [agents, setAgents] = useState<ScopedAgent[]>(SCOPED_AGENTS);
@@ -172,34 +173,20 @@ export default function AgentCockpit() {
     }
 
     notifySuccess(
-      `Fleet Batch Status Updated`,
-      `Set ${selectedAgentIds.length} agents to ${newStatus}. Guardrails applied.`,
+      `Local view updated`,
+      `Set ${selectedAgentIds.length} agents to ${newStatus}. This changes the local view only; running tasks are unaffected.`,
       { category: 'AGENT' }
     );
   };
 
-  const handleBatchSync = () => {
+  const handleBatchSync = async () => {
     setIsBatchSyncing(true);
-    setTimeout(() => {
+    try {
+      await refreshSharedTasks();
+      notifyInfo('Tasks refreshed', 'Loaded the current task records.');
+    } finally {
       setIsBatchSyncing(false);
-      setAgentLogs(prev => [
-        {
-          id: `log-${Date.now()}-batchsync`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          agentId: 'system',
-          agentCodename: 'FLEET-SYNC',
-          level: 'INFO',
-          category: 'QUEUE',
-          message: `Synchronized Second Brain knowledge embeddings across ${selectedAgentIds.length} agents.`
-        },
-        ...prev
-      ]);
-      notifySuccess(
-        'Batch Knowledge Sync Complete',
-        `Re-indexed pgvector embeddings and synchronized state across ${selectedAgentIds.length} agents.`,
-        { category: 'SYSTEM' }
-      );
-    }, 1200);
+    }
   };
 
   const handleBatchExport = () => {
@@ -223,13 +210,13 @@ export default function AgentCockpit() {
   const handleApproveHITL = async (taskId: string) => {
     const task = hitlTasks.find(t => t.id === taskId);
     setActiveTaskModal(null);
-    setHitlTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'APPROVED' } : t));
+
 
     const result = await approveSharedTask(taskId);
     if (result.success) {
       notifySuccess(
-        'HITL Action Approved & Executed',
-        `Signed off by Admin. Server approved and executed task "${task?.title || taskId}".`,
+        'Task approval processed',
+        `Signed off by Admin. Server returned an approval result for task "${task?.title || taskId}".`,
         { category: 'SECURITY' }
       );
     } else {
@@ -240,7 +227,7 @@ export default function AgentCockpit() {
   const handleRejectHITL = async (taskId: string) => {
     const task = hitlTasks.find(t => t.id === taskId);
     setActiveTaskModal(null);
-    setHitlTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'REJECTED' } : t));
+
 
     const result = await rejectSharedTask(taskId);
     if (result.success) {
@@ -254,232 +241,23 @@ export default function AgentCockpit() {
     }
   };
 
-  const handleTriggerAgentRun = (agent: ScopedAgent, title?: string) => {
-    // Clear any existing simulation timers
-    simTimersRef.current.forEach(t => clearTimeout(t));
-    simTimersRef.current = [];
-
+  const handleTriggerAgentRun = async (agent: ScopedAgent, title?: string) => {
     setIsTriggeringRun(true);
-    const taskName = title || (
-      agent.isOrchestrator 
-        ? `Orchestrate Full Growth Diagnostic Workflow (Oracle -> Aurora -> Vortex)`
-        : `Execute Autonomous Audit: ${agent.name}`
-    );
-    const runId = `run-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newRun: AgentRunLog = {
-      id: runId,
-      agentId: agent.id,
-      agentName: agent.name,
-      taskTitle: taskName,
-      status: 'QUEUED',
-      startedAt: 'Just now',
-      duration: 'Running...',
-      steps: [
-        { phase: '01 Queued', description: 'Request accepted by BullMQ Task Queue', timestamp: '00:00:01', status: 'active' }
-      ],
-      traceLog: [
-        `[00:00:01] [QUEUE] Enqueued task for agent ${agent.codename}`,
-        `[00:00:02] [RBAC] Verified allowed read vaults: ${agent.readVaults.join(', ')}`
-      ]
-    };
-
-    setLiveSimRun(newRun);
-
-    // Add Queue Log
-    setAgentLogs(prev => [
-      {
-        id: `log-${Date.now()}-q`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        agentId: agent.id,
-        agentCodename: agent.codename,
-        level: 'INFO',
-        category: 'QUEUE',
-        message: `Task "${taskName}" placed into priority partition queue.`
-      },
-      ...prev
-    ]);
-
-    // Step 2: Planning
-    const t1 = setTimeout(() => {
-      setLiveSimRun(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          status: 'PLANNING',
-          steps: [
-            { ...prev.steps[0], status: 'completed' },
-            { phase: '02 Planning', description: 'Decomposed goal into verified tool graph via Gemini 3 Flash', timestamp: '00:00:04', status: 'active' }
-          ],
-          traceLog: [...prev.traceLog, `[00:00:04] [MODEL] Context window: 16k tokens. Planning next actions`]
-        };
-      });
-
-      setAgentLogs(prev => [
-        {
-          id: `log-${Date.now()}-m`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          agentId: agent.id,
-          agentCodename: agent.codename,
-          level: 'INFO',
-          category: 'MODEL',
-          message: `Generated execution plan with 4 tool nodes using Gemini 3 Flash.`,
-          durationMs: 380
-        },
-        ...prev
-      ]);
-    }, 1200);
-    simTimersRef.current.push(t1);
-
-    // Step 3: Executing Tool Call
-    const t2 = setTimeout(() => {
-      const toolUsed = agent.skills[0]?.toolSignature || 'search_second_brain(query="optimization")';
-      setLiveSimRun(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          status: 'EXECUTING',
-          steps: [
-            { ...prev.steps[0], status: 'completed' },
-            { ...prev.steps[1], status: 'completed' },
-            { phase: '03 Executing', description: `Queried Second Brain ${agent.readVaults[0]} & executed MCP tool`, timestamp: '00:00:09', status: 'active', toolCall: toolUsed }
-          ],
-          traceLog: [...prev.traceLog, `[00:00:09] [TOOL] ${toolUsed} returned 4 similarity records`]
-        };
-      });
-
-      setAgentLogs(prev => [
-        {
-          id: `log-${Date.now()}-t`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          agentId: agent.id,
-          agentCodename: agent.codename,
-          level: 'TOOL',
-          category: 'TOOL',
-          message: `Invoked specialized skill tool: ${toolUsed}`,
-          durationMs: 1240
-        },
-        ...prev
-      ]);
-    }, 2400);
-    simTimersRef.current.push(t2);
-
-    // Step 4: Quality Gate Review
-    const t3 = setTimeout(() => {
-      setLiveSimRun(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          status: 'REVIEWING',
-          steps: [
-            { ...prev.steps[0], status: 'completed' },
-            { ...prev.steps[1], status: 'completed' },
-            { ...prev.steps[2], status: 'completed' },
-            { phase: '04 Reviewing', description: 'Verified output against Brand Vault voice vectors & constraints', timestamp: '00:00:15', status: 'active' }
-          ],
-          traceLog: [...prev.traceLog, `[00:00:15] [GATE] Voice vector alignment score: 99.4% precision`]
-        };
-      });
-
-      setAgentLogs(prev => [
-        {
-          id: `log-${Date.now()}-g`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          agentId: agent.id,
-          agentCodename: agent.codename,
-          level: 'GATE',
-          category: 'RBAC',
-          message: `Passed Brand Vault tone alignment and zero-hallucination verification at 99.4% accuracy.`,
-          durationMs: 410
-        },
-        ...prev
-      ]);
-    }, 3600);
-    simTimersRef.current.push(t3);
-
-    // Step 5: Completed
-    const t4 = setTimeout(() => {
-      const completedRun: AgentRunLog = {
-        id: runId,
-        agentId: agent.id,
+    try {
+      const result = await queueSharedTask({
         agentName: agent.name,
-        taskTitle: taskName,
-        status: 'COMPLETED',
-        startedAt: 'Just now',
-        duration: '18s',
-        steps: [
-          { phase: '01 Queued', description: 'Request accepted by BullMQ Task Queue', timestamp: '00:00:01', status: 'completed' },
-          { phase: '02 Planning', description: 'Decomposed goal into verified tool graph via Gemini 3 Flash', timestamp: '00:00:04', status: 'completed' },
-          { phase: '03 Executing', description: `Queried Second Brain ${agent.readVaults[0]} & executed MCP tool`, timestamp: '00:00:09', status: 'completed', toolCall: agent.skills[0]?.toolSignature || 'search_second_brain()' },
-          { phase: '04 Reviewing', description: 'Verified output against Brand Vault voice vectors & constraints', timestamp: '00:00:15', status: 'completed' },
-          // Phase 0: this timeline is a local rehearsal of the agent loop, not a
-          // server execution. Nothing was committed anywhere, so it must not
-          // claim a Postgres commit or a state commit. The run is labelled a
-          // simulation in the UI and its telemetry is marked simulated.
-          { phase: '05 Rehearsal complete', description: 'Local rehearsal finished — no server run, no persisted state', timestamp: '00:00:18', status: 'completed' }
-        ],
-        traceLog: [
-          `[00:00:01] [SIM] Rehearsal step: task "${taskName}" staged locally`,
-          `[00:00:02] [SIM] Rehearsal step: allowed read vaults shown as ${agent.readVaults.join(', ')}`,
-          `[00:00:04] [SIM] Rehearsal step: planning phase described, not executed`,
-          `[00:00:09] [SIM] Rehearsal step: illustrative tool call only`,
-          `[00:00:15] [SIM] Rehearsal step: illustrative review gate only`,
-          `[00:00:18] [SIM] Rehearsal finished — no agent was dispatched and nothing was persisted`
-        ]
-      };
-
-      setLiveSimRun(completedRun);
-      setAgentRuns(current => [completedRun, ...current]);
-      setIsTriggeringRun(false);
-
-      const currentHour = `${String(new Date().getHours()).padStart(2, '0')}:00`;
-      // Phase 0: this is a local rehearsal, so its telemetry is marked simulated and
-      // buildHeatmapMatrix() keeps it out of verified load/success/latency. It must
-      // never be written as a verified event — no agent ran, nothing persisted.
-      appendTelemetryEvent({
-        id: `evt-${Date.now()}-${agent.id}`,
-        agentId: agent.id,
-        interval: currentHour,
-        status: 'completed',
-        latencyMs: 180,
-        hitlRequired: (agent.requiresHITLFor && agent.requiresHITLFor.length > 0) || false,
-        timestamp: Date.now(),
-        simulated: true,
+        goal: title || `Review the current workspace and propose the next action for ${agent.name}.`,
+        moduleKey: 'agents',
       });
-
-      // Increment completed tasks for agent
-      setAgents(prev => prev.map(a => {
-        if (a.id === agent.id) {
-          return {
-            ...a,
-            tasksCompleted: a.tasksCompleted + 1,
-            lastActive: 'Just now'
-          };
-        }
-        return a;
-      }));
-
-      setAgentLogs(prev => [
-        {
-          id: `log-${Date.now()}-c`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          agentId: agent.id,
-          agentCodename: agent.codename,
-          level: 'INFO',
-          category: 'QUEUE',
-          message: `Rehearsal run #${runId} finished in 18s. Local rehearsal only — nothing was committed or persisted.`,
-          durationMs: 18000
-        },
-        ...prev
-      ]);
-
-      notifyInfo(
-        `${agent.name} Rehearsal Completed`,
-        `Task "${taskName}" finished its local rehearsal in 18s. No agent was dispatched and no state was persisted.`,
-        { category: 'AGENT' }
-      );
-    }, 4800);
-    simTimersRef.current.push(t4);
+      if (!result.success) throw new Error(result.error || 'Could not create the task.');
+      setLiveSimRun(null);
+      await refreshSharedTasks();
+      notifyInfo('Task awaiting approval', 'The task is saved. Review it before execution.');
+    } catch (error) {
+      notifyWarning('Task not created', error instanceof Error ? error.message : 'Request failed.');
+    } finally {
+      setIsTriggeringRun(false);
+    }
   };
 
   // Updates from Child Components
@@ -594,7 +372,7 @@ export default function AgentCockpit() {
         agentCodename: orchestratorAgent.codename,
         level: 'GATE',
         category: 'CONSENSUS',
-        message: `Simulation Deployed: Master Orchestrator directives & DAG path synchronized with production fleet.`,
+        message: `Instructions changed in this local session. No production deployment was made.`,
         details: { summaryLog }
       },
       ...prev
