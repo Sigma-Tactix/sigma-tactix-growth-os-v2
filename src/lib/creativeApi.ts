@@ -17,7 +17,7 @@ export interface GenerateImageResult {
   imageUrl: string;
   enhancedPrompt: string;
   aspectRatio: string;
-  seed: number;
+  seed: number | null;
   provider: string;
   modelName?: string;
   source?: string;

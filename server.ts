@@ -746,7 +746,7 @@ app.get("/api/creative/brand-style-presets", requireAuth, async (_req: Request, 
   res.json({ success: true, presets: presets.map(({ promptGuidance: _promptGuidance, ...preset }) => preset) });
 });
 
-app.post("/api/creative/generate-image", requireAuth, async (req: Request, res: Response) => {
+app.post("/api/creative/generate-image", requireAuth, expensiveLimiter, async (req: Request, res: Response) => {
   const startTime = Date.now();
   const {
     prompt,
@@ -792,18 +792,8 @@ app.post("/api/creative/generate-image", requireAuth, async (req: Request, res: 
     return;
   }
 
-  await recordTokenUsage(res, {
-    actionType: "CREATIVE_IMAGE",
-    provider: result.provider,
-    modelName: result.modelName || "flux",
-    usageMetadata: {
-      promptTokenCount: estimateTokens(result.enhancedPrompt || prompt),
-      candidatesTokenCount: 1000,
-      totalTokenCount: estimateTokens(result.enhancedPrompt || prompt) + 1000,
-    },
-    durationMs: Date.now() - startTime,
-    metadata: { prompt, aspectRatio, stylePreset, seed: result.seed, provider: result.provider, source: result.source },
-  });
+  // These adapters do not return measured token usage. Do not invent token counts or image costs.
+
 
   res.json({
     success: true,
@@ -2468,6 +2458,8 @@ app.use(
   createSocialDistributionRouter({
     provider: socialScheduler,
     expensiveLimiter,
+    requireWorkspaceBinding: true,
+    workspaceId: process.env.SOCIAL_SCHEDULER_WORKSPACE_ID,
   }),
 );
 
@@ -2476,6 +2468,8 @@ app.use(
   createSocialDistributionRouter({
     provider: socialScheduler,
     expensiveLimiter,
+    requireWorkspaceBinding: true,
+    workspaceId: process.env.SOCIAL_SCHEDULER_WORKSPACE_ID,
   }),
 );
 
@@ -2683,7 +2677,7 @@ app.get("/api/gsc/status", requireAuth, async (req: Request, res: Response) => {
   const db = await getDB(res);
   const gsc = readGscSettings(db);
   res.json({
-    connected: gsc.connected,
+    connected: gsc.connected && Boolean(readGscTokens(db)),
     siteUrl: gsc.siteUrl,
     verificationState: gsc.verificationState,
     verificationMessage: gsc.verificationMessage,
@@ -2717,7 +2711,7 @@ app.get("/api/gsc/diagnostics", requireAuth, async (req: Request, res: Response)
     redirectUri,
     redirectPath: GSC_REDIRECT_PATH,
     oauthConfigured: Boolean(storedClient),
-    connected: gsc.connected,
+    connected: gsc.connected && Boolean(readGscTokens(db)),
     siteUrl: gsc.siteUrl,
     verificationState: gsc.verificationState,
     hasGrant: Boolean(readGscTokens(db)),
@@ -10076,6 +10070,15 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   if (res.headersSent) return;
 
+  if (err?.type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'Invalid JSON request body.' });
+    return;
+  }
+  if (err?.type === 'entity.too.large') {
+    res.status(413).json({ error: 'Request body is too large.' });
+    return;
+  }
+
   // A concurrent-write conflict is a normal, expected outcome in a workspace
   // with more than one active member — not a server fault. It gets a 409 and
   // the real message so the client can tell the user to reload, instead of the
@@ -10087,7 +10090,7 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   }
 
   console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
-  res.status(500).json({ error: "An unexpected server error occurred. The team has been notified." });
+  res.status(500).json({ error: "An unexpected server error occurred." });
 });
 
 // Cutover diagnostic: only runs when the app is configured to TRUST the ledger.

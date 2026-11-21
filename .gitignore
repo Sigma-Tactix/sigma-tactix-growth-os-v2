@@ -152,3 +152,11 @@ CLAUDE.md
 
 # Auto-generated agent rules (personalized per developer)
 .brainsync/agent-rules.md
+
+# Python tool caches
+__pycache__/
+
+# Source-only architecture scan working copies and fragments
+.ua/tmp/
+.ua/intermediate/
+.playwright-mcp/

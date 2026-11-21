@@ -52,7 +52,7 @@ describe('Creative Gateway truthfulness', () => {
       interactions: {
         create: async () => ({
           id: 'interaction-1', status: 'completed', steps: [],
-          output_image: { type: 'image', mime_type: 'image/jpeg', data: 'aW1hZ2U=' },
+          output_image: { type: 'image', mime_type: 'image/jpeg', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6ZBsAAAAASUVORK5CYII=' },
         }),
       } as any,
     }));
@@ -60,7 +60,7 @@ describe('Creative Gateway truthfulness', () => {
       prompt: 'Premium B2B product visual', aspectRatio: '16:9',
       modelId: 'gemini-nano-banana-2.1', promptEnhancer: 'none',
     });
-    expect(result.imageUrl).toBe('data:image/jpeg;base64,aW1hZ2U=');
+    expect(result.imageUrl).toBe('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6ZBsAAAAASUVORK5CYII=');
     expect(result.provider).toBe('gemini');
     expect(result.modelName).toBe('gemini-nano-banana-2.1');
   });

@@ -1,0 +1,50 @@
+<div id="growth-os-evidence">
+  <style>
+    #growth-os-evidence { display:grid; gap:calc(var(--font-size-base)*1); color:var(--foreground); }
+    #growth-os-evidence .evidence-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(9em,1fr)); gap:calc(var(--font-size-base)*.5); }
+    #growth-os-evidence .evidence-detail { display:grid; gap:calc(var(--font-size-base)*.5); }
+  </style>
+  <h2>Growth OS verification</h2>
+  <div class="text-small text-muted">21 November 2026 | Full workflow acceptance incomplete</div>
+  <div class="evidence-grid" aria-label="Verification areas">
+    <button type="button" class="btn" data-area="http" aria-pressed="true">Public HTTP</button>
+    <button type="button" class="btn" data-area="auth" aria-pressed="false">Sign-in and isolation</button>
+    <button type="button" class="btn" data-area="records" aria-pressed="false">Saved records</button>
+    <button type="button" class="btn" data-area="preview" aria-pressed="false">Preview security</button>
+    <button type="button" class="btn" data-area="providers" aria-pressed="false">Creative providers</button>
+    <button type="button" class="btn" data-area="social" aria-pressed="false">Social publishing</button>
+    <button type="button" class="btn" data-area="worker" aria-pressed="false">Scheduler and browser</button>
+    <button type="button" class="btn" data-area="coverage" aria-pressed="false">Remaining coverage</button>
+  </div>
+  <div class="card evidence-detail" aria-live="polite">
+    <h3 data-title>Production HTTP - 6 passed, 2 blocked</h3>
+    <div data-evidence>Readiness remains unavailable. Eight preview requests require Vercel authentication.</div>
+    <div class="text-small text-muted" data-source>Source: bounded HTTP probe and deployment protection checks</div>
+  </div>
+  <script>
+    (() => {
+      const root=document.getElementById('growth-os-evidence');
+      const entries={
+        http:['Production HTTP - 6 passed, 2 blocked','Readiness remains unavailable. Eight preview requests require Vercel authentication.','Bounded HTTP probe and deployment protection checks'],
+        auth:['Sign-in and isolation - checked','Google session observed; disposable identities passed session refresh, own-enclave reads and foreign-enclave API/RLS denial.','Authenticated browser and isolated user-JWT fixtures'],
+        records:['Saved records - checked','Reports and task rejections persisted across requests; disposable records were cleaned. Task execution remains unverified.','Production report/task fixtures'],
+        preview:['Protection enabled; database separation blocked','Anonymous previews redirect to Vercel authentication. The $0 staging project was blocked by the owner\'s two-active-free-project limit.','Project settings, live HTTP checks and Supabase creation response'],
+        providers:['Creative providers - incomplete','Image response parsing and metadata were repaired. Live generation and saved artifacts still require provider acceptance.','Adapter contract tests and source review'],
+        social:['Publishing repaired in draft; live acceptance pending','Postiz requests, media uploads and receipts are implemented. LinkedIn/Instagram connections and an approved test post are still required.','Draft remediation and contract tests'],
+        worker:['Computer pilot checked; worker unfinished','Node 24, Docker and isolated headless Chrome contexts passed host checks. Persistent scheduling and in-app streaming are not running.','Pilot host check and production readiness'],
+        coverage:['905 tests; 116 views; 29 paced connectivity checks','241 API routes are inventoried. Each remaining action still needs real output, failure, authorization and persistence acceptance.','Candidate gate, browser reports and static route inventory']
+      };
+      function select(area,save){
+        const e=entries[area];if(!e)return;
+        root.querySelector('[data-title]').textContent=e[0];
+        root.querySelector('[data-evidence]').textContent=e[1];
+        root.querySelector('[data-source]').textContent='Source: '+e[2];
+        root.querySelectorAll('[data-area]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.area===area)));
+        if(save&&window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{selectedVerificationArea:area},privateContent:null}).catch(()=>{});
+      }
+      root.querySelectorAll('[data-area]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.area,true)));
+      select(window.openai?.widgetState?.modelContent?.selectedVerificationArea||'http',false);
+      window.addEventListener('openai:set_globals',e=>{const a=e.detail?.globals?.widgetState?.modelContent?.selectedVerificationArea;if(a)select(a,false)});
+    })();
+  </script>
+</div>

@@ -42,7 +42,7 @@ export interface SocialPostPayload {
 export interface ChannelPublishOutcome {
   channelId: string;
   platform: SocialPlatform;
-  status: 'success' | 'failed';
+  status: 'success' | 'pending' | 'failed';
   postId?: string;
   postUrl?: string;
   error?: string;
@@ -51,7 +51,7 @@ export interface ChannelPublishOutcome {
 export interface SocialPublishResult {
   success: boolean;
   id: string;
-  status: 'published' | 'scheduled' | 'drafted' | 'failed';
+  status: 'published' | 'queued' | 'scheduled' | 'drafted' | 'failed';
   scheduledFor?: string;
   targetChannels: string[];
   channelResults: ChannelPublishOutcome[];
@@ -65,7 +65,7 @@ export interface SocialDistributionProviderStatus {
   endpointUrl?: string;
   connectedChannelsCount: number;
   supportedPlatforms: SocialPlatform[];
-  mode: 'live' | 'mock_offline';
+  mode: 'live' | 'unavailable';
 }
 
 export interface SocialDistributionProvider {

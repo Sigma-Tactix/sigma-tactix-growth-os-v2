@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Image as ImageIcon, 
   Sparkles, 
@@ -47,52 +47,52 @@ interface ModelOption {
 
 const AI_IMAGE_MODELS: ModelOption[] = [
   {
+    id: '@cf/black-forest-labs/flux-1-schnell',
+    providerId: 'cloudflare',
+    name: 'Cloudflare Workers AI FLUX',
+    provider: 'Cloudflare Edge',
+    badge: 'Free quota',
+    strengths: 'Images within your Cloudflare allowance.'
+  },
+  {
+    id: 'comfyui-local-workflow',
+    providerId: 'comfyui',
+    name: 'Local ComfyUI Workflow',
+    provider: 'Local device',
+    badge: 'Local',
+    strengths: 'Uses a model running on this device.'
+  },
+  {
     id: 'gemini-nano-banana-2.1',
     providerId: 'gemini',
     name: 'Gemini Nano Banana 2.1',
     provider: 'Google Gemini',
-    badge: 'Recommended',
-    strengths: 'Fast native image generation, typography adherence, brand-safe commercial visual direction.'
+    badge: 'Usage-based',
+    strengths: 'Billed through your Google account.'
   },
   {
     id: 'gemini-3-pro-image',
     providerId: 'gemini',
     name: 'Gemini 3 Pro Image',
     provider: 'Google Gemini',
-    badge: 'Highest Fidelity',
-    strengths: 'Complex compositions, multi-object precision, lighting control, and high-resolution rendering.'
+    badge: 'Usage-based',
+    strengths: 'Billed through your Google account.'
   },
   {
     id: 'gemini-2.5-flash-image',
     providerId: 'gemini',
     name: 'Gemini 2.5 Flash Image',
     provider: 'Google Gemini',
-    badge: 'High Speed',
-    strengths: 'Sub-second generation for rapid prototyping and iterative creative exploration.'
+    badge: 'Usage-based',
+    strengths: 'Billed through your Google account.'
   },
   {
     id: 'black-forest-labs/FLUX.1-schnell',
     providerId: 'huggingface',
     name: 'FLUX.1 Schnell',
     provider: 'Hugging Face / Black Forest',
-    badge: 'Open Serverless Ready',
-    strengths: 'Highest typography fidelity, complex prompt adherence, photorealism without cloud API quotas.'
-  },
-  {
-    id: '@cf/black-forest-labs/flux-1-schnell',
-    providerId: 'cloudflare',
-    name: 'Cloudflare Workers AI FLUX',
-    provider: 'Cloudflare Edge',
-    badge: '10K Neurons/Day',
-    strengths: 'Fast edge synthesis, zero cold starts, resilient B2B graphics with dedicated free tier.'
-  },
-  {
-    id: 'comfyui-local-workflow',
-    providerId: 'comfyui',
-    name: 'Local ComfyUI Workflow',
-    provider: 'This Mac',
-    badge: 'Private / Local',
-    strengths: 'Runs a discovered local checkpoint through a governed API workflow; no prompt leaves this machine.'
+    badge: 'Usage-based',
+    strengths: 'Requires provider credits.'
   }
 ];
 
@@ -196,10 +196,9 @@ function generateSovereignGraphic(
 
 export default function ImageStudioPage() {
   const { notifySuccess, notifyError, notifyInfo } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [providers, setProviders] = useState<CreativeProviderStatus[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-nano-banana-2.1');
+  const [selectedModel, setSelectedModel] = useState<string>('@cf/black-forest-labs/flux-1-schnell');
   const [prompt, setPrompt] = useState<string>(
     'Enterprise Second Brain data core with 10 glowing permissioned vaults in obsidian space, metallic amber accents, 8k resolution, cinematic lighting'
   );
@@ -207,20 +206,13 @@ export default function ImageStudioPage() {
   const [ratio, setRatio] = useState<'16:9' | '1:1' | '9:16' | '4:5'>('16:9');
   const [stylePresets, setStylePresets] = useState<BrandCreativeStylePreset[]>(FALLBACK_STYLE_PRESETS);
   const [stylePreset, setStylePreset] = useState<string>('SIGMA_SIGNAL_CORE');
-  const [enhancePrompt, setEnhancePrompt] = useState(true);
-  const [promptEnhancer, setPromptEnhancer] = useState<'none' | 'gemini' | 'ollama' | 'lmstudio'>('gemini');
+  const [enhancePrompt, setEnhancePrompt] = useState(false);
+  const [promptEnhancer, setPromptEnhancer] = useState<'none' | 'gemini' | 'ollama' | 'lmstudio'>('none');
   const [lastEnhancedPrompt, setLastEnhancedPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [renderFailure, setRenderFailure] = useState<{ message: string; is503?: boolean } | null>(null);
-
-  // Reference Inspiration Graphic State
-  const [referenceImage, setReferenceImage] = useState<{
-    file: File;
-    previewUrl: string;
-    name: string;
-  } | null>(null);
 
   // Gallery History
   const [gallery, setGallery] = useState<Array<{ url: string; prompt: string; model: string; ratio: string; style: string; type: string }>>([]);
@@ -236,11 +228,12 @@ export default function ImageStudioPage() {
         setProviders(res);
         const current = AI_IMAGE_MODELS.find(model => model.id === selectedModel);
         const currentStatus = res.find(provider => provider.provider === current?.providerId);
-        const currentAvailable = currentStatus && (currentStatus.active || (currentStatus.provider === 'gemini' && currentStatus.configured));
+        const currentAvailable = currentStatus && (currentStatus.active || (['gemini', 'huggingface', 'cloudflare'].includes(currentStatus.provider) && currentStatus.configured));
         if (!currentAvailable) {
           const available = AI_IMAGE_MODELS.find(model => {
+            if (!['cloudflare', 'comfyui'].includes(model.providerId)) return false;
             const status = res.find(provider => provider.provider === model.providerId);
-            return Boolean(status && (status.active || (status.provider === 'gemini' && status.configured)));
+            return Boolean(status && (status.active || (['gemini', 'huggingface', 'cloudflare'].includes(status.provider) && status.configured)));
           });
           if (available) setSelectedModel(available.id);
         }
@@ -261,38 +254,6 @@ export default function ImageStudioPage() {
     return () => { mounted = false; };
   }, []);
 
-  // Handle Reference Image File Upload
-  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      notifyError('Invalid File Type', 'Please upload an image file (.png, .jpg, .jpeg, .webp).');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      notifyError('File Too Large', 'Reference image must be under 10MB.');
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    setReferenceImage({
-      file,
-      previewUrl,
-      name: file.name
-    });
-    notifySuccess('Reference Graphic Attached', `Loaded "${file.name}" for creative style inspiration.`);
-  };
-
-  const removeReferenceImage = () => {
-    if (referenceImage?.previewUrl) {
-      URL.revokeObjectURL(referenceImage.previewUrl);
-    }
-    setReferenceImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   const handleGenerate = async (overrideModelId?: string) => {
     if (!prompt.trim()) {
       notifyError('Prompt Required', 'Please enter a visual description prompt.');
@@ -303,11 +264,7 @@ export default function ImageStudioPage() {
     setIsGenerating(true);
     setRenderFailure(null);
     
-    // Enrich prompt with reference context if present
-    let effectivePrompt = prompt;
-    if (referenceImage) {
-      effectivePrompt = `${prompt} [Style Reference: adhere to the lighting, color composition, and geometry inspired by the attached visual asset "${referenceImage.name}"]`;
-    }
+    const effectivePrompt = prompt;
 
     try {
       const activeModelObj = AI_IMAGE_MODELS.find(m => m.id === modelToUse);
@@ -330,7 +287,7 @@ export default function ImageStudioPage() {
         url: result.imageUrl,
         prompt: effectivePrompt,
         model: activeModelObj?.name || modelToUse,
-        ratio,
+        ratio: result.aspectRatio,
         style: stylePresets.find(s => s.id === stylePreset)?.label || stylePreset,
         type: 'image'
       };
@@ -338,25 +295,24 @@ export default function ImageStudioPage() {
 
       const newRun: AgentRunRecord = {
         id: `run-img-${Date.now()}`,
-        agentName: 'Creative Vision Agent',
-        agentRole: 'High-Fidelity Visual Asset Synthesizer',
+        agentName: 'Image Studio',
+        agentRole: 'Image generation',
         timestamp: 'Just now',
         status: 'SUCCESS',
         moduleOrigin: 'AI Creative Image Studio',
         inputSummary: `${activeModelObj?.name}: ${prompt.slice(0, 70)}...`,
-        outputSummary: `Rendered ${ratio} visual asset using ${stylePreset} preset with ${activeModelObj?.name}.`,
+        outputSummary: `Generated ${result.aspectRatio} image with ${result.modelName}.`,
         imageUrl: result.imageUrl,
-        fullOutput: `Model: ${activeModelObj?.name}\nRatio: ${ratio}\nStyle: ${stylePreset}\nEnhanced: ${result.enhancedPrompt || 'None'}\nURL: ${result.imageUrl}`,
+        fullOutput: `Model: ${activeModelObj?.name}\nRatio: ${result.aspectRatio}\nStyle: ${stylePreset}\nEnhanced: ${result.enhancedPrompt || 'None'}\nURL: ${result.imageUrl}`,
         metrics: [
           { label: 'Model', value: activeModelObj?.name || 'Flux 1.1' },
-          { label: 'Resolution', value: ratio },
+          { label: 'Aspect ratio', value: result.aspectRatio },
           { label: 'Provider', value: result.provider },
-          { label: 'Reference Attached', value: referenceImage ? 'Yes' : 'No' }
         ]
       };
 
       setRunHistory(prev => [newRun, ...prev]);
-      notifySuccess('Visual Synthesized', `Generated via verified provider ${result.provider}.`);
+      notifySuccess('Image generated', `Created with ${result.provider}.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate visual asset.';
       const is503 = message.includes('503') || message.includes('high demand') || message.includes('UNAVAILABLE');
@@ -368,8 +324,8 @@ export default function ImageStudioPage() {
 
       const failedRun: AgentRunRecord = {
         id: `run-img-err-${Date.now()}`,
-        agentName: 'Creative Vision Agent',
-        agentRole: 'High-Fidelity Visual Asset Synthesizer',
+        agentName: 'Image Studio',
+        agentRole: 'Image generation',
         timestamp: 'Just now',
         status: 'ERROR',
         moduleOrigin: 'AI Creative Image Studio',
@@ -398,7 +354,7 @@ export default function ImageStudioPage() {
     const newGalleryItem = {
       url: svgData,
       prompt,
-      model: 'Sovereign Vector Synthesis',
+      model: 'Local SVG template',
       ratio,
       style: styleLabel,
       type: 'image'
@@ -407,18 +363,18 @@ export default function ImageStudioPage() {
 
     const fallbackRun: AgentRunRecord = {
       id: `run-img-sov-${Date.now()}`,
-      agentName: 'Creative Vision Agent',
-      agentRole: 'Sovereign Brand Graphic Engine',
+      agentName: 'Image Studio',
+      agentRole: 'Local template renderer',
       timestamp: 'Just now',
       status: 'SUCCESS',
       moduleOrigin: 'AI Creative Image Studio',
-      inputSummary: `Sovereign Canvas: ${prompt.slice(0, 70)}...`,
+      inputSummary: `Local template: ${prompt.slice(0, 70)}...`,
       outputSummary: `Local vector fallback (${ratio}) generated — not a provider image.`,
       imageUrl: svgData,
-      fullOutput: `Engine: Sovereign Brand Canvas (local vector template)\nRatio: ${ratio}\nResolution: 1920x1080 Vector`,
+      fullOutput: `Engine: Local SVG template\nRatio: ${ratio}`,
       metrics: [
         { label: 'Engine', value: 'Local vector template' },
-        { label: 'Resolution', value: ratio },
+        { label: 'Aspect ratio', value: ratio },
         { label: 'Source', value: 'Generated on-device' }
       ]
     };
@@ -559,7 +515,7 @@ export default function ImageStudioPage() {
             <div className="space-y-2">
               {AI_IMAGE_MODELS.map(model => {
                 const status = providers.find(provider => provider.provider === model.providerId);
-                const available = Boolean(status && (status.active || (model.providerId === 'gemini' && status.configured)));
+                const available = Boolean(status && (status.active || (['gemini', 'huggingface', 'cloudflare'].includes(model.providerId) && status.configured)));
                 return (
                   <button
                     key={model.id}
@@ -593,58 +549,6 @@ export default function ImageStudioPage() {
                 );
               })}
             </div>
-          </div>
-
-          {/* Reference Image / Inspiration Upload */}
-          <div className="p-5 rounded-2xl bg-[#0F0F12] border border-white/10 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <FileImage className="w-4 h-4 text-purple-400" />
-                Reference Graphic / Inspiration (Optional)
-              </label>
-              {referenceImage && (
-                <button
-                  onClick={removeReferenceImage}
-                  className="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1"
-                >
-                  <X className="w-3 h-3" /> Remove
-                </button>
-              )}
-            </div>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleReferenceUpload}
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-            />
-
-            {referenceImage ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
-                <img
-                  src={referenceImage.previewUrl}
-                  alt="Reference Preview"
-                  className="w-14 h-14 rounded-lg object-cover border border-purple-500/40"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-purple-200 truncate">{referenceImage.name}</p>
-                  <p className="text-[11px] text-purple-400/80 mt-0.5">Style, color palette &amp; composition will be matched</p>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-4 px-3 border border-dashed border-white/15 rounded-xl hover:border-purple-500/40 hover:bg-white/[0.02] transition-all text-center flex flex-col items-center gap-2 group"
-              >
-                <div className="p-2 rounded-lg bg-white/5 group-hover:bg-purple-500/10 text-slate-400 group-hover:text-purple-400 transition-colors">
-                  <Upload className="w-4 h-4" />
-                </div>
-                <div className="text-xs text-slate-300 font-medium">Click to upload reference image for style inspiration</div>
-                <div className="text-[10px] text-slate-500">Supports .PNG, .JPG, .WEBP (max 10MB)</div>
-              </button>
-            )}
           </div>
 
           {/* Aspect Ratio & Style Presets */}
@@ -859,7 +763,7 @@ export default function ImageStudioPage() {
                         onClick={handleFallbackSovereignRender}
                         className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white flex items-center gap-1.5 shadow"
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> Generate Sovereign Brand Graphic
+                        <Sparkles className="w-3.5 h-3.5" /> Create local SVG template
                       </button>
                     </div>
                   </div>
@@ -915,7 +819,7 @@ export default function ImageStudioPage() {
         <AgentRunResults
           records={runHistory}
           title="Image Studio Synthesis Records"
-          description="Log of visual asset generations, diffusion seeds, and production-grade marketing outputs."
+          description="Images created during this session."
           onClear={() => setRunHistory([])}
         />
       </div>

@@ -14,7 +14,7 @@ export interface CreativeProviderStatus {
   name: string;
   configured: boolean;
   active: boolean;
-  tier: 'free_serverless' | 'free_quota' | 'self_hosted' | 'local_renderer';
+  tier: 'usage_based' | 'free_serverless' | 'free_quota' | 'self_hosted' | 'local_renderer';
   supportedModals: ('image' | 'video' | 'motion' | 'prompt')[];
   description: string;
 }
@@ -37,7 +37,7 @@ export interface CreativeImageResponse {
   imageUrl: string;
   enhancedPrompt: string;
   aspectRatio: string;
-  seed: number;
+  seed: number | null;
   provider: CreativeProviderId;
   modelName: string;
   source: 'provider_api';

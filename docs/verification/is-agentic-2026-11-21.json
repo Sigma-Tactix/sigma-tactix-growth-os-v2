@@ -1,0 +1,109 @@
+{
+  "target": "https://growth-os.sigmatactix.com",
+  "display_target": "growth-os.sigmatactix.com",
+  "report_url": "https://is-agentic.com/scan/growth-os.sigmatactix.com",
+  "score": 46,
+  "score_label": "Agents are likely to struggle",
+  "scanned_at": "2026-11-21T05:46:14.968Z",
+  "eligible_checks": 15,
+  "score_breakdown": {
+    "essential": {
+      "earned": 40,
+      "available": 80,
+      "passing": 3,
+      "total": 6
+    },
+    "recommended": {
+      "earned": 5.6,
+      "available": 20,
+      "passing": 2,
+      "total": 9
+    },
+    "bonus": {
+      "points": 0.6,
+      "positive_signals": 4
+    }
+  },
+  "issues": [
+    {
+      "details": "Homepage: Very little text content (35 chars), and the app mount node <div id=\"root\"> is empty and the page loads 1 script: the content is rendered by JavaScript, so AI crawlers that run none see an empty page. No inner pages checked: the scan found none to sample.",
+      "id": "content-no-js",
+      "name": "Content without JavaScript",
+      "recommendation": "Serve at least 500 characters of meaningful homepage content in raw HTML. Add a clear H1, keep deeper heading levels sequential, and remove excessive non-content markup. Inner pages need their main text in the raw HTML too, not only after JavaScript runs.",
+      "result": "failed",
+      "tier": "essential"
+    },
+    {
+      "details": "Nonexistent paths return HTTP 200 with the app shell (soft-404). Agents probing for resources conclude every path exists. Return a real HTTP 404 status for unknown paths.",
+      "id": "agent-friendly-404",
+      "name": "Agent-friendly 404s",
+      "recommendation": "This check awards partial credit for a real HTTP 404/410 status and full credit when a Markdown error body is also available. If the status is already correct, keep it and add the Markdown body. Include at least 20 characters explaining the error and point agents to your docs, sitemap, or llms.txt. Verify with `curl -sS -L -i -H 'Accept: text/markdown' https://yourdomain.com/some-path-that-does-not-exist`. Check both the final 404/410 status and the Markdown body, served with Content-Type: text/markdown. A correct status with an HTML error page still earns only partial credit.",
+      "result": "failed",
+      "tier": "essential"
+    },
+    {
+      "details": "Homepage https://growth-os.sigmatactix.com does not meet the Markdown negotiation requirements: Accept: text/markdown returned text/html; charset=utf-8; Vary header missing Accept (got \"none\")",
+      "id": "markdown-negotiation-vary",
+      "name": "Markdown content negotiation (acceptmarkdown.com)",
+      "recommendation": "Enable Markdown negotiation on the scanned homepage. Supporting it only on /docs or a separate .md URL does not satisfy this check. Requests with Accept: text/markdown must receive a nonempty Markdown body with Content-Type: text/markdown and Vary: Accept. Keep serving HTML for Accept: text/html. Adding Vary alone does not create a Markdown response. Verify both with `curl -sS -L -i -H 'Accept: text/markdown' https://yourdomain.com/` and `curl -sS -L -i -H 'Accept: text/html' https://yourdomain.com/`. Check the final response headers and body: Markdown with Vary: Accept for the first request, HTML for the second.",
+      "result": "failed",
+      "tier": "essential"
+    },
+    {
+      "details": "growth-os.sigmatactix.com was not in the top 10 for \"Sigma Tactix\" (searched your brand name alone: no main product term from your homepage qualified)",
+      "id": "brand-search-accuracy",
+      "name": "Brand name discoverability",
+      "recommendation": "Make sure your own domain ranks in the top results when people search your brand together with your main product (for example \"Acme payments API\"). Ora first reads product terms from your homepage's JSON-LD keywords or knowsAbout, or its meta keywords tag. If none qualifies, it checks the main service's serviceType in JSON-LD, then a short product phrase in the page title. If those do not qualify, it checks product names in the homepage business's JSON-LD offers. Use clear product terms that also appear on the page. If no term qualifies, Ora searches your brand name alone. If your domain does not rank, your brand may be too generic, conflict with a more established term, or not yet indexed. Strengthen it by describing your main product clearly in your homepage title and headings, earning press mentions that link to your domain, and avoiding redirect chains that mask your main domain in search results.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "No JSON-LD structured data found on homepage",
+      "id": "json-ld",
+      "name": "JSON-LD structured data",
+      "recommendation": "Add JSON-LD structured data to your homepage using the identity type that matches your site - SoftwareApplication for products, Organization or LocalBusiness for companies, Person for personal sites, Article for blogs - with name, description, url, and type-appropriate fields (offers, sameAs, author) so AI can parse your identity programmatically.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "No agent instruction file with when-to-use guidance found",
+      "id": "agent-instruction",
+      "name": "Agent instruction / when-to-use",
+      "recommendation": "Tell agents when to reach for you: add a 'when to use this' section to your llms.txt (or a dedicated agent-instructions file) that names your best-fit use cases and how an agent should call you. Be specific about the jobs you are right for - generic marketing copy does not read as guidance.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "No sitemap found",
+      "id": "sitemap",
+      "name": "Sitemap exists",
+      "recommendation": "Add a valid XML sitemap at /sitemap.xml listing all indexable URLs. Include lastmod dates and keep it under 50MB.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "No JSON-LD found - Organization schema missing",
+      "id": "org-schema-completeness",
+      "name": "Organization schema completeness",
+      "recommendation": "Add Organization JSON-LD that includes both contactPoint (with email/phone and contactType) and address (PostalAddress). This lets AI verify your business legitimacy and answer contact queries.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "No trust anchor pages found with sufficient content (About, Contact, Privacy)",
+      "id": "trust-anchors",
+      "name": "Trust anchor pages",
+      "recommendation": "Publish real /about, /contact, and /privacy pages with at least 500 characters of content each. These are the pages AI agents check to verify your business is legitimate before recommending you.",
+      "result": "failed",
+      "tier": "recommended"
+    },
+    {
+      "details": "Only 1/4 metadata signals present - missing: canonical URL, og:image, og:type",
+      "id": "metadata-completeness",
+      "name": "Metadata completeness",
+      "recommendation": "Add all four signals to your homepage: <link rel=\"canonical\"> pointing to the page on your own site, <html lang=\"...\">, <meta property=\"og:image\">, and <meta property=\"og:type\">. Agents use these for entity resolution and attribution.",
+      "result": "partial",
+      "tier": "recommended"
+    }
+  ]
+}

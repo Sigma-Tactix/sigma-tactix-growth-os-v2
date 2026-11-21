@@ -1,0 +1,2814 @@
+{
+  "scope": "built_candidate_module_navigation_and_layout",
+  "sourceCommit": "896eafb206b361190a00d338aef915d120893dbe",
+  "includesUncommittedChanges": true,
+  "builtApiSha256": "aa6b62142d42318f2d43c429c1e2e5554a2ac3b903d514cac23e88fdea0693ab",
+  "checkedAt": "2026-11-21T06:31:34.773Z",
+  "results": [
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-editorial",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-image",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-video",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 5,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-publishing",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-listening",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-seo-aeo",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-cro",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-intake",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-outreach",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-ads",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 25,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-email",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-competitors",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-simulator",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "attribution",
+      "url": "/suite/attribution",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agents",
+      "url": "/agents",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "scheduler",
+      "url": "/scheduler",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "reports",
+      "url": "/reports",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "explorer",
+      "url": "/explorer",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 7,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "learnings",
+      "url": "/learnings",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 2,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "living-system",
+      "url": "/living-system",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 0,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "data-sources",
+      "url": "/data-sources",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 8,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agent-reach",
+      "url": "/agent-reach",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 13,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "architecture",
+      "url": "/architecture",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 24,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "tenants",
+      "url": "/tenants",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 15,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "harness",
+      "url": "/harness",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 21,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "models",
+      "url": "/models",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 91,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "prompts",
+      "url": "/prompts",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 14,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "skills",
+      "url": "/skills",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 35,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "cron",
+      "url": "/cron",
+      "width": 1280,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 20,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-editorial",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-image",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-video",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 5,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-publishing",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-listening",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-seo-aeo",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 18,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-cro",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 4,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/cro/artifacts",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-intake",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-outreach",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-ads",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 25,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/pipelines",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-email",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-competitors",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/web-intelligence/capabilities",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-simulator",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/market-simulations/capabilities",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "attribution",
+      "url": "/suite/attribution",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/reporting/metrics",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agents",
+      "url": "/agents",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/execution-ledger",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "scheduler",
+      "url": "/scheduler",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "reports",
+      "url": "/reports",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "explorer",
+      "url": "/explorer",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 7,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "learnings",
+      "url": "/learnings",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 2,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "living-system",
+      "url": "/living-system",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 0,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "data-sources",
+      "url": "/data-sources",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 8,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/pipelines",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agent-reach",
+      "url": "/agent-reach",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 13,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/agent-reach/doctor",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "architecture",
+      "url": "/architecture",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 24,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "tenants",
+      "url": "/tenants",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 15,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "harness",
+      "url": "/harness",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 21,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/harness/status",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "models",
+      "url": "/models",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 91,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "prompts",
+      "url": "/prompts",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 14,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "skills",
+      "url": "/skills",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 35,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "cron",
+      "url": "/cron",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 20,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-editorial",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-image",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-video",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 5,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-publishing",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-listening",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-seo-aeo",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 18,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-cro",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-intake",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-outreach",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-ads",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 25,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-email",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-competitors",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-simulator",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "attribution",
+      "url": "/suite/attribution",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agents",
+      "url": "/agents",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "scheduler",
+      "url": "/scheduler",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "reports",
+      "url": "/reports",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "explorer",
+      "url": "/explorer",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 7,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "learnings",
+      "url": "/learnings",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 2,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "living-system",
+      "url": "/living-system",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 0,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "data-sources",
+      "url": "/data-sources",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 8,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agent-reach",
+      "url": "/agent-reach",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 13,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "architecture",
+      "url": "/architecture",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 24,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "tenants",
+      "url": "/tenants",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 15,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "harness",
+      "url": "/harness",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 21,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "models",
+      "url": "/models",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 91,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "prompts",
+      "url": "/prompts",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 14,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "skills",
+      "url": "/skills",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 35,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "cron",
+      "url": "/cron",
+      "width": 1280,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 20,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-editorial",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-image",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "creative",
+      "url": "/suite/creative?tab=creative-video",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 5,
+      "buttonCount": 19,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-publishing",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "social",
+      "url": "/suite/social?tab=social-listening",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-seo-aeo",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 18,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        },
+        {
+          "path": "/api/gsc/status",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "search",
+      "url": "/suite/search?tab=search-cro",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 4,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/cro/artifacts",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-intake",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 3,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "demand",
+      "url": "/suite/demand?tab=demand-outreach",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 12,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-ads",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 25,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/pipelines",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "paid",
+      "url": "/suite/paid?tab=paid-email",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-competitors",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/web-intelligence/capabilities",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "intelligence",
+      "url": "/suite/intelligence?tab=intel-simulator",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 10,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/market-simulations/capabilities",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "attribution",
+      "url": "/suite/attribution",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/reporting/metrics",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agents",
+      "url": "/agents",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/execution-ledger",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "scheduler",
+      "url": "/scheduler",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 1,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "reports",
+      "url": "/reports",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 36,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "explorer",
+      "url": "/explorer",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 3,
+      "buttonCount": 7,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "learnings",
+      "url": "/learnings",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 2,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "living-system",
+      "url": "/living-system",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 0,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "data-sources",
+      "url": "/data-sources",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 8,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/pipelines",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "agent-reach",
+      "url": "/agent-reach",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 13,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/agent-reach/doctor",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "architecture",
+      "url": "/architecture",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 24,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "tenants",
+      "url": "/tenants",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 15,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "harness",
+      "url": "/harness",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 21,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/harness/status",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "models",
+      "url": "/models",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 1,
+      "buttonCount": 91,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "prompts",
+      "url": "/prompts",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 14,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "skills",
+      "url": "/skills",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 35,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    },
+    {
+      "hub": "cron",
+      "url": "/cron",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "headingCount": 2,
+      "buttonCount": 20,
+      "boundaryError": false,
+      "apiFailures": [
+        {
+          "path": "/api/workspace/vanta/status",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/manage",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/telemetry/tokens",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/admin/ai-keys",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tier",
+          "status": 429
+        },
+        {
+          "path": "/api/workspace/billing/tiers",
+          "status": 429
+        }
+      ],
+      "pageErrorCount": 0,
+      "passed": true,
+      "actionExecution": "not_performed_by_navigation_check"
+    }
+  ],
+  "fixtureCleanup": "completed",
+  "passed": true
+}

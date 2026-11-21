@@ -35,10 +35,10 @@ export class CreativeGateway {
     return [
       {
         provider: 'gemini',
-        name: 'Gemini Nano Banana image generation',
+        name: 'Gemini images',
         configured: Boolean(context.geminiApiKey),
         active: false,
-        tier: 'free_quota',
+        tier: 'usage_based',
         supportedModals: ['image', 'prompt'],
         description: context.geminiApiKey
           ? 'Workspace Gemini credential is configured. Provider access is verified by each generation request.'
@@ -48,22 +48,22 @@ export class CreativeGateway {
         provider: 'huggingface',
         name: 'Hugging Face Inference (FLUX.1-schnell & SDXL)',
         configured: hfConfigured,
-        active: hfConfigured,
-        tier: 'free_serverless',
+        active: false,
+        tier: 'usage_based',
         supportedModals: ['image', 'video'],
         description: hfConfigured
-          ? 'Active via HF_TOKEN: native FLUX.1-schnell and open-weights video inference.'
-          : 'Set HF_TOKEN (free HuggingFace account) to enable authentic FLUX.1-schnell serverless generation.',
+          ? 'Credential configured. Generation has not been verified.'
+          : 'Connect Hugging Face with provider credits to generate images.',
       },
       {
         provider: 'cloudflare',
-        name: 'Cloudflare Workers AI (Edge FLUX)',
+        name: 'Cloudflare images',
         configured: cfConfigured,
-        active: cfConfigured,
+        active: false,
         tier: 'free_quota',
         supportedModals: ['image'],
         description: cfConfigured
-          ? 'Active via Cloudflare Workers AI token (10,000 neurons/day free tier).'
+          ? 'Credential configured. Generation has not been verified.'
           : 'Set CLOUDFLARE_API_TOKEN & CLOUDFLARE_ACCOUNT_ID for edge-accelerated FLUX rendering.',
       },
       {

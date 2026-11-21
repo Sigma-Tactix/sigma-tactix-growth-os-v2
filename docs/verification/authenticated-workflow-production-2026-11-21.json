@@ -1,0 +1,83 @@
+{
+  "scope": "production_disposable_authenticated_workflow",
+  "sourceCommit": "896eafb206b361190a00d338aef915d120893dbe",
+  "checkedOn": "2026-11-21",
+  "checks": [
+    {
+      "name": "two_fixture_sign_ins_and_session_refreshes",
+      "passed": true
+    },
+    {
+      "name": "authenticated_workspace_read",
+      "passed": true
+    },
+    {
+      "name": "invalid_jwt_rejected",
+      "passed": true
+    },
+    {
+      "name": "invalid_enclave_selector_rejected",
+      "passed": true
+    },
+    {
+      "name": "foreign_enclave_api_rejected",
+      "passed": true
+    },
+    {
+      "name": "foreign_enclave_rls_denied",
+      "passed": true
+    },
+    {
+      "name": "malformed_json_rejected_as_json",
+      "passed": false,
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "invalid_report_rejected",
+      "passed": true
+    },
+    {
+      "name": "report_created",
+      "passed": true
+    },
+    {
+      "name": "report_persists_across_requests",
+      "passed": true
+    },
+    {
+      "name": "foreign_report_hidden_by_rls",
+      "passed": true
+    },
+    {
+      "name": "foreign_report_write_denied_by_rls",
+      "passed": true
+    },
+    {
+      "name": "task_enters_human_approval_without_execution",
+      "passed": true
+    },
+    {
+      "name": "task_persists_across_requests",
+      "passed": true
+    },
+    {
+      "name": "task_rejection_persists",
+      "passed": true
+    },
+    {
+      "name": "durable_mutations_fail_closed",
+      "passed": true
+    },
+    {
+      "name": "report_removed",
+      "passed": true
+    },
+    {
+      "name": "fixture_logout_clears_session",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "fixtureCleanup": "completed",
+  "inferenceOrPublishingPerformed": false
+}

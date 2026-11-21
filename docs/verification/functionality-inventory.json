@@ -1,0 +1,2422 @@
+{
+  "generatedAt": "2026-11-21T06:27:08.482Z",
+  "sourceCommit": "896eafb206b361190a00d338aef915d120893dbe",
+  "includesUncommittedChanges": true,
+  "scope": "static_express_routes",
+  "runtimeCertification": false,
+  "routeCount": 241,
+  "unresolvedMountCount": 0,
+  "routes": [
+    {
+      "id": "GET /*",
+      "method": "GET",
+      "path": "/*",
+      "file": "server.ts",
+      "line": 10050,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "ALL /api",
+      "method": "ALL",
+      "path": "/api",
+      "file": "server.ts",
+      "line": 10025,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "ALL /api/*",
+      "method": "ALL",
+      "path": "/api/*",
+      "file": "server.ts",
+      "line": 10026,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/admin/agent-mailboxes",
+      "method": "GET",
+      "path": "/api/admin/agent-mailboxes",
+      "file": "server.ts",
+      "line": 1630,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/admin/agent-mailboxes/save",
+      "method": "POST",
+      "path": "/api/admin/agent-mailboxes/save",
+      "file": "server.ts",
+      "line": 1638,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/admin/agent-mailboxes/test-send",
+      "method": "POST",
+      "path": "/api/admin/agent-mailboxes/test-send",
+      "file": "server.ts",
+      "line": 1649,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/audit-evidence/:stepId",
+      "method": "GET",
+      "path": "/api/audit-evidence/:stepId",
+      "file": "server.ts",
+      "line": 1267,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/creative/brand-style-presets",
+      "method": "GET",
+      "path": "/api/creative/brand-style-presets",
+      "file": "server.ts",
+      "line": 743,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/creative/generate-image",
+      "method": "POST",
+      "path": "/api/creative/generate-image",
+      "file": "server.ts",
+      "line": 749,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/creative/generate-social",
+      "method": "POST",
+      "path": "/api/creative/generate-social",
+      "file": "server.ts",
+      "line": 856,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/creative/generate-text",
+      "method": "POST",
+      "path": "/api/creative/generate-text",
+      "file": "server.ts",
+      "line": 1118,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/creative/generate-video",
+      "method": "POST",
+      "path": "/api/creative/generate-video",
+      "file": "server.ts",
+      "line": 811,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/creative/providers/status",
+      "method": "GET",
+      "path": "/api/creative/providers/status",
+      "file": "server.ts",
+      "line": 737,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/gsc/analytics",
+      "method": "GET",
+      "path": "/api/gsc/analytics",
+      "file": "server.ts",
+      "line": 3015,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/gsc/auth",
+      "method": "GET",
+      "path": "/api/gsc/auth",
+      "file": "server.ts",
+      "line": 2972,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/gsc/callback",
+      "method": "GET",
+      "path": "/api/gsc/callback",
+      "file": "server.ts",
+      "line": 2993,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/gsc/connect",
+      "method": "POST",
+      "path": "/api/gsc/connect",
+      "file": "server.ts",
+      "line": 2759,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/gsc/diagnostics",
+      "method": "GET",
+      "path": "/api/gsc/diagnostics",
+      "file": "server.ts",
+      "line": 2700,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/gsc/disconnect",
+      "method": "POST",
+      "path": "/api/gsc/disconnect",
+      "file": "server.ts",
+      "line": 2947,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/gsc/preflight",
+      "method": "POST",
+      "path": "/api/gsc/preflight",
+      "file": "server.ts",
+      "line": 2733,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/gsc/status",
+      "method": "GET",
+      "path": "/api/gsc/status",
+      "file": "server.ts",
+      "line": 2676,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/gsc/token-exchange",
+      "method": "POST",
+      "path": "/api/gsc/token-exchange",
+      "file": "server.ts",
+      "line": 2857,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/health",
+      "method": "GET",
+      "path": "/api/health",
+      "file": "server.ts",
+      "line": 370,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/leads",
+      "method": "GET",
+      "path": "/api/leads",
+      "file": "server.ts",
+      "line": 1539,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/leads/create",
+      "method": "POST",
+      "path": "/api/leads/create",
+      "file": "server.ts",
+      "line": 1551,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/leads/update-stage",
+      "method": "POST",
+      "path": "/api/leads/update-stage",
+      "file": "server.ts",
+      "line": 1582,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/outreach/send-email",
+      "method": "POST",
+      "path": "/api/outreach/send-email",
+      "file": "server.ts",
+      "line": 1664,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/public/capture-lead",
+      "method": "POST",
+      "path": "/api/public/capture-lead",
+      "file": "server.ts",
+      "line": 1503,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/public/intake/:token",
+      "method": "GET",
+      "path": "/api/public/intake/:token",
+      "file": "server.ts",
+      "line": 705,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/public/intake/:token/complete",
+      "method": "POST",
+      "path": "/api/public/intake/:token/complete",
+      "file": "server.ts",
+      "line": 719,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/ready",
+      "method": "GET",
+      "path": "/api/ready",
+      "file": "server.ts",
+      "line": 389,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/reports/deck/:id/download",
+      "method": "GET",
+      "path": "/api/reports/deck/:id/download",
+      "file": "server.ts",
+      "line": 7873,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/reports/deck/:id/view",
+      "method": "GET",
+      "path": "/api/reports/deck/:id/view",
+      "file": "server.ts",
+      "line": 7853,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/reports/deck/generate",
+      "method": "POST",
+      "path": "/api/reports/deck/generate",
+      "file": "server.ts",
+      "line": 7849,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/social/channels",
+      "method": "GET",
+      "path": "/api/social/channels",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 46,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/social/draft",
+      "method": "POST",
+      "path": "/api/social/draft",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 105,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/social/publish",
+      "method": "POST",
+      "path": "/api/social/publish",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 107,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/social/schedule",
+      "method": "POST",
+      "path": "/api/social/schedule",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 106,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/social/status",
+      "method": "GET",
+      "path": "/api/social/status",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 36,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/webhooks/inbound",
+      "method": "POST",
+      "path": "/api/webhooks/inbound",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 31,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/webhooks/stripe",
+      "method": "POST",
+      "path": "/api/webhooks/stripe",
+      "file": "server.ts",
+      "line": 255,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace",
+      "method": "GET",
+      "path": "/api/workspace",
+      "file": "server.ts",
+      "line": 2306,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/add-keyword",
+      "method": "POST",
+      "path": "/api/workspace/add-keyword",
+      "file": "server.ts",
+      "line": 7066,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/admin/ai-keys",
+      "method": "GET",
+      "path": "/api/workspace/admin/ai-keys",
+      "file": "server.ts",
+      "line": 4555,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/admin/ai-keys",
+      "method": "POST",
+      "path": "/api/workspace/admin/ai-keys",
+      "file": "server.ts",
+      "line": 4561,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/admin/ai-keys/:provider",
+      "method": "DELETE",
+      "path": "/api/workspace/admin/ai-keys/:provider",
+      "file": "server.ts",
+      "line": 4902,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/admin/ai-keys/:provider/models",
+      "method": "POST",
+      "path": "/api/workspace/admin/ai-keys/:provider/models",
+      "file": "server.ts",
+      "line": 4626,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/admin/ai-keys/opusmax/key-status",
+      "method": "POST",
+      "path": "/api/workspace/admin/ai-keys/opusmax/key-status",
+      "file": "server.ts",
+      "line": 4753,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/admin/ai/selection",
+      "method": "POST",
+      "path": "/api/workspace/admin/ai/selection",
+      "file": "server.ts",
+      "line": 4783,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/admin/ai/test-inference",
+      "method": "POST",
+      "path": "/api/workspace/admin/ai/test-inference",
+      "file": "server.ts",
+      "line": 4819,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/admin/harness/status",
+      "method": "GET",
+      "path": "/api/workspace/admin/harness/status",
+      "file": "server.ts",
+      "line": 4976,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/admin/local-llm/ping",
+      "method": "POST",
+      "path": "/api/workspace/admin/local-llm/ping",
+      "file": "server.ts",
+      "line": 4918,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/agent-mailboxes",
+      "method": "GET",
+      "path": "/api/workspace/agent-mailboxes",
+      "file": "server.ts",
+      "line": 1630,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/agent-mailboxes/save",
+      "method": "POST",
+      "path": "/api/workspace/agent-mailboxes/save",
+      "file": "server.ts",
+      "line": 1638,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agent-mailboxes/test-send",
+      "method": "POST",
+      "path": "/api/workspace/agent-mailboxes/test-send",
+      "file": "server.ts",
+      "line": 1649,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agent-reach/competitor-scan",
+      "method": "POST",
+      "path": "/api/workspace/agent-reach/competitor-scan",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 182,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/agent-reach/doctor",
+      "method": "GET",
+      "path": "/api/workspace/agent-reach/doctor",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 26,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/agent-reach/fetch",
+      "method": "POST",
+      "path": "/api/workspace/agent-reach/fetch",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 36,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agent-reach/repurpose-article",
+      "method": "POST",
+      "path": "/api/workspace/agent-reach/repurpose-article",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 199,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agent-reach/repurpose-carousel",
+      "method": "POST",
+      "path": "/api/workspace/agent-reach/repurpose-carousel",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 222,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agent-reach/sync-social",
+      "method": "POST",
+      "path": "/api/workspace/agent-reach/sync-social",
+      "file": "src/server/routes/agentReachRoutes.ts",
+      "line": 51,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/agents",
+      "method": "GET",
+      "path": "/api/workspace/agents",
+      "file": "server.ts",
+      "line": 7413,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/agents",
+      "method": "POST",
+      "path": "/api/workspace/agents",
+      "file": "server.ts",
+      "line": 7896,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/agents/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/agents/:id",
+      "file": "server.ts",
+      "line": 7922,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/agents/import",
+      "method": "POST",
+      "path": "/api/workspace/agents/import",
+      "file": "server.ts",
+      "line": 7992,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/agents/library",
+      "method": "GET",
+      "path": "/api/workspace/agents/library",
+      "file": "server.ts",
+      "line": 7932,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/agents/library/:agentId",
+      "method": "GET",
+      "path": "/api/workspace/agents/library/:agentId",
+      "file": "server.ts",
+      "line": 7968,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/ai-fill-brief",
+      "method": "POST",
+      "path": "/api/workspace/ai-fill-brief",
+      "file": "server.ts",
+      "line": 6991,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/audit-evidence/:stepId",
+      "method": "GET",
+      "path": "/api/workspace/audit-evidence/:stepId",
+      "file": "server.ts",
+      "line": 1267,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/authority-insights",
+      "method": "POST",
+      "path": "/api/workspace/authority-insights",
+      "file": "server.ts",
+      "line": 7089,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/billing/checkout-session",
+      "method": "POST",
+      "path": "/api/workspace/billing/checkout-session",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 116,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/billing/portal-session",
+      "method": "POST",
+      "path": "/api/workspace/billing/portal-session",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 68,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/billing/set-tier",
+      "method": "POST",
+      "path": "/api/workspace/billing/set-tier",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 213,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/billing/status",
+      "method": "GET",
+      "path": "/api/workspace/billing/status",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 14,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/billing/tier",
+      "method": "GET",
+      "path": "/api/workspace/billing/tier",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 207,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/billing/tiers",
+      "method": "GET",
+      "path": "/api/workspace/billing/tiers",
+      "file": "src/server/routes/billingRoutes.ts",
+      "line": 197,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/brain/compound",
+      "method": "POST",
+      "path": "/api/workspace/brain/compound",
+      "file": "src/server/routes/brainGraphRoutes.ts",
+      "line": 82,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/brain/entities",
+      "method": "POST",
+      "path": "/api/workspace/brain/entities",
+      "file": "src/server/routes/brainGraphRoutes.ts",
+      "line": 38,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/brain/graph",
+      "method": "GET",
+      "path": "/api/workspace/brain/graph",
+      "file": "src/server/routes/brainGraphRoutes.ts",
+      "line": 25,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/brain/relationships",
+      "method": "POST",
+      "path": "/api/workspace/brain/relationships",
+      "file": "src/server/routes/brainGraphRoutes.ts",
+      "line": 60,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/brain/search",
+      "method": "POST",
+      "path": "/api/workspace/brain/search",
+      "file": "src/server/routes/brainGraphRoutes.ts",
+      "line": 122,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/capabilities",
+      "method": "GET",
+      "path": "/api/workspace/capabilities",
+      "file": "src/server/routes/capabilityRoutes.ts",
+      "line": 18,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/capabilities/operations",
+      "method": "GET",
+      "path": "/api/workspace/capabilities/operations",
+      "file": "src/server/routes/capabilityRoutes.ts",
+      "line": 32,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/capabilities/receipts",
+      "method": "GET",
+      "path": "/api/workspace/capabilities/receipts",
+      "file": "src/server/routes/capabilityRoutes.ts",
+      "line": 65,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/clone-template",
+      "method": "POST",
+      "path": "/api/workspace/clone-template",
+      "file": "server.ts",
+      "line": 3086,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/competitors",
+      "method": "GET",
+      "path": "/api/workspace/competitors",
+      "file": "server.ts",
+      "line": 9852,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/competitors",
+      "method": "POST",
+      "path": "/api/workspace/competitors",
+      "file": "server.ts",
+      "line": 9858,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/competitors/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/competitors/:id",
+      "file": "server.ts",
+      "line": 9874,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/competitors/:id/scan",
+      "method": "POST",
+      "path": "/api/workspace/competitors/:id/scan",
+      "file": "server.ts",
+      "line": 9880,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/connectors/:id/connect",
+      "method": "POST",
+      "path": "/api/workspace/connectors/:id/connect",
+      "file": "server.ts",
+      "line": 9051,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/connectors/:id/disconnect",
+      "method": "POST",
+      "path": "/api/workspace/connectors/:id/disconnect",
+      "file": "server.ts",
+      "line": 9117,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/content-assets/:id/improve",
+      "method": "POST",
+      "path": "/api/workspace/content-assets/:id/improve",
+      "file": "server.ts",
+      "line": 6933,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/content-assets/:id/publish",
+      "method": "POST",
+      "path": "/api/workspace/content-assets/:id/publish",
+      "file": "server.ts",
+      "line": 6874,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/content-status",
+      "method": "POST",
+      "path": "/api/workspace/content-status",
+      "file": "server.ts",
+      "line": 6824,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/creative/renders",
+      "method": "POST",
+      "path": "/api/workspace/creative/renders",
+      "file": "server.ts",
+      "line": 2178,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/creative/renders/:taskId/download",
+      "method": "GET",
+      "path": "/api/workspace/creative/renders/:taskId/download",
+      "file": "server.ts",
+      "line": 2228,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/crm/contacts",
+      "method": "GET",
+      "path": "/api/workspace/crm/contacts",
+      "file": "server.ts",
+      "line": 9719,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/crm/contacts",
+      "method": "POST",
+      "path": "/api/workspace/crm/contacts",
+      "file": "server.ts",
+      "line": 9725,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/crm/contacts/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/crm/contacts/:id",
+      "file": "server.ts",
+      "line": 9751,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "PATCH /api/workspace/crm/contacts/:id",
+      "method": "PATCH",
+      "path": "/api/workspace/crm/contacts/:id",
+      "file": "server.ts",
+      "line": 9736,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/crm/contacts/import-hubspot",
+      "method": "POST",
+      "path": "/api/workspace/crm/contacts/import-hubspot",
+      "file": "server.ts",
+      "line": 9803,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/crm/deals",
+      "method": "GET",
+      "path": "/api/workspace/crm/deals",
+      "file": "server.ts",
+      "line": 9757,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/crm/deals",
+      "method": "POST",
+      "path": "/api/workspace/crm/deals",
+      "file": "server.ts",
+      "line": 9765,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/crm/deals/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/crm/deals/:id",
+      "file": "server.ts",
+      "line": 9792,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "PATCH /api/workspace/crm/deals/:id",
+      "method": "PATCH",
+      "path": "/api/workspace/crm/deals/:id",
+      "file": "server.ts",
+      "line": 9777,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/cro/artifacts",
+      "method": "GET",
+      "path": "/api/workspace/cro/artifacts",
+      "file": "server.ts",
+      "line": 1885,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/cro/artifacts",
+      "method": "POST",
+      "path": "/api/workspace/cro/artifacts",
+      "file": "server.ts",
+      "line": 1902,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/cro/artifacts/:id/approve",
+      "method": "POST",
+      "path": "/api/workspace/cro/artifacts/:id/approve",
+      "file": "server.ts",
+      "line": 2120,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/cro/artifacts/:id/html",
+      "method": "GET",
+      "path": "/api/workspace/cro/artifacts/:id/html",
+      "file": "server.ts",
+      "line": 2063,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/cron-schedules",
+      "method": "GET",
+      "path": "/api/workspace/cron-schedules",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 127,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/cron-schedules",
+      "method": "POST",
+      "path": "/api/workspace/cron-schedules",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 133,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/cron-schedules/:id/trigger",
+      "method": "POST",
+      "path": "/api/workspace/cron-schedules/:id/trigger",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 164,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/decision/route",
+      "method": "POST",
+      "path": "/api/workspace/decision/route",
+      "file": "src/server/routes/decisionRoutes.ts",
+      "line": 70,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/decision/safety",
+      "method": "POST",
+      "path": "/api/workspace/decision/safety",
+      "file": "src/server/routes/decisionRoutes.ts",
+      "line": 91,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/decision/status",
+      "method": "GET",
+      "path": "/api/workspace/decision/status",
+      "file": "src/server/routes/decisionRoutes.ts",
+      "line": 29,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/decision/traces",
+      "method": "GET",
+      "path": "/api/workspace/decision/traces",
+      "file": "src/server/routes/decisionRoutes.ts",
+      "line": 34,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/decision/triage",
+      "method": "POST",
+      "path": "/api/workspace/decision/triage",
+      "file": "src/server/routes/decisionRoutes.ts",
+      "line": 49,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/execution-ledger",
+      "method": "GET",
+      "path": "/api/workspace/execution-ledger",
+      "file": "server.ts",
+      "line": 7530,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/execution-ledger/backfill",
+      "method": "POST",
+      "path": "/api/workspace/execution-ledger/backfill",
+      "file": "server.ts",
+      "line": 7504,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/fetch-brand",
+      "method": "POST",
+      "path": "/api/workspace/fetch-brand",
+      "file": "server.ts",
+      "line": 7252,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/generate-content",
+      "method": "POST",
+      "path": "/api/workspace/generate-content",
+      "file": "server.ts",
+      "line": 5820,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/generate-keyword-clusters",
+      "method": "POST",
+      "path": "/api/workspace/generate-keyword-clusters",
+      "file": "server.ts",
+      "line": 7195,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/google-ads-mcp/customers",
+      "method": "POST",
+      "path": "/api/workspace/google-ads-mcp/customers",
+      "file": "src/server/routes/googleAdsMcpRoutes.ts",
+      "line": 25,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/google-ads-mcp/status",
+      "method": "GET",
+      "path": "/api/workspace/google-ads-mcp/status",
+      "file": "src/server/routes/googleAdsMcpRoutes.ts",
+      "line": 21,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/intake/questionnaire",
+      "method": "POST",
+      "path": "/api/workspace/intake/questionnaire",
+      "file": "server.ts",
+      "line": 3625,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/jobs",
+      "method": "GET",
+      "path": "/api/workspace/jobs",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 90,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/jobs",
+      "method": "POST",
+      "path": "/api/workspace/jobs",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 96,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/jobs/:id/cancel",
+      "method": "POST",
+      "path": "/api/workspace/jobs/:id/cancel",
+      "file": "src/server/routes/durableWorkerRoutes.ts",
+      "line": 117,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/launch-intake",
+      "method": "POST",
+      "path": "/api/workspace/launch-intake",
+      "file": "server.ts",
+      "line": 3557,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/leads",
+      "method": "GET",
+      "path": "/api/workspace/leads",
+      "file": "server.ts",
+      "line": 1539,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/leads/create",
+      "method": "POST",
+      "path": "/api/workspace/leads/create",
+      "file": "server.ts",
+      "line": 1551,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/leads/update-stage",
+      "method": "POST",
+      "path": "/api/workspace/leads/update-stage",
+      "file": "server.ts",
+      "line": 1582,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/learnings",
+      "method": "GET",
+      "path": "/api/workspace/learnings",
+      "file": "server.ts",
+      "line": 7683,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/learnings",
+      "method": "POST",
+      "path": "/api/workspace/learnings",
+      "file": "server.ts",
+      "line": 7692,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/learnings/:id/approve",
+      "method": "POST",
+      "path": "/api/workspace/learnings/:id/approve",
+      "file": "server.ts",
+      "line": 7713,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/learnings/:id/revoke",
+      "method": "POST",
+      "path": "/api/workspace/learnings/:id/revoke",
+      "file": "server.ts",
+      "line": 7733,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/learnings/:id/supersede",
+      "method": "POST",
+      "path": "/api/workspace/learnings/:id/supersede",
+      "file": "server.ts",
+      "line": 7723,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/learnings/development",
+      "method": "GET",
+      "path": "/api/workspace/learnings/development",
+      "file": "server.ts",
+      "line": 7744,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/manage",
+      "method": "GET",
+      "path": "/api/workspace/manage",
+      "file": "server.ts",
+      "line": 1704,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/manage",
+      "method": "POST",
+      "path": "/api/workspace/manage",
+      "file": "server.ts",
+      "line": 1720,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/market-simulations/capabilities",
+      "method": "GET",
+      "path": "/api/workspace/market-simulations/capabilities",
+      "file": "src/server/routes/marketSimulationRoutes.ts",
+      "line": 14,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/market-simulations/simulations",
+      "method": "POST",
+      "path": "/api/workspace/market-simulations/simulations",
+      "file": "src/server/routes/marketSimulationRoutes.ts",
+      "line": 40,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/market-simulations/verify",
+      "method": "POST",
+      "path": "/api/workspace/market-simulations/verify",
+      "file": "src/server/routes/marketSimulationRoutes.ts",
+      "line": 24,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "ALL /api/workspace/mcp",
+      "method": "ALL",
+      "path": "/api/workspace/mcp",
+      "file": "src/server/routes/mcpRoutes.ts",
+      "line": 52,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/mcp/google-ads/read",
+      "method": "POST",
+      "path": "/api/workspace/mcp/google-ads/read",
+      "file": "src/server/routes/mcpRoutes.ts",
+      "line": 41,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/mcp/receipts",
+      "method": "GET",
+      "path": "/api/workspace/mcp/receipts",
+      "file": "src/server/routes/mcpRoutes.ts",
+      "line": 37,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/mcp/status",
+      "method": "GET",
+      "path": "/api/workspace/mcp/status",
+      "file": "src/server/routes/mcpRoutes.ts",
+      "line": 30,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/missions/dispatch",
+      "method": "POST",
+      "path": "/api/workspace/missions/dispatch",
+      "file": "server.ts",
+      "line": 6240,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/onboarding-chat",
+      "method": "POST",
+      "path": "/api/workspace/onboarding-chat",
+      "file": "server.ts",
+      "line": 2249,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/operations/readiness",
+      "method": "GET",
+      "path": "/api/workspace/operations/readiness",
+      "file": "server.ts",
+      "line": 9249,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/outreach/send-email",
+      "method": "POST",
+      "path": "/api/workspace/outreach/send-email",
+      "file": "server.ts",
+      "line": 1664,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/performance/channel-strategies",
+      "method": "POST",
+      "path": "/api/workspace/performance/channel-strategies",
+      "file": "server.ts",
+      "line": 8391,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/performance/media-plan-template",
+      "method": "POST",
+      "path": "/api/workspace/performance/media-plan-template",
+      "file": "server.ts",
+      "line": 8335,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/performance/media-plan-template/url",
+      "method": "GET",
+      "path": "/api/workspace/performance/media-plan-template/url",
+      "file": "server.ts",
+      "line": 8355,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/performance/questionnaire-notes",
+      "method": "POST",
+      "path": "/api/workspace/performance/questionnaire-notes",
+      "file": "server.ts",
+      "line": 8299,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/performance/questionnaire-notes/:noteId",
+      "method": "DELETE",
+      "path": "/api/workspace/performance/questionnaire-notes/:noteId",
+      "file": "server.ts",
+      "line": 8325,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/performance/sample-template/:kind",
+      "method": "GET",
+      "path": "/api/workspace/performance/sample-template/:kind",
+      "file": "server.ts",
+      "line": 8372,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/performance/save-hook",
+      "method": "POST",
+      "path": "/api/workspace/performance/save-hook",
+      "file": "server.ts",
+      "line": 6517,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/performance/upload-report",
+      "method": "POST",
+      "path": "/api/workspace/performance/upload-report",
+      "file": "server.ts",
+      "line": 8220,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/pipelines",
+      "method": "GET",
+      "path": "/api/workspace/pipelines",
+      "file": "server.ts",
+      "line": 9202,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "DELETE /api/workspace/pipelines/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/pipelines/:id",
+      "file": "server.ts",
+      "line": 9699,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/pipelines/:id/agent-permissions",
+      "method": "POST",
+      "path": "/api/workspace/pipelines/:id/agent-permissions",
+      "file": "server.ts",
+      "line": 9330,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/pipelines/:id/sync-metrics",
+      "method": "POST",
+      "path": "/api/workspace/pipelines/:id/sync-metrics",
+      "file": "server.ts",
+      "line": 9575,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/pipelines/ping",
+      "method": "POST",
+      "path": "/api/workspace/pipelines/ping",
+      "file": "server.ts",
+      "line": 9351,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/pipelines/save",
+      "method": "POST",
+      "path": "/api/workspace/pipelines/save",
+      "file": "server.ts",
+      "line": 9276,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/pipelines/test-webhook",
+      "method": "POST",
+      "path": "/api/workspace/pipelines/test-webhook",
+      "file": "server.ts",
+      "line": 9625,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/reporting/metrics",
+      "method": "GET",
+      "path": "/api/workspace/reporting/metrics",
+      "file": "server.ts",
+      "line": 9208,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/reports",
+      "method": "GET",
+      "path": "/api/workspace/reports",
+      "file": "server.ts",
+      "line": 7540,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/reports",
+      "method": "POST",
+      "path": "/api/workspace/reports",
+      "file": "server.ts",
+      "line": 7549,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/reports/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/reports/:id",
+      "file": "server.ts",
+      "line": 7567,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/reports/artifact/:hash/download",
+      "method": "GET",
+      "path": "/api/workspace/reports/artifact/:hash/download",
+      "file": "server.ts",
+      "line": 7661,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/reports/deck/generate",
+      "method": "POST",
+      "path": "/api/workspace/reports/deck/generate",
+      "file": "server.ts",
+      "line": 7850,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/reports/snapshot/render",
+      "method": "POST",
+      "path": "/api/workspace/reports/snapshot/render",
+      "file": "server.ts",
+      "line": 7576,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/reset",
+      "method": "POST",
+      "path": "/api/workspace/reset",
+      "file": "server.ts",
+      "line": 3540,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-agent",
+      "method": "POST",
+      "path": "/api/workspace/run-agent",
+      "file": "server.ts",
+      "line": 6135,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-agent/:id/approve",
+      "method": "POST",
+      "path": "/api/workspace/run-agent/:id/approve",
+      "file": "server.ts",
+      "line": 6314,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-agent/:id/reject",
+      "method": "POST",
+      "path": "/api/workspace/run-agent/:id/reject",
+      "file": "server.ts",
+      "line": 6491,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-analytics",
+      "method": "POST",
+      "path": "/api/workspace/run-analytics",
+      "file": "server.ts",
+      "line": 7299,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-diagnostic",
+      "method": "POST",
+      "path": "/api/workspace/run-diagnostic",
+      "file": "server.ts",
+      "line": 5355,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-performance-swarm",
+      "method": "POST",
+      "path": "/api/workspace/run-performance-swarm",
+      "file": "server.ts",
+      "line": 8078,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-pipeline",
+      "method": "POST",
+      "path": "/api/workspace/run-pipeline",
+      "file": "server.ts",
+      "line": 6545,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-reconciliation",
+      "method": "POST",
+      "path": "/api/workspace/run-reconciliation",
+      "file": "server.ts",
+      "line": 9149,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-swarm",
+      "method": "POST",
+      "path": "/api/workspace/run-swarm",
+      "file": "server.ts",
+      "line": 8040,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/run-uiux",
+      "method": "POST",
+      "path": "/api/workspace/run-uiux",
+      "file": "server.ts",
+      "line": 5676,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/second-brain",
+      "method": "POST",
+      "path": "/api/workspace/second-brain",
+      "file": "server.ts",
+      "line": 2573,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/agent-teams/:moduleKey",
+      "method": "POST",
+      "path": "/api/workspace/settings/agent-teams/:moduleKey",
+      "file": "server.ts",
+      "line": 2516,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/mcps/:id/toggle",
+      "method": "POST",
+      "path": "/api/workspace/settings/mcps/:id/toggle",
+      "file": "server.ts",
+      "line": 2486,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/plugins/:id/toggle",
+      "method": "POST",
+      "path": "/api/workspace/settings/plugins/:id/toggle",
+      "file": "server.ts",
+      "line": 2538,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/skills",
+      "method": "POST",
+      "path": "/api/workspace/settings/skills",
+      "file": "server.ts",
+      "line": 2499,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/settings/skills/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/settings/skills/:id",
+      "file": "server.ts",
+      "line": 2564,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/skills/:id/toggle",
+      "method": "POST",
+      "path": "/api/workspace/settings/skills/:id/toggle",
+      "file": "server.ts",
+      "line": 2551,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/settings/skills/upload",
+      "method": "POST",
+      "path": "/api/workspace/settings/skills/upload",
+      "file": "server.ts",
+      "line": 3133,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/social-mentions",
+      "method": "GET",
+      "path": "/api/workspace/social-mentions",
+      "file": "server.ts",
+      "line": 9968,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/social-mentions",
+      "method": "POST",
+      "path": "/api/workspace/social-mentions",
+      "file": "server.ts",
+      "line": 9974,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/social-mentions/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/social-mentions/:id",
+      "file": "server.ts",
+      "line": 10009,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/social/channels",
+      "method": "GET",
+      "path": "/api/workspace/social/channels",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 46,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/social/draft",
+      "method": "POST",
+      "path": "/api/workspace/social/draft",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 105,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/social/publish",
+      "method": "POST",
+      "path": "/api/workspace/social/publish",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 107,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/social/schedule",
+      "method": "POST",
+      "path": "/api/workspace/social/schedule",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 106,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/social/status",
+      "method": "GET",
+      "path": "/api/workspace/social/status",
+      "file": "src/server/routes/socialDistributionRoutes.ts",
+      "line": 36,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /api/workspace/team",
+      "method": "GET",
+      "path": "/api/workspace/team",
+      "file": "server.ts",
+      "line": 3749,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/team/accept",
+      "method": "POST",
+      "path": "/api/workspace/team/accept",
+      "file": "server.ts",
+      "line": 3833,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/team/invite",
+      "method": "POST",
+      "path": "/api/workspace/team/invite",
+      "file": "server.ts",
+      "line": 3768,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/team/invite/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/team/invite/:id",
+      "file": "server.ts",
+      "line": 3816,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/team/member/:userId",
+      "method": "DELETE",
+      "path": "/api/workspace/team/member/:userId",
+      "file": "server.ts",
+      "line": 3878,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/team/pending-invitations",
+      "method": "GET",
+      "path": "/api/workspace/team/pending-invitations",
+      "file": "server.ts",
+      "line": 3851,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/team/role",
+      "method": "POST",
+      "path": "/api/workspace/team/role",
+      "file": "server.ts",
+      "line": 3860,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/telemetry/log-token",
+      "method": "POST",
+      "path": "/api/workspace/telemetry/log-token",
+      "file": "server.ts",
+      "line": 5159,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/telemetry/tokens",
+      "method": "GET",
+      "path": "/api/workspace/telemetry/tokens",
+      "file": "server.ts",
+      "line": 5108,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/terms/accept",
+      "method": "POST",
+      "path": "/api/workspace/terms/accept",
+      "file": "server.ts",
+      "line": 7480,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vanta/conversations",
+      "method": "GET",
+      "path": "/api/workspace/vanta/conversations",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 231,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/vanta/conversations",
+      "method": "POST",
+      "path": "/api/workspace/vanta/conversations",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 246,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/vanta/conversations/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/vanta/conversations/:id",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 309,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vanta/conversations/:id/messages",
+      "method": "GET",
+      "path": "/api/workspace/vanta/conversations/:id/messages",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 265,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/vanta/conversations/:id/messages",
+      "method": "POST",
+      "path": "/api/workspace/vanta/conversations/:id/messages",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 320,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "PATCH /api/workspace/vanta/conversations/:id/share",
+      "method": "PATCH",
+      "path": "/api/workspace/vanta/conversations/:id/share",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 291,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vanta/local-context",
+      "method": "POST",
+      "path": "/api/workspace/vanta/local-context",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 566,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/vanta/local-context/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/vanta/local-context/:id",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 600,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vanta/local-context/:id",
+      "method": "GET",
+      "path": "/api/workspace/vanta/local-context/:id",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 617,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/vanta/memories",
+      "method": "POST",
+      "path": "/api/workspace/vanta/memories",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 534,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "DELETE /api/workspace/vanta/memories/:id",
+      "method": "DELETE",
+      "path": "/api/workspace/vanta/memories/:id",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 555,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vanta/provider/verify",
+      "method": "POST",
+      "path": "/api/workspace/vanta/provider/verify",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 200,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vanta/settings",
+      "method": "GET",
+      "path": "/api/workspace/vanta/settings",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 95,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "PUT /api/workspace/vanta/settings/voice",
+      "method": "PUT",
+      "path": "/api/workspace/vanta/settings/voice",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 116,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vanta/status",
+      "method": "GET",
+      "path": "/api/workspace/vanta/status",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 77,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/vanta/voice/speak",
+      "method": "POST",
+      "path": "/api/workspace/vanta/voice/speak",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 683,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vanta/voice/transcribe",
+      "method": "POST",
+      "path": "/api/workspace/vanta/voice/transcribe",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 639,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vanta/voice/verify",
+      "method": "POST",
+      "path": "/api/workspace/vanta/voice/verify",
+      "file": "src/server/routes/vantaRoutes.ts",
+      "line": 149,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vault/analyze-document",
+      "method": "POST",
+      "path": "/api/workspace/vault/analyze-document",
+      "file": "server.ts",
+      "line": 3318,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vault/documents",
+      "method": "GET",
+      "path": "/api/workspace/vault/documents",
+      "file": "server.ts",
+      "line": 3267,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "DELETE /api/workspace/vault/files/:fileId",
+      "method": "DELETE",
+      "path": "/api/workspace/vault/files/:fileId",
+      "file": "server.ts",
+      "line": 3509,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/vault/files/:fileId/url",
+      "method": "GET",
+      "path": "/api/workspace/vault/files/:fileId/url",
+      "file": "server.ts",
+      "line": 3491,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/vault/search",
+      "method": "POST",
+      "path": "/api/workspace/vault/search",
+      "file": "server.ts",
+      "line": 3303,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/vault/upload",
+      "method": "POST",
+      "path": "/api/workspace/vault/upload",
+      "file": "server.ts",
+      "line": 3169,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/verify-domain-dns",
+      "method": "POST",
+      "path": "/api/workspace/verify-domain-dns",
+      "file": "server.ts",
+      "line": 2581,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /api/workspace/web-intelligence/capabilities",
+      "method": "GET",
+      "path": "/api/workspace/web-intelligence/capabilities",
+      "file": "src/server/routes/webIntelligenceRoutes.ts",
+      "line": 14,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "POST /api/workspace/web-intelligence/fetch",
+      "method": "POST",
+      "path": "/api/workspace/web-intelligence/fetch",
+      "file": "src/server/routes/webIntelligenceRoutes.ts",
+      "line": 60,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/web-intelligence/search",
+      "method": "POST",
+      "path": "/api/workspace/web-intelligence/search",
+      "file": "src/server/routes/webIntelligenceRoutes.ts",
+      "line": 40,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "POST /api/workspace/web-intelligence/verify",
+      "method": "POST",
+      "path": "/api/workspace/web-intelligence/verify",
+      "file": "src/server/routes/webIntelligenceRoutes.ts",
+      "line": 24,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "isolated_fixture_or_specific_external_approval_required"
+    },
+    {
+      "id": "GET /healthz",
+      "method": "GET",
+      "path": "/healthz",
+      "file": "server.ts",
+      "line": 362,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    },
+    {
+      "id": "GET /readyz",
+      "method": "GET",
+      "path": "/readyz",
+      "file": "server.ts",
+      "line": 388,
+      "verification": "untested",
+      "sourceDiscovery": "typescript_ast",
+      "executionPolicy": "review_before_live_probe"
+    }
+  ],
+  "unresolved": []
+}
