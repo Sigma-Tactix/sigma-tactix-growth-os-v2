@@ -1,4 +1,5 @@
 {
+  "checkedAt": "2026-11-21T06:58:40.332193+00:00",
   "checks": [
     {
       "status": "passed",
@@ -81,84 +82,84 @@
       "error_code": null
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/",
-      "http_status": 200,
-      "content_type": "text/html",
+      "http_status": 302,
+      "content_type": "text/plain",
       "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/api/health",
-      "http_status": 200,
-      "content_type": "application/json",
-      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "http_status": 302,
+      "content_type": "text/plain",
+      "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/healthz",
-      "http_status": 200,
-      "content_type": "application/json",
-      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
+      "http_status": 302,
+      "content_type": "text/plain",
+      "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     },
     {
       "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/api/ready",
-      "http_status": 503,
-      "content_type": "application/json",
-      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
-      "ready": false,
-      "error_code": "runtime_not_ready"
+      "http_status": 302,
+      "content_type": "text/plain",
+      "commit": null,
+      "ready": null,
+      "error_code": "deployment_authentication_required"
     },
     {
       "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/readyz",
-      "http_status": 503,
-      "content_type": "application/json",
-      "commit": "2378cec675b56a74ba77e96d92689bca93d52a7e",
-      "ready": false,
-      "error_code": "runtime_not_ready"
+      "http_status": 302,
+      "content_type": "text/plain",
+      "commit": null,
+      "ready": null,
+      "error_code": "deployment_authentication_required"
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/api/workspace",
-      "http_status": 401,
-      "content_type": "application/json",
+      "http_status": 302,
+      "content_type": "text/plain",
       "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/api",
-      "http_status": 404,
-      "content_type": "application/json",
+      "http_status": 302,
+      "content_type": "text/plain",
       "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     },
     {
-      "status": "passed",
+      "status": "blocked",
       "deployment": "analytics_preview",
       "path": "/api/__connection_check_missing__",
-      "http_status": 404,
-      "content_type": "application/json",
+      "http_status": 302,
+      "content_type": "text/plain",
       "commit": null,
       "ready": null,
-      "error_code": null
+      "error_code": "deployment_authentication_required"
     }
   ],
   "scope": "public_read_only_http",

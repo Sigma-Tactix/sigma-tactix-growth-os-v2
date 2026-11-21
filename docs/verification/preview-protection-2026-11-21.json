@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-11-21T06:54:09.552548+00:00",
+  "scope": "anonymous_preview_protection_and_production_liveness",
+  "checks": [
+    {
+      "name": "analytics_preview_root",
+      "url": "https://sigma-tactix-growth-os-v2-aycb8ssm3-nazims-projects-ddc76692.vercel.app/",
+      "http_status": 302,
+      "content_type": "text/plain",
+      "redirect_host": "vercel.com",
+      "redirect_path": "/sso-api",
+      "expected": "vercel_authentication_redirect",
+      "passed": true
+    },
+    {
+      "name": "analytics_preview_health",
+      "url": "https://sigma-tactix-growth-os-v2-aycb8ssm3-nazims-projects-ddc76692.vercel.app/api/health",
+      "http_status": 302,
+      "content_type": "text/plain",
+      "redirect_host": "vercel.com",
+      "redirect_path": "/sso-api",
+      "expected": "vercel_authentication_redirect",
+      "passed": true
+    },
+    {
+      "name": "production_root",
+      "url": "https://growth-os.sigmatactix.com/",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "redirect_host": null,
+      "redirect_path": "",
+      "expected": "200",
+      "passed": true
+    },
+    {
+      "name": "production_health",
+      "url": "https://growth-os.sigmatactix.com/api/health",
+      "http_status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "redirect_host": null,
+      "redirect_path": "",
+      "expected": "200",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "ssoProtection": {
+    "enabled": true,
+    "deploymentType": "preview"
+  },
+  "appliedVia": "authenticated_vercel_cli_after_connector_403",
+  "stagingProjectCreated": false,
+  "stagingBlocker": "owner_active_free_project_limit",
+  "stagingQuotedMonthlyCost": 0,
+  "productionApplicationCommitChanged": false
+}

@@ -6,6 +6,8 @@
 import asyncio
 import json
 import os
+from urllib.parse import urlparse
+from datetime import datetime, timezone
 from typing import Literal
 import httpx
 from pydantic import Field
@@ -55,6 +57,9 @@ class DeploymentProbeTool(BaseTool[DeploymentProbeInput, DeploymentProbeOutput])
     def _evaluate(self, params, response, body):
         media = response.headers.get('content-type', '').split(';', 1)[0].lower()
         fields = {'http_status': response.status_code, 'content_type': media}
+        location = urlparse(response.headers.get('location', ''))
+        if params.deployment == 'analytics_preview' and response.status_code == 302 and location.hostname == 'vercel.com' and location.path in ('/sso-api', '/login'):
+            return self._output(params, 'blocked', error_code='deployment_authentication_required', **fields)
         expected, expected_type = PATHS[params.path]
         if media != expected_type:
             return self._output(params, 'failed', error_code='unexpected_content_type', **fields)
@@ -114,7 +119,7 @@ async def main():
         for path in PATHS:
             result = await DeploymentProbeTool().run_async(DeploymentProbeInput(deployment=deployment, path=path))
             results.append(result.model_dump())
-    print(json.dumps({'checks': results, 'scope': 'public_read_only_http', 'authenticated_workflows': 'not_tested_by_this_tool'}, indent=2))
+    print(json.dumps({'checkedAt': datetime.now(timezone.utc).isoformat(), 'checks': results, 'scope': 'public_read_only_http', 'authenticated_workflows': 'not_tested_by_this_tool'}, indent=2))
 
 if __name__ == '__main__':
     asyncio.run(main())

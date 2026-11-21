@@ -5,7 +5,7 @@
     #growth-os-evidence .evidence-detail { display:grid; gap:calc(var(--font-size-base)*.5); }
   </style>
   <h2>Growth OS verification</h2>
-  <div class="text-small text-muted">21 November 2026 · 241 routes inventoried · Full workflow acceptance incomplete</div>
+  <div class="text-small text-muted">21 November 2026 | Full workflow acceptance incomplete</div>
   <div class="evidence-grid" aria-label="Verification areas">
     <button type="button" class="btn" data-area="http" aria-pressed="true">Public HTTP</button>
     <button type="button" class="btn" data-area="auth" aria-pressed="false">Sign-in and isolation</button>
@@ -17,22 +17,22 @@
     <button type="button" class="btn" data-area="coverage" aria-pressed="false">Remaining coverage</button>
   </div>
   <div class="card evidence-detail" aria-live="polite">
-    <h3 data-title>Public HTTP — 12 passed, 4 blocked</h3>
-    <div data-evidence>Production and the repaired Analytics preview passed liveness, content-type, unauthorized-access and missing-route checks. Both readiness paths report HTTP 503 because the worker is unavailable.</div>
-    <div class="text-small text-muted" data-source>Source: typed public HTTP probe · production 896eafb · Analytics preview 2378cec</div>
+    <h3 data-title>Production HTTP - 6 passed, 2 blocked</h3>
+    <div data-evidence>Readiness remains unavailable. Eight preview requests require Vercel authentication.</div>
+    <div class="text-small text-muted" data-source>Source: bounded HTTP probe and deployment protection checks</div>
   </div>
   <script>
     (() => {
       const root=document.getElementById('growth-os-evidence');
       const entries={
-        http:['Public HTTP — 12 passed, 4 blocked','Production and the repaired Analytics preview passed liveness, content-type, unauthorized-access and missing-route checks. Both readiness paths report HTTP 503 because the worker is unavailable.','Typed public HTTP probe · production 896eafb · Analytics preview 2378cec'],
-        auth:['Sign-in and isolation — checked','A real Google session was present on the Vercel production alias. Two disposable identities passed own-enclave reads, foreign-enclave rejection, session refresh and database isolation checks. The canonical domain has separate browser session storage.','Authenticated browser and isolated user-JWT fixtures'],
-        records:['Saved records — checked','Disposable reports persisted across requests. Tasks entered human approval, persisted and could be rejected. Fixtures were removed. No external publishing or AI generation was performed.','Production report/task acceptance fixtures'],
-        preview:['Preview security — failed','Deployment protection is disabled. Preview and production share credential bindings and the same database target; no Supabase development branch exists.','Vercel project settings, environment metadata and Supabase branch inventory'],
-        providers:['Creative providers — incomplete','Provider configuration has been inspected. Real generation and artifact persistence still need provider-specific acceptance. Credential presence does not establish a working provider.','Provider status and source review'],
-        social:['Social publishing — failed on production','The production provider reports unconfigured while returning four connected example channels. The remediation branch removes fake channels and requires a provider receipt; it has not been released.','Authenticated production GET checks and remediation diff'],
-        worker:['Scheduler and live browser — blocked','No production worker is healthy. Persistent scheduling and an isolated streamed browser are unfinished. A visible browser session cannot be proved by a simulated activity log.','Production readiness and source review'],
-        coverage:['Coverage — incomplete','241 routes are inventoried, not certified. Seven suite hubs and TinyFish/MiroFish tab navigation loaded in the authenticated browser. Each remaining operation still needs its own success, failure, authorization and persistence checks.','Static TypeScript route inventory and browser navigation checks']
+        http:['Production HTTP - 6 passed, 2 blocked','Readiness remains unavailable. Eight preview requests require Vercel authentication.','Bounded HTTP probe and deployment protection checks'],
+        auth:['Sign-in and isolation - checked','Google session observed; disposable identities passed session refresh, own-enclave reads and foreign-enclave API/RLS denial.','Authenticated browser and isolated user-JWT fixtures'],
+        records:['Saved records - checked','Reports and task rejections persisted across requests; disposable records were cleaned. Task execution remains unverified.','Production report/task fixtures'],
+        preview:['Protection enabled; database separation blocked','Anonymous previews redirect to Vercel authentication. The $0 staging project was blocked by the owner\'s two-active-free-project limit.','Project settings, live HTTP checks and Supabase creation response'],
+        providers:['Creative providers - incomplete','Image response parsing and metadata were repaired. Live generation and saved artifacts still require provider acceptance.','Adapter contract tests and source review'],
+        social:['Publishing repaired in draft; live acceptance pending','Postiz requests, media uploads and receipts are implemented. LinkedIn/Instagram connections and an approved test post are still required.','Draft remediation and contract tests'],
+        worker:['Computer pilot checked; worker unfinished','Node 24, Docker and isolated headless Chrome contexts passed host checks. Persistent scheduling and in-app streaming are not running.','Pilot host check and production readiness'],
+        coverage:['905 tests; 116 views; 29 paced connectivity checks','241 API routes are inventoried. Each remaining action still needs real output, failure, authorization and persistence acceptance.','Candidate gate, browser reports and static route inventory']
       };
       function select(area,save){
         const e=entries[area];if(!e)return;

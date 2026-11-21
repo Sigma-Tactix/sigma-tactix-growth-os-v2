@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-11-21T06:56:28.351Z",
+  "scope": "existing_computer_pilot_host",
+  "nodeVersion": "v24.14.0",
+  "dockerVersion": "29.7.2",
+  "browser": "157.0.8103.79",
+  "isolatedContexts": true,
+  "publicPageLoaded": true,
+  "browserTeardown": true,
+  "supervisedWorkerRunning": false,
+  "durableExecutionCertified": false,
+  "hostCheckPassed": true
+}

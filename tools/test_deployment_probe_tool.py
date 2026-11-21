@@ -56,6 +56,18 @@ class DeploymentProbeTests(unittest.TestCase):
         self.assertEqual(r.status, 'passed')
         self.assertTrue(r.ready)
 
+    def test_known_preview_authentication_redirect_is_blocked_not_backend_success(self):
+        transport = httpx.MockTransport(lambda request: httpx.Response(302, headers={'content-type': 'text/plain', 'location': 'https://vercel.com/sso-api?nonce=private-test-nonce'}))
+        result = DeploymentProbeTool(transport=transport).run(DeploymentProbeInput(deployment='analytics_preview', path='/api/health'))
+        self.assertEqual(result.status, 'blocked')
+        self.assertEqual(result.error_code, 'deployment_authentication_required')
+        self.assertNotIn('private-test-nonce', result.model_dump_json())
+
+    def test_unknown_redirect_is_not_treated_as_preview_protection(self):
+        transport = httpx.MockTransport(lambda request: httpx.Response(302, headers={'content-type': 'text/plain', 'location': 'https://untrusted.example/login'}))
+        result = DeploymentProbeTool(transport=transport).run(DeploymentProbeInput(deployment='analytics_preview', path='/api/health'))
+        self.assertEqual(result.status, 'failed')
+
     def test_oversized_body_is_rejected(self):
         transport = httpx.MockTransport(lambda request: httpx.Response(200, content=b'x' * 2048))
         tool = DeploymentProbeTool(DeploymentProbeConfig(max_bytes=1024), transport=transport)
