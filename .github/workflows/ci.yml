@@ -55,7 +55,7 @@ jobs:
         run: npm run build
 
       - name: Run built API with stock Node
-        run: node scripts/checkBuiltApi.mjs
+        run: node --no-experimental-detect-module scripts/checkBuiltApi.mjs
 
       - name: Run vitest suite
         run: npm test

@@ -35,6 +35,8 @@ Published the repair branch and opened draft [PR #50](https://github.com/Sigma-T
 
 Vercel automatically built the exact pushed commit, confirming the repository deployment trigger. The first cloud startup exposed an ESM resolution failure hidden by Vite's resolver. CI also exposed two dependencies on the ignored local sprint database and a missing build step. The follow-up bundles internal API imports, checks the artifact under stock Node, validates committed historical evidence instead of local file existence, and builds fixtures in CI. Fresh validation and deployment results follow below.
 
+The second commit passed all four GitHub CI jobs. Live startup then exposed PptxGenJS's ambiguous ESM package entry. Running the artifact with `--no-experimental-detect-module` reproduced the module failure locally. The server-side renderer now explicitly loads the package's CommonJS export, and local/CI verification use that stricter Node mode.
+
 ## Remaining work
 
 1. Persistent job storage adapter, supervised worker lifecycle, and verified dispatch/reconciliation. A serverless function or an environment flag is not a substitute.
