@@ -35,8 +35,8 @@ describe('exported Express runtime over HTTP', () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toMatchObject({ error: 'Missing Authorization header' });
   });
-  it('returns JSON 404 for unknown API routes', async () => {
-    const response = await fetch(`${origin}/api/__connection_check_missing__`);
+  it.each(['/api', '/api/__connection_check_missing__'])('returns JSON 404 for API path %s', async path => {
+    const response = await fetch(`${origin}${path}`);
     expect(response.status).toBe(404);
     expect(await response.json()).toMatchObject({ error: 'API endpoint not found' });
   });

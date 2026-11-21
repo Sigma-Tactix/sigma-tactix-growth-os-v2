@@ -106,9 +106,12 @@ export default function App() {
                 <Routes>
                   {/* Growth OS Overview */}
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard/briefing" element={<DashboardBriefing />} />
-                  <Route path="/dashboard/command" element={<DashboardCommandCenter />} />
-                  <Route path="/dashboard/progress" element={<DashboardProgressBoard />} />
+                  {/* Layout prototypes contain sample results and are development-only. */}
+                  {import.meta.env.DEV && <>
+                    <Route path="/dashboard/briefing" element={<DashboardBriefing />} />
+                    <Route path="/dashboard/command" element={<DashboardCommandCenter />} />
+                    <Route path="/dashboard/progress" element={<DashboardProgressBoard />} />
+                  </>}
                   <Route path="/diagnostics" element={<GrowthDiagnostics />} />
                   <Route path="/vaults" element={<SecondBrain />} />
 

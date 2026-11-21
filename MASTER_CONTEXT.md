@@ -2,7 +2,16 @@
 
 > **Last updated**: 2026-11-21
 > **Version**: v2.0.0-rc1 (live production readiness not established)
-> **Status**: Connection repair is underway: the missing schema is applied and verified, API deployment and configuration guards are implemented, and live release readiness remains unestablished. See [the repair record](docs/connection-repair-2026-11-21.md). Earlier certification statements below are historical claims superseded by live observations. Local tests do not establish live production readiness.
+> **Status**: The repaired API/database candidate is verified in preview, and the user has authorized production activation. Full durable execution readiness remains unestablished. See the [production release record](docs/production-release-2026-11-21.md) and [PR #50](https://github.com/Sigma-Tactix/sigma-tactix-growth-os-v2/pull/50) for the current deployment identity and live results. Earlier certification statements below are historical claims superseded by live observations.
+
+## Production Activation Follow-up — 2026-11-21
+
+- User authorized production deployment and requested a hosting recommendation before provisioning a worker. No paid worker host has been provisioned. Render Background Worker is recommended; the persistent adapter/worker remains a separate implementation gate.
+- Two independent reviews found hardcoded sample metrics in the inherited dashboard variants; all three routes are now development-only, with a built-client exclusion check. Bare `/api` now returns JSON 404.
+- Actual authenticated preview acceptance passed with two disposable identities: own Client Enclave reads succeeded, foreign API selection returned 403, and user-scoped database queries denied foreign access. Fixture setup/cleanup is isolated in `scripts/verifyAuthenticatedDeployment.mjs`; all fixtures were removed.
+- The local Gemini key authenticated successfully without inference and is now bound in Vercel. The existing Google OAuth client is configured for production with the canonical `APP_URL`, but its Google preflight returned `redirect_uri_mismatch`. Stripe examples, Google Ads setup, owner-coordinated Secret Vault key migration, database-password rotation, and GitHub connector PR-write permission require operator work; exact tasks are in the production release record.
+- Both independent review axes cleared their findings. The final local gate passed build/typecheck, 868 tests (3 skipped), a production-client prototype exclusion check, and five strict-Node HTTP checks.
+- Production activation will ship the verified core application with durable capabilities explicitly unavailable. Keep readiness evidence distinct from API liveness and do not claim full platform certification. Final production source/deployment evidence is maintained in PR #50.
 
 ## Connection Repair — 2026-11-21
 
@@ -12,7 +21,7 @@
 - Added real HTTP/regression checks and a public deployment smoke command with an explicit readiness gate. The older production deployment remains a release concern until a tested replacement is activated; authenticated provider acceptance and the worker remain outstanding.
 - Final `npm run verify` passed: build/typecheck and 867 tests, with 3 skipped, plus four HTTP checks of the built API under stock Node. Queue mutation checks are included; deployment evidence is tracked in the repair record. Strategic direction, RACI, pricing, and the user's pre-existing `.mcp.json` edit are unchanged.
 
-## Current Connection and Release Status — 2026-11-21
+## Initial Audit Snapshot (superseded by the repair/release records) — 2026-11-21
 
 - **Infrastructure identity**: GitHub connector access works. Vercel project `prj_7zpThzqMg9eKObVmUGLIaZdrDG0F` links to `Sigma-Tactix/sigma-tactix-growth-os-v2`, repository ID `1367656977`, production branch `main`. Supabase `rqktjogegbdlsdvpusie` reports `ACTIVE_HEALTHY`; its URL matches local configuration, both deployed browser bundles, and Vercel's integration-provided public URL.
 - **Production blocker**: `https://growth-os.sigmatactix.com/api/health`, `/api/ready`, `/api/connectors`, and an unknown API path return HTTP 200 with the same HTML as `/`. Production alias targets deployment `dpl_6M71gxumDbv23rus4Sd8Z3x1xErr`, created 17 Nov, with base commit metadata `18ef63c` and a dirty-tree marker. Local `vercel.json` still configures a static Vite SPA with a universal HTML rewrite.

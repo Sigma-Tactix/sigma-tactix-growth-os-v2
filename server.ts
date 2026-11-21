@@ -10021,13 +10021,15 @@ app.delete("/api/workspace/social-mentions/:id", requireModule("social"), async 
 // Explicit API 404 handler: Catches any unhandled /api/* route before the SPA
 // fallback so unknown or malformed API calls return a clean JSON 404 rather than
 // falling through to index.html (which causes HTML-as-JSON syntax errors in callers).
-app.all("/api/*", (req: Request, res: Response) => {
+function respondApiNotFound(req: Request, res: Response) {
   res.status(404).json({
     error: "API endpoint not found",
     path: req.originalUrl,
     method: req.method,
   });
-});
+}
+app.all("/api", respondApiNotFound);
+app.all("/api/*", respondApiNotFound);
 
 // Handle serving the production frontend build
 if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {

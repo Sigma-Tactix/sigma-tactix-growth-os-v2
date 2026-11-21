@@ -8,8 +8,8 @@ const expectedCommit = value('--commit');
 const probes = [
   ['/api/health', 200, 'json'], ['/healthz', 200, 'json'],
   ['/api/ready', null, 'json'], ['/readyz', null, 'json'],
-  ['/api/workspace', 401, 'json'], ['/api/__connection_check_missing__', 404, 'json'],
-  ['/dashboard/briefing', 200, 'html'],
+  ['/api/workspace', 401, 'json'], ['/api', 404, 'json'], ['/api/__connection_check_missing__', 404, 'json'],
+  ['/', 200, 'html'],
 ];
 const results = await Promise.all(probes.map(async ([path, expectedStatus, format]) => {
   try {
