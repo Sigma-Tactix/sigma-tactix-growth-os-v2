@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { isPlaceholderSecret } from './secretConfiguration.js';
 
 // Server-only. Encrypts connector credentials (third-party API keys/tokens)
 // before they're written to db_store.json, so a leaked or accidentally
@@ -10,6 +11,9 @@ const DEV_FALLBACK_KEY = "sigma-tactix-dev-only-insecure-key-do-not-use-in-prod"
 
 function getKey(): Buffer {
   const secret = process.env.CONNECTOR_CREDENTIALS_KEY;
+  if ((secret && isPlaceholderSecret(secret)) || (!secret && (process.env.NODE_ENV === 'production' || process.env.VERCEL))) {
+    throw new Error('CONNECTOR_CREDENTIALS_KEY must be configured with a real encryption key before storing or reading connector credentials.');
+  }
   if (!secret) {
     console.warn(
       "CONNECTOR_CREDENTIALS_KEY is not set — using an insecure dev-only key. " +

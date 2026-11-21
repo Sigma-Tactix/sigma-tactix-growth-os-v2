@@ -31,7 +31,6 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import multer from "multer";
 import crypto from "crypto";
@@ -130,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
 import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
@@ -153,7 +153,7 @@ import * as fs from "fs";
 import { spawn } from "child_process";
 
 // Load environment variables
-dotenv.config({ override: true });
+if (!process.env.VERCEL) dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -377,37 +377,16 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 // Readiness probe: checks system environment, database presence, and exposes runtime commit
-app.get("/readyz", (_req: Request, res: Response) => {
-  let dbStatus = "unconfigured";
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    dbStatus = "configured";
-  }
-  res.json({
-    ready: true,
-    status: "ready",
+async function respondWithReadiness(_req: Request, res: Response) {
+  const readiness = await assessRuntimeReadiness();
+  res.status(readiness.ready ? 200 : 503).json({
+    ...readiness,
     commit: resolveRuntimeCommitSha(),
-    environment: process.env.NODE_ENV || "development",
-    database: dbStatus,
-    ledgerAuthoritative: process.env.EXECUTION_LEDGER_AUTHORITATIVE === "true",
     uptimeSeconds: Math.round(process.uptime()),
   });
-});
-
-app.get("/api/ready", (_req: Request, res: Response) => {
-  let dbStatus = "unconfigured";
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    dbStatus = "configured";
-  }
-  res.json({
-    ready: true,
-    status: "ready",
-    commit: resolveRuntimeCommitSha(),
-    environment: process.env.NODE_ENV || "development",
-    database: dbStatus,
-    ledgerAuthoritative: process.env.EXECUTION_LEDGER_AUTHORITATIVE === "true",
-    uptimeSeconds: Math.round(process.uptime()),
-  });
-});
+}
+app.get("/readyz", respondWithReadiness);
+app.get("/api/ready", respondWithReadiness);
 
 // Request-scoped DB access. requireAuth stashes a Supabase client (built from
 // the caller's JWT) plus their resolved workspace id on res.locals; RLS
@@ -10042,22 +10021,25 @@ app.delete("/api/workspace/social-mentions/:id", requireModule("social"), async 
 // Explicit API 404 handler: Catches any unhandled /api/* route before the SPA
 // fallback so unknown or malformed API calls return a clean JSON 404 rather than
 // falling through to index.html (which causes HTML-as-JSON syntax errors in callers).
-app.all("/api/*", (req: Request, res: Response) => {
+function respondApiNotFound(req: Request, res: Response) {
   res.status(404).json({
     error: "API endpoint not found",
     path: req.originalUrl,
     method: req.method,
   });
-});
+}
+app.all("/api", respondApiNotFound);
+app.all("/api/*", respondApiNotFound);
 
 // Handle serving the production frontend build
-if (process.env.NODE_ENV !== "production") {
+if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {
+  const { createServer: createViteServer } = await import("vite");
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: "spa",
   });
   app.use(vite.middlewares);
-} else {
+} else if (!process.env.VERCEL) {
   // Serve the built SPA only when the build output actually exists next to the
   // running server. dist/server.js lives inside dist/, so the Vite build
   // (plus the public/ assets it copies in) is found relative to __dirname in
@@ -10142,6 +10124,9 @@ async function reportLedgerTrustProblems(): Promise<void> {
   }
 }
 
+// Vercel invokes the exported app. Standalone supervisors own process lifecycle,
+// retention timers, and signals; these must not run in a request function.
+if (!process.env.VERCEL) {
 await reportLedgerTrustProblems();
 
 const server = app.listen(PORT, "0.0.0.0", () => { console.log(`Sigma Tactix Growth OS Backend running on http://localhost:${PORT}`); });
@@ -10199,3 +10184,6 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
     setTimeout(() => process.exit(0), 10000).unref();
   });
 }
+}
+
+export default app;

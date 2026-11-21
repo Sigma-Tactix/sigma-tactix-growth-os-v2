@@ -4,14 +4,14 @@ import * as path from 'path';
 import { reportArtifactRepository, type ArtifactRenderResult } from '../lib/reportArtifactPipeline.js';
 import { assessSystemReadiness } from '../lib/operationsRunbook.js';
 
-describe('Task S20: Release Exact Verified Candidate & Production Activation', () => {
+describe('S20 local acceptance fixtures (not live production certification)', () => {
   const rootDir = process.cwd();
 
   describe('S20-A1: Predeploy Candidate Evidence & Milestone Gate Verification', () => {
-    it('verifies that all milestones M0 through M5 and S22 are integrated on the sprint board', () => {
-      const dbPath = path.resolve(rootDir, '.release-run/sprint.sqlite');
-      expect(fs.existsSync(dbPath)).toBe(true);
-
+    it('checks the committed milestone evidence rather than a local sprint database', () => {
+      const archivedVerification = JSON.parse(fs.readFileSync(path.resolve(rootDir, 'evidence/S22/verify.json'), 'utf8'));
+      expect(archivedVerification.exit_code).toBe(0);
+      expect(archivedVerification.command).toBe('npm run verify');
       const candidateReportPath = path.resolve(rootDir, 'evidence/S22/candidate_acceptance_report.md');
       expect(fs.existsSync(candidateReportPath)).toBe(true);
 
@@ -135,16 +135,5 @@ describe('Task S20: Release Exact Verified Candidate & Production Activation', (
       expect(runbookContent).toContain('Worker Default Timeout');
     });
 
-    it('activates production certification upon verified pass of all production activation bindings', () => {
-      const allPredeployPassed = true;
-      const ops02Passed = true;
-      const auth01Passed = true;
-      const art04Passed = true;
-
-      const productionCertificationActive =
-        allPredeployPassed && ops02Passed && auth01Passed && art04Passed;
-
-      expect(productionCertificationActive).toBe(true);
-    });
   });
 });

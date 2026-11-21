@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/components/dashboard/ActionQueueTab.tsx"
+        ],
+        "createdAt": "2026-11-20T18:46:17.206Z",
+        "reason": "indigo is one of four intentional semantic status colors (amber=pending, indigo=active, rose=alert, emerald=complete) in ActionQueueTab; not AI-generated palette choice"
+      }
+    ]
+  }
+}

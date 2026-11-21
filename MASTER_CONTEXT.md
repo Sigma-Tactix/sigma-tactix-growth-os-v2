@@ -1,8 +1,36 @@
 # SigmaTactix Growth OS — Master Context
 
-> **Last updated**: 2026-11-18
-> **Version**: v2.0.0-rc1 (Release Candidate 1: Production Certified & Released)
-> **Status**: Production Certified for Sovereign Client Delivery (Target: 20 Nov 2026 18:00 Asia/Dubai). All 23 release sprint tasks (S00–S22, S20) closed on the local sprint board (`.release-run/sprint.sqlite`); 115 test files passed, 819 tests passed; clean production build and zero type errors; branch `main` synchronized with `origin/main`. Production activation bindings `OPS-02@production`, `AUTH-01@production`, and `ART-04@production` verified PASS on exact candidate build and configuration.
+> **Last updated**: 2026-11-21
+> **Version**: v2.0.0-rc1 (live production readiness not established)
+> **Status**: The repaired API/database candidate is verified in preview, and the user has authorized production activation. Full durable execution readiness remains unestablished. See the [production release record](docs/production-release-2026-11-21.md) and [PR #50](https://github.com/Sigma-Tactix/sigma-tactix-growth-os-v2/pull/50) for the current deployment identity and live results. Earlier certification statements below are historical claims superseded by live observations.
+
+## Production Activation Follow-up — 2026-11-21
+
+- User authorized production deployment and requested a hosting recommendation before provisioning a worker. No paid worker host has been provisioned. Render Background Worker is recommended; the persistent adapter/worker remains a separate implementation gate.
+- Two independent reviews found hardcoded sample metrics in the inherited dashboard variants; all three routes are now development-only, with a built-client exclusion check. Bare `/api` now returns JSON 404.
+- Actual authenticated preview acceptance passed with two disposable identities: own Client Enclave reads succeeded, foreign API selection returned 403, and user-scoped database queries denied foreign access. Fixture setup/cleanup is isolated in `scripts/verifyAuthenticatedDeployment.mjs`; all fixtures were removed.
+- The local Gemini key authenticated successfully without inference and is now bound in Vercel. The existing Google OAuth client is configured for production with the canonical `APP_URL`, but its Google preflight returned `redirect_uri_mismatch`. Stripe examples, Google Ads setup, owner-coordinated Secret Vault key migration, database-password rotation, and GitHub connector PR-write permission require operator work; exact tasks are in the production release record.
+- Both independent review axes cleared their findings. The final local gate passed build/typecheck, 868 tests (3 skipped), a production-client prototype exclusion check, and five strict-Node HTTP checks.
+- Production activation will ship the verified core application with durable capabilities explicitly unavailable. Keep readiness evidence distinct from API liveness and do not claim full platform certification. Final production source/deployment evidence is maintained in PR #50.
+
+## Connection Repair — 2026-11-21
+
+- Supabase migration `20261121002753_reconcile_connection_schema` added the four missing telemetry/trace/graph tables. Verified RLS, anonymous denial, append-only log grants, graph enclave constraints, and caller-scoped RPCs. No existing data was changed.
+- Added a reproducible Vercel API function with API/health rewrites, bundled internal imports for stock Node ESM, separate static client build, and standalone-only listeners/timers. The server-side PPTX loader uses the package's CommonJS export; the built-API check disables ambiguous module detection to reproduce Vercel's stricter loading. Local Vercel project linking is repaired. Draft PR #50 is published; GitHub connector PR writes returned 403, so existing local Git authentication was used. CI now builds acceptance fixtures and avoids the ignored local sprint database.
+- Readiness now reports measured database connectivity and the missing persistent execution adapter/worker. Volatile job/schedule/webhook mutations fail on Vercel instead of claiming durability. Example Stripe/encryption configuration is rejected.
+- Added real HTTP/regression checks and a public deployment smoke command with an explicit readiness gate. The older production deployment remains a release concern until a tested replacement is activated; authenticated provider acceptance and the worker remain outstanding.
+- Final `npm run verify` passed: build/typecheck and 867 tests, with 3 skipped, plus four HTTP checks of the built API under stock Node. Queue mutation checks are included; deployment evidence is tracked in the repair record. Strategic direction, RACI, pricing, and the user's pre-existing `.mcp.json` edit are unchanged.
+
+## Initial Audit Snapshot (superseded by the repair/release records) — 2026-11-21
+
+- **Infrastructure identity**: GitHub connector access works. Vercel project `prj_7zpThzqMg9eKObVmUGLIaZdrDG0F` links to `Sigma-Tactix/sigma-tactix-growth-os-v2`, repository ID `1367656977`, production branch `main`. Supabase `rqktjogegbdlsdvpusie` reports `ACTIVE_HEALTHY`; its URL matches local configuration, both deployed browser bundles, and Vercel's integration-provided public URL.
+- **Production blocker**: `https://growth-os.sigmatactix.com/api/health`, `/api/ready`, `/api/connectors`, and an unknown API path return HTTP 200 with the same HTML as `/`. Production alias targets deployment `dpl_6M71gxumDbv23rus4Sd8Z3x1xErr`, created 17 Nov, with base commit metadata `18ef63c` and a dirty-tree marker. Local `vercel.json` still configures a static Vite SPA with a universal HTML rewrite.
+- **Preview blocker**: Newer deployment `dpl_8puB5yhEHvmiqD5P8Chs256dcFPe` serves JSON liveness, but readiness returns HTTP 503, database `unverified`, and no configured/healthy supervised worker. It identifies itself as `uncommitted-743bae6244fc`, based on `af69830`. It has not been promoted to the production domain.
+- **Schema truth**: Catalog inspection confirms missing `token_usage_records`, `decision_traces`, `brain_entities`, and `brain_relationships`, despite references in current source. Migration history alone is incomplete evidence because several tables were applied outside individually recorded migrations. Local direct PostgreSQL connectivity also fails with DNS `ENOTFOUND`, while Supabase HTTPS access works. No schema writes were performed.
+- **Source drift**: At audit start local `main` was `42935b3`, four commits ahead of the live GitHub `main` (`af69830`). The 20 Nov changes add `/dashboard/briefing`, `/dashboard/command`, and `/dashboard/progress`, plus an AIExplorer border correction. The existing `.mcp.json` modification was preserved.
+- **Connector limits**: Infrastructure access and Supabase Google sign-in configuration were checked; individual Client Enclave provider grants were not exercised without a user session. Local Google Ads prerequisites are incomplete. Current Vercel environment names omit the Google OAuth client pair and durable worker configuration. Stored per-enclave OAuth configuration may still exist and was not read.
+- **Certification discrepancy**: `src/server/productionActivation.test.ts` uses source inspection, local objects, and hardcoded pass flags; it does not test deployed login or production API requests. Existing `evidence/remediation-2026-11-18/certification-check.log` says `NOT_CERTIFIED`, `productionActive: false`.
+- **Next release gate**: Reconcile source, package the API reproducibly, complete schema/worker configuration, and validate authenticated provider operations on the exact release candidate before production activation. No strategic direction, RACI, or pricing changes were made in this audit.
 
 ## Release Execution Sprint (Milestones M0–M6, Tasks S00–S22/S20, Production Certification & Release) — 2026-11-18
 
@@ -975,6 +1003,8 @@ Agent Reach (`v1.5.0`) provides multi-backend real-time data ingestion:
 
 | Date | Session ID | Key Work & Deliverables |
 | --- | --- | --- |
+| Nov 21 | Connection repair | Applied missing schema with isolation constraints; added Vercel Express function/routing, truthful readiness, connector configuration guards, volatile-queue rejection, and actual HTTP tests. See the repair record for validation/deployment state. |
+| Nov 21 | Connection audit (`42935b3` local / `af69830` remote) | Verified GitHub/Vercel/Supabase identities; reproduced production HTML responses on API paths and preview readiness 503; confirmed schema gaps and corrected stale certification claims. Documentation only; no remote configuration or database writes. |
 | Apr 18 | `7524fa3b` | Sigma Tactix Web2Agent WordPress audit, CSS icon sizing fix, 10 E-E-A-T marketing authority blog posts. |
 | May 12 | `ab75a1bc` | Smart Analytics Phase 2 audit, React.lazy code splitting (84% bundle reduction), ErrorBoundary, Supabase wiring. |
 | Jul 14 | `7bf5842a` | Initial project analysis, production readiness planning. |

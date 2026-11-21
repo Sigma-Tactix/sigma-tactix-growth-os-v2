@@ -51,6 +51,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build acceptance fixtures
+        run: npm run build
+
+      - name: Run built API with stock Node
+        run: node --no-experimental-detect-module scripts/checkBuiltApi.mjs
+
       - name: Run vitest suite
         run: npm test
 

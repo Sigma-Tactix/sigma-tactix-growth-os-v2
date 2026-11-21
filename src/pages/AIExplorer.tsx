@@ -366,7 +366,7 @@ export default function AIExplorer() {
 
            {/* AI Recommendation - Restricted to Admin/Sub-Admin */}
            {isAdmin ? (
-             <div className="bg-[#09090B] border border-secondary/20 shadow-[0_0_50px_rgba(6,182,212,0.05)] rounded-2xl p-7 relative border-l-4 border-l-secondary">
+             <div className="bg-[#09090B] border border-secondary/30 shadow-[0_0_50px_rgba(6,182,212,0.05)] rounded-2xl p-7 relative">
                 <div className="flex items-center gap-3 mb-6 text-secondary">
                    <Zap size={22} className="fill-secondary" />
                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] font-black">AI Recommendation</span>

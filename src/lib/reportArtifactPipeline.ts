@@ -1,9 +1,15 @@
 import crypto from 'crypto';
-import PptxGenJS from 'pptxgenjs';
+import { createRequire } from 'node:module';
 import * as XLSX from 'xlsx';
 import { renderExecutiveReportPDF, type BrandProfile } from './pdfReportRenderer.js';
 import { validateReportSnapshot, type ReportSnapshot } from './reportSnapshot.js';
 import { AI_DISCLOSURE_LINE } from './claimLabels.js';
+
+// PptxGenJS publishes its ESM entry as .js without declaring type:module.
+// Load its supported CommonJS export explicitly on Node/Vercel. This module
+// is server-only; browser exports use src/services/exportService.ts instead.
+const requirePptx = createRequire(import.meta.url);
+const PptxGenJS = requirePptx('pptxgenjs');
 
 export interface ArtifactRenderResult {
   format: 'pdf' | 'pptx' | 'xlsx';
