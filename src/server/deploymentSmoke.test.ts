@@ -16,20 +16,35 @@ import path from 'node:path';
 // `vitest run` executes from the repo root, so cwd() is the checkout.
 const repoRoot = process.cwd();
 const source = fs.readFileSync(path.join(repoRoot, 'server.ts'), 'utf8');
+// P2 inc-17: the probes co-moved into the public-ops router module; the
+// mount stays in server.ts and must precede the API limiter + workspace auth.
+const publicOpsSource = fs.readFileSync(
+  path.join(repoRoot, 'src/server/routes/publicOpsRoutes.ts'),
+  'utf8',
+);
 
 describe('deployment smoke (static, no socket)', () => {
   it('registers a dependency-free /healthz and /api/health liveness probe', () => {
-    expect(source).toContain('app.get("/healthz"');
-    expect(source).toContain('app.get("/api/health"');
-    expect(source).toContain('ok: true, uptimeSeconds');
-    expect(source).toContain('commit: resolveRuntimeCommitSha()');
+    expect(publicOpsSource).toContain('router.get("/healthz"');
+    expect(publicOpsSource).toContain('router.get("/api/health"');
+    expect(publicOpsSource).toContain('ok: true, uptimeSeconds');
+    expect(publicOpsSource).toContain('commit: resolveRuntimeCommitSha()');
+    // mounted in server.ts, strictly before the API limiter + workspace auth
+    // (compare the actual registration lines, not the mount comment text)
+    expect(source).toContain('app.use(createPublicOpsRouter());');
+    const lines = source.split('\n');
+    const mountLine = lines.findIndex((l) => l.startsWith('app.use(createPublicOpsRouter());'));
+    const limiterLine = lines.findIndex((l) => l.startsWith('app.use("/api", apiLimiter);'));
+    expect(mountLine).toBeGreaterThan(-1);
+    expect(limiterLine).toBeGreaterThan(-1);
+    expect(mountLine).toBeLessThan(limiterLine);
   });
 
   it('registers /readyz and /api/ready readiness probes exposing runtime commit and environment', () => {
-    expect(source).toContain('app.get("/readyz"');
-    expect(source).toContain('app.get("/api/ready"');
-    expect(source).toContain('assessRuntimeReadiness()');
-    expect(source).toContain('res.status(readiness.ready ? 200 : 503)');
+    expect(publicOpsSource).toContain('router.get("/readyz"');
+    expect(publicOpsSource).toContain('router.get("/api/ready"');
+    expect(publicOpsSource).toContain('assessRuntimeReadiness()');
+    expect(publicOpsSource).toContain('res.status(readiness.ready ? 200 : 503)');
   });
 
   it('enforces authentication on /api/social mount (C-01 fix)', () => {
