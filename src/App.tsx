@@ -6,10 +6,6 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from '@/src/components/Layout';
-import Dashboard from '@/src/pages/Dashboard';
-import DashboardBriefing from '@/src/pages/dashboard-variants/DashboardBriefing';
-import DashboardCommandCenter from '@/src/pages/dashboard-variants/DashboardCommandCenter';
-import DashboardProgressBoard from '@/src/pages/dashboard-variants/DashboardProgressBoard';
 import { UserProvider } from '@/src/contexts/UserContext';
 import { ToastProvider } from '@/src/contexts/ToastContext';
 import { WorkspaceProvider } from '@/src/contexts/WorkspaceContext';
@@ -20,6 +16,10 @@ import { VantaProvider } from '@/src/contexts/VantaContext';
 import { isVantaReleaseEnabled } from '@/src/lib/vantaFeatureFlag';
 import { AppearanceProvider } from '@/src/contexts/AppearanceContext';
 
+const Dashboard = lazy(() => import('@/src/pages/Dashboard'));
+const DashboardBriefing = lazy(() => import('@/src/pages/dashboard-variants/DashboardBriefing'));
+const DashboardCommandCenter = lazy(() => import('@/src/pages/dashboard-variants/DashboardCommandCenter'));
+const DashboardProgressBoard = lazy(() => import('@/src/pages/dashboard-variants/DashboardProgressBoard'));
 const Scheduler = lazy(() => import('@/src/pages/Scheduler'));
 const AIExplorer = lazy(() => import('@/src/pages/AIExplorer'));
 const DataSources = lazy(() => import('@/src/pages/DataSources'));
