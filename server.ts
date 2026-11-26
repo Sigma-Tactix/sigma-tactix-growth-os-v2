@@ -129,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createLectureDeckRouter } from "./src/server/routes/lectureDeckRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -150,7 +151,6 @@ import {
   DEVELOPMENT_LESSON_REGISTRY,
 } from "./src/lib/learningRegistry.js";
 import * as fs from "fs";
-import { spawn } from "child_process";
 
 // Load environment variables
 if (!process.env.VERCEL) dotenv.config();
@@ -7752,152 +7752,25 @@ app.get("/api/workspace/learnings/development", async (_req: Request, res: Respo
 });
 
 // =========================================================================
-// LECTURE DECK ENGINE (Phase 3 Presentation Engine)
-// Generates self-contained interactive animated HTML decks & printable PDFs
-// =========================================================================
-interface LectureDeckArtifact {
-  html: string;
-  filename: string;
-  title: string;
-  slideCount: number;
-  theme: string;
-  createdAt: number;
-}
-const lectureDeckCache = new Map<string, LectureDeckArtifact>();
-
-async function generateLectureDeck(payload: any, options: { theme?: string; type?: string } = {}): Promise<LectureDeckArtifact & { deckId: string; viewUrl: string; downloadUrl: string }> {
-  return new Promise((resolve, reject) => {
-    const deckId = payload.id || crypto.randomBytes(4).toString("hex");
-    const scriptPath = path.resolve(__dirname, "tools/lecture-deck-skill/scripts/generate_from_report.py");
-    const outDir = path.resolve(__dirname, "dist/decks");
-
-    if (!fs.existsSync(outDir)) {
-      fs.mkdirSync(outDir, { recursive: true });
-    }
-
-    const theme = options.theme || payload.theme || "sigmatactix";
-    const deckType = options.type || "auto";
-
-    const proc = spawn("python3", [
-      scriptPath,
-      "--stdin",
-      "--theme", theme,
-      "--out-dir", outDir,
-      "--type", deckType
-    ]);
-
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (d) => { stdout += d.toString(); });
-    proc.stderr.on("data", (d) => { stderr += d.toString(); });
-
-    proc.on("error", (err) => {
-      reject(new Error(`Failed to spawn deck generator: ${err.message}`));
-    });
-
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        return reject(new Error(`Deck generator failed (exit ${code}): ${stderr || stdout}`));
-      }
-      try {
-        const parsed = JSON.parse(stdout.trim());
-        const html = fs.readFileSync(parsed.htmlPath, "utf-8");
-        const artifact: LectureDeckArtifact = {
-          html,
-          filename: parsed.filename,
-          title: parsed.title,
-          slideCount: parsed.slideCount,
-          theme: parsed.theme,
-          createdAt: Date.now()
-        };
-        lectureDeckCache.set(parsed.deckId, artifact);
-        resolve({
-          ...artifact,
-          deckId: parsed.deckId,
-          viewUrl: `/api/reports/deck/${parsed.deckId}/view`,
-          downloadUrl: `/api/reports/deck/${parsed.deckId}/download`
-        });
-      } catch (err: any) {
-        reject(new Error(`Failed to parse deck generator output: ${err.message}. Output was: ${stdout}`));
-      }
-    });
-
-    proc.stdin.write(JSON.stringify(payload));
-    proc.stdin.end();
-  });
-}
-
-// Handler for generating a presentation deck
-const handleDeckGeneration = async (req: Request, res: Response) => {
-  try {
-    const { reportData, theme, type } = req.body;
-    if (!reportData) {
-      return res.status(400).json({ error: "reportData is required" });
-    }
-    const result = await generateLectureDeck(reportData, { theme, type });
-    res.json({
-      success: true,
-      deckId: result.deckId,
-      title: result.title,
-      slideCount: result.slideCount,
-      theme: result.theme,
-      filename: result.filename,
-      viewUrl: result.viewUrl,
-      downloadUrl: result.downloadUrl
-    });
-  } catch (err: any) {
-    console.error("Lecture Deck generation error:", err);
-    res.status(500).json({ error: err.message || String(err) });
-  }
-};
-
-app.post("/api/reports/deck/generate", handleDeckGeneration);
-app.post("/api/workspace/reports/deck/generate", handleDeckGeneration);
-
-// Serve interactive fullscreen presentation deck in browser
-app.get("/api/reports/deck/:id/view", (req: Request, res: Response) => {
-  const deck = lectureDeckCache.get(req.params.id);
-  if (!deck) {
-    const outDir = path.resolve(__dirname, "dist/decks");
-    if (fs.existsSync(outDir)) {
-      const files = fs.readdirSync(outDir);
-      const match = files.find(f => f.includes(req.params.id) && f.endsWith(".html"));
-      if (match) {
-        const html = fs.readFileSync(path.join(outDir, match), "utf-8");
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        return res.send(html);
-      }
-    }
-    return res.status(404).send("Lecture deck presentation not found or expired.");
-  }
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.send(deck.html);
-});
-
-// Download standalone HTML deck for offline presentation
-app.get("/api/reports/deck/:id/download", (req: Request, res: Response) => {
-  const deck = lectureDeckCache.get(req.params.id);
-  let html = deck?.html;
-  let filename = deck?.filename || `sigmatactix-presentation-${req.params.id}.html`;
-  if (!html) {
-    const outDir = path.resolve(__dirname, "dist/decks");
-    if (fs.existsSync(outDir)) {
-      const files = fs.readdirSync(outDir);
-      const match = files.find(f => f.includes(req.params.id) && f.endsWith(".html"));
-      if (match) {
-        html = fs.readFileSync(path.join(outDir, match), "utf-8");
-        filename = match;
-      }
-    }
-  }
-  if (!html) {
-    return res.status(404).json({ error: "Lecture deck artifact not found" });
-  }
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.send(html);
-});
+// Lecture deck engine + routes — extracted to src/server/routes/
+// lectureDeckRoutes.ts (P2 inc-16). Root-mounted (full /api... paths) so a
+// single module-scope lectureDeckCache is shared across all four routes:
+//
+//   POST /api/reports/deck/generate            (PUBLIC — no Bearer header in a
+//   POST /api/workspace/reports/deck/generate      browser <iframe>/link)
+//   GET  /api/reports/deck/:id/view               (PUBLIC)
+//   GET  /api/reports/deck/:id/download           (PUBLIC)
+//
+// Mounted strictly after app.use("/api", apiLimiter) AND
+// app.use("/api/workspace", requireAuth). The public /api/reports/deck/*
+// routes are matched by Express path-prefix BEFORE they could reach the
+// /api/workspace requireAuth middleware (that middleware only intercepts
+// /api/workspace/... paths), so they keep their unauthenticated posture —
+// identical to the inline registrations, which also sat after both mounts.
+// baseDir = this module's __dirname (project root in dev, dist/ in the
+// esbuild bundle) replaces the engine's four __dirname call sites so the
+// python3 script + dist/decks resolution is byte-identical in both envs.
+app.use(createLectureDeckRouter({ baseDir: __dirname }));
 
 app.post("/api/workspace/agents", requireModule("agents"), async (req: Request, res: Response) => {
   const { name, role, goal, targetModule, skills, instructions, pluginIds, connectorIds } = req.body as {
