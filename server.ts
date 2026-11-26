@@ -129,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createTeamRouter } from "./src/server/routes/teamRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -3752,147 +3753,13 @@ async function callerIsOwnerOrAdmin(res: Response): Promise<boolean> {
   return data.role === "owner" || data.role === "admin";
 }
 
-app.get("/api/workspace/team", async (req: Request, res: Response) => {
-  const { data: team, error: teamErr } = await res.locals.sb.rpc("get_workspace_team", { p_workspace_id: res.locals.wsId });
-  if (teamErr) {
-    res.status(500).json({ error: teamErr.message });
-    return;
-  }
-  const { data: invites, error: inviteErr } = await res.locals.sb
-    .from("workspace_invitations")
-    .select("id, email, role, status, created_at, expires_at")
-    .eq("workspace_id", res.locals.wsId)
-    .eq("status", "Pending")
-    .order("created_at", { ascending: false });
-  if (inviteErr) {
-    res.status(500).json({ error: inviteErr.message });
-    return;
-  }
-  res.json({ success: true, members: team || [], pendingInvitations: invites || [] });
-});
-
-app.post("/api/workspace/team/invite", async (req: Request, res: Response) => {
-  if (!(await callerIsOwnerOrAdmin(res))) {
-    res.status(403).json({ error: "You must be an owner or admin to invite team members." });
-    return;
-  }
-  const { email, role } = req.body as { email?: string; role?: string };
-  const cleanEmail = (email || "").trim().toLowerCase();
-  const cleanRole = (role || "member").trim().toLowerCase();
-  if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    res.status(400).json({ error: "A valid email address is required." });
-    return;
-  }
-  if (!["admin", "member"].includes(cleanRole)) {
-    res.status(400).json({ error: "Role must be 'admin' or 'member'." });
-    return;
-  }
-
-  const token = crypto.randomBytes(24).toString("hex");
-  const { data: invite, error } = await res.locals.sb
-    .from("workspace_invitations")
-    .upsert(
-      { workspace_id: res.locals.wsId, email: cleanEmail, role: cleanRole, token, invited_by: res.locals.userId, status: "Pending" },
-      { onConflict: "workspace_id,email" },
-    )
-    .select("id, email, role, status, created_at, expires_at")
-    .single();
-  if (error) {
-    res.status(500).json({ error: "Failed to create invitation: " + error.message });
-    return;
-  }
-
-  const appUrl = (process.env.APP_URL && !process.env.APP_URL.startsWith("MY_")) ? process.env.APP_URL : "http://localhost:3000";
-  const db = await getDB(res);
-  const workspaceName = db.secondBrain?.brandVault?.brandSlogan || db.secondBrain?.brandVault?.corePositioning || "your team's workspace";
-  const emailResult = await sendEmail({
-    to: cleanEmail,
-    subject: `You've been invited to join ${workspaceName} on Growth OS`,
-    html: `
-      <p>Hi,</p>
-      <p>You've been invited to join <strong>${workspaceName}</strong> on Growth OS as a <strong>${cleanRole}</strong>.</p>
-      <p><a href="${appUrl.replace(/\/$/, "")}/?invite=${token}">Accept invitation →</a></p>
-      <p>This invitation expires in 14 days. If you don't have an account yet, sign up with this email address first.</p>
-    `,
-  });
-
-  res.json({ success: true, invitation: invite, emailSent: emailResult.sent });
-});
-
-app.delete("/api/workspace/team/invite/:id", async (req: Request, res: Response) => {
-  if (!(await callerIsOwnerOrAdmin(res))) {
-    res.status(403).json({ error: "You must be an owner or admin to revoke invitations." });
-    return;
-  }
-  const { error } = await res.locals.sb
-    .from("workspace_invitations")
-    .delete()
-    .eq("id", req.params.id)
-    .eq("workspace_id", res.locals.wsId);
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  res.json({ success: true });
-});
-
-app.post("/api/workspace/team/accept", async (req: Request, res: Response) => {
-  const { token } = req.body as { token?: string };
-  if (!token) {
-    res.status(400).json({ error: "Invitation token is required." });
-    return;
-  }
-  const { data, error } = await res.locals.sb.rpc("accept_workspace_invitation", { p_token: token });
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(400).json({ error: "This invitation is invalid, expired, or was sent to a different email address." });
-    return;
-  }
-  res.json({ success: true });
-});
-
-app.get("/api/workspace/team/pending-invitations", async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.rpc("get_my_pending_invitations");
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  res.json({ success: true, invitations: data || [] });
-});
-
-app.post("/api/workspace/team/role", async (req: Request, res: Response) => {
-  const { userId, role } = req.body as { userId?: string; role?: string };
-  if (!userId || !["admin", "member"].includes(role || "")) {
-    res.status(400).json({ error: "userId and a valid role ('admin' or 'member') are required. Ownership cannot be transferred through this endpoint." });
-    return;
-  }
-  const { data, error } = await res.locals.sb.rpc("update_member_role", { p_workspace_id: res.locals.wsId, p_user_id: userId, p_role: role });
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(403).json({ error: "You must be an owner or admin to change roles, and the workspace owner's role cannot be changed." });
-    return;
-  }
-  res.json({ success: true });
-});
-
-app.delete("/api/workspace/team/member/:userId", async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.rpc("remove_workspace_member", { p_workspace_id: res.locals.wsId, p_user_id: req.params.userId });
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(403).json({ error: "You must be an owner or admin to remove members, and the workspace owner cannot be removed." });
-    return;
-  }
-  res.json({ success: true });
-});
+// Workspace team management — members, invitations, role changes, removal.
+// Extracted to src/server/routes/teamRoutes.ts (P2 inc-4) — the shared role
+// helper callerIsOwnerOrAdmin stays in server.ts (used by 15+ other routes)
+// and is injected by reference. Mounted at the original position, strictly
+// after app.use("/api/workspace", requireAuth), so auth + RLS scoping are
+// unchanged; the RPCs are SECURITY DEFINER and enforce their own role gates.
+app.use("/api/workspace/team", createTeamRouter({ getDB, callerIsOwnerOrAdmin }));
 
 // Admin Panel real billing (#17) — was a fully hardcoded modal ($15,000/mo,
 // ==========================================
