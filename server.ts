@@ -92,7 +92,7 @@ import { MODULE_TO_SYSTEM_AGENT, resolveAgentDispatch, personaInstructionsFor } 
 import { createDispatchPlan, dispatchPlanFromVantaProposal, expandDispatchPlan, materializeDispatchGraph, taskMetadata } from "./src/lib/missionExecution.js";
 import { sendEmail } from "./src/lib/email.js";
 import { getPublicClient, getServiceRoleClient } from "./src/lib/supabaseAdmin.js";
-import { isStripeConfigured, isStripeWebhookConfigured, getStripeClient } from "./src/lib/stripe.js";
+import { isStripeConfigured, getStripeClient } from "./src/lib/stripe.js";
 import { promises as dns } from "dns";
 import {
   getAgentReachDoctor,
@@ -129,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createStripeWebhookRouter } from "./src/server/routes/stripeWebhookRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -247,67 +248,15 @@ const publicLimiter = rateLimit({
   message: { error: "Too many requests. Please try again shortly." },
 });
 
-// Stripe webhook (#17) — MUST be registered before the global express.json()
-// parser below. Stripe's signature verification (constructEvent) needs the
-// exact raw request body bytes; once express.json() has parsed and
-// re-serialized it, the signature no longer matches. This is the only route
-// in the app that reads a raw body instead of JSON.
-app.post("/api/webhooks/stripe", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
-  if (!isStripeConfigured() || !isStripeWebhookConfigured()) {
-    res.status(503).json({ error: "Stripe billing is not configured on this server." });
-    return;
-  }
-  const signature = req.headers["stripe-signature"];
-  let event;
-  try {
-    event = getStripeClient().webhooks.constructEvent(req.body, signature as string, process.env.STRIPE_WEBHOOK_SECRET as string);
-  } catch (err: any) {
-    console.error("Stripe webhook signature verification failed:", err.message);
-    res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
-    return;
-  }
-
-  const obj: any = event.data.object;
-  const customerId: string | undefined = typeof obj.customer === "string" ? obj.customer : obj.customer?.id;
-  if (customerId && event.type.startsWith("customer.subscription.")) {
-    const status = event.type === "customer.subscription.deleted" ? "canceled" : obj.status;
-    const tierKey = obj.metadata?.tier_key;
-    const plan = obj.items?.data?.[0]?.price?.nickname || obj.items?.data?.[0]?.price?.id || tierKey || null;
-    const periodEnd = obj.current_period_end ? new Date(obj.current_period_end * 1000).toISOString() : null;
-    // Service-role client, deliberately — see the comment on getServiceRoleClient()
-    // in supabaseAdmin.ts. apply_stripe_webhook_update is no longer anon-granted
-    // (migration 0008), so this is the only client that can call it; the Stripe
-    // HMAC check above is what actually authorizes reaching this line.
-    try {
-      const { error } = await getServiceRoleClient().rpc("apply_stripe_webhook_update", {
-        p_stripe_customer_id: customerId,
-        p_stripe_subscription_id: obj.id,
-        p_status: status,
-        p_plan: plan,
-        p_current_period_end: periodEnd,
-      });
-      if (error) console.error("Failed to apply Stripe webhook update:", error.message);
-
-      // Update actual workspace tier if tier_key was passed in the subscription metadata
-      if (tierKey && (status === 'active' || status === 'trialing')) {
-        const { data: wsRow } = await getServiceRoleClient()
-          .from('workspaces')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-        if (wsRow) {
-          await getServiceRoleClient()
-            .from('workspaces')
-            .update({ tier: tierKey })
-            .eq('id', wsRow.id);
-        }
-      }
-    } catch (err: any) {
-      console.error("Failed to apply Stripe webhook update:", err.message);
-    }
-  }
-  res.json({ received: true });
-});
+// Stripe billing webhook — extracted to src/server/routes/stripeWebhookRoutes.ts
+// (P2 inc-18). MUST stay strictly BEFORE the global express.json() parser
+// below: constructEvent verifies the Stripe signature against the RAW body
+// bytes, which no longer match once the JSON parser parses + re-serializes
+// them. The stripe lib import (isStripeConfigured/getStripeClient, still
+// injected into the creative-gateway deps below) and the service-role
+// client stay in server.ts; isStripeWebhookConfigured moved with the route
+// (its sole use was here) and is imported by the router module.
+app.use(createStripeWebhookRouter());
 
 // 50 MB was the limit here. File uploads do NOT go through this parser — they
 // use multer (multipart) — so no route legitimately posts anywhere near that,
