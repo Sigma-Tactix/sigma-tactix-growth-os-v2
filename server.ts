@@ -129,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createCrmRouter } from "./src/server/routes/crmRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -9720,86 +9721,15 @@ app.delete("/api/workspace/pipelines/:id", async (req: Request, res: Response) =
 // All operate directly on Postgres via the JWT-forwarding client (RLS scopes
 // every query to res.locals.wsId already), the same pattern as agents/
 // saved_reports above — not the workspace_state jsonb blob.
+//
+// CRM contacts + deals CRUD extracted to src/server/routes/crmRoutes.ts
+// (P2 inc-5) — mounted at the original position, strictly after
+// app.use("/api/workspace", requireAuth), with the shared requireModule
+// entitlement middleware injected. import-hubspot below stays inline until
+// the connectors increment provides a shared credential/adapter module.
 // ============================================================================
 
-app.get("/api/workspace/crm/contacts", requireModule("crm"), async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.from("crm_contacts").select("*").order("created_at", { ascending: false });
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, contacts: data });
-});
-
-app.post("/api/workspace/crm/contacts", requireModule("crm"), async (req: Request, res: Response) => {
-  const { name, email, company, phone, source, owner, notes } = req.body as Record<string, string | undefined>;
-  if (!name || !name.trim()) { res.status(400).json({ error: "Contact name is required." }); return; }
-  const { data, error } = await res.locals.sb
-    .from("crm_contacts")
-    .insert({ workspace_id: res.locals.wsId, name: name.trim(), email, company, phone, source, owner, notes })
-    .select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, contact: data });
-});
-
-app.patch("/api/workspace/crm/contacts/:id", requireModule("crm"), async (req: Request, res: Response) => {
-  const { name, email, company, phone, source, owner, notes } = req.body as Record<string, string | undefined>;
-  const patch: Record<string, any> = {};
-  if (name !== undefined) patch.name = name;
-  if (email !== undefined) patch.email = email;
-  if (company !== undefined) patch.company = company;
-  if (phone !== undefined) patch.phone = phone;
-  if (source !== undefined) patch.source = source;
-  if (owner !== undefined) patch.owner = owner;
-  if (notes !== undefined) patch.notes = notes;
-  const { data, error } = await res.locals.sb.from("crm_contacts").update(patch).eq("id", req.params.id).select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, contact: data });
-});
-
-app.delete("/api/workspace/crm/contacts/:id", requireModule("crm"), async (req: Request, res: Response) => {
-  const { error } = await res.locals.sb.from("crm_contacts").delete().eq("id", req.params.id);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true });
-});
-
-app.get("/api/workspace/crm/deals", requireModule("crm"), async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.from("crm_deals").select("*").order("created_at", { ascending: false });
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, deals: data });
-});
-
-const DEAL_STAGES = ['New', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
-
-app.post("/api/workspace/crm/deals", requireModule("crm"), async (req: Request, res: Response) => {
-  const { contactId, title, stage, value, closeDate, notes } = req.body as { contactId?: string; title?: string; stage?: string; value?: number; closeDate?: string; notes?: string };
-  if (!title || !title.trim()) { res.status(400).json({ error: "Deal title is required." }); return; }
-  if (stage && !DEAL_STAGES.includes(stage)) { res.status(400).json({ error: `Stage must be one of: ${DEAL_STAGES.join(", ")}` }); return; }
-  const { data, error } = await res.locals.sb
-    .from("crm_deals")
-    .insert({ workspace_id: res.locals.wsId, contact_id: contactId || null, title: title.trim(), stage: stage || 'New', value: value ?? null, close_date: closeDate || null, notes })
-    .select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, deal: data });
-});
-
-app.patch("/api/workspace/crm/deals/:id", requireModule("crm"), async (req: Request, res: Response) => {
-  const { title, stage, value, closeDate, notes, contactId } = req.body as { title?: string; stage?: string; value?: number; closeDate?: string; notes?: string; contactId?: string };
-  if (stage && !DEAL_STAGES.includes(stage)) { res.status(400).json({ error: `Stage must be one of: ${DEAL_STAGES.join(", ")}` }); return; }
-  const patch: Record<string, any> = {};
-  if (title !== undefined) patch.title = title;
-  if (stage !== undefined) patch.stage = stage;
-  if (value !== undefined) patch.value = value;
-  if (closeDate !== undefined) patch.close_date = closeDate;
-  if (notes !== undefined) patch.notes = notes;
-  if (contactId !== undefined) patch.contact_id = contactId || null;
-  const { data, error } = await res.locals.sb.from("crm_deals").update(patch).eq("id", req.params.id).select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, deal: data });
-});
-
-app.delete("/api/workspace/crm/deals/:id", requireModule("crm"), async (req: Request, res: Response) => {
-  const { error } = await res.locals.sb.from("crm_deals").delete().eq("id", req.params.id);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true });
-});
+app.use("/api/workspace/crm", createCrmRouter({ requireModule }));
 
 // Real HubSpot contact import — reuses the connector credentials already
 // stored for a connected 'HubSpot CRM' connector (same decrypt path
