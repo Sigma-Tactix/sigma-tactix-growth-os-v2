@@ -129,6 +129,8 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createCompetitorsRouter } from "./src/server/routes/competitorsRoutes.js";
+import { createSocialMentionsRouter } from "./src/server/routes/socialMentionsRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -9855,168 +9857,34 @@ app.post("/api/workspace/crm/contacts/import-hubspot", requireModule("crm"), asy
 // Growth Audit / Authority & SEO. Explicitly labeled inferred-from-public-
 // site (no paid competitive-intel API connected), consistent with how
 // Growth Audit already labels its social/competitor sections.
-app.get("/api/workspace/competitors", requireModule("competitors"), async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.from("competitors").select("*").order("created_at", { ascending: false });
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, competitors: data });
-});
-
-app.post("/api/workspace/competitors", requireModule("competitors"), async (req: Request, res: Response) => {
-  const { name, domain, trackedKeywords } = req.body as { name?: string; domain?: string; trackedKeywords?: unknown };
-  if (!name || !domain) { res.status(400).json({ error: "Competitor name and domain are required." }); return; }
-  // A non-array trackedKeywords (the `?: string[]` type is only a compile-time
-  // assertion, not runtime validation) used to be stored as-is into the jsonb
-  // column, then crash every future scan at `.join(", ")` with no way to fix
-  // it short of delete+recreate (no PATCH route exists). Validate at the door.
-  const cleanKeywords = Array.isArray(trackedKeywords) ? trackedKeywords.filter((k): k is string => typeof k === "string") : [];
-  const { data, error } = await res.locals.sb
-    .from("competitors")
-    .insert({ workspace_id: res.locals.wsId, name: name.trim(), domain: domain.trim(), tracked_keywords: cleanKeywords })
-    .select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, competitor: data });
-});
-
-app.delete("/api/workspace/competitors/:id", requireModule("competitors"), async (req: Request, res: Response) => {
-  const { error } = await res.locals.sb.from("competitors").delete().eq("id", req.params.id);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true });
-});
-
-app.post("/api/workspace/competitors/:id/scan", expensiveLimiter, requireModule("competitors"), async (req: Request, res: Response) => {
-  const { data: competitor, error: fetchErr } = await res.locals.sb.from("competitors").select("*").eq("id", req.params.id).single();
-  if (fetchErr || !competitor) { res.status(404).json({ error: "Competitor not found." }); return; }
-  if (!process.env.GEMINI_API_KEY) {
-    res.status(503).json({ error: "GEMINI_API_KEY not set — competitor scans need a live Gemini key." });
-    return;
-  }
-
-  let snapshot;
-  try {
-    snapshot = await fetchSiteContent(competitor.domain);
-  } catch (err: any) {
-    res.status(422).json({ error: "Could not fetch the competitor's site: " + err.message });
-    return;
-  }
-
-  try {
-    const client = getGeminiClient(await resolveEffectiveGeminiKey(res));
-    const geminiModel = await resolveEffectiveGeminiModel(res);
-    const db = await getDB(res);
-    const prompt = `
-      You are a competitive intelligence analyst. Analyze this real fetched site data for ${competitor.name}
-      (${competitor.domain}) versus our business.
-
-      Our business context: ${db.secondBrain.brandVault?.corePositioning || "(no positioning on file)"}
-      Tracked keywords for this competitor: ${(competitor.tracked_keywords || []).join(", ") || "none yet"}
-
-      ${summarizeSnapshotForPrompt(snapshot)}
-
-      This analysis is inferred entirely from the competitor's public site (no paid competitive-intel API
-      is connected) — be explicit that traffic/ad-spend figures are not available, and focus on positioning,
-      offer, content strategy, and on-page SEO signals you can actually observe.
-
-      Return JSON: { "positioningSummary": string, "strengths": string[], "weaknesses": string[],
-        "contentStrategyNotes": string, "seoSignalsNotes": string, "recommendedCounterMoves": string[] }
-    `;
-    const response = await client.models.generateContent({
-      model: geminiModel,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            positioningSummary: { type: Type.STRING },
-            strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-            weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-            contentStrategyNotes: { type: Type.STRING },
-            seoSignalsNotes: { type: Type.STRING },
-            recommendedCounterMoves: { type: Type.ARRAY, items: { type: Type.STRING } },
-          },
-          required: ["positioningSummary", "strengths", "weaknesses", "contentStrategyNotes", "seoSignalsNotes", "recommendedCounterMoves"],
-        },
-      },
-    });
-    const parsed = JSON.parse(response.text || "{}");
-    const analysis = { ...parsed, scannedUrl: snapshot.finalUrl, scannedAt: new Date().toISOString() };
-
-    const { data: updated, error: updateErr } = await res.locals.sb
-      .from("competitors")
-      .update({ last_analysis: analysis, last_analyzed_at: new Date().toISOString() })
-      .eq("id", req.params.id)
-      .select().single();
-    if (updateErr) { res.status(500).json({ error: updateErr.message }); return; }
-
-    try {
-      await saveDocument(res.locals.sb, {
-        workspaceId: res.locals.wsId,
-        vaultId: "competitor",
-        sourceModule: "competitor_analysis",
-        fileName: `Competitor Scan — ${competitor.name} — ${analysis.scannedAt.split("T")[0]}`,
-        contentText: `${analysis.positioningSummary}\n\nStrengths: ${(analysis.strengths || []).join("; ")}\n\nWeaknesses: ${(analysis.weaknesses || []).join("; ")}`,
-      });
-    } catch (err) {
-      console.error("Failed to save competitor scan into Second Brain documents (non-fatal):", err);
-    }
-
-    res.json({ success: true, competitor: updated });
-  } catch (err: any) {
-    console.error("Competitor scan failed:", err);
-    res.status(500).json({ error: classifyGeminiError(err) });
-  }
-});
+//
+// Extracted to src/server/routes/competitorsRoutes.ts (P2 inc-6) — mounted at
+// the original position, strictly after app.use("/api/workspace",
+// requireAuth); the shared Gemini helpers + classifyGeminiError are injected
+// so the router carries no duplicate logic.
+app.use("/api/workspace/competitors", createCompetitorsRouter({
+  requireModule,
+  expensiveLimiter,
+  getGeminiClient,
+  resolveEffectiveGeminiKey,
+  resolveEffectiveGeminiModel,
+  classifyGeminiError,
+  getDB,
+}));
 
 // Social Listening (#18) — manual mention capture with real Gemini sentiment
 // tagging (not a keyword heuristic). Connector-fed live ingestion is left
 // for when a real social listening API is connected — same "connect a data
 // source" honesty pattern as Growth Audit's social section.
-app.get("/api/workspace/social-mentions", requireModule("social"), async (req: Request, res: Response) => {
-  const { data, error } = await res.locals.sb.from("social_mentions").select("*").order("detected_at", { ascending: false }).limit(200);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, mentions: data });
-});
-
-app.post("/api/workspace/social-mentions", requireModule("social"), async (req: Request, res: Response) => {
-  const { platform, mentionText, sourceUrl, author } = req.body as { platform?: string; mentionText?: string; sourceUrl?: string; author?: string };
-  if (!platform || !mentionText || !mentionText.trim()) {
-    res.status(400).json({ error: "Platform and mention text are required." });
-    return;
-  }
-
-  let sentiment: "Positive" | "Neutral" | "Negative" = "Neutral";
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const client = getGeminiClient(await resolveEffectiveGeminiKey(res));
-      const geminiModel = await resolveEffectiveGeminiModel(res);
-      const response = await client.models.generateContent({
-        model: geminiModel,
-        contents: `Classify the sentiment of this social media mention toward the brand as exactly one word — Positive, Neutral, or Negative:\n\n"${mentionText.trim()}"`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: { type: Type.OBJECT, properties: { sentiment: { type: Type.STRING, enum: ["Positive", "Neutral", "Negative"] } }, required: ["sentiment"] },
-        },
-      });
-      const parsed = JSON.parse(response.text || "{}");
-      if (["Positive", "Neutral", "Negative"].includes(parsed.sentiment)) sentiment = parsed.sentiment;
-    } catch (err) {
-      console.error("Sentiment classification failed, defaulting to Neutral (non-fatal):", err);
-    }
-  }
-
-  const { data, error } = await res.locals.sb
-    .from("social_mentions")
-    .insert({ workspace_id: res.locals.wsId, platform, mention_text: mentionText.trim(), source_url: sourceUrl || null, author: author || null, sentiment })
-    .select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true, mention: data });
-});
-
-app.delete("/api/workspace/social-mentions/:id", requireModule("social"), async (req: Request, res: Response) => {
-  const { error } = await res.locals.sb.from("social_mentions").delete().eq("id", req.params.id);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ success: true });
-});
+//
+// Extracted to src/server/routes/socialMentionsRoutes.ts (P2 inc-6) — same
+// injection pattern; the sentiment path degrades to Neutral without a key.
+app.use("/api/workspace/social-mentions", createSocialMentionsRouter({
+  requireModule,
+  getGeminiClient,
+  resolveEffectiveGeminiKey,
+  resolveEffectiveGeminiModel,
+}));
 
 // Explicit API 404 handler: Catches any unhandled /api/* route before the SPA
 // fallback so unknown or malformed API calls return a clean JSON 404 rather than
