@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas-pro';
 import pptxgen from 'pptxgenjs';
 import * as XLSX from 'xlsx';
 import { renderExecutiveReportPDF } from '../lib/pdfReportRenderer';
@@ -69,6 +68,9 @@ export const exportService = {
     if (!element) return false;
 
     try {
+      // Loaded on demand so the export-only html2canvas library stays out of the
+      // app shell; it is only ever needed when a user triggers a PDF export.
+      const { default: html2canvas } = await import('html2canvas-pro');
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
