@@ -129,7 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
-import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
+import { createPublicOpsRouter } from "./src/server/routes/publicOpsRoutes.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
 import { hyperframesRenderer } from "./src/server/providers/creative/hyperframesRenderer.js";
@@ -239,13 +239,6 @@ const expensiveLimiter = rateLimit({
 // The unauthenticated intake endpoints. The token is a 24-byte random value so
 // brute force is not the concern; this bounds abuse of an endpoint that anyone
 // on the internet can reach.
-const publicLimiter = rateLimit({
-  windowMs: 60_000,
-  limit: 20,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { error: "Too many requests. Please try again shortly." },
-});
 
 // Stripe webhook (#17) — MUST be registered before the global express.json()
 // parser below. Stripe's signature verification (constructEvent) needs the
@@ -328,65 +321,6 @@ app.use(
 // restart. Defaults to the historical 3000 when unset.
 const PORT = Number(process.env.PORT) || 3000;
 
-// Liveness probe for the process supervisor and uptime monitoring. Deliberately
-// registered before app.use("/api/workspace", requireAuth) and deliberately
-// dependency-free: it answers "is this process alive and serving HTTP", which
-// is the question a restart policy needs. It must NOT check Supabase — a DB
-// blip would then cause the supervisor to kill an otherwise healthy process.
-function resolveRuntimeCommitSha(): string {
-  if (process.env.GIT_COMMIT_SHA) return process.env.GIT_COMMIT_SHA;
-  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA;
-  if (process.env.COMMIT_SHA) return process.env.COMMIT_SHA;
-  try {
-    const gitHeadPath = path.join(process.cwd(), '.git', 'HEAD');
-    if (fs.existsSync(gitHeadPath)) {
-      const head = fs.readFileSync(gitHeadPath, 'utf8').trim();
-      if (head.startsWith('ref: ')) {
-        const refPath = path.join(process.cwd(), '.git', head.slice(5));
-        if (fs.existsSync(refPath)) {
-          return fs.readFileSync(refPath, 'utf8').trim();
-        }
-      } else {
-        return head;
-      }
-    }
-  } catch { }
-  return "be85432d0b5033878b438cf38b97587ef03b9c73";
-}
-
-// Liveness probe for the process supervisor and uptime monitoring. Deliberately
-// registered before app.use("/api/workspace", requireAuth) and deliberately
-// dependency-free: it answers "is this process alive and serving HTTP", which
-// is the question a restart policy needs. It must NOT check Supabase — a DB
-// blip would then cause the supervisor to kill an otherwise healthy process.
-app.get("/healthz", (_req: Request, res: Response) => {
-  res.json({
-    ok: true, uptimeSeconds: Math.round(process.uptime()),
-    commit: resolveRuntimeCommitSha(),
-    status: "alive",
-  });
-});
-
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({
-    ok: true,
-    uptimeSeconds: Math.round(process.uptime()),
-    commit: resolveRuntimeCommitSha(),
-    status: "alive",
-  });
-});
-
-// Readiness probe: checks system environment, database presence, and exposes runtime commit
-async function respondWithReadiness(_req: Request, res: Response) {
-  const readiness = await assessRuntimeReadiness();
-  res.status(readiness.ready ? 200 : 503).json({
-    ...readiness,
-    commit: resolveRuntimeCommitSha(),
-    uptimeSeconds: Math.round(process.uptime()),
-  });
-}
-app.get("/readyz", respondWithReadiness);
-app.get("/api/ready", respondWithReadiness);
 
 // Request-scoped DB access. requireAuth stashes a Supabase client (built from
 // the caller's JWT) plus their resolved workspace id on res.locals; RLS
@@ -695,42 +629,6 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
     res.status(500).json({ error: "Workspace resolution failed: " + (err.message || String(err)) });
   }
 }
-
-// Public, UNAUTHENTICATED routes — the client-facing intake completion form
-// (#14). Deliberately registered outside app.use("/api/workspace", requireAuth)
-// below: the client filling this out is not a workspace member and has no
-// session. Safety comes from the token itself (opaque, expiring, single-use)
-// validated inside the two SECURITY DEFINER RPCs in 0005_intake_tokens.sql —
-// getPublicClient() has no elevated privilege, it's a plain anon-key client.
-app.get("/api/public/intake/:token", publicLimiter, async (req: Request, res: Response) => {
-  const { data, error } = await getPublicClient().rpc("get_intake_token_info", { p_token: req.params.token });
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  const info = Array.isArray(data) ? data[0] : data;
-  if (!info) {
-    res.status(404).json({ error: "This link is invalid or has expired." });
-    return;
-  }
-  res.json({ success: true, info });
-});
-
-app.post("/api/public/intake/:token/complete", publicLimiter, async (req: Request, res: Response) => {
-  const { data, error } = await getPublicClient().rpc("complete_intake_token", {
-    p_token: req.params.token,
-    p_payload: req.body?.payload || {},
-  });
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(410).json({ error: "This link has already been used or has expired." });
-    return;
-  }
-  res.json({ success: true });
-});
 
 // Creative Studio endpoints are authenticated. They never fall back to a
 // browser-side provider or label a still image as a video.
@@ -1697,6 +1595,17 @@ app.post(["/api/outreach/send-email", "/api/workspace/outreach/send-email"], asy
   });
 });
 
+// Public ops band — /healthz, /api/health, /readyz, /api/ready probes + the
+// two public intake-token routes — extracted to src/server/routes/
+// publicOpsRoutes.ts (P2 inc-17). Root-mounted at the ORIGINAL position:
+// after the global express.json() parser, and strictly BEFORE
+// app.use("/api", apiLimiter) + app.use("/api/workspace", requireAuth), so
+// the six public routes stay exempt from the global API limiter + workspace
+// auth exactly as the inline registrations were. The intake routes throttle
+// via publicLimiter (co-moved into the router; its 60s/20 config is
+// verbatim); resolveRuntimeCommitSha + respondWithReadiness co-moved as the
+// sole consumers of the probes.
+app.use(createPublicOpsRouter());
 app.use("/api", apiLimiter);
 app.use("/api/workspace", requireAuth);
 

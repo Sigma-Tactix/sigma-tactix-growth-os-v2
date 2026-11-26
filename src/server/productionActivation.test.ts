@@ -54,12 +54,18 @@ describe('S20 local acceptance fixtures (not live production certification)', ()
       expect(readiness.checks.workerHeartbeat.status).toBe('pass');
       expect(readiness.checks.vaultBoundary.status).toBe('pass');
 
-      // Verify server.ts static guarantees for API error handling
+      // Verify static guarantees for API error handling. The 4 probe
+      // registrations co-moved into the public-ops router module (P2
+      // inc-17); server.ts keeps the mount + the JSON 404 catch-all.
       const serverSource = fs.readFileSync(path.resolve(rootDir, 'server.ts'), 'utf-8');
-      expect(serverSource).toContain('app.get("/healthz"');
-      expect(serverSource).toContain('app.get("/api/health"');
-      expect(serverSource).toContain('app.get("/readyz"');
-      expect(serverSource).toContain('app.get("/api/ready"');
+      const publicOpsSource = fs.readFileSync(
+        path.resolve(rootDir, 'src/server/routes/publicOpsRoutes.ts'),
+        'utf-8',
+      );
+      expect(publicOpsSource).toContain('router.get("/healthz"');
+      expect(publicOpsSource).toContain('router.get("/api/health"');
+      expect(publicOpsSource).toContain('router.get("/readyz"');
+      expect(publicOpsSource).toContain('router.get("/api/ready"');
       expect(serverSource).toContain('app.all("/api/*"');
       expect(serverSource).toContain('API endpoint not found');
     });
