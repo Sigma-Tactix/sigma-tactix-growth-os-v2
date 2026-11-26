@@ -129,6 +129,7 @@ import { createWebIntelligenceRouter } from "./src/server/routes/webIntelligence
 import { createMarketSimulationRouter } from "./src/server/routes/marketSimulationRoutes.js";
 import { createSocialDistributionRouter } from "./src/server/routes/socialDistributionRoutes.js";
 import { createBrainGraphRouter } from "./src/server/routes/brainGraphRoutes.js";
+import { createLearningRegistryRouter } from "./src/server/routes/learningRegistryRoutes.js";
 import { assessRuntimeReadiness } from "./src/server/runtimeReadiness.js";
 import { SocialSchedulerAdapter } from "./src/server/providers/socialDistribution/socialSchedulerAdapter.js";
 import { creativeGateway } from "./src/server/providers/creative/creativeGateway.js";
@@ -145,10 +146,6 @@ import {
   renderSnapshotToXLSX,
   generateReportArtifactBundle,
 } from "./src/lib/reportArtifactPipeline.js";
-import {
-  globalLearningRegistry,
-  DEVELOPMENT_LESSON_REGISTRY,
-} from "./src/lib/learningRegistry.js";
 import * as fs from "fs";
 import { spawn } from "child_process";
 
@@ -7682,74 +7679,14 @@ app.get("/api/workspace/reports/artifact/:hash/download", async (req: Request, r
   res.send(artifact.buffer);
 });
 
-// =========================================================================
-// LEARNING REGISTRY (Phase 3 & Task S21 Learning Loops)
-// Versioned development lessons, client job learnings, and scoped retrieval
-// =========================================================================
-app.get("/api/workspace/learnings", async (req: Request, res: Response) => {
-  const wsId = res.locals.wsId;
-  const category = req.query.category as any;
-  const query = req.query.q as string;
-  const vaultScope = req.query.vaultScope ? (req.query.vaultScope as string).split(",") : undefined;
-  const learnings = globalLearningRegistry.queryScopedLearnings(wsId, { category, query, vaultScope });
-  res.json({ success: true, learnings });
-});
-
-app.post("/api/workspace/learnings", async (req: Request, res: Response) => {
-  try {
-    const wsId = res.locals.wsId;
-    const { jobRunId, taskTitle, category, reviewedOutcome, limitations, lessonContent, targetVault, author } = req.body;
-    const entry = globalLearningRegistry.recordClientLearning({
-      workspaceId: wsId,
-      jobRunId: jobRunId || `manual-${Date.now()}`,
-      taskTitle: taskTitle || "Operator Learning",
-      category: category || "positioning",
-      reviewedOutcome: reviewedOutcome || "",
-      limitations: limitations || "",
-      lessonContent: lessonContent || "",
-      targetVault: targetVault || "Brand Vault",
-      author: author || res.locals.userEmail || "Operator",
-    });
-    res.json({ success: true, learning: entry });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || String(err) });
-  }
-});
-
-app.post("/api/workspace/learnings/:id/approve", async (req: Request, res: Response) => {
-  try {
-    const reviewer = res.locals.userEmail || req.body.reviewer || "Lead Reviewer";
-    const entry = globalLearningRegistry.approveLearning(req.params.id, reviewer);
-    res.json({ success: true, learning: entry });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || String(err) });
-  }
-});
-
-app.post("/api/workspace/learnings/:id/supersede", async (req: Request, res: Response) => {
-  try {
-    const reviewer = res.locals.userEmail || req.body.reviewer || "Lead Reviewer";
-    const entry = globalLearningRegistry.supersedeLearning(req.params.id, req.body, reviewer);
-    res.json({ success: true, learning: entry });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || String(err) });
-  }
-});
-
-app.post("/api/workspace/learnings/:id/revoke", async (req: Request, res: Response) => {
-  try {
-    const reviewer = res.locals.userEmail || req.body.reviewer || "Lead Reviewer";
-    const reason = req.body.reason || "Superseded or invalidated by operator";
-    const entry = globalLearningRegistry.revokeLearning(req.params.id, reviewer, reason);
-    res.json({ success: true, learning: entry });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || String(err) });
-  }
-});
-
-app.get("/api/workspace/learnings/development", async (_req: Request, res: Response) => {
-  res.json({ success: true, lessons: DEVELOPMENT_LESSON_REGISTRY });
-});
+// Learning Registry (Phase 3 learning loops) — extracted to
+// src/server/routes/learningRegistryRoutes.ts (P2 inc-22). Root-mounted at
+// the ORIGINAL position, strictly after app.use("/api/workspace",
+// requireAuth); no route in this band had a per-route tier gate inline, and
+// none does here. The globalLearningRegistry / DEVELOPMENT_LESSON_REGISTRY
+// lib import moved with the router (its sole user was this band); the
+// factory is zero-arg.
+app.use(createLearningRegistryRouter());
 
 // =========================================================================
 // LECTURE DECK ENGINE (Phase 3 Presentation Engine)
